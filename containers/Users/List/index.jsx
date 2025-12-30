@@ -10,7 +10,7 @@ import {
 
 export default function UsersPage() {
   return (
-    <div className="min-h-screen bg-[#f6f6f6] dark:bg-[#183431] p-6 text-[#183431] dark:text-white">
+    <div className="min-h-screen bg-[#f6f6f6] dark:bg-[#101437] p-6 text-[#101437] dark:text-white">
       {/* STATS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         {[
@@ -18,14 +18,14 @@ export default function UsersPage() {
             title: "Session",
             value: "21,459",
             change: "+29%",
-            color: "text-[#183431]",
+            color: "text-[#101437]",
             darkColor: "text-white",
           },
           {
             title: "Paid Users",
             value: "4,567",
             change: "+18%",
-            color: "text-[#183431]",
+            color: "text-[#101437]",
             darkColor: "text-white",
           },
           {
@@ -39,7 +39,7 @@ export default function UsersPage() {
             title: "Pending Users",
             value: "237",
             change: "+42%",
-            color: "text-[#183431]",
+            color: "text-[#101437]",
             darkColor: "text-white",
           },
         ].map((item) => (
@@ -105,7 +105,7 @@ export default function UsersPage() {
           <div className="overflow-x-auto">
             <table className="table">
               <thead>
-                <tr className="text-[#183431] dark:text-white">
+                <tr className="text-[#101437] dark:text-white">
                   <th>
                     <input type="checkbox" className="checkbox" />
                   </th>
@@ -126,13 +126,13 @@ export default function UsersPage() {
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="avatar placeholder">
-                          <div className="bg-primary text-[#183431] dark:text-white rounded-full w-8">
+                          <div className="bg-primary text-[#101437] dark:text-white rounded-full w-8">
                             <span>SO</span>
                           </div>
                         </div>
                         <div>
                           <p className="font-semibold">Saunder Offner</p>
-                          <p className="text-sm text-[#183431] dark:text-white">
+                          <p className="text-sm text-[#101437] dark:text-white">
                             soffner19@mac.com
                           </p>
                         </div>
@@ -175,15 +175,23 @@ export default function UsersPage() {
 
           {/* PAGINATION */}
           <div className="flex justify-between items-center mt-4">
-            <p className="text-sm text-[#183431] dark:text-white">
+            <p className="text-sm text-[#101437] dark:text-white">
               Showing 1 to 10 of 50 entries
             </p>
             <div className="join bg-[#f6f6f6] dark:bg-[#1e4742] p-1 rounded-md">
-              <button className="join-item btn bg-[#f6f6f6] dark:bg-[#1e4742]">«</button>
+              <button className="join-item btn bg-[#f6f6f6] dark:bg-[#1e4742]">
+                «
+              </button>
               <button className="join-item btn btn-active">1</button>
-              <button className="join-item btn bg-[#f6f6f6] dark:bg-[#1e4742]">2</button>
-              <button className="join-item btn bg-[#f6f6f6] dark:bg-[#1e4742]">3</button>
-              <button className="join-item btn bg-[#f6f6f6] dark:bg-[#1e4742]">»</button>
+              <button className="join-item btn bg-[#f6f6f6] dark:bg-[#1e4742]">
+                2
+              </button>
+              <button className="join-item btn bg-[#f6f6f6] dark:bg-[#1e4742]">
+                3
+              </button>
+              <button className="join-item btn bg-[#f6f6f6] dark:bg-[#1e4742]">
+                »
+              </button>
             </div>
           </div>
         </div>

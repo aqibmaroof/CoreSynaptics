@@ -1,8 +1,8 @@
 export default function SalesCards({ title, salesCount }) {
   return (
     <div className="bg-[#f6f6f6] col-span-2 p-6 rounded-xl mt-2 shadow-xl h-53 dark:bg-[#1e4742] flex flex-col justify-between">
-      <p className="text-[#183431] dark:text-[#fff]">{title}</p>
-      <p className="text-[#183431] dark:text-[#fff]">{salesCount}</p>
+      <p className="text-[#101437] dark:text-[#fff]">{title}</p>
+      <p className="text-[#101437] dark:text-[#fff]">{salesCount}</p>
       <div className="flex flex-col justify-end items-end mt-1 h-19">
         <svg viewBox="0 0 200 80" className="w-full h-full">
           <path

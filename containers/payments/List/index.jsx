@@ -102,7 +102,7 @@ export default function InvoicePage() {
       {/* Actions */}
       <div className="flex justify-between">
         <div>
-          <select className="select select-bordered w-32 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white">
+          <select className="select select-bordered w-32 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white">
             <option>Show 10</option>
             <option>Show 20</option>
             <option>Show 30</option>
@@ -113,13 +113,13 @@ export default function InvoicePage() {
           <input
             type="text"
             placeholder="Search Invoice"
-            className="input bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+            className="input bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
 
           <select
-            className="select select-bordered w-44 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+            className="select select-bordered w-44 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -132,8 +132,8 @@ export default function InvoicePage() {
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl shadow">
-        <table className="table w-full text-[#183431] dark:text-white">
-          <thead className="text-[#183431] dark:text-white bg-[#f6f6f6] dark:bg-[#0b1f1d]">
+        <table className="table w-full text-[#101437] dark:text-white">
+          <thead className="text-[#101437] dark:text-white bg-[#f6f6f6] dark:bg-[#0b1f1d]">
             <tr>
               <th></th>
               <th>#</th>
@@ -149,7 +149,7 @@ export default function InvoicePage() {
             {filtered.map((inv) => (
               <tr
                 key={inv.id}
-                className="text-[#183431] dark:text-white bg-[#f6f6f6] dark:bg-[#1e4742]"
+                className="text-[#101437] dark:text-white bg-[#f6f6f6] dark:bg-[#1e4742]"
               >
                 <td>
                   <input

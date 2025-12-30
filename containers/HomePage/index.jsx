@@ -113,28 +113,15 @@ const HomePage = () => {
   const handleClose = (val) => setOpen(val);
 
   return (
-    <div className="bg-white dark:bg-[#183431] min-h-screen">
-      <div className="grid grid-cols-12 gap-5 w-full px-5 pt-5">
+    <div className="min-h-screen">
+      <div className="px-5 pt-5">
         <CongratsCard user={JSON.parse(getUser())} />
-        <SalesCard title="Profit" salesCount="275K" />
-        <SalesCard title="Sales" salesCount="150K" />
         {/* <StatsCards /> */}
       </div>
 
-      <div className="grid grid-cols-12 gap-5 w-full px-5 pt-5">
+      <div className="flex items-cenmter gap-5 w-full px-5 pt-5">
         <RevenueCard />
-        <div className="grid grid-cols-4 col-span-4 gap-5">
-          <SalesCard title="Profit" salesCount="275K" />
-          <SalesCard title="Sales" salesCount="150K" />
-          <div className="col-span-4">
-            <ProfileReportCard
-              title="Profile Report"
-              year="2022"
-              reportPercentage="68.2"
-              reportPersonsCount="84686"
-            />
-          </div>
-        </div>
+        <ProfileReportCard />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-12 px-5 gap-5 pt-5">
         <OrderStatisticsCard data={orderStatsData} />

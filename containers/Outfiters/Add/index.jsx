@@ -57,10 +57,10 @@ export default function AddOutfiter() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold px-5 pt-5 text-[#183431] dark:text-white">
+          <h1 className="text-2xl font-bold px-5 pt-5 text-[#101437] dark:text-white">
             Add a new Outfitter
           </h1>
-          <p className="text-sm px-5 text-[#183431] dark:text-white mb-5">
+          <p className="text-sm px-5 text-[#101437] dark:text-white mb-5">
             Outfitter for your hunt over your store
           </p>
         </div>
@@ -72,69 +72,69 @@ export default function AddOutfiter() {
       <div className="flex jusify-center items-start gap-10 w-[100%]">
         <div className="flex flex-col items-left justify-center w-[65%]">
           <div className="bg-[#f6f6f6] dark:bg-[#1e4742] px-5 py-5 ml-5 rounded-xl w-full shadow-xl">
-            <h4 className="fieldset-legend text-xl  text-[#183431] dark:text-white">
+            <h4 className="fieldset-legend text-xl  text-[#101437] dark:text-white">
               Outfitter Information
             </h4>
             <div className="flex items-center justify-start gap-5 w-full my-3">
               <fieldset className="fieldset w-full">
-                <legend className="text-xl  text-[#183431] dark:text-white mb-3">
+                <legend className="text-xl  text-[#101437] dark:text-white mb-3">
                   Name
                 </legend>
                 <input
                   type="text"
-                  className="input bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                  className="input bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                   placeholder="My awesome page"
                 />
               </fieldset>
               <fieldset className="fieldset w-full">
-                <legend className="text-xl  text-[#183431] dark:text-white mb-3">
+                <legend className="text-xl  text-[#101437] dark:text-white mb-3">
                   code
                 </legend>
                 <input
                   type="text"
-                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                   placeholder="My awesome page"
                 />
               </fieldset>
-               <fieldset className="fieldset w-full">
-                <legend className="text-xl  text-[#183431] dark:text-white mb-3">
+              <fieldset className="fieldset w-full">
+                <legend className="text-xl  text-[#101437] dark:text-white mb-3">
                   Ratings
                 </legend>
                 <input
                   type="text"
-                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                   placeholder="My awesome page"
                 />
               </fieldset>
             </div>
             <div className="flex items-center justify-start gap-5 w-full my-3">
               <fieldset className="fieldset w-full">
-                <legend className="text-xl  text-[#183431] dark:text-white mb-3">
+                <legend className="text-xl  text-[#101437] dark:text-white mb-3">
                   Outfitter Area
                 </legend>
                 <input
                   type="text"
-                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                   placeholder="My awesome page"
                 />
               </fieldset>
               <fieldset className="fieldset w-full">
-                <legend className="text-xl  text-[#183431] dark:text-white mb-3">
+                <legend className="text-xl  text-[#101437] dark:text-white mb-3">
                   Outfitter Contact Number
                 </legend>
                 <input
                   type="text"
-                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                   placeholder="My awesome page"
                 />
               </fieldset>
             </div>
             <fieldset className="fieldset w-full">
-              <legend className="text-xl  text-[#183431] dark:text-white mb-3">
+              <legend className="text-xl  text-[#101437] dark:text-white mb-3">
                 Description
               </legend>
               <textarea
-                className="input p-auto flex items-center justify-center bg-[transparent] py-2 w-full h-40 border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                className="input p-auto flex items-center justify-center bg-[transparent] py-2 w-full h-40 border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                 placeholder="My awesome page"
               />
             </fieldset>{" "}
@@ -142,13 +142,13 @@ export default function AddOutfiter() {
         </div>
         <div className=" flex flex-col items-left justify-center  mr-5 w-[35%]">
           <div className="bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl flex flex-col items-left justify-center px-5 py-5 rounded-xl w-full">
-            <h4 className="fieldset-legend text-xl  text-[#183431] dark:text-white">
+            <h4 className="fieldset-legend text-xl  text-[#101437] dark:text-white">
               Outfitter Image
             </h4>
             <fieldset className="fieldset w-full mb-3">
               <input
                 type="file"
-                className="file-input w-full file-input-md bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                className="file-input w-full file-input-md bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                 onChange={handleChange}
                 accept="image/*"
                 ref={fileInputRef}
@@ -176,7 +176,7 @@ export default function AddOutfiter() {
           <div className="bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl shadow-xl px-5 py-5 mt-5">
             {/* Fieldset with input */}
             <fieldset className="fieldset w-full">
-              <legend className="text-lg text-[#183431] dark:text-white mb-3">
+              <legend className="text-lg text-[#101437] dark:text-white mb-3">
                 Terms & Conditions
               </legend>
 
@@ -186,12 +186,9 @@ export default function AddOutfiter() {
                   value={termInput}
                   onChange={(e) => setTermInput(e.target.value)}
                   placeholder="Enter a term..."
-                  className="w-full input bg-transparent border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                  className="w-full input bg-transparent border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                 />
-                <button
-                  onClick={handleAdd}
-                  className="btn btn-accent"
-                >
+                <button onClick={handleAdd} className="btn btn-accent">
                   Add
                 </button>
               </div>

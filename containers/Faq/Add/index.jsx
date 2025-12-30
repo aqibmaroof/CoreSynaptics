@@ -57,10 +57,10 @@ export default function AddReviews() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold px-5 pt-5 text-[#183431] dark:text-white">
+          <h1 className="text-2xl font-bold px-5 pt-5 text-[#101437] dark:text-white">
             Add a new Faq
           </h1>
-          <p className="text-sm px-5 text-[#183431] dark:text-white mb-5">
+          <p className="text-sm px-5 text-[#101437] dark:text-white mb-5">
             Faqs Dsiplayed over your store
           </p>
         </div>
@@ -72,18 +72,18 @@ export default function AddReviews() {
       <div className="flex jusify-center items-start gap-10 w-[100%]">
         <div className="flex flex-col items-left justify-center w-[65%]">
           <div className="bg-[#f6f6f6] dark:bg-[#1e4742] px-5 py-5 ml-5 rounded-xl w-full shadow-xl">
-            <h4 className="fieldset-legend text-xl  text-[#183431] dark:text-white">
+            <h4 className="fieldset-legend text-xl  text-[#101437] dark:text-white">
               Faq Information
             </h4>
-             <fieldset className="fieldset mt-4 w-full">
-              <legend className="text-xl  text-[#183431] dark:text-white mb-3">
+            <fieldset className="fieldset mt-4 w-full">
+              <legend className="text-xl  text-[#101437] dark:text-white mb-3">
                 Category
               </legend>
               <div class="dropdown dropdown-end w-full">
                 <div
                   tabindex="0"
                   role="button"
-                  class="inline-flex justify-between items-center w-full rounded-lg shadow-lg bg-[#f6f6f6]/50  dark:bg-[#265953]/50 text-[#183431] dark:text-white text-base font-semibold transition duration-150 ease-in-out border-2 border-[#d8d6d6] dark:border-[#265953] focus:outline-none"
+                  class="inline-flex justify-between items-center w-full rounded-lg shadow-lg bg-[#f6f6f6]/50  dark:bg-[#265953]/50 text-[#101437] dark:text-white text-base font-semibold transition duration-150 ease-in-out border-2 border-[#d8d6d6] dark:border-[#265953] focus:outline-none"
                 >
                   <span class="py-2 px-3 mx-1 bg-[#e3e0e0] dark:bg-[#265953]/50 rounded-l-md">
                     Category 1
@@ -91,7 +91,7 @@ export default function AddReviews() {
 
                   <div class="bg-[#e3e0e0] dark:bg-[#275a54] hover:bg-[#d9d6d6] dark:hover:bg-[#246159] p-3 rounded-r-md">
                     <svg
-                      class="h-5 w-5 fill-current dark:text-white text-[#183431] "
+                      class="h-5 w-5 fill-current dark:text-white text-[#101437] "
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                       fill="currentColor"
@@ -111,55 +111,53 @@ export default function AddReviews() {
                   class="dropdown-content z-[1] bg-[#e3e0e0] dark:bg-[#246159] mt-2 w-full mb-20 p-0 rounded-lg shadow-2xl ring-1 ring-white/10"
                 >
                   <li>
-                    <a class="block px-4 py-3 text-lg text-[#183431] dark:text-white hover:bg-[#d9d6d6] dark:hover:bg-[#275a54] hover:rounded-t-lg transition duration-100 ease-in-out">
+                    <a class="block px-4 py-3 text-lg text-[#101437] dark:text-white hover:bg-[#d9d6d6] dark:hover:bg-[#275a54] hover:rounded-t-lg transition duration-100 ease-in-out">
                       Category 1
                     </a>
                   </li>
                   <li>
-                    <a class="block px-4 py-3 text-lg text-[#183431] dark:text-white hover:bg-[#d9d6d6] dark:hover:bg-[#275a54] transition duration-100 ease-in-out">
+                    <a class="block px-4 py-3 text-lg text-[#101437] dark:text-white hover:bg-[#d9d6d6] dark:hover:bg-[#275a54] transition duration-100 ease-in-out">
                       Category 2
                     </a>
                   </li>
                   <li>
-                    <a class="block px-4 py-3 text-lg text-[#183431] dark:text-white hover:bg-[#d9d6d6] dark:hover:bg-[#275a54] hover:rounded-b-lg transition duration-100 ease-in-out">
+                    <a class="block px-4 py-3 text-lg text-[#101437] dark:text-white hover:bg-[#d9d6d6] dark:hover:bg-[#275a54] hover:rounded-b-lg transition duration-100 ease-in-out">
                       Category 3
                     </a>
                   </li>
                 </ul>
               </div>
             </fieldset>{" "}
-            
             <fieldset className="fieldset mt-4 w-full">
-              <legend className="text-xl text-[#183431] dark:text-white mb-3">
+              <legend className="text-xl text-[#101437] dark:text-white mb-3">
                 Question
               </legend>
               <input
                 type="text"
-                className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                 placeholder="My awesome page"
               />
             </fieldset>
             <fieldset className="fieldset mt-4 w-full">
-              <legend className="text-xl  text-[#183431] dark:text-white mb-3">
+              <legend className="text-xl  text-[#101437] dark:text-white mb-3">
                 Answer
               </legend>
               <textarea
-                className="input p-auto flex items-center justify-center bg-[transparent] py-2 w-full h-40 border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                className="input p-auto flex items-center justify-center bg-[transparent] py-2 w-full h-40 border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                 placeholder="My awesome page"
               />
             </fieldset>{" "}
-           
           </div>
         </div>
         <div className=" flex flex-col items-left justify-center  mr-5 w-[35%]">
           <div className="bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl shadow-xl px-5 py-5">
-            <h4 className="fieldset-legend text-xl  text-[#183431] dark:text-white">
+            <h4 className="fieldset-legend text-xl  text-[#101437] dark:text-white">
               Faq Organize
             </h4>
             <div className="flex flex-col items-center justify-start gap-5 mt-3">
               <fieldset className="w-full">
                 <div className="flex items-center justify-between">
-                  <span className="text-xl text-[#183431] dark:text-white">
+                  <span className="text-xl text-[#101437] dark:text-white">
                     Status
                   </span>
                   <input type="checkbox" checked className="toggle" />

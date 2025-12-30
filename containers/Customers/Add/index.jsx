@@ -53,10 +53,10 @@ export default function AddCustomer() {
       {/* HEADER */}
       <div className="flex items-center  justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-[#183431] dark:text-white">
+          <h1 className="text-3xl font-bold text-[#101437] dark:text-white">
             Edit Customer
           </h1>
-          <p className="text-sm text-[#183431] dark:text-white opacity-70">
+          <p className="text-sm text-[#101437] dark:text-white opacity-70">
             Edit the customer profile
           </p>
         </div>
@@ -71,46 +71,46 @@ export default function AddCustomer() {
         <div className="w-2/3 flex flex-col gap-6">
           {/* BASIC INFORMATION */}
           <div className="card bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl p-6">
-            <h2 className="text-xl text-[#183431] dark:text-white font-semibold mb-4">
+            <h2 className="text-xl text-[#101437] dark:text-white font-semibold mb-4">
               Basic Information
             </h2>
 
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className="label text-[#183431] dark:text-white">
+                <label className="label text-[#101437] dark:text-white">
                   Full Name
                 </label>
                 <input
-                  className="input input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white"
+                  className="input input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white"
                   placeholder="Customer name"
                 />
               </div>
 
               <div>
-                <label className="label text-[#183431] dark:text-white">
+                <label className="label text-[#101437] dark:text-white">
                   Email
                 </label>
                 <input
-                  className="input input-bordered bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white w-full"
+                  className="input input-bordered bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white w-full"
                   placeholder="email@example.com"
                 />
               </div>
 
               <div>
-                <label className="label text-[#183431] dark:text-white">
+                <label className="label text-[#101437] dark:text-white">
                   Phone
                 </label>
                 <input
-                  className="input input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white"
+                  className="input input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white"
                   placeholder="+1 234 5678"
                 />
               </div>
 
               <div>
-                <label className="label text-[#183431] dark:text-white">
+                <label className="label text-[#101437] dark:text-white">
                   Customer Type
                 </label>
-                <select className="select select-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white">
+                <select className="select select-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white">
                   <option>Regular</option>
                   <option>VIP</option>
                   <option>Corporate</option>
@@ -118,25 +118,25 @@ export default function AddCustomer() {
               </div>
             </div>
 
-            <label className="label text-[#183431] dark:text-white mt-4">
+            <label className="label text-[#101437] dark:text-white mt-4">
               Address
             </label>
             <textarea
-              className="textarea textarea-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white"
+              className="textarea textarea-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white"
               placeholder="Customer address"
             ></textarea>
           </div>
 
           {/* PROFILE IMAGE */}
           <div className="card bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl p-6">
-            <h2 className="text-xl text-[#183431] dark:text-white font-semibold mb-4">
+            <h2 className="text-xl text-[#101437] dark:text-white font-semibold mb-4">
               Profile Image
             </h2>
 
             <input
               type="file"
               accept="image/*"
-              className="file-input file-input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white"
+              className="file-input file-input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white"
               onChange={handleProfileChange}
               ref={profileInputRef}
             />
@@ -156,7 +156,7 @@ export default function AddCustomer() {
 
           {/* DOCUMENTS */}
           <div className="card bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl p-6">
-            <h2 className="text-xl text-[#183431] dark:text-white font-semibold mb-4">
+            <h2 className="text-xl text-[#101437] dark:text-white font-semibold mb-4">
               Customer Documents
             </h2>
 
@@ -164,7 +164,7 @@ export default function AddCustomer() {
               type="file"
               multiple
               accept="image/*,.pdf"
-              className="file-input file-input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white"
+              className="file-input file-input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white"
               onChange={handleDocuments}
               ref={documentsInputRef}
             />
@@ -215,20 +215,20 @@ export default function AddCustomer() {
             <h2 className="text-xl font-semibold mb-4">Tags</h2>
 
             <input
-              className="input input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white"
+              className="input input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white"
               placeholder="Add tags like VIP, Business..."
             />
           </div>
           {/* NOTES */}
           <div className="card bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl p-6">
-            <h2 className="text-xl text-[#183431] dark:text-white font-semibold mb-4">
+            <h2 className="text-xl text-[#101437] dark:text-white font-semibold mb-4">
               Notes
             </h2>
 
             <div className="flex gap-3">
               <input
                 type="text"
-                className="input input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white"
+                className="input input-bordered w-full bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white"
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
                 placeholder="Add a note"

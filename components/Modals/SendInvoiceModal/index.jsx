@@ -24,7 +24,7 @@ export default function SendInvoicePanel({ open, onClose }) {
       >
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl text-[#183431] dark:text-white font-semibold">
+          <h2 className="text-xl text-[#101437] dark:text-white font-semibold">
             Send Invoice
           </h2>
           <button
@@ -36,40 +36,40 @@ export default function SendInvoicePanel({ open, onClose }) {
         </div>
 
         {/* From */}
-        <label className="text-md text-[#183431] dark:text-white">From</label>
+        <label className="text-md text-[#101437] dark:text-white">From</label>
         <input
           type="email"
           defaultValue="shelbyCompany@email.com"
-          className="input input-bordered w-full mb-2 mt-2 bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+          className="input input-bordered w-full mb-2 mt-2 bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
         />
 
         {/* To */}
-        <label className="text-md text-[#183431] dark:text-white">To</label>
+        <label className="text-md text-[#101437] dark:text-white">To</label>
         <div className="relative">
           <input
             type="email"
             defaultValue="qConsolidated@email.com"
-            className="input input-bordered w-full mb-2 mt-2 bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+            className="input input-bordered w-full mb-2 mt-2 bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
           />
         </div>
 
         {/* Subject */}
-        <label className="text-md text-[#183431] dark:text-white">
+        <label className="text-md text-[#101437] dark:text-white">
           Subject
         </label>
         <input
           type="text"
           defaultValue="Invoice of purchased Admin Templates"
-          className="input input-bordered w-full mb-2 mt-2 bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+          className="input input-bordered w-full mb-2 mt-2 bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
         />
 
         {/* Message */}
-        <label className="text-md text-[#183431] dark:text-white">
+        <label className="text-md text-[#101437] dark:text-white">
           Message
         </label>
         <textarea
           rows={6}
-          className="textarea textarea-bordered w-full mb-1 mt-2 leading-relaxed bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+          className="textarea textarea-bordered w-full mb-1 mt-2 leading-relaxed bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
           defaultValue={`Dear Queen Consolidated,
 Thank you for your business, always a pleasure to work with you!
 We have generated a new invoice in the amount of $95.59
@@ -78,7 +78,7 @@ We would appreciate payment of this invoice by 05/11/2021`}
 
         {/* Invoice Attached */}
         <div className="pt-3">
-          <span className="badge badge-outline text-[#183431] dark:text-white gap-2 ">
+          <span className="badge badge-outline text-[#101437] dark:text-white gap-2 ">
             📎 Invoice Attached
           </span>
         </div>

@@ -1,43 +1,165 @@
+import DynamicChart from "@/components/common/Charts/DynamicChart";
 import NumberFormatter from "../../../Utils/NumberFormatter";
 
-export default function SalesCards({
-  title,
-  year,
-  reportPercentage,
-  reportPersonsCount,
-}) {
+export default function SalesCards() {
+  const categories = ["Not Started", "In Progress", "L2", "Completed", "None"];
+  const counts = [2, 2, 1, 1, 13];
+  const total = counts.reduce((sum, val) => sum + val, 0);
+  const percentages = counts.map((count) => ((count / total) * 100).toFixed(1));
+
+  const ChartOptions = {
+    series: [
+      {
+        name: "Sites",
+        data: percentages.map((p) => parseFloat(p)),
+      },
+    ],
+    chart: {
+      type: "bar",
+      height: "350",
+      toolbar: {
+        show: false,
+      },
+      background: "transparent",
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 8,
+        borderRadiusApplication: "end",
+        columnWidth: "60%",
+        dataLabels: {
+          position: "top",
+        },
+      },
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val, opts) {
+        const index = opts.dataPointIndex;
+        return index === 2 ? percentages[index] + "%" : "";
+      },
+      offsetY: -25,
+      style: {
+        fontSize: "14px",
+        fontWeight: "bold",
+        colors: ["#fff", "#000"],
+      },
+      background: {
+        enabled: true,
+        foreColor: "#000",
+        borderRadius: 6,
+        padding: 6,
+        opacity: 1,
+        borderWidth: 0,
+      },
+    },
+    fill: {
+      type: "gradient",
+      gradient: {
+        shade: "dark",
+        type: "vertical",
+        shadeIntensity: 0.5,
+        gradientToColors: ["#093E7D"],
+        inverseColors: false,
+        opacityFrom: 1,
+        opacityTo: 0.8,
+        stops: [0, 100],
+      },
+    },
+    colors: ["#093E7D", "#0075FF", "#00E691"],
+    xaxis: {
+      categories: categories,
+      labels: {
+        style: {
+          colors: "#94a3b8",
+          fontSize: "12px",
+        },
+      },
+      axisBorder: {
+        show: false,
+      },
+      axisTicks: {
+        show: false,
+      },
+    },
+    yaxis: {
+      min: 0,
+      max: 100,
+      tickAmount: 4,
+      labels: {
+        formatter: function (val) {
+          return val + "%";
+        },
+        style: {
+          colors: "#c3c8cfff",
+          fontSize: "12px",
+        },
+      },
+    },
+    grid: {
+      borderColor: "#6b6f75ff",
+      strokeDashArray: 0,
+      xaxis: {
+        lines: {
+          show: false,
+        },
+      },
+      yaxis: {
+        lines: {
+          show: true,
+        },
+      },
+    },
+    tooltip: {
+      enabled: true,
+      theme: "dark",
+      y: {
+        formatter: function (val, opts) {
+          const index = opts.dataPointIndex;
+          return counts[index] + " sites (" + percentages[index] + "%)";
+        },
+      },
+    },
+  };
+
   return (
-    <div className="bg-[#f6f6f6] col-span-2 p-6 rounded-xl mt-2 shadow-xl h-53 dark:bg-[#1e4742] flex flex-col justify-between">
-      <div className="flex justify-between">
+    <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl">
+      <div className="flex items-start justify-between w-full">
         <div>
-          <p className="text-[#183431] dark:text-[#fff]">{title}</p>
-          <p class="w-[max-content] bg-[#E2B864]/40 hover:bg-[#A37B47] text-warning text-sm font-medium py-1 px-2 rounded-md shadow-md shadow-[#E2B864]/40 transition duration-150 ease-in-out">
-            YEAR {year}
-          </p>
+          <h2 className="text-xl font-semibold text-white mb-12">
+            Sites Overview
+          </h2>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 text-slate-300">
+              <span className="font-medium w-32">Not Started</span>
+              <span className="text-white font-semibold">02</span>
+            </div>
+            <div className="flex items-center gap-4 text-slate-300">
+              <span className="font-medium w-32">In Progress</span>
+              <span className="text-white font-semibold">02</span>
+            </div>
+            <div className="flex items-center gap-4 text-slate-300">
+              <span className="font-medium w-32">L2</span>
+              <span className="text-white font-semibold">01</span>
+            </div>
+            <div className="flex items-center gap-4 text-slate-300">
+              <span className="font-medium w-32">Complete</span>
+              <span className="text-white font-semibold">01</span>
+            </div>
+            <div className="flex items-center gap-4 text-slate-300">
+              <span className="font-medium w-32">None</span>
+              <span className="text-white font-semibold">13</span>
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="text-[#71dd37]">{reportPercentage}%</p>
-          <p className="text-[#183431] dark:text-[#fff]">
-            {NumberFormatter(reportPersonsCount)}
-          </p>
-        </div>
-      </div>
 
-      <div className="flex flex-col justify-end items-end w-full  h-25">
-        <svg viewBox="0 0 200 80" className="w-full h-full">
-          <path
-            d="M0 50 C40 60, 60 20, 100 30 S160 60, 200 40"
-            fill="none"
-            stroke="#4ADE80"
-            strokeWidth="3"
+        <div className="flex-1 w-full ml-12">
+          <DynamicChart
+            options={ChartOptions}
+            series={ChartOptions.series}
+            type={ChartOptions.chart?.type}
+            height={ChartOptions.chart?.height}
           />
-        </svg>
-
-        <div className="flex justify-evenly w-full px-3 text-[9px] text-gray-500 ">
-          <span>Tu</span>
-          <span>We</span>
-          <span>Th</span>
-          <span>Fr</span>
         </div>
       </div>
     </div>

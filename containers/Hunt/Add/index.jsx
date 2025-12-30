@@ -307,7 +307,6 @@ export default function AddHuntForm() {
         images: accommodationImages,
       };
 
-
       // TODO: Upload images first using accommodationFiles
       // const uploadedImages = await uploadToS3(accommodationFiles);
       // payload.images = uploadedImages; // Replace blob URLs with actual CDN URLs
@@ -335,10 +334,10 @@ export default function AddHuntForm() {
     <div ref={scrollContainerRef}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold px-5 pt-5 text-[#183431] dark:text-white">
+          <h1 className="text-2xl font-bold px-5 pt-5 text-[#101437] dark:text-white">
             Add a new Hunt
           </h1>
-          <p className="text-sm px-5 text-[#183431] dark:text-white mb-5">
+          <p className="text-sm px-5 text-[#101437] dark:text-white mb-5">
             Hunts booked over your store
           </p>
         </div>
@@ -375,12 +374,12 @@ export default function AddHuntForm() {
           <div className="flex flex-col items-left justify-center w-[65%]">
             {/* Hunt Information */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] px-5 py-5 ml-5 rounded-xl w-full shadow-xl">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white">
                 Hunt Information
               </h4>
 
               <fieldset className="fieldset w-full my-3">
-                <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                <legend className="text-xl text-[#101437] dark:text-white mb-3">
                   Title *
                 </legend>
                 <input
@@ -388,7 +387,7 @@ export default function AddHuntForm() {
                   name="title"
                   value={formData?.title}
                   onChange={handleInputChange}
-                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="Premium Elk Hunt in Montana Wilderness"
                   required
                 />
@@ -396,7 +395,7 @@ export default function AddHuntForm() {
 
               <div className="flex items-center justify-start gap-5 w-full my-3">
                 <fieldset className="fieldset w-full">
-                  <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                  <legend className="text-xl text-[#101437] dark:text-white mb-3">
                     Region *
                   </legend>
                   <input
@@ -404,14 +403,14 @@ export default function AddHuntForm() {
                     name="region"
                     value={formData?.region}
                     onChange={handleInputChange}
-                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                     placeholder="Montana"
                     required
                   />
                 </fieldset>
 
                 <fieldset className="fieldset w-full">
-                  <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                  <legend className="text-xl text-[#101437] dark:text-white mb-3">
                     Duration (Days) *
                   </legend>
                   <input
@@ -419,7 +418,7 @@ export default function AddHuntForm() {
                     name="durationDays"
                     value={formData?.durationDays}
                     onChange={handleInputChange}
-                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                     placeholder="2"
                     required
                   />
@@ -428,7 +427,7 @@ export default function AddHuntForm() {
 
               <div className="flex items-center justify-start gap-5 w-full my-3">
                 <fieldset className="fieldset w-full">
-                  <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                  <legend className="text-xl text-[#101437] dark:text-white mb-3">
                     Latitude *
                   </legend>
                   <input
@@ -438,14 +437,14 @@ export default function AddHuntForm() {
                     onChange={(e) =>
                       handleNestedChange("geo", "lat", e.target.value)
                     }
-                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                     placeholder="46.8797"
                     required
                   />
                 </fieldset>
 
                 <fieldset className="fieldset w-full">
-                  <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                  <legend className="text-xl text-[#101437] dark:text-white mb-3">
                     Longitude *
                   </legend>
                   <input
@@ -455,7 +454,7 @@ export default function AddHuntForm() {
                     onChange={(e) =>
                       handleNestedChange("geo", "lng", e.target.value)
                     }
-                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                     placeholder="-110.3626"
                     required
                   />
@@ -463,14 +462,14 @@ export default function AddHuntForm() {
               </div>
 
               <fieldset className="fieldset w-full">
-                <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                <legend className="text-xl text-[#101437] dark:text-white mb-3">
                   Description *
                 </legend>
                 <textarea
                   name="description"
                   value={formData?.description}
                   onChange={handleInputChange}
-                  className="input p-2 flex items-center justify-center bg-[transparent] w-full h-40 border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input p-2 flex items-center justify-center bg-[transparent] w-full h-40 border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="Experience world-class elk hunting..."
                   required
                 />
@@ -479,7 +478,7 @@ export default function AddHuntForm() {
 
             {/* Hunt Territory */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl flex flex-col items-left justify-center px-5 py-5 ml-5 mt-5 rounded-xl w-full">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white">
                 Hunt Territory
               </h4>
 
@@ -489,7 +488,7 @@ export default function AddHuntForm() {
                   name="fenceType"
                   value={formData?.fenceType}
                   onChange={handleInputChange}
-                  className="select z-[99999] w-full mt-3 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-[#fff] text-[#183431] dark:text-white"
+                  className="select z-[99999] w-full mt-3 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-[#fff] text-[#101437] dark:text-white"
                 >
                   <option value="not_fenced">Not Fenced</option>
                   <option value="partially_fenced">Partially Fenced</option>
@@ -498,7 +497,7 @@ export default function AddHuntForm() {
               </div>
 
               <fieldset className="fieldset w-full mt-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-3">
+                <legend className="text-lg text-[#101437] dark:text-white mb-3">
                   Territory Size (Acres)
                 </legend>
                 <input
@@ -506,13 +505,13 @@ export default function AddHuntForm() {
                   name="territorySizeAcres"
                   value={formData?.territorySizeAcres}
                   onChange={handleInputChange}
-                  className="w-full input bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="w-full input bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="5000"
                 />
               </fieldset>
 
               <fieldset className="fieldset w-full mt-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-3">
+                <legend className="text-lg text-[#101437] dark:text-white mb-3">
                   Staff Language
                 </legend>
                 <input
@@ -520,7 +519,7 @@ export default function AddHuntForm() {
                   name="staffLanguage"
                   value={formData?.staffLanguage}
                   onChange={handleInputChange}
-                  className="w-full input bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="w-full input bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="English"
                 />
               </fieldset>
@@ -528,12 +527,12 @@ export default function AddHuntForm() {
 
             {/* Hunt Travel */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl flex flex-col items-left justify-center px-5 py-5 ml-5 mt-5 rounded-xl w-full">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white">
                 Hunt Travel
               </h4>
 
               <fieldset className="fieldset w-full mt-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-3">
+                <legend className="text-lg text-[#101437] dark:text-white mb-3">
                   Nearest Airport
                 </legend>
                 <input
@@ -541,13 +540,13 @@ export default function AddHuntForm() {
                   name="nearestAirport"
                   value={formData?.nearestAirport}
                   onChange={handleInputChange}
-                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="Melbourne"
                 />
               </fieldset>
 
               <fieldset className="fieldset w-full mt-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-3">
+                <legend className="text-lg text-[#101437] dark:text-white mb-3">
                   Airport Distance (KM)
                 </legend>
                 <input
@@ -555,14 +554,14 @@ export default function AddHuntForm() {
                   name="airportDistanceKm"
                   value={formData?.airportDistanceKm}
                   onChange={handleInputChange}
-                  className="w-full input bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="w-full input bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="350"
                 />
               </fieldset>
 
               <fieldset className="fieldset w-full mt-3">
                 <div className="flex items-center justify-between">
-                  <legend className="text-lg text-[#183431] dark:text-white">
+                  <legend className="text-lg text-[#101437] dark:text-white">
                     Airport Transfer Provided
                   </legend>
                   <input
@@ -577,7 +576,7 @@ export default function AddHuntForm() {
 
               <fieldset className="fieldset w-full mt-3">
                 <div className="flex items-center justify-between">
-                  <legend className="text-lg text-[#183431] dark:text-white">
+                  <legend className="text-lg text-[#101437] dark:text-white">
                     Railway Transfer Provided
                   </legend>
                   <input
@@ -593,19 +592,19 @@ export default function AddHuntForm() {
 
             {/* Hunt Services */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl ml-5 flex flex-col items-left justify-center px-5 py-5 mt-5 rounded-xl w-full">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white">
                 Hunt Services
               </h4>
 
               <fieldset className="fieldset w-full mt-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-3">
+                <legend className="text-lg text-[#101437] dark:text-white mb-3">
                   Transportation Type
                 </legend>
                 <select
                   name="transportationType"
                   value={formData?.transportationType}
                   onChange={handleInputChange}
-                  className="select w-full bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="select w-full bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#101437] dark:text-white"
                 >
                   <option value="provided">Provided</option>
                   <option value="not_provided">Not Provided</option>
@@ -619,7 +618,7 @@ export default function AddHuntForm() {
                   name="lodgingType"
                   value={formData?.lodgingType}
                   onChange={handleInputChange}
-                  className="select z-[99999] w-full mt-3 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-[#fff] text-[#183431] dark:text-white"
+                  className="select z-[99999] w-full mt-3 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-[#fff] text-[#101437] dark:text-white"
                 >
                   <option value="cabin">Cabin</option>
                   <option value="lodge">Lodge</option>
@@ -630,7 +629,7 @@ export default function AddHuntForm() {
 
               <fieldset className="fieldset w-full mt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg text-[#183431] dark:text-white">
+                  <span className="text-lg text-[#101437] dark:text-white">
                     Chef Provided
                   </span>
                   <input
@@ -645,7 +644,7 @@ export default function AddHuntForm() {
 
               <fieldset className="fieldset w-full mt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg text-[#183431] dark:text-white">
+                  <span className="text-lg text-[#101437] dark:text-white">
                     Gear Provided
                   </span>
                   <input
@@ -660,7 +659,7 @@ export default function AddHuntForm() {
 
               <fieldset className="fieldset w-full mt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg text-[#183431] dark:text-white">
+                  <span className="text-lg text-[#101437] dark:text-white">
                     Cruise Available
                   </span>
                   <input
@@ -679,17 +678,17 @@ export default function AddHuntForm() {
           <div className="flex flex-col items-left justify-center mr-5 w-[35%]">
             {/* Hunt Images */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl flex flex-col items-left justify-center px-5 py-5 mb-5 rounded-xl w-full">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white">
                 Hunt Images
               </h4>
               <fieldset className="fieldset w-full mt-3 mb-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-3">
+                <legend className="text-lg text-[#101437] dark:text-white mb-3">
                   Upload Multiple Images
                 </legend>
 
                 <input
                   type="file"
-                  className="file-input file-input-md w-full bg-transparent border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="file-input file-input-md w-full bg-transparent border border-black dark:border-white text-[#101437] dark:text-white"
                   onChange={handleAccommodationChange}
                   accept="image/*"
                   ref={accommodationsFileInputRef}
@@ -714,7 +713,7 @@ export default function AddHuntForm() {
                           className="rounded-xl border max-h-32 w-full object-cover"
                         />
                       </figure>
-                      <p className="text-xs text-center mt-1 text-[#183431] dark:text-white truncate">
+                      <p className="text-xs text-center mt-1 text-[#101437] dark:text-white truncate">
                         {f?.s3Key}
                       </p>
                     </div>
@@ -725,12 +724,12 @@ export default function AddHuntForm() {
 
             {/* Hunt Pricing */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl shadow-xl px-5 py-5">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white">
                 Hunt Pricing
               </h4>
 
               <fieldset className="fieldset w-full mb-3">
-                <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                <legend className="text-xl text-[#101437] dark:text-white mb-3">
                   Base Price ($) *
                 </legend>
                 <input
@@ -738,17 +737,17 @@ export default function AddHuntForm() {
                   name="basePriceMinor"
                   value={formData?.basePriceMinor}
                   onChange={handleInputChange}
-                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="5000"
                   required
                 />
-                <p className="text-xs text-[#183431] dark:text-white mt-1">
+                <p className="text-xs text-[#101437] dark:text-white mt-1">
                   Will be converted to cents (multiply by 100)
                 </p>
               </fieldset>
 
               <fieldset className="fieldset w-full mb-3">
-                <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                <legend className="text-xl text-[#101437] dark:text-white mb-3">
                   Deposit Percent (%) *
                 </legend>
                 <input
@@ -756,14 +755,14 @@ export default function AddHuntForm() {
                   name="depositPercent"
                   value={formData?.depositPercent}
                   onChange={handleInputChange}
-                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="30"
                   required
                 />
               </fieldset>
 
               <fieldset className="fieldset w-full">
-                <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                <legend className="text-xl text-[#101437] dark:text-white mb-3">
                   Capacity Per Day *
                 </legend>
                 <input
@@ -771,7 +770,7 @@ export default function AddHuntForm() {
                   name="capacityPerDayDefault"
                   value={formData?.capacityPerDayDefault}
                   onChange={handleInputChange}
-                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="2"
                   required
                 />
@@ -780,13 +779,13 @@ export default function AddHuntForm() {
 
             {/* Hunt Details */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl shadow-xl px-5 py-5 mt-5">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white">
                 Hunt Details
               </h4>
 
               {/* Species */}
               <div className="mt-4">
-                <h5 className="text-lg text-[#183431] dark:text-white mb-2">
+                <h5 className="text-lg text-[#101437] dark:text-white mb-2">
                   Species
                 </h5>
                 <div className="flex gap-2 mb-2">
@@ -795,7 +794,7 @@ export default function AddHuntForm() {
                     value={speciesInput}
                     onChange={(e) => setSpeciesInput(e.target.value)}
                     placeholder="e.g., elk"
-                    className="input w-full bg-transparent border border-black dark:border-white text-[#183431] dark:text-white"
+                    className="input w-full bg-transparent border border-black dark:border-white text-[#101437] dark:text-white"
                   />
                   <button
                     type="button"
@@ -814,7 +813,7 @@ export default function AddHuntForm() {
                         key={index}
                         className="flex justify-between items-center"
                       >
-                        <span className="text-[#183431] dark:text-white">
+                        <span className="text-[#101437] dark:text-white">
                           {item}
                         </span>
                         <button
@@ -832,7 +831,7 @@ export default function AddHuntForm() {
 
               {/* Weapon Types */}
               <div className="mt-4">
-                <h5 className="text-lg text-[#183431] dark:text-white mb-2">
+                <h5 className="text-lg text-[#101437] dark:text-white mb-2">
                   Weapon Types
                 </h5>
                 <div className="flex gap-2 mb-2">
@@ -841,7 +840,7 @@ export default function AddHuntForm() {
                     value={weaponInput}
                     onChange={(e) => setWeaponInput(e.target.value)}
                     placeholder="e.g., rifle, bow"
-                    className="input w-full bg-transparent border border-black dark:border-white text-[#183431] dark:text-white"
+                    className="input w-full bg-transparent border border-black dark:border-white text-[#101437] dark:text-white"
                   />
                   <button
                     type="button"
@@ -860,7 +859,7 @@ export default function AddHuntForm() {
                         key={index}
                         className="flex justify-between items-center"
                       >
-                        <span className="text-[#183431] dark:text-white">
+                        <span className="text-[#101437] dark:text-white">
                           {item}
                         </span>
                         <button
@@ -878,7 +877,7 @@ export default function AddHuntForm() {
 
               {/* Tags */}
               <div className="mt-4">
-                <h5 className="text-lg text-[#183431] dark:text-white mb-2">
+                <h5 className="text-lg text-[#101437] dark:text-white mb-2">
                   Tags
                 </h5>
                 <div className="flex gap-2 mb-2">
@@ -887,7 +886,7 @@ export default function AddHuntForm() {
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     placeholder="e.g., archery, guided"
-                    className="input w-full bg-transparent border border-black dark:border-white text-[#183431] dark:text-white"
+                    className="input w-full bg-transparent border border-black dark:border-white text-[#101437] dark:text-white"
                   />
                   <button
                     type="button"
@@ -904,7 +903,7 @@ export default function AddHuntForm() {
                         key={index}
                         className="flex justify-between items-center"
                       >
-                        <span className="text-[#183431] dark:text-white">
+                        <span className="text-[#101437] dark:text-white">
                           {item}
                         </span>
                         <button
@@ -927,7 +926,7 @@ export default function AddHuntForm() {
                   name="outfitterId"
                   value={formData?.outfitterId}
                   onChange={handleInputChange}
-                  className="select z-[99999] w-full mt-3 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-[#fff] text-[#183431] dark:text-white"
+                  className="select z-[99999] w-full mt-3 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-[#fff] text-[#101437] dark:text-white"
                 >
                   <option value="" disabled>
                     Pick an outfitter
@@ -940,30 +939,30 @@ export default function AddHuntForm() {
 
               {/* Season Dates */}
               <div className="mt-4">
-                <h5 className="text-lg text-[#183431] dark:text-white mb-2">
+                <h5 className="text-lg text-[#101437] dark:text-white mb-2">
                   Hunt Season
                 </h5>
                 <div className="flex gap-2">
                   <fieldset className="fieldset w-full">
-                    <legend className="text-sm text-[#183431] dark:text-white mb-2">
+                    <legend className="text-sm text-[#101437] dark:text-white mb-2">
                       Start Date
                     </legend>
                     <input
                       type="date"
                       value={seasonStart}
                       onChange={(e) => setSeasonStart(e.target.value)}
-                      className="input bg-transparent border border-black dark:border-white text-[#183431] dark:text-white w-full"
+                      className="input bg-transparent border border-black dark:border-white text-[#101437] dark:text-white w-full"
                     />
                   </fieldset>
                   <fieldset className="fieldset w-full">
-                    <legend className="text-sm text-[#183431] dark:text-white mb-2">
+                    <legend className="text-sm text-[#101437] dark:text-white mb-2">
                       End Date
                     </legend>
                     <input
                       type="date"
                       value={seasonEnd}
                       onChange={(e) => setSeasonEnd(e.target.value)}
-                      className="input bg-transparent border border-black dark:border-white text-[#183431] dark:text-white w-full"
+                      className="input bg-transparent border border-black dark:border-white text-[#101437] dark:text-white w-full"
                     />
                   </fieldset>
                 </div>
@@ -975,7 +974,7 @@ export default function AddHuntForm() {
                   Generate Available Dates
                 </button>
                 {formData?.availableDates?.length > 0 && (
-                  <p className="text-md text-[#183431] dark:text-white mt-3">
+                  <p className="text-md text-[#101437] dark:text-white mt-3">
                     {formData?.availableDates?.length} dates generated from{" "}
                     {formData?.availableDates?.[0] +
                       " to " +
@@ -989,12 +988,12 @@ export default function AddHuntForm() {
 
             {/* Inclusions & Exclusions */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl shadow-xl px-5 py-5 mt-5">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white mb-3">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white mb-3">
                 Inclusions
               </h4>
 
               <fieldset className="fieldset w-full mb-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-2">
+                <legend className="text-lg text-[#101437] dark:text-white mb-2">
                   Lodging
                 </legend>
                 <input
@@ -1003,13 +1002,13 @@ export default function AddHuntForm() {
                   onChange={(e) =>
                     handleNestedChange("inclusions", "lodging", e.target.value)
                   }
-                  className="input w-full bg-transparent border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-transparent border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="Premium cabin accommodations"
                 />
               </fieldset>
 
               <fieldset className="fieldset w-full mb-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-2">
+                <legend className="text-lg text-[#101437] dark:text-white mb-2">
                   Meals
                 </legend>
                 <input
@@ -1018,13 +1017,13 @@ export default function AddHuntForm() {
                   onChange={(e) =>
                     handleNestedChange("inclusions", "meals", e.target.value)
                   }
-                  className="input w-full bg-transparent border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-transparent border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="All meals included"
                 />
               </fieldset>
 
               <fieldset className="fieldset w-full mb-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-2">
+                <legend className="text-lg text-[#101437] dark:text-white mb-2">
                   Guide
                 </legend>
                 <input
@@ -1033,17 +1032,17 @@ export default function AddHuntForm() {
                   onChange={(e) =>
                     handleNestedChange("inclusions", "guide", e.target.value)
                   }
-                  className="input w-full bg-transparent border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-transparent border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="Professional guide service"
                 />
               </fieldset>
 
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white mb-3 mt-5">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white mb-3 mt-5">
                 Exclusions
               </h4>
 
               <fieldset className="fieldset w-full mb-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-2">
+                <legend className="text-lg text-[#101437] dark:text-white mb-2">
                   License
                 </legend>
                 <input
@@ -1052,13 +1051,13 @@ export default function AddHuntForm() {
                   onChange={(e) =>
                     handleNestedChange("exclusions", "license", e.target.value)
                   }
-                  className="input w-full bg-transparent border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-transparent border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="Hunting license not included"
                 />
               </fieldset>
 
               <fieldset className="fieldset w-full mb-3">
-                <legend className="text-lg text-[#183431] dark:text-white mb-2">
+                <legend className="text-lg text-[#101437] dark:text-white mb-2">
                   Transportation
                 </legend>
                 <input
@@ -1071,7 +1070,7 @@ export default function AddHuntForm() {
                       e.target.value
                     )
                   }
-                  className="input w-full bg-transparent border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="input w-full bg-transparent border border-black dark:border-white text-[#101437] dark:text-white"
                   placeholder="Travel to location not included"
                 />
               </fieldset>

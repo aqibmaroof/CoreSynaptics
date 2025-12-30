@@ -62,37 +62,22 @@ export default function RegisterPage() {
   const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
 
   return (
-    <div className="flex min-h-screen bg-[#f6f6f6] dark:bg-[#183431]">
+    <div className="flex min-h-screen bg-[#f6f6f6] dark:bg-[#101437]">
       {/* Left Side: Illustration (Hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-2/3 items-center justify-center p-12 bg-[#fff] dark:bg-[#1e4742]">
-        <div className="relative w-full max-w-lg">
-          {/* Replace this with your actual image component */}
-          <img
-            src={config?.login_illustration_light}
-            className="w-full h-auto object-contain dark:hidden"
-          />
-          <img
-            src={config?.login_illustration}
-            className="w-full h-auto object-contain hidden dark:block"
-          />
-        </div>
-      </div>
+      <div className="bg-[url('/images/login-illustration.png')] bg-cover bg-center bg-no-repeat w-full flex items-center justify-center "></div>
 
       {/* Right Side: Form */}
       <div className="flex flex-col justify-center w-full lg:w-1/3 p-8 md:p-16 overflow-y-auto">
         <div className="flex items-center gap-2 mb-6">
-          <img src={config?.brand} className="w-40 h-auto  dark:hidden" />
-          <img
-            src={config?.brand_dark}
-            className="w-40 h-auto hidden dark:block"
-          />
+          <img src={config?.brand} className="w-70 h-auto dark:hidden" />
+          <img src={config?.brand} className="w-70 h-auto hidden dark:block" />
         </div>
 
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold mb-1 text-[#183431] dark:text-white">
+          <h2 className="text-2xl font-semibold mb-1 text-[#101437] dark:text-white">
             Adventure starts here 🚀
           </h2>
-          <p className="text-sm text-[#183431] dark:text-white">
+          <p className="text-sm text-[#101437] dark:text-white">
             Make your app management easy and fun!
           </p>
         </div>
@@ -103,7 +88,7 @@ export default function RegisterPage() {
         >
           <div className="form-control w-full md:col-span-2">
             <label className="label py-1">
-              <span className="label-text text-sm text-[#183431] dark:text-white mb-1 font-semibold">
+              <span className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
                 FULL NAME
               </span>
             </label>
@@ -114,13 +99,13 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               placeholder="Full Name"
-              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-[#183431] dark:placeholder:text-white border-[#183431] dark:border-white text-[#183431] dark:text-white focus:border-accent focus:outline-none h-10 text-sm"
+              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white focus:border-accent focus:outline-none h-10 text-sm"
             />
           </div>
 
           <div className="form-control w-full md:col-span-2">
             <label className="label py-1">
-              <span className="label-text text-sm text-[#183431] dark:text-white mb-1 font-semibold">
+              <span className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
                 EMAIL
               </span>
             </label>
@@ -131,13 +116,13 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               placeholder="email@example.com"
-              className="input input-bordered border-gray-600 bg-transparent w-full focus:border-accent focus:outline-none placeholder:text-[#183431] dark:placeholder:text-white border-[#183431] dark:border-white text-[#183431] dark:text-white h-10 text-sm"
+              className="input input-bordered border-gray-600 bg-transparent w-full focus:border-accent focus:outline-none placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white h-10 text-sm"
             />
           </div>
 
           <div className="form-control w-full">
             <label className="label py-1">
-              <span className="label-text text-sm text-[#183431] dark:text-white mb-1 font-semibold">
+              <span className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
                 DATE OF BIRTH
               </span>
             </label>
@@ -148,13 +133,13 @@ export default function RegisterPage() {
               max={today}
               onChange={handleChange}
               required
-              className="input input-bordered border-gray-600 bg-transparent w-full focus:border-accent focus:outline-none h-10 text-sm placeholder:text-[#183431] dark:placeholder:text-white border-[#183431] dark:border-white text-[#183431] dark:text-white"
+              className="input input-bordered border-gray-600 bg-transparent w-full focus:border-accent focus:outline-none h-10 text-sm placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white"
             />
           </div>
 
           <div className="form-control w-full">
             <label className="label py-1">
-              <span className="label-text text-sm text-[#183431] dark:text-white mb-1 font-semibold">
+              <span className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
                 ROLE
               </span>
             </label>
@@ -162,7 +147,7 @@ export default function RegisterPage() {
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className="select select-bordered border-gray-600 bg-[#fff] dark:bg-[#183431] w-full placeholder:text-[#183431] dark:placeholder:text-white border-[#183431] dark:border-white text-[#183431] dark:text-white focus:border-accent focus:outline-none h-10 min-h-0 text-sm font-normal"
+              className="select select-bordered border-gray-600 bg-[#fff] dark:bg-[#101437] w-full placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white focus:border-accent focus:outline-none h-10 min-h-0 text-sm font-normal"
             >
               {/* "role must be one of the following values: hunter, guide, outfitter, admin" */}
               <option value="admin">Admin</option>
@@ -174,7 +159,7 @@ export default function RegisterPage() {
 
           <div className="form-control w-full md:col-span-2">
             <label className="label py-1">
-              <span className="label-text text-sm text-[#183431] dark:text-white mb-1 font-semibold">
+              <span className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
                 PHONE NUMBER
               </span>
             </label>
@@ -185,7 +170,7 @@ export default function RegisterPage() {
                 value={formData.phoneCountryCode}
                 onChange={handleChange}
                 placeholder="+1"
-                className="input input-bordered border-gray-600 placeholder:text-[#183431] dark:placeholder:text-white border-[#183431] dark:border-white text-[#183431] dark:text-white bg-transparent w-20 focus:border-accent focus:outline-none h-10 text-sm text-center"
+                className="input input-bordered border-gray-600 placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white bg-transparent w-20 focus:border-accent focus:outline-none h-10 text-sm text-center"
               />
               <input
                 type="text"
@@ -194,14 +179,14 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 required
                 placeholder="4547260592"
-                className="input input-bordered border-gray-600 bg-transparent flex-1 focus:border-accent placeholder:text-[#183431] dark:placeholder:text-white border-[#183431] dark:border-white text-[#183431] dark:text-white focus:outline-none h-10 text-sm"
+                className="input input-bordered border-gray-600 bg-transparent flex-1 focus:border-accent placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white focus:outline-none h-10 text-sm"
               />
             </div>
           </div>
 
           <div className="form-control w-full md:col-span-2">
             <label className="label py-1">
-              <span className="label-text text-sm text-[#183431] dark:text-white mb-1 font-semibold">
+              <span className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
                 COUNTRY (ISO CODE)
               </span>
             </label>
@@ -211,14 +196,14 @@ export default function RegisterPage() {
               value={formData.country}
               onChange={handleChange}
               placeholder="US"
-              className="input input-bordered border-gray-600 bg-transparent w-full focus:border-accent focus:outline-none h-10 text-sm placeholder:text-[#183431] dark:placeholder:text-white border-[#183431] dark:border-white text-[#183431] dark:text-white"
+              className="input input-bordered border-gray-600 bg-transparent w-full focus:border-accent focus:outline-none h-10 text-sm placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white"
             />
           </div>
 
           <div className="form-control w-full md:col-span-2">
             <div className="flex justify-between items-center">
               <label className="label py-1">
-                <span className="label-text text-sm text-[#183431] dark:text-white mb-1 font-semibold">
+                <span className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
                   Password
                 </span>
               </label>
@@ -231,7 +216,7 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="input input-bordered border-gray-600 bg-transparent w-full focus:border-accent placeholder:text-[#183431] dark:placeholder:text-white border-[#183431] dark:border-white text-[#183431] dark:text-white focus:outline-none h-10 text-sm pr-10"
+                className="input input-bordered border-gray-600 bg-transparent w-full focus:border-accent placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white focus:outline-none h-10 text-sm pr-10"
               />
               <button
                 type="button"

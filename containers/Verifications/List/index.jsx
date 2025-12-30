@@ -34,7 +34,11 @@ export default function ListVerifications() {
   }, [currentPage]);
 
   const getVerificationsList = async () => {
-    const response = await getVerifications(verificationsPerPage, 0, currentPage);
+    const response = await getVerifications(
+      verificationsPerPage,
+      0,
+      currentPage
+    );
     setVerifications(response?.data);
     setTotalPages(response?.meta?.totalPages);
   };
@@ -68,7 +72,7 @@ export default function ListVerifications() {
   return (
     <div className="px-5">
       <div className="flex items-center justify-between my-5">
-        <h1 className="text-2xl font-bold text-[#183431] dark:text-white">
+        <h1 className="text-2xl font-bold text-[#101437] dark:text-white">
           All Verifications
         </h1>
         {/* <a href="/Outfiters/Add" className="btn btn-success">
@@ -89,7 +93,7 @@ export default function ListVerifications() {
 
       <div className="overflow-x-auto">
         <table className="table w-full border border-gray-200 dark:border-gray-700">
-          <thead className="text-center text-[#183431] dark:text-white  bg-[#f6f6f6] dark:bg-[#1e4742]">
+          <thead className="text-center text-[#101437] dark:text-white  bg-[#f6f6f6] dark:bg-[#1e4742]">
             <tr>
               <th>#</th>
               <th>id</th>
@@ -105,7 +109,7 @@ export default function ListVerifications() {
             {verifications?.map((re, idx) => (
               <tr
                 key={re.id}
-                className=" bg-[#f6f6f6] dark:bg-[#1e4742] text-center hover:bg-gray-50 dark:hover:bg-[#183431]"
+                className=" bg-[#f6f6f6] dark:bg-[#1e4742] text-center hover:bg-gray-50 dark:hover:bg-[#101437]"
               >
                 <td>{indexOfFirst + idx + 1}</td>
                 <td>{re.id}</td>

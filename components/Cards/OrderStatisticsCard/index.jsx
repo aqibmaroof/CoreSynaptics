@@ -29,7 +29,7 @@ const OrderStatisticsCard = ({ data }) => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-[#183431] dark:text-white">
+          <h2 className="text-xl font-semibold text-[#101437] dark:text-white">
             {title}
           </h2>
           <p className="text-sm text-gray-500 dark:text-[#fff]">

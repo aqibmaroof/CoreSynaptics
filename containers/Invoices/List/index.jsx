@@ -6,11 +6,51 @@ import { FaTrash, FaEye } from "react-icons/fa";
 import { HiDotsVertical } from "react-icons/hi";
 
 const invoicesData = [
-  { id: 5089, client: "Jamal Kerrod", role: "Software Development", total: 3077, date: "09 May 2020", status: "Paid", balance: 0 },
-  { id: 5041, client: "Shamus Tuttle", role: "Software Development", total: 2230, date: "19 Nov 2020", status: "Paid", balance: 0 },
-  { id: 5027, client: "Devonne Wallbridge", role: "Software Development", total: 2787, date: "25 Sept 2020", status: "Paid", balance: 0 },
-  { id: 5024, client: "Ariella Filippyev", role: "Unlimited Extended License", total: 5285, date: "02 Aug 2020", status: "Unpaid", balance: -202 },
-  { id: 5020, client: "Roy Southerell", role: "UI/UX Design", total: 5219, date: "15 Dec 2020", status: "Paid", balance: 0 },
+  {
+    id: 5089,
+    client: "Jamal Kerrod",
+    role: "Software Development",
+    total: 3077,
+    date: "09 May 2020",
+    status: "Paid",
+    balance: 0,
+  },
+  {
+    id: 5041,
+    client: "Shamus Tuttle",
+    role: "Software Development",
+    total: 2230,
+    date: "19 Nov 2020",
+    status: "Paid",
+    balance: 0,
+  },
+  {
+    id: 5027,
+    client: "Devonne Wallbridge",
+    role: "Software Development",
+    total: 2787,
+    date: "25 Sept 2020",
+    status: "Paid",
+    balance: 0,
+  },
+  {
+    id: 5024,
+    client: "Ariella Filippyev",
+    role: "Unlimited Extended License",
+    total: 5285,
+    date: "02 Aug 2020",
+    status: "Unpaid",
+    balance: -202,
+  },
+  {
+    id: 5020,
+    client: "Roy Southerell",
+    role: "UI/UX Design",
+    total: 5219,
+    date: "15 Dec 2020",
+    status: "Paid",
+    balance: 0,
+  },
 ];
 
 export default function InvoicePage() {
@@ -19,7 +59,9 @@ export default function InvoicePage() {
   const [statusFilter, setStatusFilter] = useState(""); // new state
 
   const filtered = invoicesData.filter((inv) => {
-    const matchesClient = inv.client.toLowerCase().includes(search.toLowerCase());
+    const matchesClient = inv.client
+      .toLowerCase()
+      .includes(search.toLowerCase());
     const matchesStatus = statusFilter ? inv.status === statusFilter : true; // filter by status if selected
     return matchesClient && matchesStatus;
   });
@@ -60,7 +102,7 @@ export default function InvoicePage() {
       {/* Actions */}
       <div className="flex justify-between">
         <div>
-          <select className="select select-bordered w-32 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white">
+          <select className="select select-bordered w-32 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white">
             <option>Show 10</option>
             <option>Show 20</option>
             <option>Show 30</option>
@@ -71,13 +113,13 @@ export default function InvoicePage() {
           <input
             type="text"
             placeholder="Search Invoice"
-            className="input bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+            className="input bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
 
           <select
-            className="select select-bordered w-44 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+            className="select select-bordered w-44 bg-[#f6f6f6] dark:bg-[#1e4742] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -97,8 +139,8 @@ export default function InvoicePage() {
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl shadow">
-        <table className="table w-full text-[#183431] dark:text-white">
-          <thead className="text-[#183431] dark:text-white bg-[#f6f6f6] dark:bg-[#0b1f1d]">
+        <table className="table w-full text-[#101437] dark:text-white">
+          <thead className="text-[#101437] dark:text-white bg-[#f6f6f6] dark:bg-[#0b1f1d]">
             <tr>
               <th></th>
               <th>#</th>
@@ -114,7 +156,7 @@ export default function InvoicePage() {
             {filtered.map((inv) => (
               <tr
                 key={inv.id}
-                className="text-[#183431] dark:text-white bg-[#f6f6f6] dark:bg-[#1e4742]"
+                className="text-[#101437] dark:text-white bg-[#f6f6f6] dark:bg-[#1e4742]"
               >
                 <td>
                   <input

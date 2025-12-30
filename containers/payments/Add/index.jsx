@@ -20,7 +20,7 @@ export default function InvoiceEditor() {
   };
 
   return (
-    <div className="p-6 bg-white dark:bg-[#183431] min-h-screen">
+    <div className="p-6 bg-white dark:bg-[#101437] min-h-screen">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* LEFT SECTION (Main Invoice Form) */}
         <div className="lg:col-span-2 ">
@@ -28,10 +28,10 @@ export default function InvoiceEditor() {
             {/* Header */}
             <div className="flex justify-between">
               <div>
-                <h2 className="text-2xl text-[#183431] dark:text-white font-bold flex items-center gap-2">
+                <h2 className="text-2xl text-[#101437] dark:text-white font-bold flex items-center gap-2">
                   <span className="text-accent">⚡</span> Sneat
                 </h2>
-                <p className="text-lg text-[#183431] dark:text-white mt-2 leading-relaxed">
+                <p className="text-lg text-[#101437] dark:text-white mt-2 leading-relaxed">
                   Office 149, 450 South Brand Brooklyn <br />
                   San Diego County, CA 91905, USA <br />
                   +1 (123) 456 7891, +44 (876) 543 2198
@@ -44,19 +44,19 @@ export default function InvoiceEditor() {
                   <input
                     type="text"
                     placeholder="#3905"
-                    className="input input-bordered input-sm w-full  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                    className="input input-bordered input-sm w-full  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                   />
                   <label>Date Issued:</label>
                   <input
                     type="text"
                     placeholder="MM/DD/YYYY"
-                    className="input input-bordered input-sm w-full  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                    className="input input-bordered input-sm w-full  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                   />
                   <label>Due Date:</label>
                   <input
                     type="text"
                     placeholder="MM/DD/YYYY"
-                    className="input input-bordered input-sm w-full  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                    className="input input-bordered input-sm w-full  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                   />
                 </div>
               </div>
@@ -68,7 +68,7 @@ export default function InvoiceEditor() {
                 <div className="dropdown dropdown-bottom w-full">
                   <label
                     tabIndex={0}
-                    className="btn w-full bg-[#f6f6f6] dark:bg-transparent text-[#183431] dark:text-white border border-black dark:border-white flex justify-between items-center"
+                    className="btn w-full bg-[#f6f6f6] dark:bg-transparent text-[#101437] dark:text-white border border-black dark:border-white flex justify-between items-center"
                   >
                     Jordan Stevenson
                     {/* Arrow icon */}
@@ -103,7 +103,7 @@ export default function InvoiceEditor() {
                   </ul>
                 </div>
 
-                <p className="text-lg text-[#183431] dark:text-white mt-2">
+                <p className="text-lg text-[#101437] dark:text-white mt-2">
                   Shelby Company Limited <br />
                   Small Heath, B10 OHF, UK <br />
                   718-986-6062 <br />
@@ -112,10 +112,10 @@ export default function InvoiceEditor() {
               </div>
 
               <div>
-                <p className="font-semibold text-[#183431] dark:text-white mb-2">
+                <p className="font-semibold text-[#101437] dark:text-white mb-2">
                   Bill To:
                 </p>
-                <p className="text-lg text-[#183431] dark:text-white leading-6">
+                <p className="text-lg text-[#101437] dark:text-white leading-6">
                   Total Due: <span className="font-semibold">$12,110.55</span>{" "}
                   <br />
                   Bank name: American Bank <br />
@@ -147,19 +147,19 @@ export default function InvoiceEditor() {
                     <input
                       type="text"
                       placeholder="App Customization"
-                      className="input input-bordered w-1/3  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                      className="input input-bordered w-1/3  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                     />
 
                     <input
                       type="text"
                       placeholder="24"
-                      className="input input-bordered w-24  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                      className="input input-bordered w-24  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                     />
 
                     <input
                       type="text"
                       placeholder="1"
-                      className="input input-bordered w-20  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                      className="input input-bordered w-20  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                     />
 
                     <p className="w-20 text-right font-semibold">$24.00</p>
@@ -174,12 +174,12 @@ export default function InvoiceEditor() {
 
                   <textarea
                     rows="2"
-                    className="textarea textarea-bordered w-full mt-3  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                    className="textarea textarea-bordered w-full mt-3  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                     placeholder="Customization & Bug fixes"
                   ></textarea>
 
                   <div className="flex justify-between items-center mt-3">
-                    <p className="text-sm text-[#183431] dark:text-white">
+                    <p className="text-sm text-[#101437] dark:text-white">
                       Discount:
                     </p>
                     <FaCog className="cursor-pointer opacity-60 hover:opacity-100" />
@@ -199,17 +199,17 @@ export default function InvoiceEditor() {
                 <input
                   type="text"
                   placeholder="Edward Crowley"
-                  className="input input-bordered w-full mt-2  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                  className="input input-bordered w-full mt-2  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                 />
 
                 <input
                   type="text"
                   placeholder="Thanks for your business"
-                  className="input input-bordered w-full mt-3  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                  className="input input-bordered w-full mt-3  bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                 />
               </div>
 
-              <div className="text-right text-[#183431] dark:text-white space-y-2">
+              <div className="text-right text-[#101437] dark:text-white space-y-2">
                 <p>
                   Subtotal: <span className="font-semibold">$1800</span>
                 </p>
@@ -227,7 +227,7 @@ export default function InvoiceEditor() {
             <div className="mt-8">
               <label className="font-semibold">Note:</label>
               <textarea
-                className="textarea textarea-bordered w-full mt-2 bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-white"
+                className="textarea textarea-bordered w-full mt-2 bg-[#f6f6f6] dark:bg-transparent bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-white"
                 rows="2"
                 placeholder="It was a pleasure working with you..."
               ></textarea>
@@ -252,14 +252,14 @@ export default function InvoiceEditor() {
 
             <div className="divider before:h-[0.1px] after:h-[0.1px] divider-neutral dark:divider-accent"></div>
 
-            <p className="font-semibold text-[#183431] dark:text-white text-md">
+            <p className="font-semibold text-[#101437] dark:text-white text-md">
               Accept payments via
             </p>
 
             <div className="dropdown dropdown-bottom w-full">
               <label
                 tabIndex={0}
-                className="btn w-full bg-[#f6f6f6] dark:bg-transparent text-[#183431] dark:text-white border border-black dark:border-white flex justify-between items-center"
+                className="btn w-full bg-[#f6f6f6] dark:bg-transparent text-[#101437] dark:text-white border border-black dark:border-white flex justify-between items-center"
               >
                 Bank Account
                 {/* Arrow icon */}
@@ -295,21 +295,21 @@ export default function InvoiceEditor() {
             </div>
             <div className="mt-4 space-y-2 text-md">
               <div className="flex justify-between">
-                <span className="text-[#183431] dark:text-white">
+                <span className="text-[#101437] dark:text-white">
                   Payment Terms
                 </span>
                 <input type="checkbox" className="toggle toggle-accent" />
               </div>
 
               <div className="flex justify-between">
-                <span className="text-[#183431] dark:text-white">
+                <span className="text-[#101437] dark:text-white">
                   Client Notes
                 </span>
                 <input type="checkbox" className="toggle toggle-accent" />
               </div>
 
               <div className="flex justify-between">
-                <span className="text-[#183431] dark:text-white">
+                <span className="text-[#101437] dark:text-white">
                   Payment Stub
                 </span>
                 <input type="checkbox" className="toggle toggle-accent" />

@@ -83,10 +83,10 @@ export default function ListCountry() {
     <div className="px-5">
       <div className="flex items-center justify-between my-5">
         <div>
-          <h1 className="text-2xl font-bold text-[#183431] dark:text-white">
+          <h1 className="text-2xl font-bold text-[#101437] dark:text-white">
             All Country Codes
           </h1>
-          <p className="text-sm text-[#183431] dark:text-white">
+          <p className="text-sm text-[#101437] dark:text-white">
             Total: {countries.length} countries
           </p>
         </div>
@@ -113,7 +113,7 @@ export default function ListCountry() {
 
       <div className="overflow-x-auto">
         <table className="table w-full border border-gray-200 dark:border-gray-700">
-          <thead className="text-center text-[#183431] dark:text-white bg-[#f6f6f6] dark:bg-[#1e4742]">
+          <thead className="text-center text-[#101437] dark:text-white bg-[#f6f6f6] dark:bg-[#1e4742]">
             <tr>
               <th>#</th>
               <th>Flag</th>
@@ -131,7 +131,7 @@ export default function ListCountry() {
               <tr>
                 <td
                   colSpan="8"
-                  className="text-center py-10 text-[#183431] dark:text-white"
+                  className="text-center py-10 text-[#101437] dark:text-white"
                 >
                   No countries found. Add your first country!
                 </td>
@@ -140,24 +140,24 @@ export default function ListCountry() {
               currentCountries.map((country, idx) => (
                 <tr
                   key={country.id || country.code}
-                  className="bg-[#f6f6f6] dark:bg-[#1e4742] text-center hover:bg-gray-50 dark:hover:bg-[#183431]"
+                  className="bg-[#f6f6f6] dark:bg-[#1e4742] text-center hover:bg-gray-50 dark:hover:bg-[#101437]"
                 >
-                  <td className="text-[#183431] dark:text-white">
+                  <td className="text-[#101437] dark:text-white">
                     {indexOfFirst + idx + 1}
                   </td>
                   <td>
                     <span className="text-3xl">{country.flag}</span>
                   </td>
-                  <td className="text-[#183431] dark:text-white font-semibold">
+                  <td className="text-[#101437] dark:text-white font-semibold">
                     {country.name}
                   </td>
-                  <td className="text-[#183431] dark:text-white font-mono">
+                  <td className="text-[#101437] dark:text-white font-mono">
                     {country.code}
                   </td>
-                  <td className="text-[#183431] dark:text-white">
+                  <td className="text-[#101437] dark:text-white">
                     {country.dialCode}
                   </td>
-                  <td className="text-[#183431] dark:text-white">
+                  <td className="text-[#101437] dark:text-white">
                     {country.sortOrder}
                   </td>
                   <td>
@@ -226,7 +226,7 @@ export default function ListCountry() {
 
       {/* Summary Footer */}
       <div className="mt-5 p-4 bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl">
-        <div className="flex justify-between text-[#183431] dark:text-white">
+        <div className="flex justify-between text-[#101437] dark:text-white">
           <span>
             Showing {indexOfFirst + 1} to{" "}
             {Math.min(indexOfLast, countries.length)} of {countries.length}{" "}

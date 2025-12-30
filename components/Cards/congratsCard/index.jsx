@@ -1,36 +1,60 @@
+import { FiArrowUp } from "react-icons/fi";
 import config from "../../../config";
 
 export default function ProfileReportCard({ user }) {
   return (
-    <div className="w-full mt-2 col-span-8 bg-[#f6f6f6] dark:bg-[#1e4742] rounded-2xl p-6 flex items-center justify-between shadow-xl">
+    <div className="w-full px-2 flex items-center justify-between">
       {/* LEFT SIDE */}
       <div>
-        <h2 className="text-[#DF5B30] dark:text-[#E2B864] text-xl font-semibold flex items-center gap-2">
-          Congratulations {user?.fullName}! 🎉
+        <h2 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+          Projects Overview
         </h2>
-
-        <p className="text-[#183431] dark:text-[#fff] mt-2">
-          You have done
-          <span className="font-semibold text-[#183431] dark:text-[#fff] mx-1">
-            72% more sales
-          </span>
-          today.
-          <br />
-          Check your new badge in your profile.
-        </p>
-
-        <button className="mt-4 bg-teal-600 hover:bg-teal-700 text-[#fff] px-4 py-2 rounded-lg transition">
-          View Badges
-        </button>
+        <div className="flex items-center justify-between w-full mt-4 gap-20">
+          <div className="flex items-center justify-between gap-25 w-[max-content]">
+            <p className="text-6xl font-bold">06</p>
+            <div className="flex flex-col items-start justify-end">
+              <p>this month</p>
+              <p className="bg-gradient-to-r from-[#080C26] to-[#00E691] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content] ml-auto">
+                <FiArrowUp /> 500%
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-25 w-[max-content]">
+            <p className="text-6xl font-bold">01</p>
+            <div className="flex flex-col items-right justify-end">
+              <p>last month</p>
+              <p className="bg-gradient-to-r from-[#080C26] to-[#FF2727] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content] ml-auto">
+                <FiArrowUp /> 500%
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* RIGHT IMAGE */}
-      <div className="hidden md:flex transform translate-y-6">
-        <img
-          src={config?.home_card}
-          alt="Illustration"
-          className="w-50 h-auto"
-        />
+      <img src={config?.line} />
+      <div>
+        <h2 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+          Units Overview
+        </h2>
+        <div className="flex items-center justify-between w-full mt-4 gap-20">
+          <div className="flex items-center justify-between gap-25 w-[max-content]">
+            <p className="text-6xl font-bold">200</p>
+            <div className="flex flex-col items-start justify-end">
+              <p>this month</p>
+              <p className="bg-gradient-to-r from-[#080C26] to-[#00E691] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content] ml-auto">
+                <FiArrowUp /> 500%
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-25 w-[max-content]">
+            <p className="text-6xl font-bold">89</p>
+            <div className="flex flex-col items-right justify-end">
+              <p>last month</p>
+              <p className="bg-gradient-to-r from-[#080C26] to-[#FF2727] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content] ml-auto">
+                <FiArrowUp /> 500%
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

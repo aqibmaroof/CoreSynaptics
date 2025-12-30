@@ -3,7 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { sidebarItems } from "./sideBarData";
-import { FaChevronDown, FaChevronRight } from "react-icons/fa";
+import {
+  FaChevronDown,
+  FaChevronRight,
+  FaQuestion,
+  FaQuestionCircle,
+} from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import config from "../../config";
 
@@ -21,24 +26,25 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-[250px] bg-white dark:bg-[#183431] dark:text-white py-2 transition-colors duration-300 overflow-y-auto h-screen scrollbar-hide">
+    <aside className="w-[240px] m-3 py-2 transition-colors bg-gradient-to-b from-[#060B26F0] to-[#1A1F3700] rounded-t rounded-t-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
       {/* LIGHT ↔ DARK LOGOS */}
-      <div className="sticky -top-2 -mt-5 bg-white dark:bg-[#183431] z-10 py-5">
-        <img src={config?.brand} className="w-40 h-auto m-auto dark:hidden" />
+      <div className="sticky z-10 px-4 py-5">
+        <img src={config?.brand} className="w-55 h-auto m-auto dark:hidden" />
         <img
-          src={config?.brand_dark}
-          className="w-40 h-auto m-auto hidden dark:block"
+          src={config?.brand}
+          className="w-55 h-auto m-auto hidden dark:block"
         />
       </div>
-      <ul className="list-none m-0 p-0 mt-5 mb-15">
+      <img src={config?.h_line} className="px-4 mt-6" />
+      <ul className="list-none m-0 p-0 mt-8 mb-15">
         {sidebarItems.map((item, index) => (
           <li key={index}>
             {/* CATEGORY TITLE */}
-            <p className="text-[#DF5B30] my-2 mx-4">{item.category}</p>
+            <p className="text-[#DF5B30]">{item.category}</p>
 
             {/* MAIN ITEM */}
             <div
-              className="flex items-center py-3 px-5 cursor-pointer text-[#2B3340] dark:text-white hover:text-[#2B3340] dark:hover:text-[#183431] hover:bg-[#A9D18E] transition"
+              className="flex items-center py-5 w-[210px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-[#2B3340] dark:text-white hover:text-[#101437] dark:hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] bg-cover bg-center bg-no-repeat transition"
               onClick={() =>
                 item.submenu.length > 0
                   ? toggleSubmenu(index)
@@ -47,7 +53,12 @@ const Sidebar = () => {
                   : router.push(item.path)
               }
             >
-              <span className="mr-3">{item.icon}</span>
+              <img
+                src={item.icon}
+                className={`mr-3 ${
+                  index === 0 ? "bg-[#0075FF]" : "bg-[#1A1F37]"
+                } p-2 rounded-xl`}
+              />
               <span className="flex-1">{item.title}</span>
 
               {item.submenu.length > 0 && (
@@ -74,7 +85,7 @@ const Sidebar = () => {
 
                           <Link
                             href={sub.path}
-                            className="cursor-pointer py-1 text-[#183431] dark:text-white dark:hover:text-[#A9D18E] hover:underline"
+                            className="cursor-pointer py-1 text-[#101437] dark:text-white dark:hover:text-[#A9D18E] hover:underline"
                           >
                             {sub.title}
                           </Link>
@@ -101,7 +112,7 @@ const Sidebar = () => {
                             {sub.submenu.map((subSub, subSubIdx) => (
                               <li
                                 key={subSubIdx}
-                                className="cursor-pointer py-1 text-[#183431] dark:text-white hover:underline"
+                                className="cursor-pointer py-1 text-[#101437] dark:text-white hover:underline"
                                 onClick={() => router.push(subSub.path)}
                               >
                                 {subSub.title}
@@ -119,7 +130,7 @@ const Sidebar = () => {
                       <li
                         key={subIdx}
                         onClick={() => setActiveSubIndex(subIdx)}
-                        className="mb-2 text-[#183431] dark:text-white font-medium text-[16px] cursor-pointer"
+                        className="mb-2 text-[#101437] dark:text-white font-medium text-[16px] cursor-pointer"
                       >
                         <span className="mr-3">{item.icon}</span>
                         <a
@@ -173,6 +184,14 @@ const Sidebar = () => {
           </li>
         ))}
       </ul>
+      <div className="bg-[url('/images/needHelp.png')] bg-cover bg-center bg-no-repeat w-[220px] rounded-xl h-auto mx-auto mb-15 px-4 py-4">
+        <img src={config?.questionMark} />
+        <p className="mt-5 font-bold text-[14px]">Need help?</p>
+        <p className="mb-3 text-[12px]">Please check our docs</p>
+        <button className="bg-linear-to-r from-[#0A0E23B5] to-[#060B28BD] w-full p-3 rounded-xl flex items-center justify-center m-auto">
+          DOCUMENTATION
+        </button>
+      </div>
     </aside>
   );
 };

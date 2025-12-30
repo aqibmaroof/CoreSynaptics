@@ -59,7 +59,7 @@ const ListCustomer = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-[#183431] dark:text-white">
+        <h1 className="text-3xl font-bold text-[#101437] dark:text-white">
           Customer List
         </h1>
         {/* <Link href="/Customers/Edit" passHref>
@@ -73,7 +73,7 @@ const ListCustomer = () => {
         <input
           type="text"
           placeholder="Search customers..."
-          className="input input-bordered w-full sm:w-80 bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#183431] dark:placeholder:text-white"
+          className="input input-bordered w-full sm:w-80 bg-[#f6f6f6] dark:bg-[#1e4742] placeholder:text-[#101437] dark:placeholder:text-white"
         />
         {/* Placeholder for filter/sort dropdowns if needed */}
         {/* <select className="select select-bordered w-full sm:w-40">
@@ -88,7 +88,7 @@ const ListCustomer = () => {
         {/* daisyUI table class with 'table-zebra' for striped rows */}
         <table className="table w-full ">
           {/* Table Head */}
-          <thead className="text-center text-[#183431] dark:text-white bg-[#f6f6f6] dark:bg-[#1e4742]">
+          <thead className="text-center text-[#101437] dark:text-white bg-[#f6f6f6] dark:bg-[#1e4742]">
             <tr>
               <th>ID</th>
               <th>Name</th>
@@ -103,7 +103,7 @@ const ListCustomer = () => {
             {dummyCustomers.map((customer) => (
               <tr
                 key={customer.id}
-                className="text-center cursor-pointer bg-[#f6f6f6] dark:bg-[#1e4742]  hover:bg-gray-50 dark:hover:bg-[#183431]"
+                className="text-center cursor-pointer bg-[#f6f6f6] dark:bg-[#1e4742]  hover:bg-gray-50 dark:hover:bg-[#101437]"
               >
                 <td className="font-mono text-sm">{customer.id}</td>
                 <td className="font-semibold">{customer.name}</td>
@@ -133,10 +133,18 @@ const ListCustomer = () => {
       {/* Pagination Placeholder (using daisyUI pagination styles) */}
       <div className="flex justify-center mt-8 ">
         <div className="join shadow-lg">
-          <button className="join-item btn border-none  bg-[#f6f6f6] dark:bg-[#1e4742]">«</button>
-          <button className="join-item btn border-none btn-active  bg-[#f6f6f6] dark:bg-[#1e4742]">Page 1</button>
-          <button className="join-item btn border-none bg-[#f6f6f6] dark:bg-[#1e4742]">Page 2</button>
-          <button className="join-item btn border-none bg-[#f6f6f6] dark:bg-[#1e4742]">»</button>
+          <button className="join-item btn border-none  bg-[#f6f6f6] dark:bg-[#1e4742]">
+            «
+          </button>
+          <button className="join-item btn border-none btn-active  bg-[#f6f6f6] dark:bg-[#1e4742]">
+            Page 1
+          </button>
+          <button className="join-item btn border-none bg-[#f6f6f6] dark:bg-[#1e4742]">
+            Page 2
+          </button>
+          <button className="join-item btn border-none bg-[#f6f6f6] dark:bg-[#1e4742]">
+            »
+          </button>
         </div>
       </div>
     </div>

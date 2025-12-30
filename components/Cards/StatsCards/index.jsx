@@ -2,10 +2,10 @@ export default function StatsCards() {
   return (
     <div className="w-full col-span-7 mx-auto bg-[#ffff] dark:bg-[#2B3340] text-white rounded-xl mt-4 p-6 grid grid-cols-1 md:grid-cols-2 gap-6 shadow-xl">
       {/* LEFT CARD — New Visitors */}
-      <div className="bg-[#ffff] dark:bg-[#2B3340] shadow-xl border border-[#183431] dark:border-[#A9D18E] h-[max-content] rounded-xl p-4 flex flex-col justify-between gap-6">
+      <div className="bg-[#ffff] dark:bg-[#2B3340] shadow-xl border border-[#101437] dark:border-[#A9D18E] h-[max-content] rounded-xl p-4 flex flex-col justify-between gap-6">
         {/* Header */}
         <div className="flex items-center justify-between text-sm text-gray-400">
-          <span className=" text-[#183431] dark:text-[#fff] text-md font-semibold">
+          <span className=" text-[#101437] dark:text-[#fff] text-md font-semibold">
             New Visitors
           </span>
           <span>Last Week</span>
@@ -14,7 +14,7 @@ export default function StatsCards() {
         {/* Percentage */}
         <div className="flex gap-6 ">
           <div className="flex flex-col items-start justify-between">
-            <p className=" text-[#183431] dark:text-[#fff] text-xl font-semibold">
+            <p className=" text-[#101437] dark:text-[#fff] text-xl font-semibold">
               23%
             </p>
             <p className=" text-red-400 text-sm mt-1">▼ -13.24%</p>
@@ -45,7 +45,7 @@ export default function StatsCards() {
       </div>
 
       {/* RIGHT CARD — Activity */}
-      <div className="bg-[#ffff] dark:bg-[#2B3340] shadow-xl border border-[#183431] dark:border-[#A9D18E] rounded-xl p-4 flex flex-col justify-between">
+      <div className="bg-[#ffff] dark:bg-[#2B3340] shadow-xl border border-[#101437] dark:border-[#A9D18E] rounded-xl p-4 flex flex-col justify-between">
         {/* Header */}
         <div className="flex items-center justify-between text-sm text-gray-400 mb-1">
           <span className="text-white text-md font-semibold">Activity</span>
@@ -55,7 +55,7 @@ export default function StatsCards() {
         {/* Percentage */}
         <div className="flex gap-5 h-20 ">
           <div className="flex flex-col items-start justify-between">
-            <p className=" text-[#183431] dark:text-[#fff] text-xl font-semibold">
+            <p className=" text-[#101437] dark:text-[#fff] text-xl font-semibold">
               82%
             </p>
             <p className="text-green-400 text-sm flex">

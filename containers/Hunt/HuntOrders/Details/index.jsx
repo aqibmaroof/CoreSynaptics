@@ -65,13 +65,13 @@ const HuntOrderDetail = () => {
           {/* Product Image Placeholder (mimics the small icon look) */}
           <div className="mask mask-squircle w-12 h-12 bg-white p-1 flex items-center justify-center">
             {/* Replace with an <img> tag pointing to the actual image source */}
-            <span className="text-xs text-[#183431]">IMG</span>
+            <span className="text-xs text-[#101437]">IMG</span>
           </div>
           <div>
-            <div className="font-bold text-[#183431] dark:text-white">
+            <div className="font-bold text-[#101437] dark:text-white">
               {item.product}
             </div>
-            <div className="text-xs text-[#183431] dark:text-white opacity-50">
+            <div className="text-xs text-[#101437] dark:text-white opacity-50">
               {item.details}
             </div>
           </div>
@@ -79,17 +79,17 @@ const HuntOrderDetail = () => {
       </td>
 
       {/* Price Column */}
-      <td className=" text-[#183431] dark:text-white font-medium">
+      <td className=" text-[#101437] dark:text-white font-medium">
         ${item.price}
       </td>
 
       {/* QTY Column */}
-      <td className=" text-[#183431] dark:text-white font-medium">
+      <td className=" text-[#101437] dark:text-white font-medium">
         {item.qty}
       </td>
 
       {/* Total Column */}
-      <td className=" text-[#183431] dark:text-white font-bold text-right">
+      <td className=" text-[#101437] dark:text-white font-bold text-right">
         {item.total}
       </td>
     </tr>
@@ -103,7 +103,7 @@ const HuntOrderDetail = () => {
         <div className="bg-[#f6f6f6] dark:bg-[#1e4742] p-6 rounded-xl shadow-2xl ml-5 mt-5 w-full">
           {/* Header Section */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-[#183431] dark:text-white">
+            <h2 className="text-xl font-semibold text-[#101437] dark:text-white">
               Hunt Booked details
             </h2>
             <button className="flex items-center text-blue-400 text-sm font-medium hover:text-blue-300 transition-colors">
@@ -113,9 +113,9 @@ const HuntOrderDetail = () => {
 
           {/* --- Table Section --- */}
           <div className="overflow-x-auto">
-            <table className="table w-full  text-[#183431] dark:text-white">
+            <table className="table w-full  text-[#101437] dark:text-white">
               {/* Table Header (<thead>) */}
-              <thead className="border-b border-gray-700/50  text-[#183431] dark:text-white text-xs uppercase tracking-wider">
+              <thead className="border-b border-gray-700/50  text-[#101437] dark:text-white text-xs uppercase tracking-wider">
                 <tr>
                   <th className="w-10 pr-2"></th>{" "}
                   {/* Empty for checkbox column */}
@@ -136,15 +136,15 @@ const HuntOrderDetail = () => {
           <div className="mt-8 text-sm text-white">
             {/* Subtotal Row */}
             <div className="flex justify-end gap-x-12 mb-2">
-              <span className="text-[#183431] dark:text-white">Subtotal:</span>
-              <span className="w-20  text-[#183431] dark:text-white text-right font-medium">
+              <span className="text-[#101437] dark:text-white">Subtotal:</span>
+              <span className="w-20  text-[#101437] dark:text-white text-right font-medium">
                 ${subtotal}
               </span>
             </div>
 
             {/* Discount Row */}
             <div className="flex justify-end gap-x-12 mb-2">
-              <span className="text-[#183431] dark:text-white">Discount:</span>
+              <span className="text-[#101437] dark:text-white">Discount:</span>
               <span className="w-20 text-right font-medium text-red-400">
                 -${discount}
               </span>
@@ -152,16 +152,18 @@ const HuntOrderDetail = () => {
 
             {/* Tax Row */}
             <div className="flex justify-end gap-x-12 mb-2">
-              <span className="text-[#183431] dark:text-white">Tax:</span>
-              <span className="w-20  text-[#183431] dark:text-white text-right font-medium">
+              <span className="text-[#101437] dark:text-white">Tax:</span>
+              <span className="w-20  text-[#101437] dark:text-white text-right font-medium">
                 ${tax}
               </span>
             </div>
 
             {/* Total Row (Bold and slightly bigger) */}
             <div className="flex justify-end gap-x-12 pt-3 border-t border-gray-700/50">
-              <span className="text-lg  text-[#183431] dark:text-white font-semibold">Total:</span>
-              <span className="w-20  text-[#183431] dark:text-white text-right text-lg font-bold">
+              <span className="text-lg  text-[#101437] dark:text-white font-semibold">
+                Total:
+              </span>
+              <span className="w-20  text-[#101437] dark:text-white text-right text-lg font-bold">
                 ${finalTotal}
               </span>
             </div>

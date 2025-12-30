@@ -8,6 +8,7 @@ import {
   FiGrid,
   FiHelpCircle,
   FiPower,
+  FiSearch,
   FiSettings,
   FiUser,
 } from "react-icons/fi";
@@ -23,9 +24,15 @@ import { getUser } from "../../services/instance/tokenService";
 
 const Layout = ({ children }) => {
   const router = useRouter();
+  const [search, setSearch] = useState("");
   const user = JSON.parse(getUser());
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false); // <-- track client mount
+
+  const handleChange = (e) => {
+    const { value } = e.target;
+    setSearch(value);
+  };
 
   // Wait for client to mount to avoid SSR mismatch
   useEffect(() => {
@@ -49,38 +56,44 @@ const Layout = ({ children }) => {
   if (!mounted) return null;
 
   return (
-    <div className="bg-[#fff] dark:bg-[#183431] flex flex-col min-h-screen">
+    <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat  flex flex-col min-h-screen">
       {/* Content Area */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat ">
         {/* Sidebar */}
-        <aside className="w-64 border-r border-gray-200 dark:border-gray-700 overflow-y-auto h-screen scrollbar-hide">
+        <aside className="w-64 overflow-y-auto h-screen scrollbar-hide">
           <Sidebar />
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 pb-8 overflow-y-auto h-screen scrollbar-hide">
-          <div className="sticky top-0 z-20 backdrop-blur px-5 pt-8">
-            <div className="sticky top-0 z-20 backdrop-blur flex items-center justify-between bg-[#f6f6f6]/70 dark:bg-[#1e4742]/70 gap-2 w-full border border-[#183431] dark:border-white py-2 px-4 rounded-md">
+        <main className="flex-1 bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat pb-8 overflow-y-auto h-screen scrollbar-hide">
+          <div className="sticky top-0 z-20 backdrop-blur px-5 pt-3">
+            <div className="sticky top-0 z-20 backdrop-blur flex items-center justify-between bg-[#060B26F0]/60 gap-2 w-full py-2 px-4 rounded-xl">
               <div className="bg-[transparent] px-2">
-                <div
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => setOpen(true)}
-                >
-                  <FaSearch className="text-[#183431] dark:text-[#fff]" />
-                  <p className="text-[#183431] dark:text-[#fff]">Search</p>
-                  <p className="text-[#183431] dark:text-[#fff]">[CTRL + K]</p>
+                <div className="flex items-center gap-2 cursor-pointer">
+                  <p className="text-2xl font-semibold text-[#101437] dark:text-[#fff]">
+                    Dashboard
+                  </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4 ml-auto mr-3">
-                <button onClick={toggleTheme} className="text-md">
+                <div className="relative">
+                  <FiSearch className="absolute text-xl text-[#101437] dark:text-white bg-transparent top-4 left-3"/>
+                <input
+                  type="text"
+                  name="search"
+                  value={search}
+                  onChange={handleChange}
+                  placeholder="Type to search..."
+                  className="input w-[489px] bg-transparent backdrop-blur-[42px] border-3 border-[white]/[0.03] border-t-white/[0.09] rounded-2xl pl-9 pr-4 text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-white/[0.03] focus:border-t-white/[0.09] h-13"
+                />
+                </div>
+                <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]"/>
+                <FaBell className="cursor-pointer text-3xl" />
+                <button onClick={toggleTheme} className="text-2xl">
                   {resolvedTheme === "dark" ? <FaSun /> : <FaMoon />}
                 </button>
-                <FiGrid className="cursor-pointer" />
-                <div className="indicator">
-                  <span className="indicator-item badge badge-error badge-xs"></span>
-                  <FaBell className="cursor-pointer" />
-                </div>
+                <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]"/>
 
                 {/* --- User Dropdown Start --- */}
                 <div className="dropdown dropdown-end">
@@ -124,10 +137,10 @@ const Layout = ({ children }) => {
                         </div>
                       </div>
                       <div className="flex flex-col justify-center items-start">
-                        <span className="text-left font-semibold text-[16px] text-[#183431] dark:text-white">
+                        <span className="text-left font-semibold text-[16px] text-[#101437] dark:text-white">
                           {user?.fullName}
                         </span>
-                        <span className="text-left opacity-60 text-[16px] capitalize text-[#183431] dark:text-white">
+                        <span className="text-left opacity-60 text-[16px] capitalize text-[#101437] dark:text-white">
                           {user?.role}
                         </span>
                       </div>
@@ -136,18 +149,18 @@ const Layout = ({ children }) => {
                     <div className="divider my-0 opacity-20"></div>
 
                     <li>
-                      <a className="text-[16px] text-[#183431] dark:text-white gap-3">
+                      <a className="text-[16px] text-[#101437] dark:text-white gap-3">
                         <FiUser className="text-lg" /> My Profile
                       </a>
                     </li>
                     <li>
-                      <a className="text-[16px] text-[#183431] dark:text-white gap-3">
+                      <a className="text-[16px] text-[#101437] dark:text-white gap-3">
                         <FiSettings className="text-lg" /> Settings
                       </a>
                     </li>
                     <li>
                       <a className="justify-between">
-                        <div className="flex items-center text-[16px] text-[#183431] dark:text-white gap-3">
+                        <div className="flex items-center text-[16px] text-[#101437] dark:text-white gap-3">
                           <FiCreditCard className="text-lg" /> Billing Plan
                         </div>
                         <span className="badge badge-error text-white text-[15px] h-6 w-6 p-0 flex items-center justify-center">
@@ -159,12 +172,12 @@ const Layout = ({ children }) => {
                     <div className="divider my-0 opacity-20"></div>
 
                     <li>
-                      <a className="text-[16px] text-[#183431] dark:text-white gap-3">
+                      <a className="text-[16px] text-[#101437] dark:text-white gap-3">
                         <FiDollarSign className="text-lg" /> Pricing
                       </a>
                     </li>
                     <li>
-                      <a className="text-[16px] text-[#183431] dark:text-white gap-3">
+                      <a className="text-[16px] text-[#101437] dark:text-white gap-3">
                         <FiHelpCircle className="text-lg" /> FAQ
                       </a>
                     </li>

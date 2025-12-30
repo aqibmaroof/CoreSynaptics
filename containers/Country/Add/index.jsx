@@ -90,10 +90,10 @@ export default function AddCountry() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold px-5 pt-5 text-[#183431] dark:text-white">
+          <h1 className="text-2xl font-bold px-5 pt-5 text-[#101437] dark:text-white">
             Add a new Country Code
           </h1>
-          <p className="text-sm px-5 text-[#183431] dark:text-white mb-5">
+          <p className="text-sm px-5 text-[#101437] dark:text-white mb-5">
             Add country codes for your application
           </p>
         </div>
@@ -123,13 +123,13 @@ export default function AddCountry() {
           {/* LEFT COLUMN */}
           <div className="flex flex-col items-left justify-center w-[65%]">
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] px-5 py-5 ml-5 rounded-xl w-full shadow-xl">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white">
                 Country Information
               </h4>
 
               <div className="flex justify-start gap-5 w-full">
                 <fieldset className="fieldset w-full">
-                  <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                  <legend className="text-xl text-[#101437] dark:text-white mb-3">
                     Country Name *
                   </legend>
                   <input
@@ -137,14 +137,14 @@ export default function AddCountry() {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-[#97999b]"
+                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-[#97999b]"
                     placeholder="United States"
                     required
                   />
                 </fieldset>
 
                 <fieldset className="fieldset w-full">
-                  <legend className="text-xl text-[#183431] dark:text-white">
+                  <legend className="text-xl text-[#101437] dark:text-white">
                     Country Code *
                   </legend>
                   <input
@@ -152,12 +152,12 @@ export default function AddCountry() {
                     name="code"
                     value={formData.code}
                     onChange={handleInputChange}
-                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-[#97999b]"
+                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-[#97999b]"
                     placeholder="US"
                     maxLength="2"
                     required
                   />
-                  <p className="text-xs text-[#183431] dark:text-white">
+                  <p className="text-xs text-[#101437] dark:text-white">
                     2-letter ISO code (e.g., US, GB, CA)
                   </p>
                 </fieldset>
@@ -165,7 +165,7 @@ export default function AddCountry() {
 
               <div className="flex items-center justify-start gap-5 w-full my-3">
                 <fieldset className="fieldset w-full">
-                  <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                  <legend className="text-xl text-[#101437] dark:text-white mb-3">
                     Dial Code *
                   </legend>
                   <input
@@ -173,11 +173,11 @@ export default function AddCountry() {
                     name="dialCode"
                     value={formData.dialCode}
                     onChange={handleInputChange}
-                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-[#97999b]"
+                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-[#97999b]"
                     placeholder="+1"
                     required
                   />
-                  <p className="text-xs text-[#183431] dark:text-white mt-1">
+                  <p className="text-xs text-[#101437] dark:text-white mt-1">
                     Include the + symbol (e.g., +1, +44, +91)
                   </p>
                 </fieldset>
@@ -185,7 +185,7 @@ export default function AddCountry() {
 
               <div className="flex items-center justify-start gap-5 w-full my-3">
                 <fieldset className="fieldset w-full">
-                  <legend className="text-xl text-[#183431] dark:text-white mb-3">
+                  <legend className="text-xl text-[#101437] dark:text-white mb-3">
                     Sort Order
                   </legend>
                   <input
@@ -193,18 +193,18 @@ export default function AddCountry() {
                     name="sortOrder"
                     value={formData.sortOrder}
                     onChange={handleInputChange}
-                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white placeholder-[#183431] dark:placeholder-[#97999b]"
+                    className="input w-full bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white placeholder-[#101437] dark:placeholder-[#97999b]"
                     placeholder="1"
                     min="1"
                   />
-                  <p className="text-xs text-[#183431] dark:text-white mt-1">
+                  <p className="text-xs text-[#101437] dark:text-white mt-1">
                     Display order in dropdown (lower numbers appear first)
                   </p>
                 </fieldset>
 
                 <fieldset className="fieldset w-full mt-8">
                   <div className="flex items-center justify-between">
-                    <span className="text-xl text-[#183431] dark:text-white">
+                    <span className="text-xl text-[#101437] dark:text-white">
                       Active Status
                     </span>
                     <input
@@ -215,7 +215,7 @@ export default function AddCountry() {
                       className="toggle toggle-accent"
                     />
                   </div>
-                  <p className="text-xs text-[#183431] dark:text-white mt-1">
+                  <p className="text-xs text-[#101437] dark:text-white mt-1">
                     Enable this country code in the system
                   </p>
                 </fieldset>
@@ -224,19 +224,19 @@ export default function AddCountry() {
 
             {/* Preview Section */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] px-5 py-5 ml-5 mt-5 rounded-xl w-full shadow-xl">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white mb-4">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white mb-4">
                 Preview
               </h4>
               <div className="flex items-center gap-4 p-4 bg-white dark:bg-[#2a5f57] rounded-lg">
                 <span className="text-4xl">{formData.flag || "🏳️"}</span>
                 <div>
-                  <p className="text-lg font-semibold text-[#183431] dark:text-white">
+                  <p className="text-lg font-semibold text-[#101437] dark:text-white">
                     {formData.name || "Country Name"}
                   </p>
-                  <p className="text-sm text-[#183431] dark:text-white">
+                  <p className="text-sm text-[#101437] dark:text-white">
                     {formData.code || "XX"} - {formData.dialCode || "+0"}
                   </p>
-                  <p className="text-xs text-[#183431] dark:text-white">
+                  <p className="text-xs text-[#101437] dark:text-white">
                     Status: {formData.isActive ? "Active" : "Inactive"} | Order:{" "}
                     {formData.sortOrder}
                   </p>
@@ -249,16 +249,16 @@ export default function AddCountry() {
           <div className="flex flex-col items-left justify-center mr-5 w-[35%]">
             {/* Optional Flag Image Upload */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] shadow-xl flex flex-col items-left justify-center px-5 py-5 rounded-xl w-full">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white">
                 Country Flag Image (Optional)
               </h4>
-              <p className="text-xs text-[#183431] dark:text-white mb-3">
+              <p className="text-xs text-[#101437] dark:text-white mb-3">
                 You can use emoji in the form or upload a flag image
               </p>
               <fieldset className="fieldset w-full mb-3">
                 <input
                   type="file"
-                  className="file-input w-full file-input-md bg-[transparent] border border-black dark:border-white text-[#183431] dark:text-white"
+                  className="file-input w-full file-input-md bg-[transparent] border border-black dark:border-white text-[#101437] dark:text-white"
                   onChange={handleChange}
                   accept="image/*"
                   ref={fileInputRef}
@@ -286,10 +286,10 @@ export default function AddCountry() {
 
             {/* Common Country Codes Reference */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl shadow-xl px-5 py-5 mt-5">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white mb-3">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white mb-3">
                 Common Country Codes
               </h4>
-              <div className="space-y-2 text-sm text-[#183431] dark:text-white">
+              <div className="space-y-2 text-sm text-[#101437] dark:text-white">
                 <div className="flex justify-between">
                   <span>🇺🇸 United States</span>
                   <span>US, +1</span>
@@ -327,10 +327,10 @@ export default function AddCountry() {
 
             {/* JSON Payload Preview */}
             <div className="bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl shadow-xl px-5 py-5 mt-5">
-              <h4 className="fieldset-legend text-xl text-[#183431] dark:text-white mb-3">
+              <h4 className="fieldset-legend text-xl text-[#101437] dark:text-white mb-3">
                 Payload Preview
               </h4>
-              <pre className="text-xs bg-white dark:bg-[#2a5f57] p-3 rounded text-[#183431] dark:text-white overflow-x-auto">
+              <pre className="text-xs bg-white dark:bg-[#2a5f57] p-3 rounded text-[#101437] dark:text-white overflow-x-auto">
                 {JSON.stringify(
                   {
                     code: formData.code.toUpperCase() || "XX",
