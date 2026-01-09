@@ -12,7 +12,7 @@ export const sidebarItems = [
     title: "Project Managers",
     icon: config?.chart,
     category: "",
-    path: "/Hunt/List",
+    path: "/Managers/List",
     submenu: [],
   },
   {

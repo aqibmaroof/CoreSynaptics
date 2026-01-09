@@ -11,6 +11,10 @@ import IncomeOverviewCard from "../../components/Cards/IncomeOverviewCard";
 import ActivityTimelineCard from "../../components/Cards/ActivityTimelineCard";
 import TransactionCard from "../../components/Cards/TransactionCard";
 import { getUser } from "../../services/instance/tokenService";
+import ProjectManagers from "../../components/Cards/ProjectManagers";
+import SalesOverview from "../../components/Cards/SalesOverview";
+import WareHouseOverview from "../../components/Cards/WareHouseOverview";
+import WarehouseAnalysis from "../../components/Cards/WarehouseAnalysis";
 
 // Mock data (replace with actual data fetching in a real app)
 const orderStatsData = {
@@ -119,19 +123,31 @@ const HomePage = () => {
         {/* <StatsCards /> */}
       </div>
 
-      <div className="flex items-cenmter gap-5 w-full px-5 pt-5">
+      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
         <RevenueCard />
         <ProfileReportCard />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-12 px-5 gap-5 pt-5">
+      <div className="px-5 pt-5">
+        <CongratsCard user={JSON.parse(getUser())} />
+        {/* <StatsCards /> */}
+      </div>
+      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
+        <ProjectManagers />
+        <SalesOverview />
+      </div>
+      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
         <OrderStatisticsCard data={orderStatsData} />
         <IncomeOverviewCard data={incomeData} />
-        <TransactionCard data={transactionsData} />
+        <TransactionCard
+          data={transactionsData}
+          heading="UPS Tracker Overview"
+        />
       </div>
-
-      <div className="grid grid-cols-12 gap-6 px-5 pt-5">
-        <ActivityTimelineCard className="col-span-12 lg:col-span-6" />
-        {/* <TrafficStatsCard className="col-span-12 lg:col-span-6" /> */}
+      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
+        <WareHouseOverview />
+      </div>
+      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
+        <WarehouseAnalysis />
       </div>
 
       {open && <TailwindDialog open={open} setOpen={handleClose} />}

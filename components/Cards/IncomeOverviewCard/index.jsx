@@ -1,133 +1,93 @@
-// components/cards/IncomeOverviewCard.jsx
-import React, { useState } from "react";
-import CardWrapper from "../../CardWrapper";
+"use client";
+import { useState, useEffect } from "react";
+import { FaSmile } from "react-icons/fa";
 
-// Simple SVG for a line chart. For production, use a library like Chart.js or Recharts.
-const LineChart = ({ data }) => {
-  const points = data
-    .map(
-      (y, i) =>
-        `${i * (100 / (data.length - 1))},${
-          100 - (y / Math.max(...data)) * 100
-        }`
-    )
-    .join(" ");
+const CircularProgress = ({ percentage }) => {
+  const [progress, setProgress] = useState(0);
+  const radius = 70;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setProgress(percentage), 100);
+    return () => clearTimeout(timer);
+  }, [percentage]);
+
   return (
-    <svg
-      viewBox="0 0 100 100"
-      className="w-full h-24"
-      preserveAspectRatio="none"
-    >
-      <polyline fill="none" stroke="#8b5cf6" strokeWidth="2" points={points} />
-      <path
-        fill="rgba(139, 92, 246, 0.2)"
-        d={`M0,100 L${points} L100,100 Z`} // Area fill
-      />
-    </svg>
+    <div className="relative flex items-center justify-center">
+      <svg className="transform -rotate-90" width="180" height="180">
+        {/* Background circle */}
+        <circle
+          cx="90"
+          cy="90"
+          r={radius}
+          stroke="#1e293b"
+          strokeWidth="12"
+          fill="none"
+        />
+        {/* Progress circle */}
+        <circle
+          cx="90"
+          cy="90"
+          r={radius}
+          stroke="url(#gradient)"
+          strokeWidth="12"
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          style={{
+            transition: "stroke-dashoffset 1.5s ease-in-out",
+          }}
+        />
+        {/* Gradient definition */}
+        <defs>
+          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#10B981" />
+            <stop offset="100%" stopColor="#34D399" />
+          </linearGradient>
+        </defs>
+      </svg>
+
+      {/* Center Icon */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg">
+          <FaSmile className="text-emerald-400 text-2xl" />
+        </div>
+      </div>
+    </div>
   );
 };
 
-const IncomeOverviewCard = ({ data }) => {
-  const {
-    totalBalance,
-    balanceChange,
-    chartData,
-    incomeThisWeek,
-    incomeComparison,
-  } = data;
-  const [activeTab, setActiveTab] = useState("Income"); // Default tab
+export default function QAQCSatisfactionCard() {
+  const satisfactionRate = 95;
 
   return (
-    <CardWrapper className="col-span-4 flex flex-col">
-      {" "}
-      {/* Example: Takes 4 columns */}
-      {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg mb-6">
-        {["Income", "Expenses", "Profit"].map((tab) => (
-          <button
-            key={tab}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors duration-200
-              ${
-                activeTab === tab
-                  ? "bg-purple-600 text-white shadow-md"
-                  : "text-gray-600 dark:text-[#fff] hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
+    <div className="flex flex-col w-full bg-gradient-to-r font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl">
+      {/* Header */}
+      <div className="mb-8">
+        <h2 className="text-white text-xl font-semibold mb-1">
+          QA/QC Satisfaction Rate
+        </h2>
+        <p className="text-gray-400 text-sm">From all projects</p>
       </div>
-      {/* Total Balance */}
-      <div className="mb-6 flex items-start gap-4">
-        <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-6 h-6 text-purple-600"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 18.75V10.5a3 3 0 013-3h15c1.728 0 3 1.372 3 3v1.5m-14.25 0h.007v.008H5.25v-.008zM12 12.75h.007v.008H12v-.008z"
-            />
-          </svg>
-        </div>
-        <div>
-          <p className="text-base text-gray-500 dark:text-[#fff]">
-            Total Balance
-          </p>
-          <div className="flex items-baseline gap-2">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              ${totalBalance}
+
+      {/* Circular Progress */}
+      <div className="flex flex-col items-center mb-6">
+        <CircularProgress percentage={satisfactionRate} />
+
+        {/* Percentage Labels */}
+        <div className="flex justify-center px-4 mt-4 bg-[#090e2b] w-[max-content] py-1 rounded-xl gap-8">
+          <span className="text-gray-400 text-xs">0%</span>
+          <div className="text-center">
+            <p className="text-white text-4xl font-bold">{satisfactionRate}%</p>
+            <p className="text-gray-400 text-xs mt-1">
+              Based on positive answers
             </p>
-            <span className="text-green-500 text-sm font-semibold flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="w-4 h-4"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25c0 .414-.336.75-.75.75z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              {balanceChange}%
-            </span>
           </div>
+          <span className="text-gray-400 text-xs">100%</span>
         </div>
       </div>
-      {/* Chart */}
-      <div className="mb-6">
-        <LineChart data={chartData} />
-      </div>
-      {/* Chart X-axis Labels */}
-      <div className="flex justify-between text-xs text-gray-400 dark:text-[#fff] mb-6">
-        {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"].map((month) => (
-          <span key={month}>{month}</span>
-        ))}
-      </div>
-      {/* Income This Week Summary */}
-      <div className="flex items-center gap-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-        <div className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold">
-          ${Math.floor(incomeThisWeek / 1000)}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-800 dark:text-white">
-            Income this week
-          </p>
-          <p className="text-xs text-gray-500 dark:text-[#fff]">
-            {incomeComparison}
-          </p>
-        </div>
-      </div>
-    </CardWrapper>
+    </div>
   );
-};
-
-export default IncomeOverviewCard;
+}

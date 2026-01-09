@@ -1,11 +1,10 @@
 // components/Layout.js
 "use client";
 import Sidebar from "../../components/sidebar";
-import { FaSearch, FaBell, FaSun, FaMoon } from "react-icons/fa";
+import { FaBell, FaSun, FaMoon, FaArrowLeft } from "react-icons/fa";
 import {
   FiCreditCard,
   FiDollarSign,
-  FiGrid,
   FiHelpCircle,
   FiPower,
   FiSearch,
@@ -19,11 +18,13 @@ import {
   clearTokens,
   getAccessToken,
 } from "../../services/instance/tokenService";
-import { useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { getUser } from "../../services/instance/tokenService";
 
 const Layout = ({ children }) => {
   const router = useRouter();
+  const pathname = usePathname();
+  const params = useParams();
   const [search, setSearch] = useState("");
   const user = JSON.parse(getUser());
   const { resolvedTheme, setTheme } = useTheme();
@@ -33,7 +34,7 @@ const Layout = ({ children }) => {
     const { value } = e.target;
     setSearch(value);
   };
-
+  console.log("User Data in Layout:", pathname , `/Profile/Managers/${params?.id}`);
   // Wait for client to mount to avoid SSR mismatch
   useEffect(() => {
     setMounted(true);
@@ -60,7 +61,7 @@ const Layout = ({ children }) => {
       {/* Content Area */}
       <div className="flex flex-1 overflow-hidden bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat ">
         {/* Sidebar */}
-        <aside className="w-64 overflow-y-auto h-screen scrollbar-hide">
+        <aside className="w-74 overflow-y-auto h-screen scrollbar-hide">
           <Sidebar />
         </aside>
 
@@ -69,31 +70,41 @@ const Layout = ({ children }) => {
           <div className="sticky top-0 z-20 backdrop-blur px-5 pt-3">
             <div className="sticky top-0 z-20 backdrop-blur flex items-center justify-between bg-[#060B26F0]/60 gap-2 w-full py-2 px-4 rounded-xl">
               <div className="bg-[transparent] px-2">
-                <div className="flex items-center gap-2 cursor-pointer">
+                <div className="flex items-center gap-5 cursor-pointer">
+                  {pathname === `/Profile/Managers/${params?.id}` && (
+                    <FaArrowLeft
+                      onClick={() => router.back()}
+                      className="text-2xl"
+                    />
+                  )}
                   <p className="text-2xl font-semibold text-[#101437] dark:text-[#fff]">
-                    Dashboard
+                    {pathname === `/Managers/List/${params?.id}`
+                      ? "Project Managers"
+                      : pathname === `/Profile/Managers/${params?.id}`
+                      ? "Project Manager Profile"
+                      : "Dashboard"}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4 ml-auto mr-3">
                 <div className="relative">
-                  <FiSearch className="absolute text-xl text-[#101437] dark:text-white bg-transparent top-4 left-3"/>
-                <input
-                  type="text"
-                  name="search"
-                  value={search}
-                  onChange={handleChange}
-                  placeholder="Type to search..."
-                  className="input w-[489px] bg-transparent backdrop-blur-[42px] border-3 border-[white]/[0.03] border-t-white/[0.09] rounded-2xl pl-9 pr-4 text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-white/[0.03] focus:border-t-white/[0.09] h-13"
-                />
+                  <FiSearch className="absolute text-xl text-[#101437] dark:text-white bg-transparent top-4 left-3" />
+                  <input
+                    type="text"
+                    name="search"
+                    value={search}
+                    onChange={handleChange}
+                    placeholder="Type to search..."
+                    className="input w-[489px] bg-transparent backdrop-blur-[42px] border-3 border-[white]/[0.03] border-t-white/[0.09] rounded-2xl pl-9 pr-4 text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-white/[0.03] focus:border-t-white/[0.09] h-13"
+                  />
                 </div>
-                <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]"/>
+                <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]" />
                 <FaBell className="cursor-pointer text-3xl" />
                 <button onClick={toggleTheme} className="text-2xl">
                   {resolvedTheme === "dark" ? <FaSun /> : <FaMoon />}
                 </button>
-                <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]"/>
+                <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]" />
 
                 {/* --- User Dropdown Start --- */}
                 <div className="dropdown dropdown-end">

@@ -26,7 +26,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-[240px] m-3 py-2 transition-colors bg-gradient-to-b from-[#060B26F0] to-[#1A1F3700] rounded-t rounded-t-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
+    <aside className="w-[280px] m-3 py-2 transition-colors bg-gradient-to-b from-[#060B26F0] to-[#1A1F3700] rounded-t rounded-t-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
       {/* LIGHT ↔ DARK LOGOS */}
       <div className="sticky z-10 px-4 py-5">
         <img src={config?.brand} className="w-55 h-auto m-auto dark:hidden" />
@@ -44,7 +44,7 @@ const Sidebar = () => {
 
             {/* MAIN ITEM */}
             <div
-              className="flex items-center py-5 w-[210px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-[#2B3340] dark:text-white hover:text-[#101437] dark:hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] bg-cover bg-center bg-no-repeat transition"
+              className="flex items-center py-5 w-[250px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-[#2B3340] dark:text-white hover:text-[#101437] dark:hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] bg-cover bg-center bg-no-repeat transition"
               onClick={() =>
                 item.submenu.length > 0
                   ? toggleSubmenu(index)
@@ -59,7 +59,7 @@ const Sidebar = () => {
                   index === 0 ? "bg-[#0075FF]" : "bg-[#1A1F37]"
                 } p-2 rounded-xl`}
               />
-              <span className="flex-1">{item.title}</span>
+              <span className="flex-1 text-[14px]">{item.title}</span>
 
               {item.submenu.length > 0 && (
                 <span className="text-xs">

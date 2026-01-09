@@ -7,7 +7,7 @@ const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 const DynamicChart = ({ options, series, type, height }) => {
   return (
-    <div id="chart">
+    <div id="chart" className="w-full">
       <ApexChart
         options={options}
         series={series}

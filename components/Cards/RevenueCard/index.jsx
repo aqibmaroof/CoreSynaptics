@@ -124,9 +124,9 @@ export default function RevenueCard() {
   };
 
   return (
-    <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl">
+    <div className="flex w-full bg-gradient-to-r  font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl">
       <div className="w-full ">
-        <p className="font-semibold text-xl">Projects Summary</p>
+        <p className="font-semibold font-gilroy text-xl">Projects Summary</p>
         <div className="w-full">
           <DynamicChart
             options={ChartOptions}

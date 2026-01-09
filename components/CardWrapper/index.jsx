@@ -5,7 +5,7 @@ const CardWrapper = ({ children, className = "" }) => {
   return (
     <div
       className={`
-        bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl shadow-xl p-6
+        flex w-full bg-gradient-to-r  font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl
       ${className}
     `}
     >

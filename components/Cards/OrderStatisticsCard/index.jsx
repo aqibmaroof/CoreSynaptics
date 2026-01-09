@@ -1,107 +1,114 @@
-// components/cards/OrderStatisticsCard.jsx
-import React from "react";
-import CardWrapper from "../../CardWrapper";
-import { FaMobileAlt, FaTshirt, FaHome, FaFootballBall } from "react-icons/fa"; // Example icons
+"use client";
+import DynamicChart from "@/components/common/Charts/DynamicChart";
 
-// Helper for dynamic icon rendering
-const getCategoryIcon = (categoryName) => {
-  switch (categoryName) {
-    case "Electronic":
-      return <FaMobileAlt className="text-purple-500 text-lg" />;
-    case "Fashion":
-      return <FaTshirt className="text-green-500 text-lg" />;
-    case "Decor":
-      return <FaHome className="text-blue-500 text-lg" />;
-    case "Sports":
-      return <FaFootballBall className="text-red-500 text-lg" />;
-    default:
-      return <div className="w-5 h-5 bg-gray-300 rounded-full"></div>; // Placeholder
-  }
-};
+export default function IntegratorChart() {
+  const ChartOptions = {
+    series: [66, 34],
+    chart: {
+      type: "donut",
+      height: "280",
+      toolbar: {
+        show: false,
+      },
+      background: "transparent",
+    },
+    labels: ["MPS", "Fiberbond"],
+    colors: ["#10B981", "#3B82F6"],
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return val.toFixed(0) + "%";
+      },
+      style: {
+        fontSize: "16px",
+        fontWeight: "700",
+        colors: ["#fff"],
+      },
+      dropShadow: {
+        enabled: true,
+        top: 2,
+        left: 2,
+        blur: 3,
+        opacity: 0.5,
+      },
+      background: {
+        enabled: true,
+        foreColor: "#1e293b",
+        borderRadius: 8,
+        padding: 8,
+        opacity: 0.9,
+        borderWidth: 0,
+      },
+    },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: "75%",
+          labels: {
+            show: false,
+          },
+        },
+        expandOnClick: false,
+      },
+    },
+    stroke: {
+      show: false,
+      width: 0,
+    },
+    legend: {
+      show: false,
+    },
+    tooltip: {
+      enabled: true,
+      theme: "dark",
+      y: {
+        formatter: function (val) {
+          return val.toFixed(0) + "%";
+        },
+      },
+    },
+  };
 
-const OrderStatisticsCard = ({ data }) => {
-  const { title, totalSales, totalOrders, weeklyPercentage, categories } = data;
+  const legendData = [
+    { name: "MPS", value: "02", color: "bg-emerald-500" },
+    { name: "Fiberbond", value: "05", color: "bg-blue-500" },
+  ];
 
   return (
-    <CardWrapper className="col-span-4 flex flex-col justify-between">
-      {" "}
-      {/* Example: Takes 4 columns */}
+    <div className="flex w-full bg-gradient-to-r font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-[#101437] dark:text-white">
-            {title}
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-[#fff]">
-            {totalSales} Total Sales
-          </p>
-        </div>
-        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-6 h-6"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
-            />
-          </svg>
-        </button>
-      </div>
-      {/* Orders Count & Radial Chart */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-4xl font-bold text-gray-900 dark:text-white">
-            {totalOrders.toLocaleString()}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-[#fff]">Total Orders</p>
-        </div>
-        {/* Radial Progress Bar - Simplified with a ring. For actual animation, use a charting library. */}
-        <div
-          className="relative w-20 h-20 rounded-full flex items-center justify-center text-sm font-semibold text-gray-800 dark:text-white"
-          style={{
-            background: `conic-gradient(#8b5cf6 ${weeklyPercentage}%, #e2e8f0 ${weeklyPercentage}%)`, // Tailwind purple-500 and gray-200
-            boxShadow: "inset 0 0 0 8px rgba(255,255,255,0.8)", // Inner white border effect
-          }}
-        >
-          <div className="absolute w-16 h-16 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-            {weeklyPercentage}%
-            <span className="absolute -bottom-7 text-xs text-gray-500 dark:text-[#fff]">
-              Weekly
-            </span>
-          </div>
-        </div>
-      </div>
-      {/* Categories List */}
-      <div className="space-y-4">
-        {categories.map((cat, index) => (
-          <div key={index} className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                {getCategoryIcon(cat.name)}
-              </div>
+      <h2 className="text-white text-xl font-semibold mb-8">Integrator</h2>
+
+      <div className="flex items-center justify-between gap-8">
+        {/* Legend - Left Side */}
+        <div className="space-y-6 flex flex-col items-start justify-start">
+          {legendData.map((item, index) => (
+            <div key={index} className="flex items-center gap-3">
+              <div className={`w-2 h-12 ${item.color} rounded-full`}></div>
               <div>
-                <p className="text-base font-medium text-gray-800 dark:text-white">
-                  {cat.name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-[#fff]">
-                  {cat.description}
-                </p>
+                <p className="text-white text-sm font-medium">{item.name}</p>
+                <p className="text-white text-2xl font-bold">{item.value}</p>
               </div>
             </div>
-            <p className="text-base font-semibold text-gray-700 dark:text-gray-200">
-              {cat.value}
-            </p>
-          </div>
-        ))}
-      </div>
-    </CardWrapper>
-  );
-};
+          ))}
+        </div>
 
-export default OrderStatisticsCard;
+        {/* Chart - Right Side */}
+        <div className="flex items-center justify-center">
+          <div className="relative">
+            {/* Glow effect */}
+            <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full"></div>
+            <div className="relative">
+              <DynamicChart
+                options={ChartOptions}
+                series={ChartOptions.series}
+                type={ChartOptions.chart?.type}
+                height={ChartOptions.chart?.height}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
