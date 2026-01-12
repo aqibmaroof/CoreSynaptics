@@ -34,7 +34,11 @@ const Layout = ({ children }) => {
     const { value } = e.target;
     setSearch(value);
   };
-  console.log("User Data in Layout:", pathname , `/Profile/Managers/${params?.id}`);
+  console.log(
+    "User Data in Layout:",
+    pathname,
+    `/Profile/Managers/${params?.id}`
+  );
   // Wait for client to mount to avoid SSR mismatch
   useEffect(() => {
     setMounted(true);
@@ -82,6 +86,10 @@ const Layout = ({ children }) => {
                       ? "Project Managers"
                       : pathname === `/Profile/Managers/${params?.id}`
                       ? "Project Manager Profile"
+                      : pathname === "/Warehouse/List"
+                      ? "Warehouse"
+                      : pathname === "/Sales/List"
+                      ? "Sales"
                       : "Dashboard"}
                   </p>
                 </div>

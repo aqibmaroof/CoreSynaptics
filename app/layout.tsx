@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <html lang="en">
-        <body className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat">
+        <body className="bg-[url('/images/mainBackground.png')] ">
           {children}
         </body>
       </html>
