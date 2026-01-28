@@ -3,7 +3,8 @@ import config from "@/config";
 export const sidebarItems = [
   {
     title: "Dashboard",
-    icon: config?.home,
+    icon: config?.chart,
+    iconActive: config?.home,
     path: "/",
     type: "link",
     submenu: [],
@@ -11,6 +12,7 @@ export const sidebarItems = [
   {
     title: "Project Managers",
     icon: config?.chart,
+    iconActive: config?.home,
     category: "",
     path: "/Managers/List",
     submenu: [],
@@ -18,39 +20,45 @@ export const sidebarItems = [
   {
     title: "QA/QC",
     icon: config?.chart,
-    path: "#",
+    iconActive: config?.home,
+    path: "/QA/QC",
     submenu: [],
   },
   {
     title: "FSEs",
     icon: config?.chart,
+    iconActive: config?.home,
     category: "",
-    path: "#",
+    path: "/FSEs",
     submenu: [],
   },
   {
     title: "Safety",
     icon: config?.chart,
+    iconActive: config?.home,
     category: "",
-    path: "#",
+    path: "/Safety",
     submenu: [],
   },
   {
     title: "Warehouse",
     icon: config?.chart,
+    iconActive: config?.home,
     path: "/Warehouse/List",
     submenu: [],
   },
   {
     title: "Sales",
     icon: config?.chart,
+    iconActive: config?.home,
     path: "/Sales/List",
     submenu: [],
   },
   {
     title: "Settings",
-    path: "#",
+    path: "/Settings",
     icon: config?.chart,
+    iconActive: config?.home,
     submenu: [],
   },
 ];

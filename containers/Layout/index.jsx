@@ -37,7 +37,7 @@ const Layout = ({ children }) => {
   console.log(
     "User Data in Layout:",
     pathname,
-    `/Profile/Managers/${params?.id}`
+    `/Profile/Managers/${params?.id}`,
   );
   // Wait for client to mount to avoid SSR mismatch
   useEffect(() => {
@@ -59,7 +59,7 @@ const Layout = ({ children }) => {
 
   // Do not render theme-dependent UI until mounted
   if (!mounted) return null;
-
+  console.log(pathname);
   return (
     <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat  flex flex-col min-h-screen">
       {/* Content Area */}
@@ -82,15 +82,25 @@ const Layout = ({ children }) => {
                     />
                   )}
                   <p className="text-2xl font-semibold text-[#101437] dark:text-[#fff]">
-                    {pathname === `/Managers/List/${params?.id}`
+                    {pathname === `/Managers/List`
                       ? "Project Managers"
                       : pathname === `/Profile/Managers/${params?.id}`
-                      ? "Project Manager Profile"
-                      : pathname === "/Warehouse/List"
-                      ? "Warehouse"
-                      : pathname === "/Sales/List"
-                      ? "Sales"
-                      : "Dashboard"}
+                        ? "Project Manager Profile"
+                        : pathname === "/Warehouse/List"
+                          ? "Warehouse"
+                          : pathname === "/Sales/List"
+                            ? "Sales"
+                            : pathname === "/QA/QC"
+                              ? "QA/QC"
+                              : pathname === "/FSEs"
+                                ? "FSEs"
+                                : pathname === "/Safety"
+                                  ? "Safety"
+                                  : pathname === "/Settings"
+                                    ? "Settings"
+                                    : pathname === "/UserProfile"
+                                      ? "My Profile"
+                                      : "Dashboard"}
                   </p>
                 </div>
               </div>
@@ -137,7 +147,7 @@ const Layout = ({ children }) => {
                   </label>
                   <ul
                     tabIndex={0}
-                    className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-[#f6f6f6] dark:bg-[#1e4742] rounded-box w-60 border border-gray-700/10 dark:border-white/10"
+                    className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-60 border border-gray-700/10 dark:border-white/10"
                   >
                     {/* User Info Header */}
                     <li className=" flex flex-row items-center justify-start">
@@ -168,16 +178,22 @@ const Layout = ({ children }) => {
                     <div className="divider my-0 opacity-20"></div>
 
                     <li>
-                      <a className="text-[16px] text-[#101437] dark:text-white gap-3">
+                      <a
+                        href="/UserProfile"
+                        className={`text-[16px] text-[#101437] dark:text-white gap-3 ${pathname === "/UserProfile" ? "bg-gray-400/20" : ""}`}
+                      >
                         <FiUser className="text-lg" /> My Profile
                       </a>
                     </li>
                     <li>
-                      <a className="text-[16px] text-[#101437] dark:text-white gap-3">
+                      <a
+                        href="/Settings"
+                        className={`text-[16px] text-[#101437] dark:text-white gap-3 ${pathname === "/Settings" ? "bg-gray-400/20" : ""}`}
+                      >
                         <FiSettings className="text-lg" /> Settings
                       </a>
                     </li>
-                    <li>
+                    {/* <li>
                       <a className="justify-between">
                         <div className="flex items-center text-[16px] text-[#101437] dark:text-white gap-3">
                           <FiCreditCard className="text-lg" /> Billing Plan
@@ -186,11 +202,11 @@ const Layout = ({ children }) => {
                           4
                         </span>
                       </a>
-                    </li>
+                    </li> */}
 
                     <div className="divider my-0 opacity-20"></div>
 
-                    <li>
+                    {/* <li>
                       <a className="text-[16px] text-[#101437] dark:text-white gap-3">
                         <FiDollarSign className="text-lg" /> Pricing
                       </a>
@@ -199,7 +215,7 @@ const Layout = ({ children }) => {
                       <a className="text-[16px] text-[#101437] dark:text-white gap-3">
                         <FiHelpCircle className="text-lg" /> FAQ
                       </a>
-                    </li>
+                    </li> */}
 
                     <div className="divider my-0 opacity-20"></div>
 

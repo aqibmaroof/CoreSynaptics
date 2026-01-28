@@ -3,18 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { sidebarItems } from "./sideBarData";
-import {
-  FaChevronDown,
-  FaChevronRight,
-  FaQuestion,
-  FaQuestionCircle,
-} from "react-icons/fa";
-import { useRouter } from "next/navigation";
+import { FaChevronDown, FaChevronRight } from "react-icons/fa";
+import { usePathname, useRouter } from "next/navigation";
 import config from "../../config";
 
 const Sidebar = () => {
   const router = useRouter();
-
+  const pathname = usePathname();
   const [openIndex, setOpenIndex] = useState(null);
   const [activeSubIndex, setActiveSubIndex] = useState(null);
   const [activeSubSubIndex, setActiveSubSubIndex] = useState(null);
@@ -44,19 +39,19 @@ const Sidebar = () => {
 
             {/* MAIN ITEM */}
             <div
-              className="flex items-center py-5 w-[250px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-[#2B3340] dark:text-white hover:text-[#101437] dark:hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] bg-cover bg-center bg-no-repeat transition"
+              className={`flex items-center py-5 w-[250px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-[#2B3340] dark:text-white hover:text-[#101437] dark:hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] ${pathname === item?.path ? "bg-[url('/images/hover_background.png')]" : ""} bg-cover bg-center bg-no-repeat transition`}
               onClick={() =>
                 item.submenu.length > 0
                   ? toggleSubmenu(index)
                   : item.title === "View Website" || item.title === "Support"
-                  ? window.open(item.path, "_blank")
-                  : router.push(item.path)
+                    ? window.open(item.path, "_blank")
+                    : router.push(item.path)
               }
             >
               <img
-                src={item.icon}
+                src={pathname === item?.path ? item?.iconActive : item.icon}
                 className={`mr-3 ${
-                  index === 0 ? "bg-[#0075FF]" : "bg-[#1A1F37]"
+                  pathname === item?.path ? "bg-[#0075FF]" : "bg-[#1A1F37]"
                 } p-2 rounded-xl`}
               />
               <span className="flex-1 text-[14px]">{item.title}</span>
@@ -159,12 +154,12 @@ const Sidebar = () => {
                                 status.color === "orange"
                                   ? "bg-[#fe5000] text-[#333]"
                                   : status.color === "teal"
-                                  ? "bg-teal-500 text-white"
-                                  : status.color === "pink"
-                                  ? "bg-[#f9c2d1] text-[#900]"
-                                  : status.color === "yellow"
-                                  ? "bg-[#fef102] text-black"
-                                  : ""
+                                    ? "bg-teal-500 text-white"
+                                    : status.color === "pink"
+                                      ? "bg-[#f9c2d1] text-[#900]"
+                                      : status.color === "yellow"
+                                        ? "bg-[#fef102] text-black"
+                                        : ""
                               }`}
                               onClick={() => router.push(status.path)}
                             >
@@ -188,9 +183,13 @@ const Sidebar = () => {
         <img src={config?.questionMark} />
         <p className="mt-5 font-bold text-[14px]">Need help?</p>
         <p className="mb-3 text-[12px]">Please check our docs</p>
-        <button className="bg-linear-to-r from-[#0A0E23B5] to-[#060B28BD] w-full p-3 rounded-xl flex items-center justify-center m-auto">
+        <a
+          href="https://wildtag-s3-bucket.s3.eu-north-1.amazonaws.com/listing_temp/cmkx1vzt6000bty9h2n9r9tkw/1769546156716-ak18ne-Screenshot_1767712780406.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIASWMZRHANP4L6HG73%2F20260127%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20260127T203556Z&X-Amz-Expires=86400&X-Amz-Signature=c75c001f0930eed3accf779efbbf6688a642aff55938302d29f4dd9f58b8c102&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+          target="_blank"
+          className="bg-linear-to-r cursor-pointer from-[#0A0E23B5] to-[#060B28BD] w-full p-3 rounded-xl flex items-center justify-center m-auto"
+        >
           DOCUMENTATION
-        </button>
+        </a>
       </div>
     </aside>
   );

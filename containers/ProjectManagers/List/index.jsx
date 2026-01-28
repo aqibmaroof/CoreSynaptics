@@ -96,7 +96,7 @@ export default function ProjectManagersList() {
       <ManagersOverview />
 
       {/* TABLE */}
-      <div className="flex w-full bg-gradient-to-r  font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl card">
+      <div className="flex w-full bg-gradient-to-r  from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-2 rounded-3xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-white mt-5 ml-4 text-3xl">Projects</h1>
