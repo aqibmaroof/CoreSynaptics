@@ -258,7 +258,7 @@ export default function KanbanBoard() {
             {projects.map((project) => (
               <div
                 key={project.id}
-                className={`flex  items-center justify-between w-full font-gilroy  border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl  ${
+                className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-1 mt-2 rounded-2xl  ${
                   project.isActive
                     ? "bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]"
                     : "bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]"
@@ -360,7 +360,7 @@ export default function KanbanBoard() {
             {members.map((member) => (
               <div
                 key={member.id}
-                className={`flex  items-center justify-between w-full font-gilroy  border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl ${
+                className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-4 mt-2 rounded-2xl ${
                   member.isActive
                     ? "bg-emerald-600/30 border border-emerald-500/50"
                     : "bg-gradient-to-r from-[#0d2963] via-[#0d2963] to-[#19213d]"
@@ -544,7 +544,7 @@ export default function KanbanBoard() {
         </div>
         {/* Table */}
         <div className="overflow-x-auto ml-4">
-          <table className="w-full">
+          <table className="w-full ">
             <thead className="bg-[#080C26] rounded-2xl">
               <tr className="rounded-2xl">
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
@@ -588,11 +588,13 @@ export default function KanbanBoard() {
                   </td>
                   <td className="py-4 px-4 text-sm">{task.taskName}</td>
                   <td className="py-4 px-4 text-gray-400 text-sm flex gap-2">
-                    <p className="w-8 h-8 text-center justify-center bg-[#656A80] text-xl font-bold text-white rounded-full">
+                    <div className="flex items-center gap-2 ">
+                    <p className="w-8 h-8 rounded-full text-center justify-center bg-[#656A80] text-xl font-bold text-white ">
                       {task.project.slice(0, 1)}
                       {task.project.split(" ")[1].slice(0, 1)}
                     </p>
                     {task.project}
+                    </div>
                   </td>
                   <td className="py-4 px-4 text-gray-400">{task.estimation}</td>
                   <td className="py-4 px-4 text-[#FB5874] text-sm">
@@ -602,12 +604,14 @@ export default function KanbanBoard() {
                     </div>
                   </td>
                   <td className="py-4 px-4 text-gray-400  text-sm">
+                    <div className="flex items-center gap-3">
                     <progress
                       className="progress progress-success w-25 "
                       value="70"
                       max="100"
                     ></progress>
                     {task.progress}
+                    </div>
                   </td>
                   <td className="flex items-center py-4 px-4 text-gray-400">
                     {task.assignee.map((item, index) => (
