@@ -89,6 +89,7 @@ export default function ProjectManagersList() {
       avatar: "/api/placeholder/40/40",
     },
   ];
+  
 
   return (
     <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">

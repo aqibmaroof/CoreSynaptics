@@ -10,6 +10,14 @@ export const sidebarItems = [
     submenu: [],
   },
   {
+    title: "Projects",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Projects",
+    type: "link",
+    submenu: [],
+  },
+  {
     title: "Project Managers",
     icon: config?.chart,
     iconActive: config?.home,
