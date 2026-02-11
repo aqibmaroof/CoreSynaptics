@@ -7,9 +7,8 @@ import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
 
 export default function KanbanBoard() {
-    const [openDropdown, setOpenDropdown] = useState(null);
-    const [searchTerm, setSearchTerm] = useState("");
-
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const projects = [
     {
@@ -102,101 +101,95 @@ export default function KanbanBoard() {
       priority: "Urgent",
       progress: "80%",
       assignee: [
-    {
-      id: 1,
-      name: "Rainer Brown",
-      email: "Rainerbrown@mail.com",
-      avatar: "https://i.pravatar.cc/150?img=1",
-      bgColor: "bg-purple-500/20",
+        {
+          id: 1,
+          name: "Rainer Brown",
+          email: "Rainerbrown@mail.com",
+          avatar: "/images/assignee1.jpg",
+          bgColor: "bg-purple-500/20",
+        },
+        {
+          id: 2,
+          name: "Conny Rany",
+          email: "connyrany@mail.com",
+          avatar: "/images/assignee2.jpg",
+          bgColor: "bg-emerald-500/20",
+        },
+        {
+          id: 3,
+          name: "Armin Falcon",
+          email: "arfalcon@mail.com",
+          avatar: "/images/assignee3.jpg",
+          bgColor: "bg-gray-500/20",
+        },
+      ],
     },
-    {
-      id: 2,
-      name: "Conny Rany",
-      email: "connyrany@mail.com",
-      avatar: "https://i.pravatar.cc/150?img=5",
-      bgColor: "bg-emerald-500/20",
-    },
-    {
-      id: 3,
-      name: "Armin Falcon",
-      email: "arfalcon@mail.com",
-      avatar: "https://i.pravatar.cc/150?img=3",
-      bgColor: "bg-gray-500/20",
-    },
-    {
-      id: 4,
-      name: "James Sullivan",
-      email: "Warren L.",
-      avatar: "https://i.pravatar.cc/150?img=4",
-      bgColor: "bg-gray-500/20",
-    },
-    {
-      id: 5,
-      name: "James Sullivan",
-      email: "Warren L.",
-      avatar: "https://i.pravatar.cc/150?img=4",
-      bgColor: "bg-gray-500/20",
-    },
-    {
-      id: 6,
-      name: "James Sullivan",
-      email: "Warren L.",
-      avatar: "https://i.pravatar.cc/150?img=4",
-      bgColor: "bg-gray-500/20",
-    },
-  ]
-      
-    },
-  ]
-  
+  ];
 
   return (
     <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">
-     <h1 className="font-bold text-2xl">Task overveiw</h1>
+      <h1 className="font-bold text-2xl">Task overveiw</h1>
       <div className="w-full px-3 gap-10 flex items-center justify-between font-gilroy mt-6 mb-6">
-      {/* LEFT SIDE */}
-      <div>
-        <div className="flex items-center justify-between w-full gap-3">
-          <div className="flex items-center justify-between gap-10 w-[max-content]">
-            <p className="text-7xl font-bold font-gilroy">80</p>
-            <div className="flex flex-col items-start justify-end text-xl w-30">
-              <p>Total <br/>Tasks</p>
+        {/* LEFT SIDE */}
+        <div>
+          <div className="flex items-center justify-between w-full gap-3">
+            <div className="flex items-center justify-between gap-10 w-[max-content]">
+              <p className="text-7xl font-bold font-gilroy">80</p>
+              <div className="flex flex-col items-start justify-end text-xl w-30">
+                <p>
+                  Total <br />
+                  Tasks
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center justify-between gap-10 w-[max-content]">
-            <p className="text-6xl font-bold text-7xl">15</p>
-            <div className="flex flex-col items-right justify-end text-xl w-40">
-              <p>Tasks Due <br/>Today</p>
+            <div className="flex items-center justify-between gap-10 w-[max-content]">
+              <p className="text-6xl font-bold text-7xl">15</p>
+              <div className="flex flex-col items-right justify-end text-xl w-40">
+                <p>
+                  Tasks Due <br />
+                  Today
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center justify-between gap-10 w-[max-content]">
-            <p className="text-6xl font-bold text-7xl">20</p>
-            <div className="flex flex-col items-start justify-end text-xl">
-              <p>Overdue <br/>Tasks</p>
+            <div className="flex items-center justify-between gap-10 w-[max-content]">
+              <p className="text-6xl font-bold text-7xl">20</p>
+              <div className="flex flex-col items-start justify-end text-xl">
+                <p>
+                  Overdue <br />
+                  Tasks
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center justify-between gap-10 w-[max-content]">
-            <p className="text-6xl font-bold text-7xl">150</p>
-            <div className="flex flex-col items-start justify-end text-xl">
-              <p>Tasks <br/>Completed</p>
+            <div className="flex items-center justify-between gap-10 w-[max-content]">
+              <p className="text-6xl font-bold text-7xl">150</p>
+              <div className="flex flex-col items-start justify-end text-xl">
+                <p>
+                  Tasks <br />
+                  Completed
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      </div> 
-        {/* cards */}
-        <div className="flex flex-row gap-6">
+      {/* cards */}
+      <div className="flex flex-row gap-6">
         {/* Left side card */}
         <CardWrapper className="font-gilroy flex-col max-w-lg">
           {" "}
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-white text-xl font-semibold">Projects List</h2>
-             </div>
-             <div className="flex items-center justify-between gap-2">
+              <h2 className="text-white text-xl font-semibold">
+                Projects List
+              </h2>
+            </div>
+            <div className="flex items-center justify-between gap-2">
               <div className="border border-[#5B5D79] rounded-2xl">
-                <button className="font-semibold text-sm mx-2"> Nearest Due Date ▼ </button>
+                <button className="font-semibold text-sm mx-2">
+                  {" "}
+                  Nearest Due Date ▼{" "}
+                </button>
               </div>
               <button className="bg-[#66ACFF] text-white p-2 rounded-xl hover:bg-[#fbbf24] transition-all">
                 <svg
@@ -228,7 +221,7 @@ export default function KanbanBoard() {
                   />
                 </svg>
               </button>
-              </div>
+            </div>
           </div>
           {/* Members List */}
           <div className="space-y-1 grid grid-cols-2 grid-rows-3 gap-3">
@@ -246,8 +239,8 @@ export default function KanbanBoard() {
                   <div className={`avatar ${project.isActive ? "online" : ""}`}>
                     <div className="w-7 h-7 rounded-full">
                       <p>
-                        {project.name.slice(0,1)}
-                        {project.name.split(" ")[1].slice(0,1) }
+                        {project.name.slice(0, 1)}
+                        {project.name.split(" ")[1].slice(0, 1)}
                       </p>
                     </div>
                   </div>
@@ -290,7 +283,6 @@ export default function KanbanBoard() {
               </div>
             ))}
           </div>
-          
         </CardWrapper>
         {/* Right side card */}
         <CardWrapper className="font-gilroy flex-col max-w-lg">
@@ -341,7 +333,7 @@ export default function KanbanBoard() {
                 className={`flex items-center justify-between p-4 rounded-2xl transition-all ${
                   member.isActive
                     ? "bg-emerald-600/30 border border-emerald-500/50"
-                  : "bg-gradient-to-r from-[#152E6A] to-[#1A1F37]"
+                    : "bg-gradient-to-r from-[#152E6A] to-[#1A1F37]"
                 }`}
               >
                 {/* Left Side - Avatar and Info */}
@@ -359,21 +351,21 @@ export default function KanbanBoard() {
                   </div>
                 </div>
                 <div>
-                <button className="text-gray-400 hover:text-white transition-colors p-2">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                    />
-                  </svg>
-                </button>
+                  <button className="text-gray-400 hover:text-white transition-colors p-2">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                      />
+                    </svg>
+                  </button>
                 </div>
                 {/* Right Side - Action Icons */}
                 {member.isActive && (
@@ -391,10 +383,9 @@ export default function KanbanBoard() {
               </div>
             ))}
           </div>
-          
         </CardWrapper>
-        </div>
-      
+      </div>
+
       {/* Task List */}
       <div className="flex w-full bg-gradient-to-r  from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
         {/* Header */}
@@ -402,21 +393,21 @@ export default function KanbanBoard() {
           <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Task List</h1>
           <div className="flex items-center gap-2">
             <button className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 rounded-xl transition-all">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                <span>Add New</span>
-              </button>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              <span>Add New</span>
+            </button>
             <span className="text-gray-400 text-sm">Sort by</span>
             <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
               Top
@@ -475,19 +466,20 @@ export default function KanbanBoard() {
 
           {/* Action Buttons */}
           <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg  
+            <svg
               className="w-5 h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path 
-                stroke-linecap="round" 
-                stroke-linejoin="round" 
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
                 strokeWidth={2}
-                d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5" />
-              </svg>
-           </button>
+                d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
+              />
+            </svg>
+          </button>
 
           <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
             <svg
@@ -570,11 +562,31 @@ export default function KanbanBoard() {
                   <td className="py-4 px-4 text-gray-400">{task.estimation}</td>
                   <td className="py-4 px-4 text-gray-400">{task.priority}</td>
                   <td className="py-4 px-4 text-gray-400">
-                    <progress className="progress progress-success w-56" value="70" max="100"></progress>
-                    {task.progress}</td>
-                  <td className="flex items-center py-4 px-4 text-gray-400">{task.assignee.map((item, index)=> (
-                    <img className={`rounded-full w-8 h-8 ${index > 0 ? "-ml-12" : ""}`} src={item.avatar} alt={item.name}/>
-                  ))}</td>
+                    <progress
+                      className="progress progress-success w-56"
+                      value="70"
+                      max="100"
+                    ></progress>
+                    {task.progress}
+                  </td>
+                  <td className="flex items-center py-4 px-4 text-gray-400">
+                    {task.assignee.map((item, index) => (
+                      <div
+                        key={index}
+                        className={`avatar 
+              ${index !== 0 ? "-ml-2" : ""} 
+              transition-transform duration-300 z-${task.assignee.length - index}`}
+                      >
+                        <div className="w-[40px] h-[40px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
+                          <img
+                            src={item.avatar}
+                            alt={`User ${index}`}
+                            className="w-[40px] h-[40px] rounded-full object-cover"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-2">
                       <button className="text-gray-400 hover:text-white transition-colors p-2">
@@ -606,7 +618,6 @@ export default function KanbanBoard() {
                 </tr>
               ))}
             </tbody>
-
           </table>
         </div>
       </div>
@@ -614,29 +625,90 @@ export default function KanbanBoard() {
       {/* Pagination */}
       <div className="flex w-full bg-gradient-to-r  from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
         <div class="flex flex-1 justify-between sm:hidden">
-          <a href="#" class="relative inline-flex items-center rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10">Previous</a>
-          <a href="#" class="relative ml-3 inline-flex items-center rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10">Next</a>
+          <a
+            href="#"
+            class="relative inline-flex items-center rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
+          >
+            Previous
+          </a>
+          <a
+            href="#"
+            class="relative ml-3 inline-flex items-center rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
+          >
+            Next
+          </a>
         </div>
         <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-          
           <div>
-            <nav aria-label="Pagination" class="isolate inline-flex -space-x-px rounded-2xl">
-              <a href="#" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0">
+            <nav
+              aria-label="Pagination"
+              class="isolate inline-flex -space-x-px rounded-2xl"
+            >
+              <a
+                href="#"
+                class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+              >
                 <span class="sr-only">Previous</span>
-                <svg viewBox="0 0 20 20" fill="currentColor" data-slot="icon" aria-hidden="true" class="size-5">
-                  <path d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" fill-rule="evenodd" />
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  data-slot="icon"
+                  aria-hidden="true"
+                  class="size-5"
+                >
+                  <path
+                    d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
+                    clip-rule="evenodd"
+                    fill-rule="evenodd"
+                  />
                 </svg>
               </a>
               {/* <!-- Current: "z-10 text-white focus-visible:outline-2 focus-visible:outline-offset-2 bg-indigo-500 focus-visible:outline-indigo-500", Default: "inset-ring focus:outline-offset-0 text-gray-200 inset-ring-gray-700 hover:bg-white/5" --> */}
-              <a href="#" aria-current="page" class="relative z-10 inline-flex items-center bg-[#656A80] px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">1</a>
-              <a href="#" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0">2</a>
-              <a href="#" class="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-200 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0 md:inline-flex">3</a>
-              <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-400 inset-ring inset-ring-gray-700 focus:outline-offset-0">...</span>
-              <a href="#" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0">10</a>
-              <a href="#" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0">
+              <a
+                href="#"
+                aria-current="page"
+                class="relative z-10 inline-flex items-center bg-[#656A80] px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              >
+                1
+              </a>
+              <a
+                href="#"
+                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+              >
+                2
+              </a>
+              <a
+                href="#"
+                class="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-200 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0 md:inline-flex"
+              >
+                3
+              </a>
+              <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-400 inset-ring inset-ring-gray-700 focus:outline-offset-0">
+                ...
+              </span>
+              <a
+                href="#"
+                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+              >
+                10
+              </a>
+              <a
+                href="#"
+                class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+              >
                 <span class="sr-only">Next</span>
-                <svg viewBox="0 0 20 20" fill="currentColor" data-slot="icon" aria-hidden="true" class="size-5">
-                  <path d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" />
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  data-slot="icon"
+                  aria-hidden="true"
+                  class="size-5"
+                >
+                  <path
+                    d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
+                    clip-rule="evenodd"
+                    fill-rule="evenodd"
+                  />
                 </svg>
               </a>
             </nav>
@@ -654,7 +726,6 @@ export default function KanbanBoard() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
