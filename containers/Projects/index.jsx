@@ -5,7 +5,7 @@ import CardWrapper from "@/components/CardWrapper";
 import { useState } from "react";
 import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
-import {  FaCircle} from "react-icons/fa";
+import { FaCircle } from "react-icons/fa";
 
 export default function KanbanBoard() {
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -163,43 +163,41 @@ export default function KanbanBoard() {
       <h1 className="font-bold text-2xl">Task overveiw</h1>
       <div className="w-full px-3 gap-10 flex items-center justify-between font-gilroy mt-6 mb-6">
         {/* LEFT SIDE */}
-        <div>
-          <div className="flex items-center justify-between w-full gap-3">
-            <div className="flex items-center justify-between gap-10 w-[max-content]">
-              <p className="text-7xl font-bold font-gilroy">80</p>
-              <div className="flex flex-col items-start justify-end text-xl w-30">
-                <p>
-                  Total <br />
-                  Tasks
-                </p>
-              </div>
+        <div className="flex items-center justify-between w-full gap-3">
+          <div className="flex items-center justify-left gap-10 w-full ">
+            <p className="text-7xl font-bold font-gilroy">80</p>
+            <div className="flex flex-col items-start justify-end text-xl w-30">
+              <p>
+                Total <br />
+                Tasks
+              </p>
             </div>
-            <div className="flex items-center justify-between gap-10 w-[max-content]">
-              <p className="text-6xl font-bold text-7xl">15</p>
-              <div className="flex flex-col items-right justify-end text-xl w-40">
-                <p>
-                  Tasks Due <br />
-                  Today
-                </p>
-              </div>
+          </div>
+          <div className="flex items-center justify-left gap-10 w-full">
+            <p className="text-6xl font-bold text-7xl">15</p>
+            <div className="flex flex-col items-right justify-end text-xl w-40">
+              <p>
+                Tasks Due <br />
+                Today
+              </p>
             </div>
-            <div className="flex items-center justify-between gap-10 w-[max-content]">
-              <p className="text-6xl font-bold text-7xl">20</p>
-              <div className="flex flex-col items-start justify-end text-xl">
-                <p>
-                  Overdue <br />
-                  Tasks
-                </p>
-              </div>
+          </div>
+          <div className="flex items-center justify-left gap-10 w-full">
+            <p className="text-6xl font-bold text-7xl">20</p>
+            <div className="flex flex-col items-start justify-end text-xl">
+              <p>
+                Overdue <br />
+                Tasks
+              </p>
             </div>
-            <div className="flex items-center justify-between gap-10 w-[max-content]">
-              <p className="text-6xl font-bold text-7xl">150</p>
-              <div className="flex flex-col items-start justify-end text-xl">
-                <p>
-                  Tasks <br />
-                  Completed
-                </p>
-              </div>
+          </div>
+          <div className="flex items-center justify-left gap-10 w-full">
+            <p className="text-6xl font-bold text-7xl">150</p>
+            <div className="flex flex-col items-start justify-end text-right text-xl">
+              <p>
+                Tasks <br />
+                Completed
+              </p>
             </div>
           </div>
         </div>
@@ -207,7 +205,7 @@ export default function KanbanBoard() {
       {/* cards */}
       <div className="flex flex-row gap-6">
         {/* Left side card */}
-        <CardWrapper className="font-gilroy flex-col max-w-lg">
+        <CardWrapper className="font-gilroy flex-col ">
           {" "}
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -216,11 +214,11 @@ export default function KanbanBoard() {
                 Projects List
               </h2>
             </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="border border-[#5B5D79] rounded-2xl">
-                <button className="font-semibold text-sm mx-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="border border-[#FFFFFF]/30 rounded-full px-2 py-2">
+                <button className="font-semibold text-[14.74px] mx-2">
                   {" "}
-                  Nearest Due Date ▼{" "}
+                  Nearest Due Date <span className="ml-3">▼</span>
                 </button>
               </div>
               <button className="bg-[#66ACFF] text-white p-2 rounded-xl hover:bg-[#fbbf24] transition-all">
@@ -260,16 +258,16 @@ export default function KanbanBoard() {
             {projects.map((project) => (
               <div
                 key={project.id}
-                className={`flex items-center justify-between p-1 rounded-2xl border-2 border-[#62647A] transition-all ${
+                className={`flex  items-center justify-between w-full font-gilroy  border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl  ${
                   project.isActive
-                    ? "bg-emerald-600/30 border border-emerald-500/50"
-                    : "bg-gradient-to-r from-[#1A1F37] via-[#214A52] to-[#1A1F37]"
+                    ? "bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]"
+                    : "bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]"
                 }`}
               >
                 {/* Left Side - Avatar and Info */}
                 <div className="flex items-center gap-3">
                   <div className={`avatar ${project.isActive ? "online" : ""}`}>
-                    <div className="w-8 h-8 text-center justify-center border-2 border-[#62647A] rounded-full bg-gradient-to-r from-[#67D389] to-[#19253A]">
+                    <div className="w-8 h-8 text-center justify-center border-2 border-[#62647A] rounded-full bg-gradient-to-r from-[#01e590] to-[#17323f]">
                       <p className="mt-1">
                         {project.name.slice(0, 1)}
                         {project.name.split(" ")[1].slice(0, 1)}
@@ -317,7 +315,7 @@ export default function KanbanBoard() {
           </div>
         </CardWrapper>
         {/* Right side card */}
-        <CardWrapper className="font-gilroy flex-col max-w-lg">
+        <CardWrapper className="font-gilroy flex-col">
           {" "}
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -362,10 +360,10 @@ export default function KanbanBoard() {
             {members.map((member) => (
               <div
                 key={member.id}
-                className={`flex items-center justify-between p-4 border-2 border-[#62647A] rounded-2xl transition-all ${
+                className={`flex  items-center justify-between w-full font-gilroy  border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl ${
                   member.isActive
                     ? "bg-emerald-600/30 border border-emerald-500/50"
-                    : "bg-gradient-to-r from-[#152E6A] to-[#1A1F37]"
+                    : "bg-gradient-to-r from-[#0d2963] via-[#0d2963] to-[#19213d]"
                 }`}
               >
                 {/* Left Side - Avatar and Info */}
@@ -435,10 +433,9 @@ export default function KanbanBoard() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 4v16m8-8H4 " 
+                  d="M12 4v16m8-8H4 "
                 />
               </svg>
-              
             </button>
             <span className="text-gray-400 text-sm">Sort by</span>
             <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
@@ -592,17 +589,19 @@ export default function KanbanBoard() {
                   <td className="py-4 px-4 text-sm">{task.taskName}</td>
                   <td className="py-4 px-4 text-gray-400 text-sm flex gap-2">
                     <p className="w-8 h-8 text-center justify-center bg-[#656A80] text-xl font-bold text-white rounded-full">
-                        {task.project.slice(0, 1)}
-                        {task.project.split(" ")[1].slice(0, 1)}
-                      </p>
+                      {task.project.slice(0, 1)}
+                      {task.project.split(" ")[1].slice(0, 1)}
+                    </p>
                     {task.project}
-                    </td>
-                  <td className="py-4 px-4 text-gray-400">{task.estimation}</td>
-                  <td className="py-4 px-4 text-[#FB5874] flex flex-row justify-center gap-2 text-sm">
-                    <FaCircle className="text-[#FB5874]" />
-                    {task.priority}
                   </td>
-                  <td className="py-4 px-4 text-gray-400 flex gap-2 text-sm">
+                  <td className="py-4 px-4 text-gray-400">{task.estimation}</td>
+                  <td className="py-4 px-4 text-[#FB5874] text-sm">
+                    <div className="flex items-center gap-3">
+                      <FaCircle className="text-[#FB5874]" />
+                      {task.priority}
+                    </div>
+                  </td>
+                  <td className="py-4 px-4 text-gray-400  text-sm">
                     <progress
                       className="progress progress-success w-25 "
                       value="70"
@@ -765,10 +764,23 @@ export default function KanbanBoard() {
               entries
             </p>
             <div className="dropdown dropdown-top">
-              <div tabIndex={0} role="button" className="btn border-none m-1 bg-white text-[#161618] rounded-xl">Show 8 </div>
-              <ul tabIndex="-1" className="dropdown-content menu bg-white text-[#161618] rounded-xl z-1 w-52 ">
-                <li><a>Item 1</a></li>
-                <li><a>Item 2</a></li>
+              <div
+                tabIndex={0}
+                role="button"
+                className="btn border-none m-1 bg-white text-[#161618] rounded-xl"
+              >
+                Show 8{" "}
+              </div>
+              <ul
+                tabIndex="-1"
+                className="dropdown-content menu bg-white text-[#161618] rounded-xl z-1 w-52 "
+              >
+                <li>
+                  <a>Item 1</a>
+                </li>
+                <li>
+                  <a>Item 2</a>
+                </li>
               </ul>
             </div>
           </div>
