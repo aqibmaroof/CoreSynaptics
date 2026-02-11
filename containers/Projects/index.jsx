@@ -5,6 +5,7 @@ import CardWrapper from "@/components/CardWrapper";
 import { useState } from "react";
 import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
+import {  FaCircle} from "react-icons/fa";
 
 export default function KanbanBoard() {
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -95,6 +96,37 @@ export default function KanbanBoard() {
   const tasks = [
     {
       id: 1,
+      taskName: "Finalize Project Proposal",
+      project: "Website Redesign",
+      estimation: "01 Nov - 7 Nov 2026",
+      priority: "Urgent",
+      progress: "80%",
+      assignee: [
+        {
+          id: 1,
+          name: "Rainer Brown",
+          email: "Rainerbrown@mail.com",
+          avatar: "/images/assignee1.jpg",
+          bgColor: "bg-purple-500/20",
+        },
+        {
+          id: 2,
+          name: "Conny Rany",
+          email: "connyrany@mail.com",
+          avatar: "/images/assignee2.jpg",
+          bgColor: "bg-emerald-500/20",
+        },
+        {
+          id: 3,
+          name: "Armin Falcon",
+          email: "arfalcon@mail.com",
+          avatar: "/images/assignee3.jpg",
+          bgColor: "bg-gray-500/20",
+        },
+      ],
+    },
+    {
+      id: 2,
       taskName: "Finalize Project Proposal",
       project: "Website Redesign",
       estimation: "01 Nov - 7 Nov 2026",
@@ -228,7 +260,7 @@ export default function KanbanBoard() {
             {projects.map((project) => (
               <div
                 key={project.id}
-                className={`flex items-center justify-between p-4 rounded-2xl transition-all ${
+                className={`flex items-center justify-between p-1 rounded-2xl border-2 border-[#62647A] transition-all ${
                   project.isActive
                     ? "bg-emerald-600/30 border border-emerald-500/50"
                     : "bg-gradient-to-r from-[#1A1F37] via-[#214A52] to-[#1A1F37]"
@@ -237,8 +269,8 @@ export default function KanbanBoard() {
                 {/* Left Side - Avatar and Info */}
                 <div className="flex items-center gap-3">
                   <div className={`avatar ${project.isActive ? "online" : ""}`}>
-                    <div className="w-7 h-7 rounded-full">
-                      <p>
+                    <div className="w-8 h-8 text-center justify-center border-2 border-[#62647A] rounded-full bg-gradient-to-r from-[#67D389] to-[#19253A]">
+                      <p className="mt-1">
                         {project.name.slice(0, 1)}
                         {project.name.split(" ")[1].slice(0, 1)}
                       </p>
@@ -326,18 +358,18 @@ export default function KanbanBoard() {
             </div>
           </div>
           {/* Managers List */}
-          <div className="space-y-1 grid grid-cols-2 grid-rows-3 gap-3 ">
+          <div className="space-y-1 grid grid-cols-2 grid-rows-3 gap-3">
             {members.map((member) => (
               <div
                 key={member.id}
-                className={`flex items-center justify-between p-4 rounded-2xl transition-all ${
+                className={`flex items-center justify-between p-4 border-2 border-[#62647A] rounded-2xl transition-all ${
                   member.isActive
                     ? "bg-emerald-600/30 border border-emerald-500/50"
                     : "bg-gradient-to-r from-[#152E6A] to-[#1A1F37]"
                 }`}
               >
                 {/* Left Side - Avatar and Info */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 ">
                   <div className={`avatar ${member.isActive ? "online" : ""}`}>
                     <div className="w-7 h-7 rounded-full">
                       <img src={member.avatar} alt={member.name} />
@@ -387,12 +419,12 @@ export default function KanbanBoard() {
       </div>
 
       {/* Task List */}
-      <div className="flex w-full bg-gradient-to-r  from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
+      <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Task List</h1>
           <div className="flex items-center gap-2">
-            <button className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 rounded-xl transition-all">
+            <button className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all">
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -403,10 +435,10 @@ export default function KanbanBoard() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 4v16m8-8H4"
+                  d="M12 4v16m8-8H4 " 
                 />
               </svg>
-              <span>Add New</span>
+              
             </button>
             <span className="text-gray-400 text-sm">Sort by</span>
             <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
@@ -525,10 +557,10 @@ export default function KanbanBoard() {
                   Task Name
                 </th>
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Projects
+                  Project
                 </th>
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Estimations
+                  Estimation
                 </th>
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
                   Priority
@@ -557,13 +589,22 @@ export default function KanbanBoard() {
                       className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
                     />
                   </td>
-                  <td className="py-4 px-4">{task.taskName}</td>
-                  <td className="py-4 px-4 text-gray-400">{task.project}</td>
+                  <td className="py-4 px-4 text-sm">{task.taskName}</td>
+                  <td className="py-4 px-4 text-gray-400 text-sm flex gap-2">
+                    <p className="w-8 h-8 text-center justify-center bg-[#656A80] text-xl font-bold text-white rounded-full">
+                        {task.project.slice(0, 1)}
+                        {task.project.split(" ")[1].slice(0, 1)}
+                      </p>
+                    {task.project}
+                    </td>
                   <td className="py-4 px-4 text-gray-400">{task.estimation}</td>
-                  <td className="py-4 px-4 text-gray-400">{task.priority}</td>
-                  <td className="py-4 px-4 text-gray-400">
+                  <td className="py-4 px-4 text-[#FB5874] flex flex-row justify-center gap-2 text-sm">
+                    <FaCircle className="text-[#FB5874]" />
+                    {task.priority}
+                  </td>
+                  <td className="py-4 px-4 text-gray-400 flex gap-2 text-sm">
                     <progress
-                      className="progress progress-success w-56"
+                      className="progress progress-success w-25 "
                       value="70"
                       max="100"
                     ></progress>
@@ -574,8 +615,8 @@ export default function KanbanBoard() {
                       <div
                         key={index}
                         className={`avatar 
-              ${index !== 0 ? "-ml-2" : ""} 
-              transition-transform duration-300 z-${task.assignee.length - index}`}
+                        ${index !== 0 ? "-ml-2" : ""} 
+                        transition-transform duration-300 z-${task.assignee.length - index}`}
                       >
                         <div className="w-[40px] h-[40px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
                           <img
@@ -646,7 +687,7 @@ export default function KanbanBoard() {
             >
               <a
                 href="#"
-                class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+                class="relative inline-flex items-center rounded-xl mr-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
               >
                 <span class="sr-only">Previous</span>
                 <svg
@@ -667,34 +708,34 @@ export default function KanbanBoard() {
               <a
                 href="#"
                 aria-current="page"
-                class="relative z-10 inline-flex items-center bg-[#656A80] px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                class="relative z-10 inline-flex items-center bg-[#656A80] px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 rounded-xl focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
               >
                 1
               </a>
               <a
                 href="#"
-                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0"
               >
                 2
               </a>
               <a
                 href="#"
-                class="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-200 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0 md:inline-flex"
+                class="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0 md:inline-flex"
               >
                 3
               </a>
-              <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-400 inset-ring inset-ring-gray-700 focus:outline-offset-0">
+              <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-400 rounded-xl focus:outline-offset-0">
                 ...
               </span>
               <a
                 href="#"
-                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0"
               >
                 10
               </a>
               <a
                 href="#"
-                class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+                class="relative inline-flex items-center rounded-xl ml-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
               >
                 <span class="sr-only">Next</span>
                 <svg
@@ -713,7 +754,7 @@ export default function KanbanBoard() {
               </a>
             </nav>
           </div>
-          <div>
+          <div className="flex items-center justify-between gap-4">
             <p class="text-sm text-gray-300">
               Showing
               <span class="font-medium"> 1 </span>
@@ -723,6 +764,13 @@ export default function KanbanBoard() {
               <span class="font-medium"> 97 </span>
               entries
             </p>
+            <div className="dropdown dropdown-top">
+              <div tabIndex={0} role="button" className="btn border-none m-1 bg-white text-[#161618] rounded-xl">Show 8 </div>
+              <ul tabIndex="-1" className="dropdown-content menu bg-white text-[#161618] rounded-xl z-1 w-52 ">
+                <li><a>Item 1</a></li>
+                <li><a>Item 2</a></li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
