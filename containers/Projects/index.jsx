@@ -6,10 +6,12 @@ import { useState } from "react";
 import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
 import { FaCircle } from "react-icons/fa";
+import {useRouter} from "next/navigation"
 
 export default function KanbanBoard() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter();
 
   const projects = [
     {
@@ -422,7 +424,8 @@ export default function KanbanBoard() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Task List</h1>
           <div className="flex items-center gap-2">
-            <button className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all">
+            <button onClick={()=> router.push("/CreateProject")} className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all">
+              <div className="flex flex-row gap-2">
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -436,6 +439,8 @@ export default function KanbanBoard() {
                   d="M12 4v16m8-8H4 "
                 />
               </svg>
+              <span>Add new</span>
+              </div>
             </button>
             <span className="text-gray-400 text-sm">Sort by</span>
             <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
@@ -791,5 +796,7 @@ export default function KanbanBoard() {
         </div>
       </div>
     </div>
+    
+    
   );
 }
