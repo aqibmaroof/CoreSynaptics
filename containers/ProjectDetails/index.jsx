@@ -2,8 +2,11 @@
 import { FaCircle } from "react-icons/fa";
 import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
+import {useRouter} from "next/navigation"
+
 
 export default function KanbanBoard() {
+    const router = useRouter();
 
   const members = [
     {
@@ -218,7 +221,7 @@ export default function KanbanBoard() {
                 </span>
               </div>
             </button>
-            <button  className="btn mt-5 bg-transparent  text-white p-2 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
+            <button onClick={()=> router.push("/KanbanView")} className="btn mt-5 bg-transparent  text-white p-2 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
               <div className="flex flex-row gap-2">
               {/* <svg
                 className="w-5 h-5"
