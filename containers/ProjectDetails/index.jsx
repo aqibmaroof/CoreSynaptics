@@ -241,7 +241,7 @@ export default function KanbanBoard() {
                 </span>
               </div>
             </button>
-            <button  className="btn mt-5 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] text-white p-2  rounded-3xl transition-all">
+            <button onClick={()=> router.push("/CalendarView")} className="btn  mt-5 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] text-white p-2  rounded-3xl transition-all">
               <div className="flex flex-row gap-2">
               {/* <svg
                 className="w-5 h-5"
@@ -517,6 +517,7 @@ export default function KanbanBoard() {
                 </tr>
             ))}
            </div>
+           
          </div>
          {/* In Progress */}
          <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
