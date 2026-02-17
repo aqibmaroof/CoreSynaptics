@@ -1,96 +1,27 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import config from "../../../config";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { LoginService, GetUser } from "../../../services/auth";
-import { setUser } from "../../../services/instance/tokenService";
+import { ResetPassword } from "../../../services/auth";
 
 const LoginPage = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  const [rememberMe, setRememberMe] = useState(false);
 
   // State to hold the login payload
   const [formData, setFormData] = useState({
     email: "",
-    phone: "",
+    code: "",
     password: "",
   });
-
-  // Load saved credentials on component mount
-  useEffect(() => {
-    loadSavedCredentials();
-  }, []);
-
-  const loadSavedCredentials = () => {
-    try {
-      const savedEmail = localStorage.getItem("rememberedEmail");
-      const savedPassword = localStorage.getItem("rememberedPassword");
-      const wasRemembered = localStorage.getItem("rememberMe") === "true";
-
-      if (wasRemembered && savedEmail) {
-        setFormData((prev) => ({
-          ...prev,
-          email: savedEmail,
-          password: savedPassword || "",
-        }));
-        setRememberMe(true);
-      }
-    } catch (error) {
-      console.error("Error loading saved credentials:", error);
-    }
-  };
-
-  /**
-   * Save credentials to localStorage
-   * Called when user successfully logs in with "Remember Me" checked
-   */
-  const saveCredentials = () => {
-    try {
-      if (rememberMe) {
-        localStorage.setItem("rememberedEmail", formData.email);
-        localStorage.setItem("rememberedPassword", formData.password);
-        localStorage.setItem("rememberMe", "true");
-      } else {
-        // Clear saved credentials if "Remember Me" is unchecked
-        clearSavedCredentials();
-      }
-    } catch (error) {
-      console.error("Error saving credentials:", error);
-    }
-  };
-
-  /**
-   * Clear saved credentials from localStorage
-   * Called when user unchecks "Remember Me" or logs out
-   */
-  const clearSavedCredentials = () => {
-    try {
-      localStorage.removeItem("rememberedEmail");
-      localStorage.removeItem("rememberedPassword");
-      localStorage.removeItem("rememberMe");
-    } catch (error) {
-      console.error("Error clearing credentials:", error);
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleRememberMeChange = (e) => {
-    const checked = e.target.checked;
-    setRememberMe(checked);
-
-    // If unchecking, immediately clear saved credentials
-    if (!checked) {
-      clearSavedCredentials();
-    }
   };
 
   const handleLogin = async (e) => {
@@ -99,43 +30,23 @@ const LoginPage = () => {
     setMessage({ type: "", text: "" });
 
     try {
-      const response = await LoginService(formData);
+      const response = await ResetPassword(formData);
       console.log(response);
       if (response) {
-        setMessage({ type: "success", text: "Login successful! 🚀" });
-
-        // Save credentials if "Remember Me" is checked
-        saveCredentials();
-
-        // const userResponse = await GetUser();
-        // setUser({ user: userResponse });
-
-        setTimeout(() => router.push("/"), 2000);
+        setMessage({ type: "success", text: "Password reset successful! 🚀" });
       } else {
         setMessage({
           type: "error",
-          text: response?.message || "Login failed.",
+          text: response?.message || "Password reset failed.",
         });
-
-        // Don't save credentials on failed login
-        if (rememberMe) {
-          clearSavedCredentials();
-          setRememberMe(false);
-        }
       }
     } catch (error) {
       setMessage({
         type: "error",
         text: Array.isArray(error?.message)
           ? error?.message?.[0]
-          : error?.message || "An error occurred during login.",
+          : error?.message || "An error occurred during password reset.",
       });
-
-      // Don't save credentials on error
-      if (rememberMe) {
-        clearSavedCredentials();
-        setRememberMe(false);
-      }
     } finally {
       setLoading(false);
     }
@@ -170,7 +81,8 @@ const LoginPage = () => {
             Nice to see you!
           </h2>
           <p className="text-[14px] text-[#101437] dark:text-gray-300">
-            Enter your email and password to sign in
+            Enter your email and code along with your new password to reset your
+            password.
           </p>
         </div>
 
@@ -194,7 +106,25 @@ const LoginPage = () => {
               />
             </div>
           </div>
-
+          {/* Code */}
+          <div className="flex flex-col items-start justify-center">
+            <label className="label py-1">
+              <span className="label-text text-lg text-[#101437] dark:text-white">
+                Code
+              </span>
+            </label>
+            <div className="w-full max-w-lg">
+              <input
+                type="text"
+                name="code"
+                value={formData.code}
+                onChange={handleChange}
+                placeholder="Your code"
+                required
+                className="input w-full bg-transparent backdrop-blur-[42px] border-3 border-white/[0.03] border-t-white/[0.09] rounded-2xl px-4 text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-white/[0.03] focus:border-t-white/[0.09] h-13"
+              />
+            </div>
+          </div>
           {/* Password Field */}
           <div className="form-control w-full">
             <label className="label py-1">
@@ -221,29 +151,6 @@ const LoginPage = () => {
                 {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
               </button>
             </div>
-          </div>
-
-          {/* Remember Me Checkbox */}
-          <div className="flex items-center justify-between">
-            <fieldset className="fieldset">
-              <label className="label text-[#FFFFFF] text-[12px]">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={handleRememberMeChange}
-                  className="toggle border-blue-100 h-5 bg-blue-100 text-[#0075FF] checked:border-[#0075FF] checked:bg-[#0075FF] checked:text-[#fff]"
-                />
-                Remember me
-              </label>
-            </fieldset>
-            <fieldset className="fieldset">
-              <a
-                href="/Auth/ForgotPassword"
-                className="label text-[#FFFFFF] text-[12px]"
-              >
-                Forgot Password ?
-              </a>
-            </fieldset>
           </div>
 
           {/* Status Messages */}
@@ -287,10 +194,10 @@ const LoginPage = () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                SIGNING IN...
+                RESETTING PASSWORD...
               </span>
             ) : (
-              "SIGN IN"
+              "Reset Password"
             )}
           </button>
         </form>

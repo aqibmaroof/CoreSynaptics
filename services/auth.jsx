@@ -15,8 +15,62 @@ export const LoginService = async (credentials) => {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
       });
-      
     }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const ChangePassword = async (payload) => {
+  try {
+    const data = await sendRequest({
+      url: "/auth/change-password",
+      method: "POST",
+      data: payload,
+    });
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const ForgotPassword = async (payload) => {
+  try {
+    const data = await sendRequest({
+      url: "/auth/forgot-password",
+      method: "POST",
+      data: payload,
+    });
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const Logout = async () => {
+  try {
+    const data = await sendRequest({
+      url: "/auth/logout",
+      method: "POST",
+    });
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const ResetPassword = async (payload) => {
+  try {
+    const data = await sendRequest({
+      url: "/auth/reset-password",
+      method: "POST",
+      data: payload,
+    });
 
     return data;
   } catch (error) {

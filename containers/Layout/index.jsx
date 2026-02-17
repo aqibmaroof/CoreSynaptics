@@ -2,15 +2,7 @@
 "use client";
 import Sidebar from "../../components/sidebar";
 import { FaBell, FaSun, FaMoon, FaArrowLeft } from "react-icons/fa";
-import {
-  FiCreditCard,
-  FiDollarSign,
-  FiHelpCircle,
-  FiPower,
-  FiSearch,
-  FiSettings,
-  FiUser,
-} from "react-icons/fi";
+import { FiPower, FiSearch, FiSettings, FiUser } from "react-icons/fi";
 import config from "../../config";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
@@ -20,6 +12,7 @@ import {
 } from "../../services/instance/tokenService";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { getUser } from "../../services/instance/tokenService";
+import { Logout } from "@/services/auth";
 
 const Layout = ({ children }) => {
   const router = useRouter();
@@ -34,11 +27,7 @@ const Layout = ({ children }) => {
     const { value } = e.target;
     setSearch(value);
   };
-  console.log(
-    "User Data in Layout:",
-    pathname,
-    `/Profile/Managers/${params?.id}`,
-  );
+
   // Wait for client to mount to avoid SSR mismatch
   useEffect(() => {
     setMounted(true);
@@ -52,14 +41,20 @@ const Layout = ({ children }) => {
     if (!mounted) return;
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
-  const handleLogout = () => {
-    clearTokens();
-    router.push("/Auth/Login");
+  const handleLogout = async () => {
+    try {
+      const response = await Logout();
+      console.log(response);
+      clearTokens();
+      router.push("/Auth/Login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   // Do not render theme-dependent UI until mounted
   if (!mounted) return null;
-  console.log(pathname);
+
   return (
     <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat  flex flex-col min-h-screen">
       {/* Content Area */}
@@ -147,7 +142,7 @@ const Layout = ({ children }) => {
                   </label>
                   <ul
                     tabIndex={0}
-                    className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-60 border border-gray-700/10 dark:border-white/10"
+                    className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-60 border border-gray-700/10 dark:border-white/10"
                   >
                     {/* User Info Header */}
                     <li className=" flex flex-row items-center justify-start">

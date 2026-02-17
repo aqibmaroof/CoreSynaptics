@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { ChangePassword } from "../../services/auth";
 
 export default function ProfilePage() {
   const [formData, setFormData] = useState({
@@ -23,6 +24,19 @@ export default function ProfilePage() {
     suffix: "",
   });
 
+  const [passwordFormData, setPasswordFormData] = useState({
+    currentPassword: "current_password",
+    newPassword: "new_secure_password",
+    confirmNewPassword: "new_secure_password",
+  });
+
+  const handlePasswordChange = (e) => {
+    setPasswordFormData({
+      ...passwordFormData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -40,6 +54,18 @@ export default function ProfilePage() {
     // Add your discard logic here
   };
 
+  const UpdatePassword = async () => {
+    try {
+      const payload = {
+        currentPassword: passwordFormData.currentPassword,
+        newPassword: passwordFormData.newPassword,
+      };
+      const response = await ChangePassword(payload);
+      console.log(response);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <div className="min-h-screen p-6">
       <style jsx>{`
@@ -136,6 +162,54 @@ export default function ProfilePage() {
               Confirm that you have access to {formData.senderEmail} in sender
               email settings.
             </p>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-2xl p-6">
+          <h2 className="text-white text-xl font-semibold mb-6">
+            Pasword Change
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Store Name */}
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">
+                Current Password
+              </label>
+              <input
+                type="password"
+                name="currentPassword"
+                value={formData.currentPassword}
+                onChange={handlePasswordChange}
+                placeholder="Enter current password"
+                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy border border-gray-600 rounded-xl px-4 py-3 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
+              />
+            </div>
+
+            {/* Sender email */}
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">
+                New Password
+              </label>
+              <input
+                type="password"
+                name="newPassword"
+                value={formData.newPassword}
+                onChange={handlePasswordChange}
+                placeholder="Enter new password"
+                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Warning Alert */}
+          <div className="mt-6 ">
+            <button
+              className="btn btn-info btn-outline"
+              onClick={() => UpdatePassword()}
+            >
+              Update Password
+            </button>
           </div>
         </div>
 

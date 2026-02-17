@@ -62,12 +62,12 @@ export default function RegisterPage() {
   const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
 
   return (
-    <div className="flex min-h-screen bg-[#f6f6f6] dark:bg-[#101437]">
+    <div className="flex min-h-screen">
       {/* Left Side: Illustration (Hidden on mobile) */}
       <div className="bg-[url('/images/login-illustration.png')] bg-cover bg-center bg-no-repeat w-full flex items-center justify-center "></div>
 
       {/* Right Side: Form */}
-      <div className="flex flex-col justify-center w-full lg:w-1/3 p-8 md:p-16 overflow-y-auto">
+      <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat flex flex-col justify-center w-full lg:w-1/3 p-8 md:p-16 overflow-y-auto">
         <div className="flex items-center gap-2 mb-6">
           <img src={config?.brand} className="w-70 h-auto dark:hidden" />
           <img src={config?.brand} className="w-70 h-auto hidden dark:block" />
