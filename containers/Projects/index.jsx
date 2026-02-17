@@ -549,7 +549,7 @@ export default function KanbanBoard() {
         </div>
         {/* Table */}
         <div className="overflow-x-auto ml-4">
-          <table className="w-full ">
+          <table className="w-full flex flex-col">
             <thead className="bg-[#080C26] rounded-2xl">
               <tr className="rounded-2xl">
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
@@ -578,11 +578,11 @@ export default function KanbanBoard() {
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="flex flex-col items-center justify-between">
               {tasks.map((task, index) => (
                 <tr
                   key={task.id}
-                  className=" hover:bg-white/5 transition-colors cursor-pointer"
+                  className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
                   onClick={() => router.push(`/Profile/Managers/${task.id}`)}
                 >
                   <td className="py-4 px-4">
@@ -591,53 +591,53 @@ export default function KanbanBoard() {
                       className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
                     />
                   </td>
-                  <td className="py-4 px-4 text-sm">{task.taskName}</td>
-                  <td className="py-4 px-4 text-gray-400 text-sm flex gap-2">
-                    <div className="flex items-center gap-2 ">
-                    <p className="w-8 h-8 rounded-full text-center justify-center bg-[#656A80] text-xl font-bold text-white ">
+                  <td className="py-4 px-1 text-xs ">{task.taskName}</td>
+                  <td className="py-2 px-1">
+                    <div className="flex items-center gap-2 text-xs">
+                    <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
                       {task.project.slice(0, 1)}
                       {task.project.split(" ")[1].slice(0, 1)}
                     </p>
                     {task.project}
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-gray-400">{task.estimation}</td>
-                  <td className="py-4 px-4 text-[#FB5874] text-sm">
-                    <div className="flex items-center gap-3">
-                      <FaCircle className="text-[#FB5874]" />
+                  <td className="py-4 px-4 text-gray-400 text-xs">{task.estimation}</td>
+                  <td className="py-4 px-1 text-[#FB5874] text-[14px]">
+                    <div className="flex items-center justify-center gap-1">
+                      <FaCircle className="text-[#FB5874] text-[10px]" />
                       {task.priority}
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-gray-400  text-sm">
-                    <div className="flex items-center gap-3">
-                    <progress
-                      className="progress progress-success w-25 "
-                      value="70"
-                      max="100"
-                    ></progress>
-                    {task.progress}
+                  <td className="py-4 px-1  text-[14px]">
+                    <div className="flex items-center gap-2">
+                      <progress
+                        className="progress progress-success w-25 "
+                        value="70"
+                        max="100"
+                      ></progress>
+                      {task.progress}
                     </div>
                   </td>
-                  <td className="flex items-center py-4 px-4 text-gray-400">
+                  <td className="flex items-center py-4 px-1 text-gray-400">
                     {task.assignee.map((item, index) => (
                       <div
                         key={index}
                         className={`avatar 
-                        ${index !== 0 ? "-ml-2" : ""} 
-                        transition-transform duration-300 z-${task.assignee.length - index}`}
+                              ${index !== 0 ? "-ml-2" : ""} 
+                              transition-transform duration-300 z-${task.assignee.length - index}`}
                       >
-                        <div className="w-[40px] h-[40px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
+                        <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
                           <img
                             src={item.avatar}
                             alt={`User ${index}`}
-                            className="w-[40px] h-[40px] rounded-full object-cover"
+                            className="w-[25px] h-[25px] rounded-full object-cover"
                           />
                         </div>
                       </div>
                     ))}
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center gap-2">
+                  <td className="py-4 px-1 ">
+                    <div className="flex items-center gap-2 text-[14px]">
                       <button className="text-gray-400 hover:text-white transition-colors p-2">
                         <FiMessageCircle className="text-white" />
                       </button>
@@ -645,11 +645,11 @@ export default function KanbanBoard() {
                         <FiStar className="text-white" />
                       </button>
                       <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                        <FaPencil className="text-white" />
+                        <FaPencil className="text-white text-[12px]" />
                       </button>
                       <button className="text-gray-400 hover:text-white transition-colors p-2">
                         <svg
-                          className="w-5 h-5"
+                          className="w-3 h-3"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
