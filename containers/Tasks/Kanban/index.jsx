@@ -1,52 +1,12 @@
 "use client";
 import { FaCircle } from "react-icons/fa";
+import { FaPencil } from "react-icons/fa6";
+import { FiMessageCircle, FiStar } from "react-icons/fi";
+import { useRouter } from "next/navigation";
 
 export default function KanbanBoard() {
+    const router = useRouter();
 
-  const members = [
-    {
-      id: 1,
-      name: "Rainer Brown",
-      email: "Rainerbrown@mail.com",
-      avatar: "https://i.pravatar.cc/150?img=1",
-      bgColor: "bg-purple-500/20",
-    },
-    {
-      id: 2,
-      name: "Conny Rany",
-      email: "connyrany@mail.com",
-      avatar: "https://i.pravatar.cc/150?img=5",
-      bgColor: "bg-emerald-500/20",
-    },
-    {   
-      id: 3,
-      name: "Armin Falcon",
-      email: "arfalcon@mail.com",
-      avatar: "https://i.pravatar.cc/150?img=3",
-      bgColor: "bg-gray-500/20",
-    },
-    {
-      id: 4,
-      name: "James Sullivan",
-      email: "Warren L.",
-      avatar: "https://i.pravatar.cc/150?img=4",
-      bgColor: "bg-gray-500/20",
-    },
-    {
-      id: 5,
-      name: "James Sullivan",
-      email: "Warren L.",
-      avatar: "https://i.pravatar.cc/150?img=4",
-      bgColor: "bg-gray-500/20",
-    },
-    {
-      id: 6,
-      name: "James Sullivan",
-      email: "Warren L.",
-      avatar: "https://i.pravatar.cc/150?img=4",
-      bgColor: "bg-gray-500/20",
-    },
-  ];
   const tasks = [
     {
       id: 1,
@@ -86,150 +46,68 @@ export default function KanbanBoard() {
         },
       ],
     },
-    // {
-    //   id: 2,
-    //   taskName: "Finalize Project Proposal",
-    //   project: "Website Redesign",
-    //   estimation: "01 Nov - 7 Nov 2026",
-    //   priority: "Urgent",
-    //   progress: "80%",
-    //   assignee: [
-    //     {
-    //       id: 1,
-    //       name: "Rainer Brown",
-    //       email: "Rainerbrown@mail.com",
-    //       avatar: "/images/assignee1.jpg",
-    //       bgColor: "bg-purple-500/20",
-    //     },
-    //     {
-    //       id: 2,
-    //       name: "Conny Rany",
-    //       email: "connyrany@mail.com",
-    //       avatar: "/images/assignee2.jpg",
-    //       bgColor: "bg-emerald-500/20",
-    //     },
-    //     {
-    //       id: 3,
-    //       name: "Armin Falcon",
-    //       email: "arfalcon@mail.com",
-    //       avatar: "/images/assignee3.jpg",
-    //       bgColor: "bg-gray-500/20",
-    //     },
-    //   ],
-    // },
   ];
-    return (
-    <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">
-        <h1 className="font-bold text-2xl text-white">Delta Developers</h1>
-        <div className="flex flex-row">
-          <div className="w-45  font-gilroy mt-6 mb-6 text-[#A0AEC0]">
-            <div className="flex justify-between items-center">
-              <h2>Project Status:</h2>
-            </div>
-            <div className="flex items-center mt-6">
-              <span class="text-slate-400">Progress:</span>
-            </div>
-            <div className="flex justify-between items-center mt-4">
-              <h2>Dates:</h2>
-            </div>
-            <div className="flex justify-between items-center mt-3">
-              <h2>Project Manager:</h2>
-            </div>
-            <div className="flex justify-between items-center mt-7">
-              <h2>Team Members:</h2>
-            </div>
-          </div>
-          {/* ........ */}
-          <div className="mt-6">
-            <div>
-              <button className="px-3 py-2 rounded-3xl text-white bg-[#0075FF]">In Progress</button>
-            </div>
-            <div className="mt-3">
-              <span class="text-sm">60%</span>
-              <progress className="progress progress-accent w-56 ml-2" value="60" max="100"></progress>
-            </div>
-            <div class="relative max-w-sm mt-3">
-              <span>January 15, 2026  - February 20, 2026</span>
-            </div>
-            <div className="w-35 mt-3">
-              {members.slice(0, 1).map((member) => (
-                <div
-                  key={member.id}
-                  className={`flex items-center justify-between w-full font-geist border border-white/[0.03] border-t-white/[0.09] mt-2 rounded-2xl ${
-                    member.isActive
-                      ? "bg-emerald-600/30 border border-emerald-500/50"
-                      : "bg-[#575975]"
-                  }`}
-                >
-                  {/* Left Side - Avatar and Info */}
-                  <div className="flex items-center gap-3 ">
-                    <div className={`avatar ${member.isActive ? "online" : ""}`}>
-                      <div className="w-7 h-7 rounded-full border-2 border-white">
-                        <img src={member.avatar} alt={member.name} />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">
-                        {member.name}
-                      </h3>
-                    </div>
-                  </div>             
+    return(
+        <div className="min-h-screen  p-6 text-[#101437] dark:text-white">
+            <h1 className="font-bold text-2xl">Task overveiw</h1>
+            <div className="flex items-center justify-between w-full gap-3">
+            <div className="flex items-center justify-left gap-10 w-full ">
+                <p className="text-7xl font-bold font-gilroy">80</p>
+                <div className="flex flex-col items-start justify-end text-xl w-30">
+                <p>
+                    Total <br />
+                    Tasks
+                </p>
                 </div>
-              ))}
             </div>
-            <div className="flex items-center justify-between mt-3 gap-2">
-              <div className="flex flex-row gap-2">
-              {members.slice(0, 3).map((member) => (
-                <div
-                  key={member.id}
-                  className={`flex items-center h-8 justify-between w-34 font-geist border border-white/[0.03] border-t-white/[0.09] mt-2 rounded-2xl ${
-                    member.isActive
-                      ? "bg-emerald-600/30 border border-emerald-500/50"
-                      : "bg-[#575975]"
-                  }`}
-                >
-                  {/* Left Side - Avatar and Info */}
-                  <div className="flex items-center gap-3 ">
-                    <div className={`avatar ${member.isActive ? "online" : ""}`}>
-                      <div className="w-7 h-7 rounded-full border-2 border-white">
-                        <img src={member.avatar} alt={member.name} />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">
-                        {member.name}
-                      </h3>
-                    </div>
-                  </div>             
+            <div className="flex items-center justify-left gap-10 w-full">
+                <p className="text-6xl font-bold text-7xl">15</p>
+                <div className="flex flex-col items-right justify-end text-xl w-40">
+                <p>
+                    Tasks Due <br />
+                    Today
+                </p>
                 </div>
-              ))}
-              </div>
-              <div>
-              <button className="btn btn-medium bg-transparent rounded-3xl px-8 font-semibold text-white border-2 border-white/[0.03] border-t-white/[0.09] hover:bg-slate-700">+ Invite</button>
-              </div>
             </div>
-          </div>
-        </div>
-         {/* Task Views */}
-        <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
+            <div className="flex items-center justify-left gap-10 w-full">
+                <p className="text-6xl font-bold text-7xl">20</p>
+                <div className="flex flex-col items-start justify-end text-xl">
+                <p>
+                    Overdue <br />
+                    Tasks
+                </p>
+                </div>
+            </div>
+            <div className="flex items-center justify-left gap-10 w-full">
+                <p className="text-6xl font-bold text-7xl">150</p>
+                <div className="flex flex-col items-start justify-end text-right text-xl">
+                <p>
+                    Tasks <br />
+                    Completed
+                </p>
+                </div>
+            </div>
+            </div>
+            {/* card */}
+            <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
             <div className="flex items-center justify-between mb-8">
               <div className="flex gap-4">
                 <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Task Views</h1>
-                <button  className="btn mt-5 bg-transparent text-white p-4 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
+                <button onClick={() => router.push("/Tasks/List")} className="btn mt-5 bg-transparent text-white p-4 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
                   <div >
                     <span className="flex flex-row gap-2 items-center"><img src="/images/list.png" alt="Vector" className="h-3 w-3" />
                     List
                     </span>
                   </div>
                 </button>
-                <button className="btn mt-5 bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]  text-white p-2 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
+                <button  className="btn mt-5 bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]  text-white p-2 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
                   <div className="flex flex-row gap-2">
                   <span className="flex flex-row gap-2 items-center"><img src="/images/kanban.png" alt="Vector" className="h-3 w-3" />
                     Kanban
                     </span>
                   </div>
                 </button>
-                <button onClick={()=> router.push("/CalendarView")} className="btn mt-5 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] text-white p-2  rounded-3xl transition-all">
+                <button onClick={() => router.push("/Tasks/Calendar")} className="btn mt-5 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] text-white p-2  rounded-3xl transition-all">
                   <div className="flex flex-row gap-2">
                     <span className="flex flex-row gap-2 items-center"><img src="/images/calender.png" alt="Vector" className="h-3 w-3" />
                     Calender
@@ -238,7 +116,7 @@ export default function KanbanBoard() {
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={()=> router.push("/ProjectDetails")} className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all">
+                <button  className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all">
                   <div className="flex flex-row gap-2">
                   <svg
                     className="w-5 h-5"
@@ -1259,7 +1137,7 @@ export default function KanbanBoard() {
               </div>
             </div>
          </div>
+            </div>
         </div>
-    </div>
     )
 };
