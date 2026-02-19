@@ -118,7 +118,7 @@ export default function KanbanBoard() {
           <div className="flex items-center gap-4">
             <h1 className="text-white ml-4 text-2xl font-bold">Task Views</h1>
             {/* List view button */}
-            <button className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all">
+            <button className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl cursor-pointer transition-all">
               <span className="h-8 w-20 flex items-center justify-center rounded-3xl  bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] flex flex-row gap-2 items-center">
                 <img src="/images/list.png" alt="Vector" className="h-3 w-3" />
                 List
@@ -127,7 +127,7 @@ export default function KanbanBoard() {
 
             <button
               onClick={() => router.push("/Tasks/Kanban")}
-              className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
+              className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl cursor-pointer transition-all"
             >
               <span className="h-8 w-30 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center">
                 <img
@@ -141,7 +141,7 @@ export default function KanbanBoard() {
 
             <button
               onClick={() => router.push("/Tasks/Calendar")}
-              className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
+              className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl cursor-pointer transition-all"
             >
               <span className="h-8 w-40 flex items-center justify-center rounded-3xl  flex flex-row gap-2 items-center">
                 <img
@@ -158,7 +158,7 @@ export default function KanbanBoard() {
           {/* Add new button */}
           <div className="flex items-center gap-5">
             <button
-            // onClick={() => router.push("/ProjectDetails")}
+              onClick={() => router.push("/Tasks/CreateTask")}
               className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
             >
               <div className="flex flex-row gap-2">
