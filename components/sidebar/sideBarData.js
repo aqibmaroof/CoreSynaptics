@@ -29,7 +29,7 @@ export const sidebarItems = [
     title: "Tasks",
     icon: config?.chart,
     iconActive: config?.home,
-    path: "/Tasks",
+    path: "/Tasks/List",
     type: "link",
     submenu: [],
   },

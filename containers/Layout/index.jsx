@@ -70,7 +70,9 @@ const Layout = ({ children }) => {
             <div className="sticky top-0 z-20 backdrop-blur flex items-center justify-between bg-[#060B26F0]/60 gap-2 w-full py-2 px-4 rounded-xl">
               <div className="bg-[transparent] px-2">
                 <div className="flex items-center gap-5 cursor-pointer">
-                  {pathname === `/Profile/Managers/${params?.id}` && (
+                  {(pathname === `/Profile/Managers/${params?.id}` ||
+                    pathname === "/CreateProject" ||
+                    pathname === "/ProjectDetails") && (
                     <FaArrowLeft
                       onClick={() => router.back()}
                       className="text-2xl"
@@ -95,7 +97,11 @@ const Layout = ({ children }) => {
                                     ? "Settings"
                                     : pathname === "/UserProfile"
                                       ? "My Profile"
-                                      : "Dashboard"}
+                                      : pathname === "/CreateProject"
+                                        ? "Create Project"
+                                        : pathname === "/ProjectDetails"
+                                          ? "Project Details"
+                                          : "Dashboard"}
                   </p>
                 </div>
               </div>

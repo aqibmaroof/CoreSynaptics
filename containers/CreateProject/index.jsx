@@ -5,13 +5,15 @@ export default function KanbanBoard() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">
-      <h1 className="font-bold text-2xl text-[#A0AEC0]">Project Name</h1>
+    <div className="min-h-screen font-gilroy p-6 text-[#101437] font-gilroy dark:text-white">
+      <h1 className="font-bold font-gilroy text-2xl text-[#A0AEC0]">
+        Project Name
+      </h1>
       <div className="w-100  font-gilroy mt-6 mb-6 text-[#A0AEC0]">
         <div className="flex justify-left gap-14 items-center">
           <h2>Project Status:</h2>
           <input
-            className="text-lg font-semibold"
+            className="text-lg text-[#656A80] font-[600] "
             type="text"
             placeholder="Empty"
           />
@@ -19,9 +21,9 @@ export default function KanbanBoard() {
         <div className="flex items-center justify-left gap-24 mt-3">
           <span class="text-slate-400">Progress:</span>
           <div className="flex items-center gap-2">
-            <span class="text-sm">0%</span>
+            <span class="text-sm text-[#656A80]">0%</span>
             <progress
-              className="progress progress-neutral w-56"
+              className="progress progress-[#656A80] w-56"
               value={0}
               max="100"
             ></progress>
@@ -36,22 +38,22 @@ export default function KanbanBoard() {
               datepicker
               id="default-datepicker"
               type="text"
-              class="block  ps-9 pe-3 py-2.5 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-3xl  placeholder:text-body"
+              class="block pl-1 bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body"
               placeholder="Select Calender"
             ></input>
           </div>
         </div>
         <div className="flex justify-left gap-8 items-center mt-3">
           <h2>Project Manager:</h2>
-          <select className="bg-transparent text-lg font-semibold text-[#A0AEC0] rounded-2xl border-none focus:outline-none appearance-none">
+          <select className="bg-transparent text-[18px] font-[600] text-[#656A80] rounded-2xl border-none focus:outline-none appearance-none">
             <option>Select Project Manager</option>
             <option>All Projects</option>
           </select>
         </div>
         <div className="flex justify-left gap-10 items-center mt-3">
           <h2>Team Members:</h2>
-          <button class="px-4 py-1 font-semibold text-white border border-slate-700 rounded-2xl bg-[#181B41] hover:bg-slate-700 ">
-            + Invite
+          <button class="flex items-center justify-center w-[129px] text-white text-[18.82px] font-[600] bg-transparent font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] px-2 py-1 mt-2 rounded-3xl">
+            <span className="text-3xl font-normal">+</span> &nbsp; Invite
           </button>
         </div>
       </div>
@@ -61,10 +63,10 @@ export default function KanbanBoard() {
           <h1 className="text-white mt-5 ml-4 text-2xl font-bold">
             Task Views
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-5">
             <button
               onClick={() => router.push("/ProjectDetails")}
-              className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all"
+              className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
             >
               <div className="flex flex-row gap-2">
                 <svg
@@ -83,8 +85,9 @@ export default function KanbanBoard() {
                 <span>Add new</span>
               </div>
             </button>
-            <span className="text-gray-400 text-sm">Sort by</span>
-            <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
+            
+            <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
+              <span className="text-gray-100 text-sm">Sort by</span>
               Top
               <svg
                 className="w-4 h-4"

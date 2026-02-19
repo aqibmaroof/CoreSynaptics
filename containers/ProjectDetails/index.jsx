@@ -119,63 +119,69 @@ export default function KanbanBoard() {
     <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">
       <h1 className="font-bold text-2xl text-white">Delta Developers</h1>
       <div className="flex flex-row">
-          <div className="w-45  font-gilroy mt-6 mb-6 text-[#A0AEC0]">
-            <div className="flex justify-between items-center">
-              <h2>Project Status:</h2>
-            </div>
-            <div className="flex items-center mt-6">
-              <span class="text-slate-400">Progress:</span>
-            </div>
-            <div className="flex justify-between items-center mt-4">
-              <h2>Dates:</h2>
-            </div>
-            <div className="flex justify-between items-center mt-3">
-              <h2>Project Manager:</h2>
-            </div>
-            <div className="flex justify-between items-center mt-7">
-              <h2>Team Members:</h2>
-            </div>
+        <div className="w-45  font-gilroy mt-6 mb-6 text-[#A0AEC0]">
+          <div className="flex justify-between items-center">
+            <h2>Project Status:</h2>
           </div>
-          {/* ........ */}
-          <div className="mt-6">
-            <div>
-              <button className="px-3 py-2 rounded-3xl text-white bg-[#0075FF]">In Progress</button>
-            </div>
-            <div className="mt-3">
-              <span class="text-sm">60%</span>
-              <progress className="progress progress-accent w-56 ml-2" value="60" max="100"></progress>
-            </div>
-            <div class="relative max-w-sm mt-3">
-              <span>January 15, 2026  - February 20, 2026</span>
-            </div>
-            <div className="w-35 mt-3">
-              {members.slice(0, 1).map((member) => (
-                <div
-                  key={member.id}
-                  className={`flex items-center justify-between w-full font-geist border border-white/[0.03] border-t-white/[0.09] mt-2 rounded-2xl ${
-                    member.isActive
-                      ? "bg-emerald-600/30 border border-emerald-500/50"
-                      : "bg-[#575975]"
-                  }`}
-                >
-                  {/* Left Side - Avatar and Info */}
-                  <div className="flex items-center gap-3 ">
-                    <div className={`avatar ${member.isActive ? "online" : ""}`}>
-                      <div className="w-7 h-7 rounded-full border-2 border-white">
-                        <img src={member.avatar} alt={member.name} />
-                      </div>
+          <div className="flex items-center mt-6">
+            <span class="text-slate-400">Progress:</span>
+          </div>
+          <div className="flex justify-between items-center mt-4">
+            <h2>Dates:</h2>
+          </div>
+          <div className="flex justify-between items-center mt-3">
+            <h2>Project Manager:</h2>
+          </div>
+          <div className="flex justify-between items-center mt-7">
+            <h2>Team Members:</h2>
+          </div>
+        </div>
+        {/* ........ */}
+        <div className="mt-6">
+          <div>
+            <button className="px-3 py-2 rounded-3xl text-white bg-[#0075FF]">
+              In Progress
+            </button>
+          </div>
+          <div className="mt-3">
+            <span class="text-sm">60%</span>
+            <progress
+              className="progress progress-accent w-56 ml-2"
+              value="60"
+              max="100"
+            ></progress>
+          </div>
+          <div class="relative max-w-sm mt-3">
+            <span>January 15, 2026 - February 20, 2026</span>
+          </div>
+          <div className="w-35 mt-3">
+            {members.slice(0, 1).map((member) => (
+              <div
+                key={member.id}
+                className={`flex items-center justify-between w-full font-geist border border-white/[0.03] border-t-white/[0.09] mt-2 rounded-2xl ${
+                  member.isActive
+                    ? "bg-emerald-600/30 border border-emerald-500/50"
+                    : "bg-[#575975]"
+                }`}
+              >
+                {/* Left Side - Avatar and Info */}
+                <div className="flex items-center gap-3 ">
+                  <div className={`avatar ${member.isActive ? "online" : ""}`}>
+                    <div className="w-7 h-7 rounded-full border-2 border-white">
+                      <img src={member.avatar} alt={member.name} />
                     </div>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">
-                        {member.name}
-                      </h3>
-                    </div>
-                  </div>             
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold text-sm">
+                      {member.name}
+                    </h3>
+                  </div>
                 </div>
-              ))}
-            </div>
-            <div className="flex items-center justify-between mt-3 gap-2">
-              <div className="flex flex-row gap-2">
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between mt-3 gap-2">
+            <div className="flex flex-row gap-2">
               {members.slice(0, 3).map((member) => (
                 <div
                   key={member.id}
@@ -187,7 +193,9 @@ export default function KanbanBoard() {
                 >
                   {/* Left Side - Avatar and Info */}
                   <div className="flex items-center gap-3 ">
-                    <div className={`avatar ${member.isActive ? "online" : ""}`}>
+                    <div
+                      className={`avatar ${member.isActive ? "online" : ""}`}
+                    >
                       <div className="w-7 h-7 rounded-full border-2 border-white">
                         <img src={member.avatar} alt={member.name} />
                       </div>
@@ -197,74 +205,63 @@ export default function KanbanBoard() {
                         {member.name}
                       </h3>
                     </div>
-                  </div>             
+                  </div>
                 </div>
               ))}
-              </div>
-              <div>
-              <button className="btn btn-medium bg-transparent rounded-3xl px-8 font-semibold text-white border-2 border-white/[0.03] border-t-white/[0.09] hover:bg-slate-700">+ Invite</button>
-              </div>
+            </div>
+            <div>
+              <button class="flex items-center justify-center w-[129px] text-white text-[18.82px] font-[600] bg-transparent font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] px-2 mt-2 rounded-3xl">
+                <span className="text-3xl font-normal">+</span> &nbsp; Invite
+              </button>
             </div>
           </div>
+        </div>
       </div>
       {/* Task Views */}
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
         <div className="flex items-center justify-between mb-8">
-          <div className="flex gap-4">
-            <h1 className="text-white mt-5 ml-4 text-2xl font-bold">
-              Task Views
-            </h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-white ml-4 text-2xl font-bold">Task Views</h1>
             {/* List view button */}
-            <button className="btn mt-5 bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-4 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
-              <div>
-                <span className="flex flex-row gap-2 items-center">
-                  <img
-                    src="/images/list.png"
-                    alt="Vector"
-                    className="h-3 w-3"
-                  />
-                  List
-                </span>
-              </div>
+            <button className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all">
+              <span className="h-8 w-20 flex items-center justify-center rounded-3xl  bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] flex flex-row gap-2 items-center">
+                <img src="/images/list.png" alt="Vector" className="h-3 w-3" />
+                List
+              </span>
             </button>
-            {/* Kanban view button */}
+
             <button
               onClick={() => router.push("/KanbanView")}
-              className="btn mt-5 bg-transparent  text-white p-2 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all"
+              className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
             >
-              <div className="flex flex-row gap-2">
-                <span className="flex flex-row gap-2 items-center">
-                  <img
-                    src="/images/kanban.png"
-                    alt="Vector"
-                    className="h-3 w-3"
-                  />
-                  Kanban
-                </span>
-              </div>
+              <span className="h-8 w-30 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center">
+                <img
+                  src="/images/kanban.png"
+                  alt="Vector"
+                  className="h-3 w-3"
+                />
+                Kanban
+              </span>
             </button>
-            {/* calendar view button */}
+
             <button
               onClick={() => router.push("/CalendarView")}
-              className="btn  mt-5 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] text-white p-2  rounded-3xl transition-all"
+              className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
             >
-              <div className="flex flex-row gap-2">
-                <span className="flex flex-row gap-2 items-center">
-                  <img
-                    src="/images/calender.png"
-                    alt="Vector"
-                    className="h-3 w-3"
-                  />
-                  Calender
-                </span>
-              </div>
+              <span className="h-8 w-40 flex items-center justify-center rounded-3xl  flex flex-row gap-2 items-center">
+                <img src="/images/calender.png" alt="Vector" className="h-3 w-3" />
+                Calender
+              </span>
             </button>
+
+            {/* calendar view button */}
+       
           </div>
           {/* Add new button */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-5">
             <button
               onClick={() => router.push("/ProjectDetails")}
-              className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all"
+              className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
             >
               <div className="flex flex-row gap-2">
                 <svg
@@ -283,8 +280,9 @@ export default function KanbanBoard() {
                 <span>Add new</span>
               </div>
             </button>
-            <span className="text-gray-400 text-sm">Sort by</span>
-            <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
+
+            <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
+              <span className="text-gray-100 text-sm">Sort by</span>
               Top
               <svg
                 className="w-4 h-4"
@@ -1001,7 +999,6 @@ export default function KanbanBoard() {
               </td>
             </div>
           ))}
-          
         </div>
         {/* In Reviews */}
         <div className="flex w-full bg-gradient-to-b from-[#00377e] from-5% via-[#11163b]/10 via-20% to-[#11163b]/10 to-10% border-3 border-white/[0.03] border-t-white/[0.09] font-gilroy py-6 px-3 mt-8 rounded-3xl card">
@@ -1310,7 +1307,6 @@ export default function KanbanBoard() {
               </td>
             </div>
           ))}
-          
         </div>
         {/* Completed */}
         <div className="flex w-full bg-gradient-to-b from-[#00377e] from-5% via-[#11163b]/10 via-20% to-[#11163b]/10 to-10% border-3 border-white/[0.03] border-t-white/[0.09] font-gilroy py-6 px-3 mt-8 rounded-3xl card">
@@ -1619,9 +1615,7 @@ export default function KanbanBoard() {
               </td>
             </div>
           ))}
-          
         </div>
-
       </div>
     </div>
   );

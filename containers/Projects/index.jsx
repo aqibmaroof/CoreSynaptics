@@ -6,7 +6,7 @@ import { useState } from "react";
 import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
 import { FaCircle } from "react-icons/fa";
-import {useRouter} from "next/navigation"
+import { useRouter } from "next/navigation";
 
 export default function KanbanBoard() {
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -423,27 +423,30 @@ export default function KanbanBoard() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Task List</h1>
-          <div className="flex items-center gap-2">
-            <button onClick={()=> router.push("/CreateProject")} className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all">
+          <div className="flex items-center gap-5">
+            <button
+              onClick={() => router.push("/CreateProject")}
+              className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white px-4 py-2 border-none rounded-xl transition-all cursor-pointer"
+            >
               <div className="flex flex-row gap-2">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4 "
-                />
-              </svg>
-              <span>Add new</span>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4 "
+                  />
+                </svg>
+                <span>Add new</span>
               </div>
             </button>
-            <span className="text-gray-400 text-sm">Sort by</span>
-            <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
+            <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
+              <span className="text-gray-100 text-sm">Sort by</span>
               Top
               <svg
                 className="w-4 h-4"
@@ -594,14 +597,16 @@ export default function KanbanBoard() {
                   <td className="py-4 px-1 text-xs ">{task.taskName}</td>
                   <td className="py-2 px-1">
                     <div className="flex items-center gap-2 text-xs">
-                    <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                      {task.project.slice(0, 1)}
-                      {task.project.split(" ")[1].slice(0, 1)}
-                    </p>
-                    {task.project}
+                      <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
+                        {task.project.slice(0, 1)}
+                        {task.project.split(" ")[1].slice(0, 1)}
+                      </p>
+                      {task.project}
                     </div>
                   </td>
-                  <td className="py-4 px-4 text-gray-400 text-xs">{task.estimation}</td>
+                  <td className="py-4 px-4 text-gray-400 text-xs">
+                    {task.estimation}
+                  </td>
                   <td className="py-4 px-1 text-[#FB5874] text-[14px]">
                     <div className="flex items-center justify-center gap-1">
                       <FaCircle className="text-[#FB5874] text-[10px]" />
@@ -796,7 +801,5 @@ export default function KanbanBoard() {
         </div>
       </div>
     </div>
-    
-    
   );
 }
