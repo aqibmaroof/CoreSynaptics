@@ -168,7 +168,7 @@ export default function KanbanBoard() {
             {/* Add new button */}
             <div className="flex items-center gap-2">
                 <button
-                // onClick={() => router.push("/ProjectDetails")}
+                onClick={() => router.push("/Tasks/CreateTask")}
                 className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all"
                 >
                 <div className="flex flex-row gap-2">
