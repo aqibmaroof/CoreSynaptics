@@ -566,19 +566,7 @@ export default function KanbanBoard() {
                 <span className="font-normal">
                   Feb 01, 2026 {"->"} Feb 11, 2026
                 </span>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                <img src={"/images/calendar_1.svg"} />
               </div>
               <div
                 tabIndex={0}
@@ -717,9 +705,9 @@ export default function KanbanBoard() {
               </div>
             ))}
           </div>
-            <button className="btn btn-medium bg-[#454A62] rounded-2xl h-8 font-semibold text-white border border-[#656A80] hover:bg-slate-700">
-              + Invite
-            </button>
+          <button className="btn btn-medium bg-[#454A62] rounded-2xl h-8 font-semibold text-white border border-[#656A80] hover:bg-slate-700">
+            + Invite
+          </button>
         </div>
       </div>
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy  mt-8 rounded-2xl card">

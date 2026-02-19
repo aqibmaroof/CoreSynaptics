@@ -137,7 +137,7 @@ export default function KanbanBoard() {
           {/* Add new button */}
           <div className="flex items-center gap-5">
             <button
-              onClick={() => router.push("/Tasks/CreateTask")}
+              onClick={() => document.getElementById("my_modal_4").showModal()}
               className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
             >
               <div className="flex flex-row gap-2">
@@ -632,24 +632,22 @@ export default function KanbanBoard() {
       </div>
       {/* Popup box */}
       <dialog id="my_modal_4" className="modal ">
-        <div className="modal-box w-[800px] h-[600px] border border-[#656A80] backdrop-blur-2xl bg-transparent">
-          <div className="modal-action flex items-center justify-between">
+        <div className="modal-box pt-0 px-0 w-[1000px] h-[850px] border border-[#656A80] backdrop-blur-2xl bg-transparent scrollbar-hide">
+          <div className="modal-action flex items-center justify-between pt-0 px-4">
             <div>
               <h3 className="font-bold text-lg">New Task</h3>
             </div>
-            <div>
-              <form method="dialog" className="gap-2 flex">
-                <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]">
-                  <img src="/images/maximize.svg" alt="Maximize" />
-                </button>
-                <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#FB5874]">
-                  <img src="/images/close.svg" alt="Close" />
-                </button>
-              </form>
-            </div>
+            <form method="dialog" className="gap-2 flex">
+              <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]">
+                <img src="/images/maximize.svg" alt="Maximize" />
+              </button>
+              <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#FB5874]">
+                <img src="/images/close.svg" alt="Close" />
+              </button>
+            </form>
           </div>
           <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-          <div>
+          <div className="px-4">
             <div className="mt-4">
               <p>Task Name</p>
               <input
@@ -697,7 +695,7 @@ export default function KanbanBoard() {
                 <input
                   type="text"
                   placeholder="Select"
-                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -713,11 +711,11 @@ export default function KanbanBoard() {
             </div>
             <div className="flex items-center gap-2 mt-4">
               <h2>Priority:</h2>
-              <div className="flex flex-row gap-2">
+              <div className="flex flex-row items-center gap-2">
                 {members.slice(0, 1).map((member) => (
                   <div
                     key={member.id}
-                    className={`flex items-center h-8 justify-between w-34 font-geist border border-[#656A80] mt-2 rounded-2xl ${
+                    className={`flex items-center h-8 justify-between w-34 font-geist border border-[#656A80]  rounded-2xl ${
                       member.isActive
                         ? "bg-emerald-600/30 border border-emerald-500/50"
                         : "bg-[#575975]"
@@ -741,11 +739,9 @@ export default function KanbanBoard() {
                   </div>
                 ))}
               </div>
-              <div>
-                <button className="btn btn-medium bg-[#454A62] rounded-2xl h-8 font-semibold text-white border border-[#656A80] hover:bg-slate-700">
-                  + Invite
-                </button>
-              </div>
+              <button className="btn btn-medium bg-[#454A62] rounded-2xl h-8 font-semibold text-white border border-[#656A80] hover:bg-slate-700">
+                + Invite
+              </button>
             </div>
             <div className="mt-4">
               <p>Attach Files</p>
@@ -800,7 +796,7 @@ export default function KanbanBoard() {
               </div>
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 px-4">
             <h3 className="font-bold text-lg mt-2">Sub Tasks</h3>
             <div className="mt-3">
               <p>Sub Task 1</p>
@@ -829,8 +825,8 @@ export default function KanbanBoard() {
               </div>
             </button>
           </div>
-          <hr class="border border-[#656A80] mt-4"></hr>
-          <div className="flex items-center justify-end gap-2">
+          <hr class="w-full mt-3 bg-neutral-quaternary border-[#656A80]"></hr>
+          <div className="flex items-center justify-end gap-2 mr-4">
             <button className="btn mt-5 backdrop-blur-md text-white p-3 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all">
               <div className="flex flex-row gap-2">
                 <span className="flex flex-row gap-2 items-center">Cancel</span>
