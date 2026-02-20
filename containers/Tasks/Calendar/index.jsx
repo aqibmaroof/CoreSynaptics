@@ -97,7 +97,10 @@ export default function KanbanBoard() {
           <div className="flex items-center gap-4">
             <h1 className="text-white ml-4 text-2xl font-bold">Task Views</h1>
             {/* List view button */}
-            <button className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all">
+            <button
+              onClick={() => router.push("/Tasks/List")}
+              className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
+            >
               <span className="h-8 w-20 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center">
                 <img src="/images/list.png" alt="Vector" className="h-3 w-3" />
                 List
@@ -638,7 +641,10 @@ export default function KanbanBoard() {
               <h3 className="font-bold text-lg">New Task</h3>
             </div>
             <form method="dialog" className="gap-2 flex">
-              <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]">
+              <button
+                onClick={() => router.push("/Tasks/CreateTask")}
+                className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]"
+              >
                 <img src="/images/maximize.svg" alt="Maximize" />
               </button>
               <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#FB5874]">
