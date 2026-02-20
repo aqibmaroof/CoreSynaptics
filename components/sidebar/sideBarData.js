@@ -34,6 +34,14 @@ export const sidebarItems = [
     submenu: [],
   },
   {
+    title: "Shipment",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Shipment/Dashboard",
+    type: "link",
+    submenu: [],
+  },
+  {
     title: "QA/QC",
     icon: config?.chart,
     iconActive: config?.home,
