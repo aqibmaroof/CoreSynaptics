@@ -2,7 +2,7 @@
 import { FiArrowDown, FiArrowUp } from "react-icons/fi";
 import { FaCircle } from "react-icons/fa";
 import { useState } from "react";
-
+import SalesOverview from "@/components/Cards/SalesOverview";
 
 export default function KanbanBoard() {
   const managers = [
@@ -70,234 +70,195 @@ export default function KanbanBoard() {
       status: "In-Stock",
     },
   ];
-return(
+  return (
     <div className="min-h-screen  p-6 text-[#101437] dark:text-white">
-        {/* Stats */}
-        <div className="flex items-center justify-between w-full gap-3 mt-2">
-            <div className="flex items-center justify-left gap-6 w-full ">
-                <p className="text-7xl font-bold font-gilroy">10</p>
-                <div className="flex flex-col items-start justify-end text-sm w-30">
-                    <p>
-                    Total Shipment<br />
-                    Today
-                    </p>
-                </div>
-            </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">1500</p>
-                <div className="flex flex-col items-right justify-end text-sm w-40">
-                    <p>
-                    Total shipment <br/> last month
-                    </p>
-                    <p className="bg-gradient-to-r from-[#080c26] to-[#6d1726] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content] ">
-                        <FiArrowDown />25%
-                    </p>
-                </div>
-            </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">147</p>
-                <div className="flex flex-col items-start justify-end text-sm">
-                    <p>
-                    Total <br />
-                    Transactions
-                    </p>
-                </div>
-            </div>
-            <div className="flex items-center justify-left gap-6 w-full ml-4">
-                <p className="text-7xl font-bold ">22</p>
-                <div className="flex flex-col items-start justify-end text-right text-base">
-                    <p>
-                    Total <br />
-                    Receiving
-                    </p>
-                </div>
-            </div>
+      {/* Stats */}
+      <div className="flex items-center justify-between w-full gap-3 mt-2">
+        <div className="flex items-center justify-left gap-6 w-full ">
+          <p className="text-7xl font-bold font-gilroy">10</p>
+          <div className="flex flex-col items-start justify-end text-sm w-30">
+            <p>
+              Total Shipment
+              <br />
+              Today
+            </p>
+          </div>
         </div>
-        
-        <div className="flex flex-row gap-4">
-            {/* Shipment card */}
-            <div className="flex flex-col justify-between w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  p-6 mt-8 rounded-2xl card">
-                <div className=""> 
-                    <h1 className="text-xl font-bold">Shipment Status</h1>
-                </div>
-                <div className="flex flex-col mt-4 w-full">
-                    <div className="flex flex-row items-center justify-between mt-8">
-                        <div>
-                            <p className="font-bold text-7xl">2500</p>
-                            <p className="bg-gradient-to-r from-[#080c26] to-[#6d1726] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content]">
-                                <FiArrowDown />25%
-                            </p>
-                        </div>
-                    <div className="flex flex-col items-center ">
-                        
-                        <div className="flex flex-col gap-2">
-                            <progress
-                            className="progress progress-accent w-70 h-6"
-                            value="70"
-                            max="100"
-                            ></progress>
-                            <progress
-                            className="progress progress-accent w-70 h-6 text-[#0075FF]"
-                            value="80"
-                            max="100"
-                            ></progress>
-                            <progress
-                            className="progress progress-accent w-70 h-6 text-[#E7844D]"
-                            value="90"
-                            max="100"
-                            ></progress>
-                            
-                        </div>
-                        <div className="flex flex-row gap-10 items-center mt-4">
-                            <div className="flex flex-col items-center ">
-                            <p className="flex items-center gap-2">
-                                <FaCircle className="text-[#00E691]" />
-                                At Warehouse
-                            </p>
-                            <h3 className="text-2xl font-bold mt-2">53%</h3>
-                        </div>
-                        <div className="flex flex-col items-center ">
-                            <p className="flex items-center gap-2">
-                                <FaCircle className="text-[#0075FF]" />
-                                In Transits
-                            </p>
-                            <h3 className="text-2xl font-bold mt-2">64%</h3>
-                        </div>
-                        <div className="flex flex-col items-center ">
-                            <p className="flex items-center gap-2">
-                                <FaCircle className="text-[#E7844D]" />
-                                Reached at Site
-                            </p>
-                            <h3 className="text-2xl font-bold mt-2">72%%</h3>
-                        </div></div>
-                    </div>
-                    </div>
-                </div>
-            </div>
-            {/* Avg card */}
-            <div className="flex flex-row items-center justify-between w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  p-6 mt-8 rounded-2xl card">
-                <div className="flex flex-col w-full">
-                    <div className="flex items-center w-full justify-between">
-                        <h1 className="text-xl font-bold justify-between">
-                            Avg. Delivery Time
-                        </h1>
-                        <svg width="29" 
-                        height="29" viewBox="0 0 29 29" 
-                        fill="none" 
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path 
-                            d="M14.4732 14.4742L14.4732 19.9022M14.4732 10.4509V10.4032M3.61719 14.4742C3.61719 8.47857 8.4776 3.61816 14.4732 3.61816C20.4688 3.61816 25.3293 8.47858 25.3293 14.4742C25.3292 20.4698 20.4688 25.3302 14.4732 25.3302C8.4776 25.3302 3.61719 20.4698 3.61719 14.4742Z" 
-                            stroke="#9BA9BB" 
-                            stroke-width="2.71401"
-                            stroke-linecap="round" 
-                            stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p className="font-bold text-6xl mt-4">2.5 Days</p>
-                    </div>
-                    
-                    
-                    {/* Vertical lines */}
-                    <div className="flex w-full justify-between mt-4">
-                        
-                        <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">0
-                        <div className="mt-4 w-full">
-                            <div className="absolute items-center justify-between">
-                                <progress className="progress progress-accent w-35 h-6" value="70"></progress>
-                                <span className="text-sm">3 Days</span>
-                            </div>
-                            <div className="absolute items-center justify-between mt-10">
-                                <progress
-                            className="progress progress-accent w-70 h-6 text-[#0075FF]" value="80"></progress>
-                                <span className="text-sm">2 Days</span>
-                            </div>
-                        </div>
-                        </div>
-                        <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">10k</div>
-                        <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">20k</div>
-                        <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">30k</div>
-                        <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">40k</div>
-                        <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">50k</div>
-                        <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 "></div>
-                    </div>
-                </div>
-            </div>
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="font-bold text-7xl">1500</p>
+          <div className="flex flex-col items-right justify-end text-sm w-40">
+            <p>
+              Total shipment <br /> last month
+            </p>
+            <p className="bg-gradient-to-r from-[#080c26] to-[#6d1726] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content] ">
+              <FiArrowDown />
+              25%
+            </p>
+          </div>
         </div>
-        <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-2xl card">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-white text-2xl font-bold ">Shipment Statistics</h1>
-                    <h1 className="text-white text-base">
-                        Shipment performance and delivery status overview.
-                    </h1>
-                </div>
-                <div className="flex gap-4">
-                    <button className="bg-transparent text-white px-5 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
-                        Day
-                    </button>
-                    <button className="bg-[#656A80] text-white px-5 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
-                        Week
-                    </button>
-                    <button className="bg-transparent text-white px-5 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
-                        Month
-                    </button>
-                </div>
-            </div>
-            <div className="flex flex-row items-center justify-between mt-4">
-                <div className="flex flex-col gap-2">
-                    <h3>400</h3>
-                    <h3>350</h3>
-                    <h3>300</h3>
-                    <h3>250</h3>
-                    <h3>200</h3>
-                    <h3>150</h3>
-                    <h3>0</h3>
-                </div>
-                <div className="flex flex-col items-center">
-                    <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-                </div>
-            </div>
-            
-            <div className="flex items-center justify-between mx-4">
-                <p>Week 1</p>
-                <p>Week 2</p>
-                <p>Week 3</p>
-                <p>Week 4</p>
-            </div>
-            <div className="flex items-center justify-center gap-4">
-                <div className="flex flex-col items-center ">
-                    <p className="flex items-center gap-2">
-                        <FaCircle className="text-[#EF4C15]" />
-                        This Month
-                    </p>
-                </div>
-                <div className="flex flex-col items-center ">
-                    <p className="flex items-center gap-2">
-                        <FaCircle className="text-[#EABC3E]" />
-                        Last Month
-                    </p>
-                </div>
-            </div>
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="font-bold text-7xl">147</p>
+          <div className="flex flex-col items-start justify-end text-sm">
+            <p>
+              Total <br />
+              Transactions
+            </p>
+          </div>
         </div>
-        
+        <div className="flex items-center justify-left gap-6 w-full ml-4">
+          <p className="text-7xl font-bold ">22</p>
+          <div className="flex flex-col items-start justify-end text-right text-base">
+            <p>
+              Total <br />
+              Receiving
+            </p>
+          </div>
+        </div>
+      </div>
 
-        {/* TABLE */}
-      <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-2xl card">
+      <div className="flex flex-row gap-4 mb-5">
+        {/* Shipment card */}
+        <div className="flex flex-col justify-between w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  p-6 mt-8 rounded-2xl card">
+          <div className="">
+            <h1 className="text-xl font-bold">Shipment Status</h1>
+          </div>
+          <div className="flex flex-col mt-4 w-full">
+            <div className="flex flex-row items-center justify-between mt-8">
+              <div>
+                <p className="font-bold text-7xl">2500</p>
+                <p className="bg-gradient-to-r from-[#080c26] to-[#6d1726] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content]">
+                  <FiArrowDown />
+                  25%
+                </p>
+              </div>
+              <div className="flex flex-col items-center ">
+                <div className="flex flex-col gap-2">
+                  <progress
+                    className="progress progress-accent w-70 h-6"
+                    value="70"
+                    max="100"
+                  ></progress>
+                  <progress
+                    className="progress progress-accent w-70 h-6 text-[#0075FF]"
+                    value="80"
+                    max="100"
+                  ></progress>
+                  <progress
+                    className="progress progress-accent w-70 h-6 text-[#E7844D]"
+                    value="90"
+                    max="100"
+                  ></progress>
+                </div>
+                <div className="flex flex-row gap-10 items-center mt-4">
+                  <div className="flex flex-col items-center ">
+                    <p className="flex items-center gap-2">
+                      <FaCircle className="text-[#00E691]" />
+                      At Warehouse
+                    </p>
+                    <h3 className="text-2xl font-bold mt-2">53%</h3>
+                  </div>
+                  <div className="flex flex-col items-center ">
+                    <p className="flex items-center gap-2">
+                      <FaCircle className="text-[#0075FF]" />
+                      In Transits
+                    </p>
+                    <h3 className="text-2xl font-bold mt-2">64%</h3>
+                  </div>
+                  <div className="flex flex-col items-center ">
+                    <p className="flex items-center gap-2">
+                      <FaCircle className="text-[#E7844D]" />
+                      Reached at Site
+                    </p>
+                    <h3 className="text-2xl font-bold mt-2">72%%</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Avg card */}
+        <div className="flex flex-row items-center justify-between w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  p-6 mt-8 rounded-2xl card">
+          <div className="flex flex-col w-full">
+            <div className="flex items-center w-full justify-between">
+              <h1 className="text-xl font-bold justify-between">
+                Avg. Delivery Time
+              </h1>
+              <svg
+                width="29"
+                height="29"
+                viewBox="0 0 29 29"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M14.4732 14.4742L14.4732 19.9022M14.4732 10.4509V10.4032M3.61719 14.4742C3.61719 8.47857 8.4776 3.61816 14.4732 3.61816C20.4688 3.61816 25.3293 8.47858 25.3293 14.4742C25.3292 20.4698 20.4688 25.3302 14.4732 25.3302C8.4776 25.3302 3.61719 20.4698 3.61719 14.4742Z"
+                  stroke="#9BA9BB"
+                  stroke-width="2.71401"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold text-6xl mt-4">2.5 Days</p>
+            </div>
+
+            {/* Vertical lines */}
+            <div className="flex w-full justify-between mt-4">
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+                0
+                <div className="mt-4 w-full">
+                  <div className="absolute items-center justify-between">
+                    <progress
+                      className="progress progress-accent w-35 h-6"
+                      value="70"
+                    ></progress>
+                    <span className="text-sm">3 Days</span>
+                  </div>
+                  <div className="absolute items-center justify-between mt-10">
+                    <progress
+                      className="progress progress-accent w-70 h-6 text-[#0075FF]"
+                      value="80"
+                    ></progress>
+                    <span className="text-sm">2 Days</span>
+                  </div>
+                </div>
+              </div>
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+                10k
+              </div>
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+                20k
+              </div>
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+                30k
+              </div>
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+                40k
+              </div>
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+                50k
+              </div>
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 "></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Header */}
+      <SalesOverview
+        heading="Shipment Statistics"
+        description="Shipment performance and delivery status overview."
+      />
+
+      {/* TABLE */}
+      <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-2xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h3 className="text-white mt-5 ml-4 text-2xl">
-            Shipping List
-          </h3>
-          <div className="flex items-center gap-2">
+          <h1 className="text-white text-[24px] font-normal">Shipping List</h1>
+          {/* Add new button */}
+          <div className="flex items-center gap-5">
             <button
+              onClick={() => router.push("/ProjectDetails")}
               className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
             >
               <div className="flex flex-row gap-2">
@@ -317,8 +278,9 @@ return(
                 <span>Add Shipment</span>
               </div>
             </button>
-            <span className="text-gray-400 text-sm">Sort by</span>
-            <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
+
+            <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
+              <span className="text-gray-100 text-sm">Sort by</span>
               Top
               <svg
                 className="w-4 h-4"
@@ -338,7 +300,7 @@ return(
         </div>
 
         {/* Filters and Search */}
-        <div className="flex items-center gap-4 mb-6 ml-4">
+        <div className="flex items-center gap-4 mb-6">
           {/* Search Input */}
           <div className="flex-1 relative">
             <svg
@@ -362,7 +324,7 @@ return(
           </div>
 
           {/* Dropdown Filters */}
-          <select className="bg-transparent text-white px-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
+          <select className="w-[max-content] bg-transparent text-white px-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance hover:border-white/20 transition-colors">
             <option>Assignee</option>
             <option>All Projects</option>
           </select>
@@ -390,13 +352,20 @@ return(
           </button>
 
           <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg 
-                width="15" height="17" 
-                viewBox="0 0 15 17" fill="none" 
-                xmlns="http://www.w3.org/2000/svg">
-                <path 
-                d="M3.75 11.25C2.09315 11.25 0.75 9.90685 0.75 8.25C0.75 6.81971 1.75092 5.6232 3.09053 5.32271C3.03127 5.05796 3 4.78263 3 4.5C3 2.42893 4.67893 0.75 6.75 0.75C8.56448 0.75 10.078 2.03869 10.4251 3.75073C10.45 3.75025 10.475 3.75 10.5 3.75C12.5711 3.75 14.25 5.42893 14.25 7.5C14.25 9.31422 12.9617 10.8275 11.25 11.175M9.75 9L7.5 6.75M7.5 6.75L5.25 9M7.5 6.75L7.5 15.75" 
-                stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              width="15"
+              height="17"
+              viewBox="0 0 15 17"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3.75 11.25C2.09315 11.25 0.75 9.90685 0.75 8.25C0.75 6.81971 1.75092 5.6232 3.09053 5.32271C3.03127 5.05796 3 4.78263 3 4.5C3 2.42893 4.67893 0.75 6.75 0.75C8.56448 0.75 10.078 2.03869 10.4251 3.75073C10.45 3.75025 10.475 3.75 10.5 3.75C12.5711 3.75 14.25 5.42893 14.25 7.5C14.25 9.31422 12.9617 10.8275 11.25 11.175M9.75 9L7.5 6.75M7.5 6.75L5.25 9M7.5 6.75L7.5 15.75"
+                stroke="white"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </button>
 
@@ -418,29 +387,21 @@ return(
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto ml-4">
-          <table className="w-full flex flex-col">
-            <thead className="bg-[#080C26] rounded-2xl">
-              <tr className="rounded-2xl flex items-center gap-4">
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+
+        <div className="overflow-x-auto">
+          <table className="table text-center">
+            {/* head */}
+            <thead>
+              <tr className="bg-[#080C26]">
+                <th className="text-white rounded-tl-full rounded-bl-full border-none">
                   #
                 </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Shipping ID
-                </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Product Name
-                </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Serial Number
-                </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Shipping Date
-                </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Shipping Owner
-                </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-white border-none">Shipping ID</th>
+                <th className="text-white border-none">Product Name</th>
+                <th className="text-white border-none">Serial Number</th>
+                <th className="text-white border-none">Shipping Date</th>
+                <th className="text-white border-none">Shipping Owner</th>
+                <th className="text-white rounded-tr-full rounded-br-full border-none">
                   Status
                 </th>
               </tr>
@@ -449,32 +410,25 @@ return(
               {managers.map((manager, index) => (
                 <tr
                   key={manager.id}
-                  className=" hover:bg-white/5 transition-colors"
+                  className="hover:bg-white/5 transition-colors"
                 >
-                  <td className="py-4 px-4">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
-                    />
+                  <td className="py-4">
+                    <input type="checkbox" className="checkbox checkbox-sm" />
                   </td>
-                  <td className="py-4 px-4 text-gray-400">{manager.shippingId}</td>
-                  <td className="py-4 px-4 text-gray-400">{manager.pName}</td>
-                  <td className="py-4 px-4 text-gray-400">{manager.sNumber}</td>
-                  <td className="py-4 px-4 text-gray-400">
-                    {manager.shipDate}
-                  </td>
-                  <td className="py-4 px-4 text-gray-400">
-                    {manager.shipOwner}
-                  </td>
-                  
-                  <td className="py-4 px-4">
+                  <td className="py-4 text-gray-100">{manager.shippingId}</td>
+                  <td className="py-4 text-gray-100">{manager.pName}</td>
+                  <td className="py-4 text-gray-100">{manager.sNumber}</td>
+                  <td className="py-4 text-gray-100">{manager.shipDate}</td>
+                  <td className="py-4 text-gray-100">{manager.shipOwner}</td>
+
+                  <td className="py-4 ">
                     <span
                       className={`px-4 py-1.5 rounded-full text-xs font-medium ${
-                        manager.status === "In-Stock"
-                          ? "bg-[#00E691] text-white"
-                          : manager.status === "Low Stock"
-                          ? "bg-[#FF6637] text-white"
-                          : "bg-[#6E7492] text-white"
+                        manager.status === "In Transit"
+                          ? "bg-[#0075FF] text-white"
+                          : manager.status === "At Warehouse"
+                            ? "bg-[#656A80] text-white"
+                            : "bg-[#00E691] text-white"
                       }`}
                     >
                       {manager.status}
@@ -487,5 +441,5 @@ return(
         </div>
       </div>
     </div>
-);
+  );
 }

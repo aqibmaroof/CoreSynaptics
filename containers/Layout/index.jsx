@@ -56,16 +56,16 @@ const Layout = ({ children }) => {
   if (!mounted) return null;
 
   return (
-    <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat  flex flex-col min-h-screen">
+    <div className="bg-[url('/images/background.png')] bg-cover bg-center bg-no-repeat flex flex-col min-h-screen">
       {/* Content Area */}
-      <div className="flex flex-1 overflow-hidden bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat ">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside className="w-74 overflow-y-auto h-screen scrollbar-hide">
           <Sidebar />
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat pb-8 overflow-y-auto h-screen scrollbar-hide">
+        <main className="flex-1  pb-8 overflow-y-auto h-screen scrollbar-hide">
           <div className="sticky top-0 z-20 backdrop-blur px-5 pt-3">
             <div className="sticky top-0 z-20 backdrop-blur flex items-center justify-between bg-[#060B26F0]/60 gap-2 w-full py-2 px-4 rounded-xl">
               <div className="bg-[transparent] px-2">
@@ -101,7 +101,9 @@ const Layout = ({ children }) => {
                                         ? "Create Project"
                                         : pathname === "/ProjectDetails"
                                           ? "Project Details"
-                                          : "Dashboard"}
+                                          : pathname === "/Shipment/Dashboard"
+                                            ? "Shipment"
+                                            : "Dashboard"}
                   </p>
                 </div>
               </div>

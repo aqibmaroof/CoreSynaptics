@@ -2,7 +2,7 @@
 import CardWrapper from "@/components/CardWrapper";
 import DynamicChart from "@/components/common/Charts/DynamicChart";
 
-export default function SalesOverview() {
+export default function SalesOverview({ heading, description }) {
   const ChartOptions = {
     series: [
       {
@@ -11,7 +11,7 @@ export default function SalesOverview() {
       },
       {
         name: "Sales",
-        data: [180, 220, 330, 420, 480, 320, 350, 250, 420, 450, 480 , 500],
+        data: [180, 220, 330, 420, 480, 320, 350, 250, 420, 450, 480, 500],
       },
     ],
     chart: {
@@ -131,7 +131,10 @@ export default function SalesOverview() {
     <CardWrapper className="flex flex-col font-gilroy">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white text-2xl font-semibold">Sales Overview</h2>
+        <h2 className="text-white text-2xl font-semibold">
+          {heading ? heading : "Sales Overview"}
+          {description && <p className="font-normal font-[16.99px]">{description}</p>}
+        </h2>
         <div className="dropdown dropdown-end">
           <label
             tabIndex={0}
