@@ -664,46 +664,102 @@ export default function KanbanBoard() {
             </div>
             <div className="mt-4">
               <p>Date</p>
-              <div class="relative">
-                <div class="absolute right-4 inset-y-0 flex items-center ps-3 pointer-events-none">
-                  <img src="/images/calendar_1.svg" alt="Calendar" />
-                </div>
-                <input
-                  datepicker
-                  id="default-datepicker"
-                  type="text"
-                  className="block w-full pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 text-md px-3 focus:border-white/20 focus:outline-none placeholder:text-body"
-                  placeholder="Select date"
-                />
+              <div
+                tabIndex={0}
+                role="button"
+                className="p-3 w-full flex items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+              >
+                <span className="font-normal">
+                  Feb 01, 2026 {"->"} Feb 11, 2026
+                </span>
+                <img src={"/images/calendar_1.svg"} />
               </div>
             </div>
-            <div className="flex flex-row gap-4 w-full mt-4">
-              <div>
-                <p>Tasks Status:</p>
-
-                <details className="dropdown ">
-                  <summary className="btn m-1 w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors">
-                    open or close
-                  </summary>
-                  <ul className="menu dropdown-content bg-transparent w-56 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors">
-                    <li className="px-2 py-1 mr-3 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#C65468] bg-[#FEF6F5]">
-                      <FaCircle className="text-[#C65468]" />
-                      <a>Item 1</a>
-                    </li>
-                    <li>
-                      <a>Item 2</a>
-                    </li>
-                  </ul>
-                </details>
-              </div>
-              <div>
-                <p>Priority:</p>
-                <input
-                  type="text"
-                  placeholder="Select"
-                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-                />
-              </div>
+            <div className="flex flex-row gap-4 w-full items-center justify-between mt-4">
+                <div className="w-full">
+                    <h1>Tasks Status:</h1>
+                    <div className="dropdown dropdown-bottom w-full">
+                    <div
+                        tabIndex={0}
+                        role="button"
+                        className="p-3 w-full flex items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+                    >
+                        <span className="flex items-center justify-center gap-3 font-[510] bg-[#B6CFFF] text-[#4D81E7] rounded-full px-2">
+                        <img src="/images/dot.svg" alt="diot" />
+                        Inprogress
+                        </span>
+                        <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                        />
+                        </svg>
+                    </div>
+                    <div
+                        tabIndex={0}
+                        className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg shadow-xl bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
+                    >
+                        <div className="p-2 space-y-1">
+                        <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
+                            <input
+                            type="checkbox"
+                            className="checkbox checkbox-info checkbox-xs"
+                            />
+                            <span className="text-white text-sm">In progress</span>
+                        </label>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <div className="w-full">
+                    <h1>Priority:</h1>
+                    <div className="dropdown dropdown-bottom w-full">
+                    <div
+                        tabIndex={0}
+                        role="button"
+                        className="p-3 w-full flex items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+                    >
+                        <span className="flex items-center justify-center gap-3 font-[510] bg-[#FFC6D0] text-[#FB5874] rounded-full px-2">
+                        <img src="/images/red_dot.svg" alt="diot" />
+                        Urgent
+                        </span>
+                        <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                        />
+                        </svg>
+                    </div>
+                    <div
+                        tabIndex={0}
+                        className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
+                    >
+                        <div className="p-2 space-y-1">
+                        <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
+                            <input
+                            type="checkbox"
+                            className="checkbox checkbox-info checkbox-xs"
+                            />
+                            <span className="text-white text-sm">Urgent</span>
+                        </label>
+                        </div>
+                    </div>
+                    </div>
+                </div>
             </div>
             <div className="mt-4">
               <p>Task Description</p>
@@ -717,7 +773,7 @@ export default function KanbanBoard() {
             </div>
             <div className="flex items-center gap-2 mt-4">
               <h2>Priority:</h2>
-              <div className="flex flex-row items-center gap-2">
+              <div className="flex flex-row items-center gap-2 ml-6">
                 {members.slice(0, 1).map((member) => (
                   <div
                     key={member.id}
@@ -749,6 +805,7 @@ export default function KanbanBoard() {
                 + Invite
               </button>
             </div>
+            {/* Attach files */}
             <div className="mt-4">
               <p>Attach Files</p>
               <div className="flex items-center justify-center w-full mt-1">
