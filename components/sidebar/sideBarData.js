@@ -57,11 +57,18 @@ export const sidebarItems = [
     submenu: [],
   },
   {
-    title: "FSEs",
+    title: "Finance",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Finance",
+    submenu: [],
+  },
+  {
+    title: "FSM",
     icon: config?.chart,
     iconActive: config?.home,
     category: "",
-    path: "/FSEs",
+    path: "/FSM",
     submenu: [],
   },
   {
