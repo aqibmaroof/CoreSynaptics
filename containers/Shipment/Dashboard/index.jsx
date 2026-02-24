@@ -2,9 +2,11 @@
 import { FiArrowDown, FiArrowUp } from "react-icons/fi";
 import { FaCircle } from "react-icons/fa";
 import { useState } from "react";
-import SalesOverview from "@/components/Cards/SalesOverview";
+import ShipmentOverview from "@/components/Cards/ShipmentOverview";
+import { useRouter } from "next/navigation";
 
 export default function KanbanBoard() {
+const router = useRouter();
   const managers = [
     {
       id: 1,
@@ -13,7 +15,7 @@ export default function KanbanBoard() {
       sNumber: "UB123900026BA",
       shipDate: "06-01-2026",
       shipOwner: "Christopher Beauchamp",
-      status: "In Transit",
+      status: "Approved",
     },
     {
       id: 2,
@@ -22,7 +24,7 @@ export default function KanbanBoard() {
       sNumber: "UB123900026BA",
       shipDate: "06-01-2026",
       shipOwner: "Christopher Beauchamp",
-      status: "At Warehouse",
+      status: "Rejected",
     },
     {
       id: 3,
@@ -31,7 +33,7 @@ export default function KanbanBoard() {
       sNumber: "UB123900026BA",
       shipDate: "06-01-2026",
       shipOwner: "Christopher Beauchamp",
-      status: "In-Stock",
+      status: "Approved",
     },
     {
       id: 4,
@@ -40,7 +42,7 @@ export default function KanbanBoard() {
       sNumber: "UB123900026BA",
       shipDate: "06-01-2026",
       shipOwner: "Christopher Beauchamp",
-      status: "In-Stock",
+      status: "Approved",
     },
     {
       id: 5,
@@ -49,7 +51,7 @@ export default function KanbanBoard() {
       sNumber: "UB123900026BA",
       shipDate: "06-01-2026",
       shipOwner: "Christopher Beauchamp",
-      status: "In-Stock",
+      status: "Approved",
     },
     {
       id: 6,
@@ -58,7 +60,7 @@ export default function KanbanBoard() {
       sNumber: "UB123900026BA",
       shipDate: "06-01-2026",
       shipOwner: "Christopher Beauchamp",
-      status: "In-Stock",
+      status: "Pending",
     },
     {
       id: 7,
@@ -67,12 +69,13 @@ export default function KanbanBoard() {
       sNumber: "UB123900026BA",
       shipDate: "06-01-2026",
       shipOwner: "Christopher Beauchamp",
-      status: "In-Stock",
+      status: "Approved",
     },
   ];
   return (
     <div className="min-h-screen  p-6 text-[#101437] dark:text-white">
       {/* Stats */}
+      <h1 className="text-xl font-bold">Shipment Overview</h1>
       <div className="flex items-center justify-between w-full gap-3 mt-2">
         <div className="flex items-center justify-left gap-6 w-full ">
           <p className="text-7xl font-bold font-gilroy">10</p>
@@ -169,7 +172,7 @@ export default function KanbanBoard() {
                       <FaCircle className="text-[#E7844D]" />
                       Reached at Site
                     </p>
-                    <h3 className="text-2xl font-bold mt-2">72%%</h3>
+                    <h3 className="text-2xl font-bold mt-2">72%</h3>
                   </div>
                 </div>
               </div>
@@ -245,12 +248,12 @@ export default function KanbanBoard() {
         </div>
       </div>
       {/* Header */}
-      <SalesOverview
+      <ShipmentOverview
         heading="Shipment Statistics"
         description="Shipment performance and delivery status overview."
       />
 
-      {/* TABLE */}
+      {/* Receving list Table */}
       <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-2xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -278,24 +281,45 @@ export default function KanbanBoard() {
                 <span>Add Shipment</span>
               </div>
             </button>
-
-            <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
-              <span className="text-gray-100 text-sm">Sort by</span>
-              Top
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
+            {/* Sort by */}
+            <div className="dropdown dropdown-end">
+                <label
+                    tabIndex={0}
+                    className="text-white/80 text-sm cursor-pointer hover:text-white transition-colors flex items-center gap-1"
+                >
+                    Sort by <span className="font-semibold">Top</span>
+                    <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                    />
+                    </svg>
+                </label>
+                <ul
+                    tabIndex={0}
+                    className="dropdown-content z-[1] menu p-2 shadow-lg bg-[#1e3a8a] rounded-box w-40 mt-2"
+                >
+                    <li>
+                    <a className="text-white hover:bg-white/10">Daily</a>
+                    </li>
+                    <li>
+                    <a className="text-white hover:bg-white/10">Weekly</a>
+                    </li>
+                    <li>
+                    <a className="text-white hover:bg-white/10">Monthly</a>
+                    </li>
+                    <li>
+                    <a className="text-white hover:bg-white/10">Yearly</a>
+                    </li>
+                </ul>
+            </div>
           </div>
         </div>
 
@@ -325,12 +349,12 @@ export default function KanbanBoard() {
 
           {/* Dropdown Filters */}
           <select className="w-[max-content] bg-transparent text-white px-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance hover:border-white/20 transition-colors">
-            <option>Assignee</option>
+            <option>Date</option>
             <option>All Projects</option>
           </select>
 
           <select className="bg-transparent text-white px-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
-            <option>Date</option>
+            <option>Status</option>
             <option>Urgent</option>
           </select>
 
@@ -408,7 +432,7 @@ export default function KanbanBoard() {
             </thead>
             <tbody>
               {managers.map((manager, index) => (
-                <tr
+                <tr  onClick={() => router.push("/Shipment/Details")}
                   key={manager.id}
                   className="hover:bg-white/5 transition-colors"
                 >
@@ -421,14 +445,14 @@ export default function KanbanBoard() {
                   <td className="py-4 text-gray-100">{manager.shipDate}</td>
                   <td className="py-4 text-gray-100">{manager.shipOwner}</td>
 
-                  <td className="py-4 ">
-                    <span
+                  <td className="py-4">
+                    <span 
                       className={`px-4 py-1.5 rounded-full text-xs font-medium ${
-                        manager.status === "In Transit"
-                          ? "bg-[#0075FF] text-white"
-                          : manager.status === "At Warehouse"
+                        manager.status === "Approved"
+                          ? "bg-[#00E691] text-white"
+                          : manager.status === "Pending"
                             ? "bg-[#656A80] text-white"
-                            : "bg-[#00E691] text-white"
+                            : "bg-[#FF2727] text-white"
                       }`}
                     >
                       {manager.status}

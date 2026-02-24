@@ -42,6 +42,14 @@ export const sidebarItems = [
     submenu: [],
   },
   {
+    title: "Receiving",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Receiving/Overview",
+    type: "link",
+    submenu: [],
+  },
+  {
     title: "QA/QC",
     icon: config?.chart,
     iconActive: config?.home,
