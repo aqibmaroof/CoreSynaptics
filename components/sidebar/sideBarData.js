@@ -79,6 +79,13 @@ export const sidebarItems = [
     submenu: [],
   },
   {
+    title: "Subscriptions",
+    path: "/Subscriptions/List",
+    icon: config?.chart,
+    iconActive: config?.home,
+    submenu: [],
+  },
+  {
     title: "Settings",
     path: "/Settings",
     icon: config?.chart,

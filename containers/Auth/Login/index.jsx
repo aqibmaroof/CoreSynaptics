@@ -17,7 +17,6 @@ const LoginPage = () => {
   // State to hold the login payload
   const [formData, setFormData] = useState({
     email: "",
-    phone: "",
     password: "",
   });
 

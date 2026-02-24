@@ -8,12 +8,11 @@ export const LoginService = async (credentials) => {
       method: "POST",
       data: credentials,
     });
-
     // Save tokens after successful login
-    if (data?.accessToken && data?.refreshToken) {
+    if (data?.access_token ) {
       setTokens({
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
       });
     }
 
