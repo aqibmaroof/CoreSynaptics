@@ -110,7 +110,7 @@ const Sidebar = () => {
                     return (
                       <li key={subIdx} className="py-1 w-full">
                         <div className="flex items-center justify-start">
-                          <span className="mr-3">{item.icon}</span>
+                          
 
                           <Link
                             href={sub.path}

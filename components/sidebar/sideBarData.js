@@ -345,6 +345,35 @@ export const sidebarItems = [
 
   // ─── Receiving / Inspection ────────────────────────────────────────
   {
+    title: "FSM",
+    icon: config?.chart,
+    iconActive: config?.home,
+    category: "",
+    path: "/FSM/Dashboard",
+    submenu: [
+      { 
+        title: "Dashboard", 
+        type:"link",
+        path: "/FSM/Dashboard" 
+      },
+      { 
+        title: "Dispatch Console", 
+        type:"link",
+        path: "/FSM/DispatchConsole" 
+      },
+      { 
+        title: "Services & Parts", 
+        type:"link",
+        path: "/FSM/ServicesParts" 
+      },
+      { 
+        title: "Invoices", 
+        type:"link",
+        path: "/FSM/Invoices" 
+      },
+    ],
+  },
+  {
     title: "Receiving",
     icon: config?.chart,
     iconActive: config?.home,
