@@ -42,6 +42,25 @@ export const sidebarItems = [
     submenu: [],
   },
   {
+    title: "FSM",
+    icon: config?.chart,
+    iconActive: config?.home,
+    category: "",
+    path: "/FSM/Dashboard",
+    submenu: [
+      { 
+        title: "Dashboard", 
+        type:"link",
+        path: "/FSM/Dashboard" 
+      },
+      { 
+        title: "Dispatch Console", 
+        type:"link",
+        path: "/FSM/DispatchConsole" 
+      },
+    ],
+  },
+  {
     title: "Receiving",
     icon: config?.chart,
     iconActive: config?.home,
@@ -63,14 +82,7 @@ export const sidebarItems = [
     path: "/Finance",
     submenu: [],
   },
-  {
-    title: "FSM",
-    icon: config?.chart,
-    iconActive: config?.home,
-    category: "",
-    path: "/FSM",
-    submenu: [],
-  },
+  
   {
     title: "Safety",
     icon: config?.chart,
