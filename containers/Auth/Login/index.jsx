@@ -4,8 +4,11 @@ import Link from "next/link";
 import config from "../../../config";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { LoginService, GetUser } from "../../../services/auth";
-import { setUser } from "../../../services/instance/tokenService";
+import { LoginService, GetUser, GetOrganization } from "../../../services/auth";
+import {
+  setOrganization,
+  setUser,
+} from "../../../services/instance/tokenService";
 
 const LoginPage = () => {
   const router = useRouter();
@@ -99,16 +102,18 @@ const LoginPage = () => {
 
     try {
       const response = await LoginService(formData);
-      console.log(response);
       if (response) {
         setMessage({ type: "success", text: "Login successful! 🚀" });
 
         // Save credentials if "Remember Me" is checked
         saveCredentials();
 
-        // const userResponse = await GetUser();
-        // setUser({ user: userResponse });
-
+        const userResponse = await GetUser();
+        setUser({ user: userResponse });
+        if (userResponse?.organizationName) {
+          const organizationResponse = await GetOrganization();
+          setOrganization({ organization: organizationResponse });
+        }
         setTimeout(() => router.push("/"), 2000);
       } else {
         setMessage({
@@ -293,6 +298,12 @@ const LoginPage = () => {
             )}
           </button>
         </form>
+        <div className="flex items-center justify-center mt-5 gap-2">
+          dont't have an account ?{" "}
+          <a className="text-info hover:underline" href="/Auth/Register">
+            Click Here
+          </a>
+        </div>
       </div>
     </div>
   );

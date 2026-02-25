@@ -1,9 +1,9 @@
 import sendRequest from "../instance/sendRequest";
 
-export const getSubscriptions = async (limit = 25, currentPage) => {
+export const getRoles = async (limit = 25, currentPage) => {
   try {
     const data = await sendRequest({
-      url: `/subscription-plans`,
+      url: `/roles`,
       method: "GET",
     });
     return data;
@@ -12,10 +12,10 @@ export const getSubscriptions = async (limit = 25, currentPage) => {
   }
 };
 
-export const DeleteSubscription = async (id) => {
+export const DeleteRoles = async (id) => {
   try {
     const data = await sendRequest({
-      url: `/subscription-plans/${id}`,
+      url: `/roles/${id}`,
       method: "DELETE",
     });
     return data;
@@ -24,10 +24,10 @@ export const DeleteSubscription = async (id) => {
   }
 };
 
-export const UpdateSubscription = async (id, payload) => {
+export const UpdateRoles = async (id, payload) => {
   try {
     const data = await sendRequest({
-      url: `/subscription-plans/${id}`,
+      url: `/roles/${id}`,
       method: "PATCH",
       data: payload,
     });
@@ -37,10 +37,10 @@ export const UpdateSubscription = async (id, payload) => {
   }
 };
 
-export const CreateSubscription = async (payload) => {
+export const CreateRoles = async (payload) => {
   try {
     const data = await sendRequest({
-      url: `/subscription-plans`,
+      url: `/roles`,
       method: "POST",
       data: payload,
     });
@@ -50,24 +50,11 @@ export const CreateSubscription = async (payload) => {
   }
 };
 
-export const GetSubscriptionById = async (id) => {
+export const GetRolesById = async (id) => {
   try {
     const data = await sendRequest({
-      url: `/subscription-plans/${id}`,
+      url: `/roles/${id}`,
       method: "GET",
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-export const selectSubscription = async (payload) => {
-  try {
-    const data = await sendRequest({
-      url: `/subscriptions/select`,
-      method: "POST",
-      data: payload,
     });
     return data;
   } catch (error) {

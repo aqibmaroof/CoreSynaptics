@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSubscriptions } from "@/services/Subscriptions";
+import { getSubscriptions, selectSubscription } from "@/services/Subscriptions";
+import { useRouter } from "next/navigation";
+import { GetOrganization, GetUser } from "@/services/auth";
+import { setOrganization, setUser } from "@/services/instance/tokenService";
 
 const plans = [
   {
@@ -33,6 +36,7 @@ const plans = [
 ];
 
 export default function PricingPlans() {
+  const router = useRouter();
   const [subscriptions, setSubscriptions] = useState([]);
 
   useEffect(() => {
@@ -49,11 +53,24 @@ export default function PricingPlans() {
     }
   };
 
+  const SelectSubscription = async (id) => {
+    try {
+      const payload = {
+        subscriptionPlanId: id,
+      };
+      await selectSubscription(payload);
+      const userResponse = await GetUser();
+      const organizationResponse = await GetOrganization();
+      setUser({ user: userResponse });
+      setOrganization({ organization: organizationResponse });
+      setTimeout(() => router.push("/"), 2000);
+    } catch (error) {
+      console.log("error selecting subscription : ", error);
+    }
+  };
+
   return (
-    <div
-      className="bg-[url('/images/background.png')] bg-cover bg-center bg-no-repeat min-h-screen flex flex-col items-center justify-center py-16 px-4"
-    
-    >
+    <div className="bg-[url('/images/background.png')] bg-cover bg-center bg-no-repeat min-h-screen flex flex-col items-center justify-center py-16 px-4">
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">
@@ -116,6 +133,7 @@ export default function PricingPlans() {
             {/* Button */}
             <div className="mt-8">
               <button
+                onClick={() => SelectSubscription(plan?.id)}
                 className={`w-auto px-8 py-2.5 rounded-xl text-sm font-semibold transition-all translate-y-10 duration-200 ${plans[index].buttonClass}`}
               >
                 Get Started

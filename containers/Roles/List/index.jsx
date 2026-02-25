@@ -1,35 +1,42 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DeleteSubscription, getSubscriptions } from "@/services/Subscriptions";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { FiEdit } from "react-icons/fi";
+import { DeleteRoles, getRoles } from "@/services/Roles";
 
 export default function PricingPlans() {
   const router = useRouter();
-  const [subscriptions, setSubscriptions] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [message, setMessage] = useState({ type: "", text: "" });
 
   useEffect(() => {
-    GetAllSubscriptions();
+    GetAllRoles();
   }, []);
 
-  const GetAllSubscriptions = async () => {
+  const GetAllRoles = async () => {
     try {
-      const res = await getSubscriptions();
-      setSubscriptions(res.data);
+      const res = await getRoles();
+      setRoles(res);
     } catch (error) {
       console.error("error Fetching subscritpions", error.message);
     }
   };
 
-  const removePlan = async (id) => {
+  const removeRole = async (id) => {
     try {
-      await DeleteSubscription(id);
-      GetAllSubscriptions();
+      await DeleteRoles(id);
+      GetAllRoles();
+      setMessage({
+        type: "success",
+        text: "Role Deleted Successfully ! 🚀",
+      });
     } catch (error) {
-      console.error("Error Deleting Plan : ", error?.message);
+      setMessage({
+        type: "error",
+        text: "Error Deleting Plan : " + error?.message + " " + error?.error,
+      });
     }
   };
   return (
@@ -37,16 +44,29 @@ export default function PricingPlans() {
       {/* Header */}
       <div className="mb-5">
         <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
-          Subscriptions Lists
+          Roles Lists
         </h1>
-        <p className="text-gray-300 text-base">
-          Subscriptions Plans for your business !
-        </p>
       </div>
       <div className="flex w-full bg-gradient-to-r font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 rounded-3xl card">
         {/* Header */}
-        <div className="flex items-center justify-end mb-8">
-          <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-between mb-8">
+          {message.text && (
+            <div
+              className={`tooltip text-white tooltip-bottom ${
+                message.type === "success" ? "tooltip-accent" : "tooltip-error"
+              }`}
+              data-tip={message.text}
+            >
+              <button
+                className={`btn font-thin text-white ${
+                  message.type === "success" ? "btn-accent" : "btn-error"
+                }`}
+              >
+                {message.text.slice(0, 160)}
+              </button>
+            </div>
+          )}
+          <div className="flex items-center justify-end ml-auto gap-2">
             <span className="text-gray-400 text-sm">Sort by</span>
             <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
               Newest
@@ -110,7 +130,7 @@ export default function PricingPlans() {
           </button>
 
           <button
-            onClick={() => router.push("/Subscriptions/Add")}
+            onClick={() => router.push("/Roles/Add")}
             className="bg-[#facc15] text-[#0a1128] cursor-pointer p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20"
           >
             <svg
@@ -138,37 +158,28 @@ export default function PricingPlans() {
                   #
                 </th>
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Plan Name
+                  Role Name
                 </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Price
-                </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  User Limit
-                </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Project Limit
-                </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Features
-                </th>
-                <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Modules
-                </th>
+
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
                   Action
                 </th>
               </tr>
             </thead>
             <tbody>
-              {subscriptions?.length === 0 ? (
+              {roles?.length === 0 ? (
                 <tr>
-                  <td colSpan="100%" className="text-center p-13 border-l-1 border-r-1 border-b-1 border-gray-600">NO SUBSCRIPTIONS FOUND</td>
+                  <td
+                    colSpan="100%"
+                    className="text-center p-13 border-l-1 border-r-1 border-b-1 border-gray-600"
+                  >
+                    NO ROLES FOUND
+                  </td>
                 </tr>
               ) : (
-                subscriptions.map((plan, index) => (
+                roles.map((role, index) => (
                   <tr
-                    key={plan.id}
+                    key={role.id}
                     className=" hover:bg-white/5 transition-colors"
                   >
                     <td className="py-4 px-4">
@@ -181,51 +192,24 @@ export default function PricingPlans() {
                       <div className="flex items-center gap-3">
                         <div className="avatar">
                           <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-purple-500">
-                            {plan.name.slice(0, 2)}
+                            {role.name.slice(0, 2)}
                           </div>
                         </div>
-                        <span className="text-white font-medium">
-                          {plan.name}
+                        <span className="text-white font-medium ">
+                          {role.name.replace("_", " ")}
                         </span>
                       </div>
-                    </td>
-                    <td className="py-4 px-4 text-gray-400">
-                      {" "}
-                      ${plan.price || "20"}
-                    </td>
-                    <td className="py-4 px-4 text-gray-400">
-                      {plan.userLimit || "♾️"}
-                    </td>
-                    <td className="py-4 px-4 text-gray-400">
-                      {plan.projectLimit || "♾️"}
-                    </td>
-                    <td className="py-4 px-4 text-gray-400">
-                      <div className="flex flex-col gap-2 text-gray-300 text-sm mb-4">
-                        {Object.entries(plan?.features).map(([key, value]) => (
-                          <div key={key}>
-                            <span>{key}</span>: <span>{String(value)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-gray-400">
-                      {" "}
-                      {plan.moduleAccess.map((mod) => (
-                        <p key={mod} className="text-gray-300">
-                          {mod}
-                        </p>
-                      ))}
                     </td>
 
                     <td className="flex items-center justify-center py-4 px-4 gap-4">
                       <button className="text-info text-xl mt-10 mb-10 cursor-pointer">
-                        <a href={`/Subscriptions/Add?id=${plan?.id}`}>
+                        <a href={`/Roles/Add?id=${role?.id}`}>
                           <FaEdit />
                         </a>
                       </button>
                       <button
                         className="text-error text-xl cursor-pointer"
-                        onClick={() => removePlan(plan.id)}
+                        onClick={() => removeRole(role.id)}
                       >
                         <FaTrash />
                       </button>

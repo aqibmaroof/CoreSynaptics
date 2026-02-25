@@ -29,7 +29,7 @@ const AVAILABLE_MODULES = [
 const defaultForm = {
   name: "",
   displayName: "",
-  tier: "",
+  tier: 1,
   price: "",
   active: false,
   projectLimit: "",
@@ -127,10 +127,10 @@ export default function AddSubscription() {
     const payload = {
       name: form.name,
       displayName: form.displayName,
-      price: form.price,
-      projectLimit: form.projectLimit || null,
-      tier: form.tier,
-      userLimit: form.userLimit || null,
+      price: Number(form.price),
+      projectLimit: Number(form.projectLimit) || null,
+      tier: Number(form.tier),
+      userLimit: Number(form.userLimit) || null,
       features: Object.fromEntries(
         form.features
           .filter((f) => f.key.trim())

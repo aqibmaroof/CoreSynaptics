@@ -15,6 +15,12 @@ export const setUser = ({ user }) => {
   user && localStorage.setItem("user", JSON.stringify(user));
 };
 
+export const setOrganization = ({ organization }) => {
+  if (typeof window === "undefined") return;
+  organization &&
+    localStorage.setItem("organization", JSON.stringify(organization));
+};
+
 export const getUser = () =>
   typeof window !== "undefined" ? localStorage.getItem("user") : null;
 

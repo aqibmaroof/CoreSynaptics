@@ -1,19 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { sidebarItems } from "./sideBarData";
+import { getMenuByRole } from "./sideBarData";
 import { FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
 import config from "../../config";
+import { getUser } from "@/services/instance/tokenService";
+import { getRoles } from "@/services/Roles";
+// Replace this with however you access the current user's role:
+// e.g. useSession(), useContext(AuthContext), useSelector(), etc.
 
 const Sidebar = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const user = JSON.parse(getUser());
   const [openIndex, setOpenIndex] = useState(null);
   const [activeSubIndex, setActiveSubIndex] = useState(null);
   const [activeSubSubIndex, setActiveSubSubIndex] = useState(null);
+  const [roles, setRoles] = useState([]);
 
+  // Filter sidebar items to only those allowed for this role
+  const visibleItems = getMenuByRole(user?.platformRole);
+
+  useEffect(() => {
+    getRolesList();
+  }, []);
+
+  const getRolesList = async () => {
+    try {
+      const res = await getRoles();
+      localStorage.setItem("roles" , JSON.stringify(res))
+    } catch (error) {
+      console.log("Error Fetching Roles : ", error);
+    }
+  };
   const toggleSubmenu = (index) => {
     setOpenIndex(openIndex === index ? null : index);
     setActiveSubIndex(null);
@@ -22,7 +43,7 @@ const Sidebar = () => {
 
   return (
     <aside className="w-[280px] m-3 py-2 transition-colors bg-gradient-to-b from-[#060B26F0] to-[#1A1F3700] rounded-t rounded-t-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
-      {/* LIGHT ↔ DARK LOGOS */}
+      {/* LOGOS */}
       <div className="sticky z-10 px-4 py-5">
         <img src={config?.brand} className="w-55 h-auto m-auto dark:hidden" />
         <img
@@ -30,23 +51,36 @@ const Sidebar = () => {
           className="w-55 h-auto m-auto hidden dark:block"
         />
       </div>
+
       <img src={config?.h_line} className="px-4 mt-6" />
+
       <ul className="list-none m-0 p-0 mt-8 mb-15">
-        {sidebarItems.map((item, index) => (
+        {visibleItems.map((item, index) => (
           <li key={index}>
             {/* CATEGORY TITLE */}
-            <p className="text-[#DF5B30]">{item.category}</p>
+            {item.category && (
+              <p className="text-[#DF5B30] px-4 mb-1">{item.category}</p>
+            )}
 
             {/* MAIN ITEM */}
             <div
-              className={`flex items-center py-5 w-[250px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-[#2B3340] dark:text-white hover:text-[#101437] dark:hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] ${pathname === item?.path ? "bg-[url('/images/hover_background.png')]" : ""} bg-cover bg-center bg-no-repeat transition`}
-              onClick={() =>
-                item.submenu.length > 0
-                  ? toggleSubmenu(index)
-                  : item.title === "View Website" || item.title === "Support"
-                    ? window.open(item.path, "_blank")
-                    : router.push(item.path)
-              }
+              className={`flex items-center py-5 w-[250px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-[#2B3340] dark:text-white hover:text-[#101437] dark:hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] ${
+                pathname === item?.path
+                  ? "bg-[url('/images/hover_background.png')]"
+                  : ""
+              } bg-cover bg-center bg-no-repeat transition`}
+              onClick={() => {
+                if (item.submenu.length > 0) {
+                  toggleSubmenu(index);
+                } else if (
+                  item.title === "View Website" ||
+                  item.title === "Support"
+                ) {
+                  window.open(item.path, "_blank");
+                } else {
+                  router.push(item.path);
+                }
+              }}
             >
               <img
                 src={pathname === item?.path ? item?.iconActive : item.icon}
@@ -85,7 +119,6 @@ const Sidebar = () => {
                             {sub.title}
                           </Link>
 
-                          {/* SUB-SUB MENU BUTTON */}
                           {sub.submenu && (
                             <span className="text-xs mr-5 cursor-pointer">
                               {activeSubSubIndex === subIdx ? (
@@ -179,6 +212,8 @@ const Sidebar = () => {
           </li>
         ))}
       </ul>
+
+      {/* NEED HELP CARD */}
       <div className="bg-[url('/images/needHelp.png')] bg-cover bg-center bg-no-repeat w-[220px] rounded-xl h-auto mx-auto mb-15 px-4 py-4">
         <img src={config?.questionMark} />
         <p className="mt-5 font-bold text-[14px]">Need help?</p>
