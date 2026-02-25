@@ -1,10 +1,7 @@
-import Layout from "@/containers/Layout";
-import HomePage from "../containers/HomePage";
+import ComingSoon from "../containers/ComingSoon";
 
-export default function Home() {
+export default function ComingSoonPage() {
   return (
-    <Layout>
-      <HomePage />
-    </Layout>
+      <ComingSoon />
   );
 }
