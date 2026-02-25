@@ -58,6 +58,16 @@ export const sidebarItems = [
         type:"link",
         path: "/FSM/DispatchConsole" 
       },
+      { 
+        title: "Services & Parts", 
+        type:"link",
+        path: "/FSM/ServicesParts" 
+      },
+      { 
+        title: "Invoices", 
+        type:"link",
+        path: "/FSM/Invoices" 
+      },
     ],
   },
   {
