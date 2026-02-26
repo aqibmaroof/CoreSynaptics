@@ -38,44 +38,20 @@ const ComingSoon = () => {
               type="text"
               maxlength="255"
               name="Email"
-              value=""
               fieldType="9"
               placeholder="Email"
-                className="flex-1 bg-transparent text-white placeholder-white px-2 py-4 w-42 md:w-80 text-lg outline-none "
-                  required
+              className="flex-1 bg-transparent text-white placeholder-white px-2 py-4 w-42 md:w-80 text-lg outline-none autofill:bg-transparent autofill:text-white autofill:[box-shadow:0_0_0px_1000px_#000000_inset] autofill:[-webkit-text-fill-color:white] "
+              required
             />
-            <button className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-700 text-white px-5 py-4 md: rounded-2xl" type="submit">
-              <em> Subscribe</em>
+            <button
+              className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-700 text-white px-5 py-4 md: rounded-2xl"
+              type="submit"
+            >
+              Subscribe
             </button>
           </div>
         </form>
-        <form className="space-y-4">
-          {/* Email Field */}
-          <div className="flex flex-col items-start justify-center">
-            <form className="w-full flex items-center">
-              <div className="w-full max-w-xl relative flex bg-transparent backdrop-blur-[42px] border-3 border-white/[0.03] border-t-white/[0.09] rounded-2xl p-1 shadow-2xl overflow-hidden">
-                {/* Email Input */}
-                <input
-                  type="email"
-                  placeholder="Email"
-                  className="flex-1 bg-transparent text-white placeholder-white px-2 py-4 w-42 md:w-80 text-lg outline-none "
-                  required
-                />
 
-                {/* Subscribe Button */}
-                <button
-                  type="submit"
-                  className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-700 text-white px-5 py-4 md: rounded-2xl"
-                >
-                  Subscribe
-                </button>
-              </div>
-            </form>
-            <h2 className="text-lg font-sora mt-4 ml-2">
-              Subscribe for early bird information
-            </h2>
-          </div>
-        </form>
         {/* Social icons */}
         <div className="mt-12">
           <div className="flex items-center gap-6 ml-2">
