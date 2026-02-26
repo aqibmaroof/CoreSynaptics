@@ -20,82 +20,35 @@ const ComingSoon = () => {
           <h2 className="text-7xl font-bold text-white mt-4">Data Center</h2>
           <p className="text-6xl text-gray-300">one window solution</p>
         </div>
- {/* <form
-          action="https://forms.zohopublic.com/customelectronics1/form/CustomerSignupForm/formperma/O0Tqc3RSeo0qdhKwX11lBUGwf-Y4kgyz0T-vNyEB5Yk/htmlRecords/submit"
+        <form
+          action="https://forms.zohopublic.com/customelectronics1/form/SimpleSignupForm/formperma/76ZUJUr3HB_xfTPsOazPwM9WxHV8d-wVzx11qysAMP4/htmlRecords/submit"
           name="form"
           id="form"
           method="POST"
           accept-charset="UTF-8"
           enctype="multipart/form-data"
-          className="flex flex-col"
+          className="w-full flex items-center"
         >
-          <input type="hidden" name="zf_referrer_name" value="" />
-          <input type="hidden" name="zf_redirect_url" value="" />
-          <input type="hidden" name="zc_gad" value="" />
-          <p></p>
-          <label>
-            Enter a valid email address
-            <em>*</em>
-          </label>
-          <input
-            type="text"
-            maxlength="255"
-            name="Email"
-            value=""
-            fieldType="9"
-            placeholder=""
-          />
-          <label>
-            Enter your phone number
-            <em>*</em>
-          </label>
-          <input
-            type="text"
-            compname="PhoneNumber"
-            name="PhoneNumber_countrycode"
-            phoneFormat="1"
-            isCountryCodeEnabled="false"
-            maxlength="20"
-            value=""
-            fieldType="11"
-            id="international_PhoneNumber_countrycode"
-            placeholder=""
-          />
-          <label>Number</label>
-          <label>Enter the company name if applicable</label>
-          <input
-            type="text"
-            name="SingleLine1"
-            value=""
-            fieldType="1"
-            maxlength="255"
-            placeholder=""
-          />
-          <label>
-            Enter your first name
-            <em>*</em>
-          </label>
-          <input
-            type="text"
-            name="SingleLine2"
-            value=""
-            fieldType="1"
-            maxlength="255"
-            placeholder=""
-          />
-          <label>Enter your last name</label>
-          <input
-            type="text"
-            name="SingleLine3"
-            value=""
-            fieldType="1"
-            maxlength="255"
-            placeholder=""
-          />
-          <button type="submit">
-            <em>Submit</em>
-          </button>
-        </form> */}
+          <div className="w-full max-w-xl relative flex bg-transparent backdrop-blur-[42px] border-3 border-white/[0.03] border-t-white/[0.09] rounded-2xl p-1 shadow-2xl overflow-hidden">
+            <input type="hidden" name="zf_referrer_name" value="" />
+            <input type="hidden" name="zf_redirect_url" value="" />
+            <input type="hidden" name="zc_gad" value="" />
+            <p></p>
+            <input
+              type="text"
+              maxlength="255"
+              name="Email"
+              value=""
+              fieldType="9"
+              placeholder="Email"
+                className="flex-1 bg-transparent text-white placeholder-white px-2 py-4 w-42 md:w-80 text-lg outline-none "
+                  required
+            />
+            <button className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-700 text-white px-5 py-4 md: rounded-2xl" type="submit">
+              <em> Subscribe</em>
+            </button>
+          </div>
+        </form>
         <form className="space-y-4">
           {/* Email Field */}
           <div className="flex flex-col items-start justify-center">
