@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CreateRoles, GetRolesById, UpdateRoles } from "@/services/Roles";
+import { CreateUsers, GetUsersById, UpdateUsers } from "@/services/Users";
 
 const defaultForm = {
-  name: "",
-  description: "",
+  email: "",
+  firstName: "",
+  lastName: "",
+  roleId: "",
 };
 
 export default function AddSubscription() {
@@ -19,13 +21,13 @@ export default function AddSubscription() {
 
   useEffect(() => {
     if (id) {
-      getRolesDetails();
+      getUsersDetails();
     }
   }, [id]);
 
-  const getRolesDetails = async () => {
+  const getUsersDetails = async () => {
     try {
-      const res = await GetRolesById(id);
+      const res = await GetUsersById(id);
       console.log(res);
       setForm({
         name: res.name,
@@ -45,7 +47,6 @@ export default function AddSubscription() {
     }));
   };
 
- 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -64,10 +65,10 @@ export default function AddSubscription() {
       setLoading(true);
       if (id) {
         console.log("id");
-        await UpdateRoles(id, payload);
+        await UpdateUsers(id, payload);
       } else {
         console.log("no id");
-        await CreateRoles(payload);
+        await CreateUsers(payload);
       }
       router.back();
     } catch (err) {
@@ -113,12 +114,12 @@ export default function AddSubscription() {
         {/* ── Basic Info ── */}
         <div>
           <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
-            User Name <span className="text-red-400">*</span>
+            Email <span className="text-red-400">*</span>
           </label>
           <input
             type="text"
-            name="name"
-            value={form.name}
+            name="email"
+            value={form.email}
             required
             onChange={handleChange}
             placeholder="e.g. Professional"
@@ -127,7 +128,34 @@ export default function AddSubscription() {
         </div>
         <div>
           <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
-            User Description
+            First Name
+          </label>
+          <input
+            type="text"
+            name="firstName"
+            value={form.firstName}
+            onChange={handleChange}
+            placeholder="e.g. Professional"
+            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
+          />
+        </div>
+
+        <div>
+          <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
+            Last Name
+          </label>
+          <input
+            type="text"
+            name="lastName"
+            value={form.lastName}
+            onChange={handleChange}
+            placeholder="e.g. Professional"
+            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
+          />
+        </div>
+        <div>
+          <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
+            Role
           </label>
           <input
             type="text"

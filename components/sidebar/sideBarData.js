@@ -107,8 +107,8 @@ import config from "@/config";
 
 // Role constants for clarity and reuse
 export const ROLES = {
-  GC_PM: "GCPM",
-  OEM_PM: "OEMPM",
+  GC_PM: "gc_pm",
+  OEM_PM: "oem_pm",
   FSM: "FSM", // Field Service Manager / Scheduler – OEM
   FSE: "FSE", // Field Service Engineer / ASP – OEM
   SUPERINTENDENT: "SUPERINTENDENT", // GC
@@ -122,7 +122,7 @@ export const ROLES = {
 export const sidebarItems = [
   // ─── GC PM Dashboard ───────────────────────────────────────────────
   {
-    title: "Dashboard",
+    title: "GC Dashboard",
     icon: config?.chart,
     iconActive: config?.home,
     path: "/",
@@ -350,26 +350,28 @@ export const sidebarItems = [
     iconActive: config?.home,
     category: "",
     path: "/FSM/Dashboard",
+    roles: [ROLES.FSM],
+
     submenu: [
-      { 
-        title: "Dashboard", 
-        type:"link",
-        path: "/FSM/Dashboard" 
+      {
+        title: "Dashboard",
+        type: "link",
+        path: "/FSM/Dashboard",
       },
-      { 
-        title: "Dispatch Console", 
-        type:"link",
-        path: "/FSM/DispatchConsole" 
+      {
+        title: "Dispatch Console",
+        type: "link",
+        path: "/FSM/DispatchConsole",
       },
-      { 
-        title: "Services & Parts", 
-        type:"link",
-        path: "/FSM/ServicesParts" 
+      {
+        title: "Services & Parts",
+        type: "link",
+        path: "/FSM/ServicesParts",
       },
-      { 
-        title: "Invoices", 
-        type:"link",
-        path: "/FSM/Invoices" 
+      {
+        title: "Invoices",
+        type: "link",
+        path: "/FSM/Invoices",
       },
     ],
   },
@@ -640,12 +642,23 @@ export const sidebarItems = [
     roles: [ROLES.SUPERADMIN],
   },
 
-
-    // ─── Users (all roles – adjust as needed) ───────────────────────
+  // ─── Users (all roles – adjust as needed) ───────────────────────
 
   {
     title: "Users",
     path: "/Users/List",
+    icon: config?.chart,
+    iconActive: config?.home,
+    type: "link",
+    submenu: [],
+    roles: [ROLES.SUPERADMIN],
+  },
+
+  // ─── Permissions (all roles – adjust as needed) ───────────────────────
+
+  {
+    title: "Permissions",
+    path: "/Permissions",
     icon: config?.chart,
     iconActive: config?.home,
     type: "link",

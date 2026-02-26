@@ -21,7 +21,7 @@ const Sidebar = () => {
   const [roles, setRoles] = useState([]);
 
   // Filter sidebar items to only those allowed for this role
-  const visibleItems = getMenuByRole(user?.platformRole);
+  const visibleItems = getMenuByRole(user?.activeRole?.name || user?.platformRole);
 
   useEffect(() => {
     getRolesList();

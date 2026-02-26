@@ -3,39 +3,40 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { DeleteRoles, getRoles } from "@/services/Roles";
+import { DeletePermissions, getPermissions } from "@/services/Permissions";
 
 export default function PricingPlans() {
   const router = useRouter();
-  const [roles, setRoles] = useState([]);
+  const [permissions, setPermissions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
 
   useEffect(() => {
-    GetAllRoles();
+    GetAllPermissions();
   }, []);
 
-  const GetAllRoles = async () => {
+  const GetAllPermissions = async () => {
     try {
-      const res = await getRoles();
-      setRoles(res);
+      const res = await getPermissions();
+      setPermissions(res);
     } catch (error) {
-      console.error("error Fetching subscritpions", error.message);
+      console.error("error Fetching permissions", error.message);
     }
   };
 
-  const removeRole = async (id) => {
+  const removePermission = async (id) => {
     try {
-      await DeleteRoles(id);
-      GetAllRoles();
+      await DeletePermissions(id);
+      GetAllPermissions();
       setMessage({
         type: "success",
-        text: "Role Deleted Successfully ! 🚀",
+        text: "Permission Deleted Successfully ! 🚀",
       });
     } catch (error) {
       setMessage({
         type: "error",
-        text: "Error Deleting Plan : " + error?.message + " " + error?.error,
+        text:
+          "Error Deleting Permission : " + error?.message + " " + error?.error,
       });
     }
   };
@@ -44,7 +45,7 @@ export default function PricingPlans() {
       {/* Header */}
       <div className="mb-5">
         <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
-          Roles Lists
+          Permissions Lists
         </h1>
       </div>
       <div className="flex w-full bg-gradient-to-r font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 rounded-3xl card">
@@ -130,7 +131,7 @@ export default function PricingPlans() {
           </button>
 
           <button
-            onClick={() => router.push("/Roles/Add")}
+            onClick={() => router.push("/Permissions/Add")}
             className="bg-[#facc15] text-[#0a1128] cursor-pointer p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20"
           >
             <svg
@@ -158,7 +159,7 @@ export default function PricingPlans() {
                   #
                 </th>
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                  Role Name
+                  Permission Name
                 </th>
 
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
@@ -167,19 +168,19 @@ export default function PricingPlans() {
               </tr>
             </thead>
             <tbody>
-              {roles?.length === 0 ? (
+              {permissions?.length === 0 ? (
                 <tr>
                   <td
                     colSpan="100%"
-                    className="text-center p-13 border-l-1 border-r-1 border-b-1 border-gray-600"
+                    className="text-center p-13 border-l-1 border-r-1 border-b-1 border-gray-600 uppercase"
                   >
-                    NO ROLES FOUND
+                    NO permissions FOUND
                   </td>
                 </tr>
               ) : (
-                roles.map((role, index) => (
+                permissions.map((permission, index) => (
                   <tr
-                    key={role.id}
+                    key={permission.id}
                     className=" hover:bg-white/5 transition-colors"
                   >
                     <td className="py-4 px-4">
@@ -192,24 +193,24 @@ export default function PricingPlans() {
                       <div className="flex items-center gap-3">
                         <div className="avatar">
                           <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-purple-500">
-                            {role.name.slice(0, 2)}
+                            {permission.name.slice(0, 2)}
                           </div>
                         </div>
                         <span className="text-white font-medium ">
-                          {role.name}
+                          {permission.name}
                         </span>
                       </div>
                     </td>
 
                     <td className="flex items-center justify-center py-4 px-4 gap-4">
                       <button className="text-info text-xl mt-10 mb-10 cursor-pointer">
-                        <a href={`/Roles/Add?id=${role?.id}`}>
+                        <a href={`/Permissions/Add?id=${permission?.id}`}>
                           <FaEdit />
                         </a>
                       </button>
                       <button
                         className="text-error text-xl cursor-pointer"
-                        onClick={() => removeRole(role.id)}
+                        onClick={() => removePermission(permission.id)}
                       >
                         <FaTrash />
                       </button>
