@@ -203,13 +203,13 @@ const tasks = [
                 </div>
                 {/* Table */}
                 <div className="overflow-x-auto ml-4">
-                <table className="w-full flex flex-col">
-                    <thead className="bg-[#080C26] rounded-2xl flex flex-col justify-between">
+                <table className="w-full ">
+                    <thead className="bg-[#080C26] rounded-2xl ">
                     <tr className="rounded-2xl">
                         <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
                         #
                         </th>
-                        <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                        <th className="text-left py-4 px-2 text-gray-400 font-medium text-sm">
                         Product Name
                         </th>
                         <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
@@ -238,11 +238,11 @@ const tasks = [
                         </th>
                     </tr>
                     </thead>
-                    <tbody className="flex flex-col items-center justify-between">
+                    <tbody>
                     {tasks.map((task, index) => (
                         <tr
                         key={task.id}
-                        className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
+                        className=" hover:bg-white/5 transition-colors cursor-pointer"
                         
                         >
                         <td className="py-4 px-4">

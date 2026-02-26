@@ -9,63 +9,48 @@ const [searchTerm, setSearchTerm] = useState("");
 const tasks = [
     {
       id: 1,
-      pName: "25Kv Invertor",
-      type: "Goods",
-      description: "--",
-      unit: "2",
-      unitPrice: "$150",
-      assignee: [{ id: 1, avatar: "/images/assignee1.jpg", },],
+      invoiceNumber: "INV - 5849496",
+      date: "3/10/2024",
       dueDate: "3/10/2024",
-      sku: "AZ6549849",
-      productOwner: "Chris Friedkly",
+      total: "$250",
+      balance: "--",
+      status: "Paid",
     },
     {
       id: 2,
-      pName: "25Kv Invertor",
-      type: "Goods",
-      description: "--",
-      unit: "2",
-      unitPrice: "$150",
-      assignee: [{ id: 1, avatar: "/images/assignee1.jpg", },],
+      invoiceNumber: "INV - 5849496",
+      date: "3/10/2024",
       dueDate: "3/10/2024",
-      sku: "AZ6549849",
-      productOwner: "Chris Friedkly",
+      total: "$250",
+      balance: "--",
+      status: "Not Paid",
     },
     {
       id: 3,
-      pName: "25Kv Invertor",
-      type: "Goods",
-      description: "--",
-      unit: "2",
-      unitPrice: "$150",
-      assignee: [{ id: 1, avatar: "/images/assignee1.jpg", },],
+      invoiceNumber: "INV - 5849496",
+      date: "3/10/2024",
       dueDate: "3/10/2024",
-      sku: "AZ6549849",
-      productOwner: "Chris Friedkly",
+      total: "$250",
+      balance: "--",
+      status: "Not Paid",
     },
     {
       id: 4,
-      pName: "25Kv Invertor",
-      type: "Goods",
-      description: "--",
-      unit: "2",
-      unitPrice: "$150",
-      assignee: [{ id: 1, avatar: "/images/assignee1.jpg", },],
+      invoiceNumber: "INV - 5849496",
+      date: "3/10/2024",
       dueDate: "3/10/2024",
-      sku: "AZ6549849",
-      productOwner: "Chris Friedkly",
+      total: "$250",
+      balance: "--",
+      status: "Paid",
     },
     {
       id: 5,
-      pName: "25Kv Invertor",
-      type: "Goods",
-      description: "--",
-      unit: "2",
-      unitPrice: "$150",
-      assignee: [{ id: 1, avatar: "/images/assignee1.jpg", },],
+      invoiceNumber: "INV - 5849496",
+      date: "3/10/2024",
       dueDate: "3/10/2024",
-      sku: "AZ6549849",
-      productOwner: "Chris Friedkly",
+      total: "$250",
+      balance: "--",
+      status: "Paid",
     },
     
   ];
@@ -239,107 +224,77 @@ const tasks = [
                 </div>
                 {/* Table */}
                 <div className="overflow-x-auto ml-4">
-                <table className="w-full flex flex-col">
-                    <thead className="bg-[#080C26] rounded-2xl flex flex-col justify-between">
+                <table className="w-full">
+                    <thead className="bg-[#080C26] rounded-2xl">
                     <tr className="rounded-2xl">
                         <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
                         #
                         </th>
                         <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Product Name
+                        Invoice Number
                         </th>
                         <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Type
-                        </th>
-                        <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Description
-                        </th>
-                        <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Unit
-                        </th>
-                        <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Unit Price
+                        Date
                         </th>
                         <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
                         Due Date
                         </th>
                         <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        SKU
+                        Total
                         </th>
                         <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Product Owner
+                        Balance
+                        </th>
+                        <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                        Status
                         </th>
                         <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
                         Action
                         </th>
                     </tr>
                     </thead>
-                    <tbody className="flex flex-col items-center justify-between">
+                    <tbody>
                     {tasks.map((task, index) => (
                         <tr
                         key={task.id}
-                        className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
+                        className=" hover:bg-white/5 transition-colors"
                         
                         >
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-2">
                             <input
                             type="checkbox"
                             className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
                             />
                         </td>
-                        <td className="py-4 px-1 text-xs ">{task.pName}</td>
-                        <td className="py-2 px-1">
-                            <div className="flex items-center gap-2 text-xs">
-                            
-                            {task.type}
-                            </div>
-                        </td>
-                        <td className="py-4 px-4 text-gray-400 text-xs">
-                            {task.description}
-                        </td>
-                        <td className="py-4 px-1text-[14px]">
-                           
-                            {task.unit}
-                        </td>
-                        <td className="py-4 px-1  text-[14px]">
-                            
-                            {task.unitPrice}
-                        </td>
-                        <td className="py-4 px-1  text-[14px]">
-                            
+                        <td className="py-4 px-2 text-xs ">{task.invoiceNumber}</td>
+                        <td className="py-4 px-2 text-xs">{task.date}</td>
+                        <td className="py-4 px-2 text-gray-400 text-xs">
                             {task.dueDate}
                         </td>
-                        <td className="py-4 px-1  text-[14px]">
-                            
-                            {task.sku}
+                        <td className="py-4 px-2 text-[14px]">
+                           
+                            {task.total}
                         </td>
-                        <div className="flex items-center gap-1 text-xs">
-                        <td className="flex items-center py-4 px-1 text-gray-400">
-                            {task.assignee.map((item, index) => (
-                            <div
-                                key={index}
-                                className={`avatar 
-                                    ${index !== 0 ? "" : ""} 
-                                    transition-transform duration-300 z-${task.assignee.length - index}`}
-                            >
-                                <div className="w-[35px] h-[35px] rounded-full ring-[#0C255B] shadow-xl">
-                                <img
-                                    src={item.avatar}
-                                    alt={`User ${index}`}
-                                    className="w-[35px] h-[35px] rounded-full object-cover"
-                                />
-                                </div>
-                            </div>
-                            ))}
+                        <td className="py-4 px-2  text-[14px]">
+                            
+                            {task.balance}
+                        </td>
+                        <td className="py-4 px-2  text-[14px]">
+                            
+                            <span 
+                                className={`px-2.5 py-1.5 rounded-full text-xs font-medium ${
+                                    task.status === "Paid"
+                                    ? "bg-[#00E691] text-white"
+                                    : task.status === "Not Paid"
+                                        ? "bg-[#757B8C] text-white"
+                                        : "bg-[#00E691] text-white"
+                                }`}
+                                >
+                                {task.status}
+                            </span>
                         </td>
                         
-                        <td className="py-4 px-1  text-[14px]">
-                            
-                            {task.productOwner}
-                        </td>
-                        </div>
-                        
-                        <td className="py-4 px-1 ">
+                        <td className="py-4 px-2 ">
                             <div className="flex items-center gap-2 text-[14px]">
                             <button className="text-gray-400 hover:text-white transition-colors p-2">
                                 <FiMessageCircle className="text-white" />
