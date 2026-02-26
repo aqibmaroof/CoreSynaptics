@@ -20,7 +20,82 @@ const ComingSoon = () => {
           <h2 className="text-7xl font-bold text-white mt-4">Data Center</h2>
           <p className="text-6xl text-gray-300">one window solution</p>
         </div>
-
+ {/* <form
+          action="https://forms.zohopublic.com/customelectronics1/form/CustomerSignupForm/formperma/O0Tqc3RSeo0qdhKwX11lBUGwf-Y4kgyz0T-vNyEB5Yk/htmlRecords/submit"
+          name="form"
+          id="form"
+          method="POST"
+          accept-charset="UTF-8"
+          enctype="multipart/form-data"
+          className="flex flex-col"
+        >
+          <input type="hidden" name="zf_referrer_name" value="" />
+          <input type="hidden" name="zf_redirect_url" value="" />
+          <input type="hidden" name="zc_gad" value="" />
+          <p></p>
+          <label>
+            Enter a valid email address
+            <em>*</em>
+          </label>
+          <input
+            type="text"
+            maxlength="255"
+            name="Email"
+            value=""
+            fieldType="9"
+            placeholder=""
+          />
+          <label>
+            Enter your phone number
+            <em>*</em>
+          </label>
+          <input
+            type="text"
+            compname="PhoneNumber"
+            name="PhoneNumber_countrycode"
+            phoneFormat="1"
+            isCountryCodeEnabled="false"
+            maxlength="20"
+            value=""
+            fieldType="11"
+            id="international_PhoneNumber_countrycode"
+            placeholder=""
+          />
+          <label>Number</label>
+          <label>Enter the company name if applicable</label>
+          <input
+            type="text"
+            name="SingleLine1"
+            value=""
+            fieldType="1"
+            maxlength="255"
+            placeholder=""
+          />
+          <label>
+            Enter your first name
+            <em>*</em>
+          </label>
+          <input
+            type="text"
+            name="SingleLine2"
+            value=""
+            fieldType="1"
+            maxlength="255"
+            placeholder=""
+          />
+          <label>Enter your last name</label>
+          <input
+            type="text"
+            name="SingleLine3"
+            value=""
+            fieldType="1"
+            maxlength="255"
+            placeholder=""
+          />
+          <button type="submit">
+            <em>Submit</em>
+          </button>
+        </form> */}
         <form className="space-y-4">
           {/* Email Field */}
           <div className="flex flex-col items-start justify-center">
