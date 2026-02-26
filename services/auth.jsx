@@ -8,12 +8,11 @@ export const LoginService = async (credentials) => {
       method: "POST",
       data: credentials,
     });
-
     // Save tokens after successful login
-    if (data?.accessToken && data?.refreshToken) {
+    if (data?.access_token) {
       setTokens({
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
       });
     }
 
@@ -81,7 +80,19 @@ export const ResetPassword = async (payload) => {
 export const GetUser = async (credentials) => {
   try {
     const data = await sendRequest({
-      url: "/users/me",
+      url: "/auth/me",
+    });
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const GetOrganization = async (credentials) => {
+  try {
+    const data = await sendRequest({
+      url: "/organizations/me",
     });
 
     return data;
@@ -93,15 +104,15 @@ export const GetUser = async (credentials) => {
 export const RegisterService = async (userInfo) => {
   try {
     const data = await sendRequest({
-      url: "/auth/register",
+      url: "/auth/register-company",
       method: "POST",
       data: userInfo,
     });
     // Save tokens after successful registration
-    if (data?.accessToken && data?.refreshToken) {
+    if (data?.access_token) {
       setTokens({
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
       });
     }
     return data;
