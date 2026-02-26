@@ -640,6 +640,19 @@ export const sidebarItems = [
     roles: [ROLES.SUPERADMIN],
   },
 
+
+    // ─── Users (all roles – adjust as needed) ───────────────────────
+
+  {
+    title: "Users",
+    path: "/Users/List",
+    icon: config?.chart,
+    iconActive: config?.home,
+    type: "link",
+    submenu: [],
+    roles: [ROLES.SUPERADMIN],
+  },
+
   // ─── Subscriptions (all roles – adjust as needed) ───────────────────────
 
   {
