@@ -3,57 +3,61 @@ import config from "../../config";
 
 const ComingSoon = () => {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex flex-col md:flex-row min-h-screen">
       {/* Left Side: Illustration */}
-      <div className="bg-[url('/images/login-illustration.png')] bg-cover bg-center bg-no-repeat w-full flex items-center justify-center"></div>
+      <div className="bg-[url('/images/login-illustration.png')] bg-cover bg-center bg-no-repeat min-h-screen w-full"></div>
 
       {/* Right Side: Form */}
-      <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat flex flex-col justify-center w-full p-8 md:p-16 lg:p-12 xl:p-20">
+      <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat  min-h-screen flex flex-col justify-center w-full p-8 md:p-16 lg:p-12 xl:p-20">
         <div className="flex items-center gap-2 mb-5">
           <img src={config?.brand} className="w-70 h-auto" alt="Brand" />
         </div>
 
-        <div className="mb-10 mt-18">
-          <h3 className="flex items-center gap-10 text-[#00E691] text-xl font-sora tracking-widest">
-            <span>C O M I N G</span> <span>S O O N</span>
-          </h3>
-          <h2 className="text-7xl font-bold text-white mt-4">Data Center</h2>
-          <p className="text-6xl text-gray-300">one window solution</p>
-        </div>
-        <form
-          action="https://forms.zohopublic.com/customelectronics1/form/SimpleSignupForm/formperma/76ZUJUr3HB_xfTPsOazPwM9WxHV8d-wVzx11qysAMP4/htmlRecords/submit"
-          name="form"
-          id="form"
-          method="POST"
-          accept-charset="UTF-8"
-          enctype="multipart/form-data"
-          className="w-full flex items-center"
-        >
-          <div className="w-full max-w-xl relative flex bg-transparent backdrop-blur-[42px] border-3 border-white/[0.03] border-t-white/[0.09] rounded-2xl p-1 shadow-2xl overflow-hidden">
-            <input type="hidden" name="zf_referrer_name" value="" />
-            <input type="hidden" name="zf_redirect_url" value="" />
-            <input type="hidden" name="zc_gad" value="" />
-            <p></p>
-            <input
-              type="text"
-              maxlength="255"
-              name="Email"
-              fieldType="9"
-              placeholder="Email"
-              className="flex-1 bg-transparent text-white placeholder-white px-2 py-4 w-42 md:w-80 text-lg outline-none autofill:bg-transparent autofill:text-white autofill:[box-shadow:0_0_0px_1000px_#000000_inset] autofill:[-webkit-text-fill-color:white] "
-              required
-            />
-            <button
-              className="bg-gradient-to-r from-[#0075F8] to-[#00387A] hover:from-[#00387A] hover:to-[#0075F8] border-3 border-blue-700 text-white px-5 py-4 md: rounded-2xl cursor-pointer"
-              type="submit"
-            >
-              Subscribe
-            </button>
+        <div className="my-auto">
+          <div className="mb-10 mt-18">
+            <h3 className="flex items-center gap-10 text-[#00E691] text-xl font-sora tracking-widest">
+              <span>C O M I N G</span> <span>S O O N</span>
+            </h3>
+            <h2 className="text-7xl font-bold text-white mt-4">Data Center</h2>
+            <p className="text-6xl text-gray-300 font-[100] mt-2">
+              one window solution
+            </p>
           </div>
-        </form>
+          <form
+            action="https://forms.zohopublic.com/customelectronics1/form/SimpleSignupForm/formperma/76ZUJUr3HB_xfTPsOazPwM9WxHV8d-wVzx11qysAMP4/htmlRecords/submit"
+            name="form"
+            id="form"
+            method="POST"
+            accept-charset="UTF-8"
+            enctype="multipart/form-data"
+            className="w-full flex items-center"
+          >
+            <div className="w-full max-w-xl relative flex bg-transparent backdrop-blur-[42px] border-3 border-white/[0.03] border-t-white/[0.09] rounded-2xl p-1 shadow-2xl overflow-hidden">
+              <input type="hidden" name="zf_referrer_name" value="" />
+              <input type="hidden" name="zf_redirect_url" value="" />
+              <input type="hidden" name="zc_gad" value="" />
+              <p></p>
+              <input
+                type="text"
+                maxlength="255"
+                name="Email"
+                fieldType="9"
+                placeholder="Email"
+                className="flex-1 bg-transparent text-white placeholder-white px-2 py-4 w-42 md:w-80 text-lg outline-none autofill:bg-transparent autofill:text-white autofill:[box-shadow:0_0_0px_1000px_#000000_inset] autofill:[-webkit-text-fill-color:white] "
+                required
+              />
+              <button
+                className="w-[167px] bg-gradient-to-r from-[#0075F8] to-[#00387A] hover:from-[#00387A] hover:to-[#0075F8] border-3 border-blue-700 text-white px-5 py-4 md: rounded-2xl cursor-pointer"
+                type="submit"
+              >
+                Get Notified
+              </button>
+            </div>
+          </form>
+        </div>
 
         {/* Social icons */}
-        <div className="mt-12">
+        <div className="mt-auto">
           <div className="flex items-center gap-6 ml-2">
             <a
               href="https://www.facebook.com/coresynaptics/"
