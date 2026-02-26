@@ -44,7 +44,7 @@ const ComingSoon = () => {
               required
             />
             <button
-              className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-700 text-white px-5 py-4 md: rounded-2xl"
+              className="bg-gradient-to-r from-[#0075F8] to-[#00387A] hover:from-[#00387A] hover:to-[#0075F8] border-3 border-blue-700 text-white px-5 py-4 md: rounded-2xl cursor-pointer"
               type="submit"
             >
               Subscribe
