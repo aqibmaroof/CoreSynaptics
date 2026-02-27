@@ -157,7 +157,13 @@ const ComingSoon = () => {
         </div>
 
         <div className="mt-12">
+          {/* Social Icons */}
           <div className="flex items-center gap-6 ml-2">
+            <a
+              href="https://www.facebook.com/coresynaptics/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
             <svg
               width="10"
               height="20"
@@ -170,7 +176,13 @@ const ComingSoon = () => {
                 fill="#00E691"
               />
             </svg>
+            </a>
 
+            <a
+              href="https://x.com/coresynaptics"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
             <svg
               width="24"
               height="24"
@@ -185,7 +197,13 @@ const ComingSoon = () => {
                 fill="#00E691"
               />
             </svg>
+            </a>
 
+            <a
+              href="https://www.linkedin.com/company/core-synaptics"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
             <svg
               width="44"
               height="44"
@@ -261,7 +279,13 @@ const ComingSoon = () => {
                 </radialGradient>
               </defs>
             </svg>
+            </a>
 
+            <a
+              href="https://www.instagram.com/coresynaptics/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
             <svg
               width="18"
               height="19"
@@ -274,6 +298,7 @@ const ComingSoon = () => {
                 fill="#00E691"
               />
             </svg>
+            </a>
           </div>
           <h2 className="text-sm text-[#A0AEC0] mt-2">
             @ 2026, All rights reserved. made by C2M
