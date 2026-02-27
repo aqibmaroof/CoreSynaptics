@@ -134,7 +134,7 @@ export default function PricingPlans() {
             <div className="mt-8">
               <button
                 onClick={() => SelectSubscription(plan?.id)}
-                className={`w-auto px-8 py-2.5 rounded-xl text-sm font-semibold transition-all translate-y-10 duration-200 ${plans[index].buttonClass}`}
+                className={`w-auto px-8 py-2.5 rounded-xl text-sm font-semibold transition-all translate-y-10 duration-200 cursor-pointer ${plans[index].buttonClass}`}
               >
                 Get Started
               </button>

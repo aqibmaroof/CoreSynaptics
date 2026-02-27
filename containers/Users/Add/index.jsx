@@ -18,6 +18,7 @@ export default function AddSubscription() {
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const roles = JSON.parse(localStorage.getItem("roles"));
 
   useEffect(() => {
     if (id) {
@@ -30,8 +31,10 @@ export default function AddSubscription() {
       const res = await GetUsersById(id);
       console.log(res);
       setForm({
-        name: res.name,
-        description: res.description,
+        email: res.email,
+        firstName: res?.firstName,
+        lastName: res.lastName,
+        roleId: res.roleId,
       });
     } catch (error) {
       console.error("error fetching details : ", error?.message);
@@ -51,15 +54,17 @@ export default function AddSubscription() {
     e.preventDefault();
     setError("");
 
-    if (!form.name) {
-      setError("Role name is required.");
-      return;
-    }
-
-    const payload = {
-      name: form.name,
-      description: form?.description,
-    };
+    const payload = id
+      ? {
+          firstName: form?.firstName,
+          lastName: form?.lastName,
+        }
+      : {
+          email: form?.email,
+          firstName: form?.firstName,
+          lastName: form?.lastName,
+          roleId: form.roleId,
+        };
 
     try {
       setLoading(true);
@@ -92,11 +97,11 @@ export default function AddSubscription() {
       {/* Header */}
       <div className=" mb-5">
         <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
-          {id ? "Edit" : "Add"} Roles
+          {id ? "Edit" : "Add"} Users
         </h1>
         <p className="text-gray-400 text-sm">
           {id ? "Update" : "Fill in"} the details{" "}
-          {id ? "of created" : "to create a new"} role.
+          {id ? "of created" : "to create a new"} user.
         </p>
       </div>
 
@@ -112,20 +117,23 @@ export default function AddSubscription() {
         )}
 
         {/* ── Basic Info ── */}
-        <div>
-          <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
-            Email <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="text"
-            name="email"
-            value={form.email}
-            required
-            onChange={handleChange}
-            placeholder="e.g. Professional"
-            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
-          />
-        </div>
+        {!id && (
+          <div>
+            <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
+              Email <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              name="email"
+              value={form.email}
+              required
+              disabled={id}
+              onChange={handleChange}
+              placeholder="e.g. Professional"
+              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
+            />
+          </div>
+        )}
         <div>
           <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
             First Name
@@ -153,20 +161,38 @@ export default function AddSubscription() {
             className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
           />
         </div>
-        <div>
-          <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
-            Role
-          </label>
-          <input
-            type="text"
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            placeholder="e.g. Professional"
-            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
-          />
-        </div>
-
+        {!id && (
+          <div>
+            <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
+              Role
+            </label>
+            <select
+              name="roleId"
+              value={form.roleId}
+              onChange={handleChange}
+              className={`select w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
+              required
+            >
+              <option
+                className="bg-gradient-to-r from-[#093E7D] to-[#0075FF] rounded-none"
+                value=""
+                disabled
+              >
+                Select Role
+              </option>
+              {roles?.length > 0 &&
+                roles.map((item, index) => (
+                  <option
+                    key={index}
+                    className="bg-gradient-to-r from-[#093E7D] to-[#0075FF] rounded-none"
+                    value={item?.id}
+                  >
+                    {item?.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
         {/* ── Actions ── */}
         <div className="flex items-center gap-4 pt-2">
           <button
@@ -179,8 +205,8 @@ export default function AddSubscription() {
                 ? "Updating..."
                 : "Creating..."
               : id
-                ? "Update Plan"
-                : "Create Plan"}
+                ? "Update User"
+                : "Create User"}
           </button>
           <button
             type="button"

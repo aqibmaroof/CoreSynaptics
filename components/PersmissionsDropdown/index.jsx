@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const StatusDropdown = ({ re, onStatusUpdate, STATUS_OPTIONS }) => {
+const PersmissionsDropdown = ({ re, onStatusUpdate, STATUS_OPTIONS }) => {
   const [status, setStatus] = useState(re.role.id);
   const [loading, setLoading] = useState(false);
 
@@ -37,4 +37,4 @@ const StatusDropdown = ({ re, onStatusUpdate, STATUS_OPTIONS }) => {
   );
 };
 
-export default StatusDropdown;
+export default PersmissionsDropdown;

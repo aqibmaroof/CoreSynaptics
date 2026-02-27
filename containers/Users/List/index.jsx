@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { DeleteRoles, getRoles } from "@/services/Roles";
+import { DeleteUsers, getUsers, UpdateUserStatus } from "@/services/Users";
+import StatusDropdown from "../../../components/StatusDropDown";
+import PermisionsDropdown from "../../../components/PersmissionsDropdown";
 
 export default function PricingPlans() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
+  const roles = JSON.parse(localStorage.getItem("roles"));
 
   useEffect(() => {
     GetAllUsers();
@@ -17,8 +20,8 @@ export default function PricingPlans() {
 
   const GetAllUsers = async () => {
     try {
-      const res = await getRoles();
-      console.log(res)
+      const res = await getUsers();
+      console.log(res);
       setUsers(res);
     } catch (error) {
       console.error("error Fetching data", error.message);
@@ -27,7 +30,7 @@ export default function PricingPlans() {
 
   const removeUser = async (id) => {
     try {
-      await DeleteRoles(id);
+      await DeleteUsers(id);
       GetAllUsers();
       setMessage({
         type: "success",
@@ -36,16 +39,41 @@ export default function PricingPlans() {
     } catch (error) {
       setMessage({
         type: "error",
-        text: "Error Deleting user : " + error?.message + " " + error?.error,
+        text: "Error Deleting user : " + error?.message,
       });
     }
   };
+
+  const UpdateStatus = async (id, roleId) => {
+    const payload = {
+      roleId: roleId,
+    };
+
+    try {
+      await UpdateUserStatus(id, payload);
+
+      setMessage({
+        type: "success",
+        text: "status updated successfully!",
+      });
+
+      GetAllUsers();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: "Failed to update  status.",
+      });
+    } finally {
+      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+    }
+  };
+
   return (
     <div className=" flex flex-col justify-center py-5 px-7">
       {/* Header */}
       <div className="mb-5">
         <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
-          Roles Lists
+          Users Lists
         </h1>
       </div>
       <div className="flex w-full bg-gradient-to-r font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 rounded-3xl card">
@@ -161,6 +189,18 @@ export default function PricingPlans() {
                 <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                   User Name
                 </th>
+                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                  Email
+                </th>
+                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                  Role
+                </th>
+                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                  Permissions
+                </th>
+                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                  Status
+                </th>
 
                 <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                   Action
@@ -193,11 +233,45 @@ export default function PricingPlans() {
                       <div className="flex items-center justify-center gap-3">
                         <div className="avatar">
                           <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-purple-500">
-                            {user.name.slice(0, 2)}
+                            {user.firstName.slice(0, 1)}
+                            {user.lastName.slice(0, 1)}
                           </div>
                         </div>
                         <span className="text-white font-medium ">
-                          {user.name.replace("_", " ")}
+                          {user.firstName} {user?.lastName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center justify-center gap-3">
+                        <span className="text-white font-medium ">
+                          {user.email}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <StatusDropdown
+                        re={user}
+                        onStatusUpdate={(id, status) => {
+                          UpdateStatus(id, status);
+                        }}
+                        STATUS_OPTIONS={roles}
+                      />
+                    </td>
+                    <td>
+                      <StatusDropdown
+                        re={user}
+                        onStatusUpdate={(id, status) => {
+                          UpdateStatus(id, status);
+                        }}
+                        STATUS_OPTIONS={roles}
+                      />
+                    </td>
+
+                    <td className="py-4 px-4">
+                      <div className="flex items-center justify-center gap-3">
+                        <span className="text-white font-medium ">
+                          {user.status}
                         </span>
                       </div>
                     </td>

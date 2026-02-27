@@ -108,14 +108,16 @@ import config from "@/config";
 // Role constants for clarity and reuse
 export const ROLES = {
   GC_PM: "gc_pm",
+  GC_ADMIN: "gc_admin",
   OEM_PM: "oem_pm",
-  FSM: "FSM", // Field Service Manager / Scheduler – OEM
-  FSE: "FSE", // Field Service Engineer / ASP – OEM
-  SUPERINTENDENT: "SUPERINTENDENT", // GC
-  QA_QC: "QAQC", // GC or OEM
-  SAFETY: "SAFETY", // GC or OEM
-  FINANCE: "FINANCE", // GC or OEM
-  EXECUTIVE: "EXECUTIVE",
+  OEM_ADMIN: "oem_admin",
+  FSM: "fsm", // Field Service Manager / Scheduler – OEM
+  FSE: "fse", // Field Service Engineer / ASP – OEM
+  SUPERINTENDENT: "superintendent", // GC
+  QA_QC: "qa_manager", // GC or OEM
+  SAFETY: "safety_officer", // GC or OEM
+  FINANCE: "finance", // GC or OEM
+  EXECUTIVE: "executive",
   SUPERADMIN: "SUPERADMIN",
 };
 
@@ -128,7 +130,8 @@ export const sidebarItems = [
     path: "/",
     type: "link",
     submenu: [],
-    roles: [ROLES.GC_PM],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN],
+    
   },
 
   // ─── OEM PM Dashboard ──────────────────────────────────────────────
@@ -139,12 +142,12 @@ export const sidebarItems = [
     path: "/OEM/Dashboard",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
   },
 
   // ─── FSM / Scheduler Dashboard ─────────────────────────────────────
   {
-    title: "Dispatch Dashboard",
+    title: "FSM Dashboard",
     icon: config?.chart,
     iconActive: config?.home,
     path: "/Dispatch/Dashboard",
@@ -217,7 +220,14 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // GC PM: Edit/Approve | OEM PM: Edit | FSM: View (limited) | QA/QC: View (limited)
-    roles: [ROLES.GC_PM, ROLES.OEM_PM, ROLES.FSM, ROLES.QA_QC],
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.OEM_ADMIN,
+      ROLES.OEM_PM,
+      ROLES.FSM,
+      ROLES.QA_QC,
+    ],
   },
 
   // ─── Portfolio (Executive only) ────────────────────────────────────
@@ -251,7 +261,7 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // GC PM: Edit | Superintendent: View
-    roles: [ROLES.GC_PM, ROLES.SUPERINTENDENT],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERINTENDENT],
   },
 
   // ─── Service Schedule / Dispatch ───────────────────────────────────
@@ -262,7 +272,7 @@ export const sidebarItems = [
     path: "/ServiceSchedule",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
   },
 
   // ─── Assignments (FSM) ─────────────────────────────────────────────
@@ -318,7 +328,7 @@ export const sidebarItems = [
     path: "/Logistics",
     type: "link",
     submenu: [],
-    roles: [ROLES.GC_PM],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN],
   },
 
   // ─── Supply Chain ──────────────────────────────────────────────────
@@ -329,7 +339,7 @@ export const sidebarItems = [
     path: "/SupplyChain",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
   },
 
   // ─── Outbound Logistics / Shipments ────────────────────────────────
@@ -340,41 +350,41 @@ export const sidebarItems = [
     path: "/Shipment/Dashboard",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
   },
 
   // ─── Receiving / Inspection ────────────────────────────────────────
-  {
-    title: "FSM",
-    icon: config?.chart,
-    iconActive: config?.home,
-    category: "",
-    path: "/FSM/Dashboard",
-    roles: [ROLES.FSM],
+  // {
+  //   title: "FSM",
+  //   icon: config?.chart,
+  //   iconActive: config?.home,
+  //   category: "",
+  //   path: "/FSM/Dashboard",
+  //   roles: [ROLES.FSM],
 
-    submenu: [
-      {
-        title: "Dashboard",
-        type: "link",
-        path: "/FSM/Dashboard",
-      },
-      {
-        title: "Dispatch Console",
-        type: "link",
-        path: "/FSM/DispatchConsole",
-      },
-      {
-        title: "Services & Parts",
-        type: "link",
-        path: "/FSM/ServicesParts",
-      },
-      {
-        title: "Invoices",
-        type: "link",
-        path: "/FSM/Invoices",
-      },
-    ],
-  },
+  //   submenu: [
+  //     {
+  //       title: "Dashboard",
+  //       type: "link",
+  //       path: "/FSM/Dashboard",
+  //     },
+  //     {
+  //       title: "Dispatch Console",
+  //       type: "link",
+  //       path: "/FSM/DispatchConsole",
+  //     },
+  //     {
+  //       title: "Services & Parts",
+  //       type: "link",
+  //       path: "/FSM/ServicesParts",
+  //     },
+  //     {
+  //       title: "Invoices",
+  //       type: "link",
+  //       path: "/FSM/Invoices",
+  //     },
+  //   ],
+  // },
   {
     title: "Receiving",
     icon: config?.chart,
@@ -382,7 +392,7 @@ export const sidebarItems = [
     path: "/Receiving/Overview",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
   },
 
   // ─── Field Reports ─────────────────────────────────────────────────
@@ -393,7 +403,7 @@ export const sidebarItems = [
     path: "/FieldReports",
     type: "link",
     submenu: [],
-    roles: [ROLES.GC_PM],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN],
   },
 
   // ─── Daily Reports (Superintendent) ───────────────────────────────
@@ -416,7 +426,7 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // GC PM: View/Escalate | Superintendent: Edit (Install QC)
-    roles: [ROLES.GC_PM, ROLES.SUPERINTENDENT],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERINTENDENT],
   },
 
   // ─── QA/QC (Inspections, NCRs, Corrective Actions) ────────────────
@@ -484,7 +494,7 @@ export const sidebarItems = [
     path: "/Safety/Incidents",
     type: "link",
     submenu: [],
-    roles: [ROLES.SAFETY],
+    roles: [ROLES.SAFETY, ROLES.GC_ADMIN],
   },
   {
     title: "Audits",
@@ -514,7 +524,14 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // GC PM: View/Coordinate | OEM PM: Edit/Approve | FSM: View | FSE: Execute
-    roles: [ROLES.GC_PM, ROLES.OEM_PM, ROLES.FSM, ROLES.FSE],
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
+      ROLES.FSM,
+      ROLES.FSE,
+    ],
   },
 
   // ─── Test Results Upload (FSE) ─────────────────────────────────────
@@ -537,7 +554,7 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // OEM PM: Edit | FSM: View | FSE: Edit
-    roles: [ROLES.OEM_PM, ROLES.FSM, ROLES.FSE],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.FSM, ROLES.FSE],
   },
 
   // ─── Change Orders ─────────────────────────────────────────────────
@@ -548,7 +565,7 @@ export const sidebarItems = [
     path: "/ChangeOrders",
     type: "link",
     submenu: [],
-    roles: [ROLES.GC_PM],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN],
   },
 
   // ─── Finance ───────────────────────────────────────────────────────
@@ -607,7 +624,14 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // GC PM: Edit | OEM PM: Edit | FSE: View (site pack) | Superintendent: View (drawings)
-    roles: [ROLES.GC_PM, ROLES.OEM_PM, ROLES.FSE, ROLES.SUPERINTENDENT],
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
+      ROLES.FSE,
+      ROLES.SUPERINTENDENT,
+    ],
   },
 
   // ─── Reports ───────────────────────────────────────────────────────
@@ -620,7 +644,9 @@ export const sidebarItems = [
     submenu: [],
     roles: [
       ROLES.GC_PM,
+      ROLES.GC_ADMIN,
       ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
       ROLES.FSM,
       ROLES.FSE,
       ROLES.QA_QC,
@@ -651,7 +677,7 @@ export const sidebarItems = [
     iconActive: config?.home,
     type: "link",
     submenu: [],
-    roles: [ROLES.SUPERADMIN],
+    roles: [ROLES.SUPERADMIN, ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN],
   },
 
   // ─── Permissions (all roles – adjust as needed) ───────────────────────
@@ -688,7 +714,9 @@ export const sidebarItems = [
     submenu: [],
     roles: [
       ROLES.GC_PM,
+      ROLES.GC_ADMIN,
       ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
       ROLES.FSM,
       ROLES.FSE,
       ROLES.SUPERINTENDENT,

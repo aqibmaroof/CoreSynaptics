@@ -6,8 +6,13 @@ import { getMenuByRole } from "./sideBarData";
 import { FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
 import config from "../../config";
-import { getUser } from "@/services/instance/tokenService";
+import {
+  getAccessToken,
+  getUser,
+  setUser,
+} from "@/services/instance/tokenService";
 import { getRoles } from "@/services/Roles";
+import { GetUser } from "@/services/auth";
 // Replace this with however you access the current user's role:
 // e.g. useSession(), useContext(AuthContext), useSelector(), etc.
 
@@ -19,18 +24,25 @@ const Sidebar = () => {
   const [activeSubIndex, setActiveSubIndex] = useState(null);
   const [activeSubSubIndex, setActiveSubSubIndex] = useState(null);
   const [roles, setRoles] = useState([]);
-
+  const accessToken = getAccessToken();
+  console.log(accessToken);
   // Filter sidebar items to only those allowed for this role
-  const visibleItems = getMenuByRole(user?.activeRole?.name || user?.platformRole);
+  const visibleItems = getMenuByRole(
+    user?.activeRole?.name || user?.platformRole,
+  );
 
-  useEffect(() => {
+  useEffect(async () => {
     getRolesList();
+    if (accessToken) {
+      const userResponse = await GetUser();
+      setUser({ user: userResponse });
+    }
   }, []);
 
   const getRolesList = async () => {
     try {
       const res = await getRoles();
-      localStorage.setItem("roles" , JSON.stringify(res))
+      localStorage.setItem("roles", JSON.stringify(res));
     } catch (error) {
       console.log("Error Fetching Roles : ", error);
     }
@@ -110,8 +122,6 @@ const Sidebar = () => {
                     return (
                       <li key={subIdx} className="py-1 w-full">
                         <div className="flex items-center justify-start">
-                          
-
                           <Link
                             href={sub.path}
                             className="cursor-pointer py-1 text-[#101437] dark:text-white dark:hover:text-[#A9D18E] hover:underline"

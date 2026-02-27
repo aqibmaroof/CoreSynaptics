@@ -22,6 +22,27 @@ export const LoginService = async (credentials) => {
   }
 };
 
+export const AcceptInvite = async (credentials) => {
+  try {
+    const data = await sendRequest({
+      url: "/auth/accept-invite",
+      method: "POST",
+      data: credentials,
+    });
+    // Save tokens after successful login
+    if (data?.access_token) {
+      setTokens({
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+      });
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const ChangePassword = async (payload) => {
   try {
     const data = await sendRequest({

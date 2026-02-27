@@ -12,6 +12,18 @@ export const getUsers = async (limit = 25, currentPage) => {
   }
 };
 
+export const UpdateUserStatus = async (id, payload) => {
+  try {
+    const data = await sendRequest({
+      url: `/users/${id}/role`,
+      method: "PATCH",
+      data: payload,
+    });
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
 export const DeleteUsers = async (id) => {
   try {
     const data = await sendRequest({
