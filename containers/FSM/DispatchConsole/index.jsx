@@ -40,7 +40,7 @@ export default function KanbanBoard() {
     },
   ];
   return (
-    <div className="min-h-screen flex flex-row gap-2 font-gilroy p-6 text-[#101437] dark:text-white w-full">
+    <div className="min-h-screen flex flex-row gap-2 font-gilroy p-6 text-white w-full">
       {/* All service appointment */}
       <div className="flex min-h-screen w-128 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-2 mt-8 rounded-2xl card">
         <div>
@@ -758,14 +758,14 @@ export default function KanbanBoard() {
 
                 {/* Vertical lines */}
                 <div className="flex items-center justify-between">
-                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-[#56577A] dark:bg-white/10"></div>
-                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-[#56577A] dark:bg-white/10"></div>
-                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-[#56577A] dark:bg-white/10"></div>
-                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-[#56577A] dark:bg-white/10"></div>
-                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-[#56577A] dark:bg-white/10"></div>
-                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-[#56577A] dark:bg-white/10"></div>
-                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-[#56577A] dark:bg-white/10"></div>
-                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-[#56577A] dark:bg-white/10"></div>
+                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-white/10"></div>
+                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-white/10"></div>
+                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-white/10"></div>
+                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-white/10"></div>
+                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-white/10"></div>
+                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-white/10"></div>
+                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-white/10"></div>
+                  <div class="inline-block min-h-screen w-0.5 self-stretch bg-white/10"></div>
                 </div>
               </div>
             </div>

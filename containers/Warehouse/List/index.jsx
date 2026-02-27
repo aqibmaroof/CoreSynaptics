@@ -152,7 +152,7 @@ export default function Warehouse() {
   ];
 
   return (
-    <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen font-gilroy p-6 text-white">
       {/* STATS */}
       <div className="px-5">
         <WarehouseDetails user={JSON.parse(getUser())} />

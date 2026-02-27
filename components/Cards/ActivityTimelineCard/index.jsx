@@ -47,7 +47,7 @@ const TimelineItem = ({ activity, isLast }) => (
   <div className="flex relative pb-8">
     {/* Vertical Line */}
     {!isLast && (
-      <div className="absolute top-0 left-2 w-0.5 h-full bg-gray-200 dark:bg-gray-700 ml-0.5"></div>
+      <div className="absolute top-0 left-2 w-0.5 h-full bg-gray-700 ml-0.5"></div>
     )}
 
     {/* Dot */}
@@ -58,21 +58,21 @@ const TimelineItem = ({ activity, isLast }) => (
     {/* Content */}
     <div className="flex-grow ml-4">
       <div className="flex justify-between items-start">
-        <h3 className="text-gray-800 dark:text-white font-medium mb-1">
+        <h3 className="text-white font-medium mb-1">
           {activity.title}
         </h3>
-        <span className="text-xs text-gray-500 dark:text-[#fff] flex-shrink-0">
+        <span className="text-xs text-[#fff] flex-shrink-0">
           {activity.time}
         </span>
       </div>
 
-      <p className="text-sm text-gray-600 dark:text-[#fff] mb-2">
+      <p className="text-sm text-[#fff] mb-2">
         {activity.details}
       </p>
 
       {/* Conditional Content based on type */}
       {activity.attachment && (
-        <div className="flex items-center gap-2 p-2 w-48 bg-gray-100 dark:bg-gray-700 rounded-md text-sm text-gray-800 dark:text-[#fff]">
+        <div className="flex items-center gap-2 p-2 w-48 bg-gray-700 rounded-md text-sm text-[#fff]">
           <span className="text-red-500">{activity.attachment.icon}</span>
           {activity.attachment.name}
         </div>
@@ -84,10 +84,10 @@ const TimelineItem = ({ activity, isLast }) => (
             {activity.person.avatar}
           </div>
           <div className="text-sm">
-            <p className="font-medium text-gray-800 dark:text-white">
+            <p className="font-medium text-white">
               {activity.person.name}
             </p>
-            <p className="text-xs text-gray-500 dark:text-[#fff]">
+            <p className="text-xs text-[#fff]">
               {activity.person.title}
             </p>
           </div>
@@ -99,12 +99,12 @@ const TimelineItem = ({ activity, isLast }) => (
           {activity.team.map((member, i) => (
             <div
               key={i}
-              className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-300 text-gray-700 flex items-center justify-center text-xs font-semibold"
+              className="w-8 h-8 rounded-full border-2 border-gray-800 bg-gray-300 text-gray-700 flex items-center justify-center text-xs font-semibold"
             >
               {member.avatar}
             </div>
           ))}
-          <div className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 flex items-center justify-center text-xs font-semibold">
+          <div className="w-8 h-8 rounded-full border-2 border-gray-800 bg-gray-700 text-gray-300 flex items-center justify-center text-xs font-semibold">
             +3
           </div>
         </div>
@@ -120,10 +120,10 @@ const ActivityTimelineCard = ({ data = timelineData }) => {
       {" "}
       {/* Example column span */}
       <div className="flex justify-between items-start mb-6">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+        <h2 className="text-xl font-semibold text-white">
           {data.title}
         </h2>
-        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <button className="text-gray-400 hover:text-gray-300">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"

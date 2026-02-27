@@ -93,7 +93,7 @@ export default function KanbanBoard() {
     },
   ];
   return (
-    <div className="min-h-screen  p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen  p-6 text-white">
       <h1 className="font-bold text-2xl">Task overveiw</h1>
       <div className="flex items-center justify-between w-full gap-3">
         <div className="flex items-center justify-left gap-10 w-full ">

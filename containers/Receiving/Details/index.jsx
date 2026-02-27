@@ -47,7 +47,7 @@ const members = [
 },
 ];
     return(
-        <div className="min-h-screen  p-6 text-[#101437] dark:text-white">
+        <div className="min-h-screen  p-6 text-white">
         <h1 className="font-bold text-2xl">UPS-1500-STD</h1>
         <h3 className="text-[#A0AEC0] mt-1">UB123900026BA</h3>
         <div className="flex flex-row items-center justify-between -mt-8">

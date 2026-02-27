@@ -85,10 +85,10 @@ export default function RegisterPage() {
         </div>
 
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold mb-1 text-[#101437] dark:text-white">
+          <h2 className="text-2xl font-semibold mb-1 text-white">
             Adventure starts here 🚀
           </h2>
-          <p className="text-sm text-[#101437] dark:text-white">
+          <p className="text-sm text-white">
             Make your app management easy and fun!
           </p>
         </div>
@@ -96,7 +96,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Company Name */}
           <div>
-            <label className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
+            <label className="label-text text-sm text-white mb-1 font-semibold">
               Company Name
             </label>
             <input
@@ -104,7 +104,7 @@ export default function RegisterPage() {
               name="companyName"
               value={formData.companyName}
               onChange={handleChange}
-              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white focus:border-accent focus:outline-none h-10 text-sm"
+              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-white border-white text-white focus:border-accent focus:outline-none h-10 text-sm"
               required
             />
           </div>
@@ -118,7 +118,7 @@ export default function RegisterPage() {
               name="organizationType"
               value={formData.organizationType}
               onChange={handleChange}
-              className="select select-bordered border-gray-600 bg-transparent w-full placeholder:text-white border-white text-[#101437] dark:text-white focus:border-accent focus:outline-none h-10 text-sm"
+              className="select select-bordered border-gray-600 bg-transparent w-full placeholder:text-white border-white text-white focus:border-accent focus:outline-none h-10 text-sm"
               required
             >
               <option
@@ -145,7 +145,7 @@ export default function RegisterPage() {
 
           {/* First Name */}
           <div>
-            <label className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
+            <label className="label-text text-sm text-white mb-1 font-semibold">
               First Name
             </label>
             <input
@@ -153,14 +153,14 @@ export default function RegisterPage() {
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white focus:border-accent focus:outline-none h-10 text-sm"
+              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-white border-white text-white focus:border-accent focus:outline-none h-10 text-sm"
               required
             />
           </div>
 
           {/* Last Name */}
           <div>
-            <label className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
+            <label className="label-text text-sm text-white mb-1 font-semibold">
               Last Name
             </label>
             <input
@@ -168,14 +168,14 @@ export default function RegisterPage() {
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white focus:border-accent focus:outline-none h-10 text-sm"
+              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-white border-white text-white focus:border-accent focus:outline-none h-10 text-sm"
               required
             />
           </div>
 
           {/* Email */}
           <div>
-            <label className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
+            <label className="label-text text-sm text-white mb-1 font-semibold">
               Email
             </label>
             <input
@@ -183,14 +183,14 @@ export default function RegisterPage() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white focus:border-accent focus:outline-none h-10 text-sm"
+              className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-white border-white text-white focus:border-accent focus:outline-none h-10 text-sm"
               required
             />
           </div>
 
           {/* Password */}
           <div>
-            <label className="label-text text-sm text-[#101437] dark:text-white mb-1 font-semibold">
+            <label className="label-text text-sm text-white mb-1 font-semibold">
               Password
             </label>
             <div className="relative">
@@ -199,7 +199,7 @@ export default function RegisterPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-[#101437] dark:placeholder:text-white border-[#101437] dark:border-white text-[#101437] dark:text-white focus:border-accent focus:outline-none h-10 text-sm"
+                className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-white border-white text-white focus:border-accent focus:outline-none h-10 text-sm"
                 required
               />
               <span

@@ -78,10 +78,10 @@ const LoginPage = () => {
         </div>
 
         <div className="mb-10 mt-18">
-          <h2 className="text-[30px] font-semibold dark:text-white">
+          <h2 className="text-[30px] font-semibold text-white">
             Nice to see you!
           </h2>
-          <p className="text-[14px] text-[#101437] dark:text-gray-300">
+          <p className="text-[14px] text-gray-300">
             Enter your email and code along with your new password to reset your
             password.
           </p>
@@ -92,7 +92,7 @@ const LoginPage = () => {
           {/* Password Field */}
           <div className="form-control w-full">
             <label className="label py-1">
-              <span className="label-text text-lg text-[#101437] dark:text-white">
+              <span className="label-text text-lg text-white">
                 Password
               </span>
             </label>

@@ -5,7 +5,7 @@ export default function RevenueDetails({ user }) {
     <div className="w-full gap-20 flex items-center justify-between font-gilroy">
       {/* LEFT SIDE */}
       <div>
-        <h1 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+        <h1 className="text-[#fff] text-2xl font-semibold">
           Warehouse Overview
         </h1>
         <div className="flex items-center justify-between w-full mt-4 gap-20">

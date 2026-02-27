@@ -92,7 +92,7 @@ export default function ProjectManagersList() {
   
 
   return (
-    <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen font-gilroy p-6 text-white">
       {/* STATS */}
       <ManagersOverview />
 

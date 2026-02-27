@@ -51,7 +51,7 @@ export default function KanbanBoard() {
   ];
 
   return (
-    <div className="min-h-screen  p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen  p-6 text-white">
       <h1 className="font-bold text-2xl">Task overveiw</h1>
       <div className="flex items-center justify-between w-full gap-3">
         <div className="flex items-center justify-left gap-10 w-full ">
@@ -622,14 +622,14 @@ export default function KanbanBoard() {
           </div>
           {/* Vertical lines */}
           <div className="flex items-center justify-between mx-8">
-            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-[#56577A] dark:bg-white/10 mt-4"></div>
-            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-[#56577A] dark:bg-white/10 mt-4"></div>
-            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-[#56577A] dark:bg-white/10 mt-4"></div>
-            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-[#56577A] dark:bg-white/10 mt-4"></div>
-            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-[#56577A] dark:bg-white/10 mt-4"></div>
-            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-[#56577A] dark:bg-white/10 mt-4"></div>
-            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-[#56577A] dark:bg-white/10 mt-4"></div>
-            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-[#56577A] dark:bg-white/10 mt-4"></div>
+            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
+            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
+            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
+            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
+            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
+            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
+            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
+            <div class="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@ export default function ManagersProjects({ user }) {
     <div className="w-full px-3 gap-10 flex items-center justify-between font-gilroy mt-10 mb-6">
       {/* LEFT SIDE */}
       <div>
-        <h2 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+        <h2 className="text-[#fff] text-2xl font-semibold">
           Project Summary{" "}
         </h2>
         <div className="flex items-center justify-between w-full mt-4 gap-30">

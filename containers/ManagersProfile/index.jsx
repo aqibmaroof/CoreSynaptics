@@ -151,7 +151,7 @@ export default function ManagersProfile() {
   ];
 
   return (
-    <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen font-gilroy p-6 text-white">
       {/* STATS */}
       <div className="flex items-center gap-9 justify-center mb-8 ">
         <div className="flex w-full bg-gradient-to-r  font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl w-full max-w-sm h-full">

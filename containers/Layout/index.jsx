@@ -78,7 +78,7 @@ const Layout = ({ children }) => {
                       className="text-2xl"
                     />
                   )}
-                  <p className="text-2xl font-semibold text-[#101437] dark:text-[#fff]">
+                  <p className="text-2xl font-semibold text-white">
                     {pathname === `/Managers/List`
                       ? "Project Managers"
                       : pathname === `/Profile/Managers/${params?.id}`
@@ -110,7 +110,7 @@ const Layout = ({ children }) => {
 
               <div className="flex items-center gap-4 ml-auto mr-3">
                 <div className="relative">
-                  <FiSearch className="absolute text-xl text-[#101437] dark:text-white bg-transparent top-4 left-3" />
+                  <FiSearch className="absolute text-xl text-white bg-transparent top-4 left-3" />
                   <input
                     type="text"
                     name="search"
@@ -150,7 +150,7 @@ const Layout = ({ children }) => {
                   </label>
                   <ul
                     tabIndex={0}
-                    className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-60 border border-gray-700/10 dark:border-white/10"
+                    className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-60 border border-white/10"
                   >
                     {/* User Info Header */}
                     <li className=" flex flex-row items-center justify-start">
@@ -169,10 +169,10 @@ const Layout = ({ children }) => {
                         </div>
                       </div>
                       <div className="flex flex-col justify-center items-start">
-                        <span className="text-left font-semibold text-[16px] text-[#101437] dark:text-white">
+                        <span className="text-left font-semibold text-[16px] text-white">
                           {user?.fullName}
                         </span>
-                        <span className="text-left opacity-60 text-[16px] capitalize text-[#101437] dark:text-white">
+                        <span className="text-left opacity-60 text-[16px] capitalize text-white">
                           {user?.role}
                         </span>
                       </div>
@@ -183,7 +183,7 @@ const Layout = ({ children }) => {
                     <li>
                       <a
                         href="/UserProfile"
-                        className={`text-[16px] text-[#101437] dark:text-white gap-3 ${pathname === "/UserProfile" ? "bg-gray-400/20" : ""}`}
+                        className={`text-[16px] text-white gap-3 ${pathname === "/UserProfile" ? "bg-gray-400/20" : ""}`}
                       >
                         <FiUser className="text-lg" /> My Profile
                       </a>
@@ -191,14 +191,14 @@ const Layout = ({ children }) => {
                     <li>
                       <a
                         href="/Settings"
-                        className={`text-[16px] text-[#101437] dark:text-white gap-3 ${pathname === "/Settings" ? "bg-gray-400/20" : ""}`}
+                        className={`text-[16px] text-white gap-3 ${pathname === "/Settings" ? "bg-gray-400/20" : ""}`}
                       >
                         <FiSettings className="text-lg" /> Settings
                       </a>
                     </li>
                     {/* <li>
                       <a className="justify-between">
-                        <div className="flex items-center text-[16px] text-[#101437] dark:text-white gap-3">
+                        <div className="flex items-center text-[16px] text-white gap-3">
                           <FiCreditCard className="text-lg" /> Billing Plan
                         </div>
                         <span className="badge badge-error text-white text-[15px] h-6 w-6 p-0 flex items-center justify-center">
@@ -210,12 +210,12 @@ const Layout = ({ children }) => {
                     <div className="divider my-0 opacity-20"></div>
 
                     {/* <li>
-                      <a className="text-[16px] text-[#101437] dark:text-white gap-3">
+                      <a className="text-[16px] text-white gap-3">
                         <FiDollarSign className="text-lg" /> Pricing
                       </a>
                     </li>
                     <li>
-                      <a className="text-[16px] text-[#101437] dark:text-white gap-3">
+                      <a className="text-[16px] text-white gap-3">
                         <FiHelpCircle className="text-lg" /> FAQ
                       </a>
                     </li> */}

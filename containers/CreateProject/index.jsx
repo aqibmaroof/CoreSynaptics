@@ -5,7 +5,7 @@ export default function KanbanBoard() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen font-gilroy p-6 text-[#101437] font-gilroy dark:text-white">
+    <div className="min-h-screen font-gilroy p-6 font-gilroy text-white">
       <h1 className="font-bold font-gilroy text-2xl text-[#A0AEC0]">
         Project Name
       </h1>

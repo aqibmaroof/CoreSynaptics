@@ -32,9 +32,9 @@ const timelineEvents = [
 const ShippingActivityCard = () => {
   return (
     // Outer container matching the dark theme
-    <div className="card w-full bg-[#f6f6f6] dark:bg-[#1e4742] rounded-xl shadow-2xl p-6 md:p-8 w-full ml-5 mt-5">
+    <div className="card w-full bg-[#1e4742] rounded-xl shadow-2xl p-6 md:p-8 w-full ml-5 mt-5">
       {/* --- Header --- */}
-      <h2 className="text-xl font-semibold text-[#101437] dark:text-white mb-6">
+      <h2 className="text-xl font-semibold text-white mb-6">
         Shipping activity
       </h2>
 
@@ -51,16 +51,16 @@ const ShippingActivityCard = () => {
               </div>
             </div>
             <div>
-              <p className=" text-[#101437] dark:text-white font-medium">
+              <p className=" text-white font-medium">
                 Shamus Tuttle
               </p>
-              <p className="text-sm  text-[#101437] dark:text-white">
+              <p className="text-sm  text-white">
                 Customer ID: #58909
               </p>
             </div>
           </div>
           {/* Hardcoded time from the image */}
-          <span className="text-xs  text-[#101437] dark:text-white pt-1">
+          <span className="text-xs  text-white pt-1">
             Tuesday 11:29 AM
           </span>
         </div>
@@ -69,10 +69,10 @@ const ShippingActivityCard = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 ml-14">
             <BsFillCartFill className="text-green-500 h-5 w-5" />
-            <p className=" text-[#101437] dark:text-white">12 Orders</p>
+            <p className=" text-white">12 Orders</p>
           </div>
           {/* Hardcoded time from the image */}
-          <span className="text-xs  text-[#101437] dark:text-white pt-1">
+          <span className="text-xs  text-white pt-1">
             Wednesday 11:29 AM
           </span>
         </div>
@@ -112,20 +112,20 @@ const ShippingActivityCard = () => {
                 <p
                   className={`font-semibold ${
                     event.isComplete
-                      ? " text-[#101437] dark:text-white"
-                      : " text-[#101437] dark:text-white"
+                      ? " text-white"
+                      : " text-white"
                   }`}
                 >
                   {event.status}
                 </p>
-                <p className="text-sm  text-[#101437] dark:text-white leading-snug">
+                <p className="text-sm  text-white leading-snug">
                   {event.description}
                 </p>
               </div>
 
               {/* Time Stamp */}
               {event.time && (
-                <span className="text-xs  text-[#101437] dark:text-white flex-shrink-0 text-right">
+                <span className="text-xs  text-white flex-shrink-0 text-right">
                   {event.time}
                 </span>
               )}
