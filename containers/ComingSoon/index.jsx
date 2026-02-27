@@ -55,6 +55,9 @@ const ComingSoon = () => {
             </div>
           </form>
         </div>
+        <div>
+          <h2 className="text-[#A0AEC0] text-lg mt-4 mb-8">Subscribe for early bird information</h2>
+        </div>
 
         {/* Social icons */}
         <div className="mt-auto">
