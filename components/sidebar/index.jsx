@@ -31,14 +31,17 @@ const Sidebar = () => {
     user?.activeRole?.name || user?.platformRole,
   );
 
-  useEffect(async () => {
+  useEffect(() => {
     getRolesList();
+    getUserFromApi();
+  }, []);
+
+  const getUserFromApi = async () => {
     if (accessToken) {
       const userResponse = await GetUser();
       setUser({ user: userResponse });
     }
-  }, []);
-
+  };
   const getRolesList = async () => {
     try {
       const res = await getRoles();
@@ -174,9 +177,7 @@ const Sidebar = () => {
                         <a
                           href={sub.path}
                           className={`no-underline hover:text-[#A9D18E] hover:underline ${
-                            subIdx === activeSubIndex
-                              ? "text-white"
-                              : ""
+                            subIdx === activeSubIndex ? "text-white" : ""
                           }`}
                         >
                           {sub.title}

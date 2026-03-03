@@ -35,6 +35,7 @@ const LoginPage = () => {
       console.log(response);
       if (response) {
         setMessage({ type: "success", text: "Password reset successful! 🚀" });
+        router.push("/Auth/Login")
       } else {
         setMessage({
           type: "error",
