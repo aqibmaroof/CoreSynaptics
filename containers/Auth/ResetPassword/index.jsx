@@ -31,11 +31,15 @@ const LoginPage = () => {
     setMessage({ type: "", text: "" });
 
     try {
-      const response = await ResetPassword(formData);
+      const payload = {
+        token: formData?.token,
+        newPassword: formData?.newPassword,
+      };
+      const response = await ResetPassword(payload);
       console.log(response);
       if (response) {
         setMessage({ type: "success", text: "Password reset successful! 🚀" });
-        router.push("/Auth/Login")
+        router.push("/Auth/Login");
       } else {
         setMessage({
           type: "error",
@@ -89,13 +93,10 @@ const LoginPage = () => {
         </div>
 
         <form className="space-y-4" onSubmit={handleLogin}>
-        
           {/* Password Field */}
           <div className="form-control w-full">
             <label className="label py-1">
-              <span className="label-text text-lg text-white">
-                Password
-              </span>
+              <span className="label-text text-lg text-white">Password</span>
             </label>
             <div className="relative">
               <input

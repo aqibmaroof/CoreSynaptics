@@ -225,7 +225,7 @@ const Sidebar = () => {
       </ul>
 
       {/* NEED HELP CARD */}
-      <div className="bg-[url('/images/needHelp.png')] bg-cover bg-center bg-no-repeat w-[220px] rounded-xl h-auto mx-auto mb-15 px-4 py-4">
+      <div className="text-white bg-[url('/images/needHelp.png')] bg-cover bg-center bg-no-repeat w-[220px] rounded-xl h-auto mx-auto mb-15 px-4 py-4">
         <img src={config?.questionMark} />
         <p className="mt-5 font-bold text-[14px]">Need help?</p>
         <p className="mb-3 text-[12px]">Please check our docs</p>

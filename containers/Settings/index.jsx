@@ -63,72 +63,10 @@ export default function ProjectManagerDashboard() {
 
   return (
     <div className="min-h-screen p-6 md:p-8">
-      <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Epilogue:wght@600;800&display=swap");
-
-        body {
-          font-family: "DM Sans", sans-serif;
-        }
-
-        .heading-font {
-          font-family: "Epilogue", sans-serif;
-        }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-          background: #1e293b;
-        }
-
-        ::-webkit-scrollbar-thumb {
-          background: #475569;
-          border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-          background: #64748b;
-        }
-
-        /* Animation for pulse */
-        @keyframes pulse-dot {
-          0%,
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.5;
-            transform: scale(1.2);
-          }
-        }
-
-        .pulse-dot {
-          animation: pulse-dot 2s infinite;
-        }
-
-        /* Smooth transitions */
-        * {
-          transition:
-            background-color 0.2s ease,
-            border-color 0.2s ease,
-            transform 0.2s ease;
-        }
-
-        /* Input styling */
-        input:focus,
-        select:focus,
-        textarea:focus {
-          outline: none !important;
-          border-color: #3b82f6 !important;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-        }
-      `}</style>
+     
 
       {/* Header */}
-      <div className="mx-auto mb-8 animate-fade-in">
+      <div className="text-white mx-auto mb-8 animate-fade-in">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
           <div>
             <h1 className="heading-font text-4xl font-bold text-white mb-2">
@@ -475,7 +413,7 @@ export default function ProjectManagerDashboard() {
                     type="checkbox"
                     checked={formData.autoAssign}
                     onChange={() => handleToggle("autoAssign")}
-                    className="toggle toggle-primary"
+                    className="toggle toggle-primary text-white bg-primary"
                   />
                 </div>
 
@@ -492,7 +430,7 @@ export default function ProjectManagerDashboard() {
                     type="checkbox"
                     checked={formData.deadlineReminders}
                     onChange={() => handleToggle("deadlineReminders")}
-                    className="toggle toggle-primary"
+                    className="toggle toggle-primary text-white bg-primary"
                   />
                 </div>
 
@@ -509,7 +447,7 @@ export default function ProjectManagerDashboard() {
                     type="checkbox"
                     checked={formData.archiveProjects}
                     onChange={() => handleToggle("archiveProjects")}
-                    className="toggle toggle-primary"
+                    className="toggle toggle-info text-white bg-primary"
                   />
                 </div>
 
@@ -526,7 +464,7 @@ export default function ProjectManagerDashboard() {
                     type="checkbox"
                     checked={formData.weeklyReports}
                     onChange={() => handleToggle("weeklyReports")}
-                    className="toggle toggle-primary"
+                    className="toggle toggle-primary text-white bg-primary"
                   />
                 </div>
               </div>
@@ -547,17 +485,17 @@ export default function ProjectManagerDashboard() {
                   <span className="text-slate-400">Active Projects</span>
                   <span className="text-2xl font-bold text-white">24</span>
                 </div>
-                <div className="divider my-0"></div>
+                <div className="divider divider-info my-0"></div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Team Members</span>
                   <span className="text-2xl font-bold text-white">47</span>
                 </div>
-                <div className="divider my-0"></div>
+                <div className="divider divider-info my-0"></div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Tasks This Week</span>
                   <span className="text-2xl font-bold text-white">156</span>
                 </div>
-                <div className="divider my-0"></div>
+                <div className="divider divider-info my-0"></div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Completion Rate</span>
                   <span className="text-2xl font-bold text-success">87%</span>
@@ -699,7 +637,7 @@ export default function ProjectManagerDashboard() {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 text-white">
                 <div className="alert alert-success bg-success/10 border border-success/20">
                   <svg
                     className="w-5 h-5"
@@ -712,7 +650,7 @@ export default function ProjectManagerDashboard() {
                       clipRule="evenodd"
                     ></path>
                   </svg>
-                  <span className="text-sm">2FA Enabled</span>
+                  <span className="text-sm text-white">2FA Enabled</span>
                 </div>
 
                 <div className="alert alert-success bg-success/10 border border-success/20">
@@ -727,7 +665,7 @@ export default function ProjectManagerDashboard() {
                       clipRule="evenodd"
                     ></path>
                   </svg>
-                  <span className="text-sm">SSL Certificate Valid</span>
+                  <span className="text-sm text-white">SSL Certificate Valid</span>
                 </div>
 
                 <div className="alert alert-warning bg-warning/10 border border-warning/20">
@@ -742,11 +680,11 @@ export default function ProjectManagerDashboard() {
                       clipRule="evenodd"
                     ></path>
                   </svg>
-                  <span className="text-sm">Password expires in 45 days</span>
+                  <span className="text-sm text-white">Password expires in 45 days</span>
                 </div>
               </div>
 
-              <button className="btn btn-outline btn-sm mt-4 w-full">
+              <button className="btn btn-outline text-white btn-sm mt-4 w-full">
                 View Security Settings
               </button>
             </div>
@@ -758,7 +696,7 @@ export default function ProjectManagerDashboard() {
       <div className=" mx-auto mt-8 flex justify-end gap-4">
         <button
           onClick={handleCancel}
-          className="px-6 py-3 bg-base-100 text-gray-300 rounded-xl hover:bg-[#4a5066] transition-colors font-medium"
+          className="px-6 py-3 text-gray-800 bg-base-100 text-gray-300 rounded-xl hover:bg-[#4a5066] transition-colors font-medium"
         >
           Cancel Changes
         </button>

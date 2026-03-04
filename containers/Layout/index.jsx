@@ -121,10 +121,10 @@ const Layout = ({ children }) => {
                   />
                 </div>
                 <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]" />
-                <FaBell className="cursor-pointer text-3xl" />
-                <button onClick={toggleTheme} className="text-2xl">
+                <FaBell className="cursor-pointer text-white text-3xl" />
+                {/* <button onClick={toggleTheme} className="text-2xl">
                   {resolvedTheme === "dark" ? <FaSun /> : <FaMoon />}
-                </button>
+                </button> */}
                 <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]" />
 
                 {/* --- User Dropdown Start --- */}
@@ -178,12 +178,12 @@ const Layout = ({ children }) => {
                       </div>
                     </li>
 
-                    <div className="divider my-0 opacity-20"></div>
+                    <div className="divider my-0 divider-info opacity-20"></div>
 
                     <li>
                       <a
                         href="/UserProfile"
-                        className={`text-[16px] text-white gap-3 ${pathname === "/UserProfile" ? "bg-gray-400/20" : ""}`}
+                        className={`text-[16px] text-white gap-3 mt-2 ${pathname === "/UserProfile" ? "bg-gray-400/20" : ""}`}
                       >
                         <FiUser className="text-lg" /> My Profile
                       </a>
@@ -191,7 +191,7 @@ const Layout = ({ children }) => {
                     <li>
                       <a
                         href="/Settings"
-                        className={`text-[16px] text-white gap-3 ${pathname === "/Settings" ? "bg-gray-400/20" : ""}`}
+                        className={`text-[16px] text-white mb-3 gap-3 ${pathname === "/Settings" ? "bg-gray-400/20" : ""}`}
                       >
                         <FiSettings className="text-lg" /> Settings
                       </a>
@@ -207,7 +207,6 @@ const Layout = ({ children }) => {
                       </a>
                     </li> */}
 
-                    <div className="divider my-0 opacity-20"></div>
 
                     {/* <li>
                       <a className="text-[16px] text-white gap-3">
@@ -220,7 +219,7 @@ const Layout = ({ children }) => {
                       </a>
                     </li> */}
 
-                    <div className="divider my-0 opacity-20"></div>
+                    <div className="divider divider-info my-0 opacity-20"></div>
 
                     <li onClick={() => handleLogout()}>
                       <a className="text-error text-[16px] gap-3">

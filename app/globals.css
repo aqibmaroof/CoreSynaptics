@@ -51,7 +51,7 @@
 }
 
 :root {
-  --background: #ffffff;
+  --background: #10123b;
   --foreground: #10123b;
 }
 
@@ -65,7 +65,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #10123b;
-    --foreground: #ffffff;
+    --foreground: #10123b;
   }
 }
 

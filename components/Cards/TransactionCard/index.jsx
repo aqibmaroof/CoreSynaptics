@@ -57,7 +57,7 @@ export default function UPSTrackerOverview({heading, data}) {
         <div>
           <h1 className="text-white text-7xl font-bold mb-2">255</h1>
           <p className="text-gray-400 text-sm mb-3">This month</p>
-          <p className="text-[20px] gap-1 bg-gradient-to-r from-[#080c26] to-[#056050] text-xs px-4 py-1 rounded-md flex items-center justify-center mt-1 w-[max-content]">
+          <p className="text-[20px] text-white gap-1 bg-gradient-to-r from-[#080c26] to-[#056050] text-xs px-4 py-1 rounded-md flex items-center justify-center mt-1 w-[max-content]">
             <FiArrowUp className="text-md"/> 80%
           </p>
         </div>
