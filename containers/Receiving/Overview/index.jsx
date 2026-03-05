@@ -86,7 +86,7 @@ const router = useRouter();
     },
   ];
     return(
-    <div className="min-h-screen  p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen  p-6 text-white">
         {/* Stats */}
         <h1 className="text-xl font-bold">Shipment Overview</h1>
         <div className="flex items-center justify-between w-full gap-3 mt-2">

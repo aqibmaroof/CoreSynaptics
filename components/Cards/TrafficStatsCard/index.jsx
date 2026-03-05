@@ -107,7 +107,7 @@ const TrafficStatsCard = ({ data = trafficData }) => {
               ${
                 activeTab === tab
                   ? "bg-purple-600 text-white shadow-md"
-                  : "text-gray-600 dark:text-[#fff] hover:bg-gray-100 dark:hover:bg-gray-700"
+                  : "text-white hover:bg-gray-700"
               }`}
             onClick={() => setActiveTab(tab)}
           >
@@ -117,21 +117,18 @@ const TrafficStatsCard = ({ data = trafficData }) => {
       </div>
       {/* Data Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className="min-w-full divide-y divide-gray-700">
           <thead>
-            <tr className="text-xs font-semibold uppercase text-gray-500 dark:text-[#fff]">
+            <tr className="text-xs font-semibold uppercase text-[#fff]">
               <th className="py-3 pr-2 text-left">NO</th>
               <th className="py-3 px-2 text-left">BROWSER</th>
               <th className="py-3 px-2 text-left">VISITS</th>
               <th className="py-3 pl-2 text-left">DATA IN PERCENTAGE</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="divide-y divide-gray-700">
             {data.table.map((row) => (
-              <tr
-                key={row.no}
-                className="text-sm text-gray-800 dark:text-gray-200"
-              >
+              <tr key={row.no} className="text-sm text-gray-200">
                 <td className="py-3 pr-2 font-medium">{row.no}</td>
 
                 {/* Browser Column */}
@@ -146,7 +143,7 @@ const TrafficStatsCard = ({ data = trafficData }) => {
                 {/* Data in Percentage Column */}
                 <td className="py-3 pl-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                    <div className="w-full rounded-full h-2.5 bg-gray-700">
                       <div
                         className={`h-2.5 rounded-full ${row.barColor}`}
                         style={{ width: `${row.percentage}%` }}

@@ -6,7 +6,7 @@ export default function ProfileReportCard({ user }) {
     <div className="w-full px-3 gap-10 flex items-center justify-center font-gilroy">
       {/* LEFT SIDE */}
       <div>
-        <h2 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+        <h2 className="text-[#fff] text-2xl font-semibold">
           Projects Overview
         </h2>
         <div className="flex items-center justify-between w-full mt-4 gap-20">
@@ -35,7 +35,7 @@ export default function ProfileReportCard({ user }) {
         className="text-center flex items-center justify-center mx-5 pl-5"
       />
       <div>
-        <h2 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+        <h2 className="text-[#fff] text-2xl font-semibold">
           Units Overview
         </h2>
         <div className="flex items-center justify-between w-full mt-4 gap-20">

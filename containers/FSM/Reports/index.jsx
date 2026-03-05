@@ -49,7 +49,7 @@ const tasks = [
     
   ];
     return(
-        <div className="min-h-screen flex flex-row gap-2 font-gilroy p-6 text-[#101437] dark:text-white">
+        <div className="min-h-screen flex flex-row gap-2 font-gilroy p-6 text-white">
             
             {/* Folder */}
             <div className="flex min-h-screen w-78 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-2 mt-8 rounded-2xl card">

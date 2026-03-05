@@ -7,7 +7,7 @@ export default function RevenueDetails({ user }) {
       <div>
         <div className="flex items-center justify-between w-full mt-4 gap-20">
           <div>
-            <h1 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+            <h1 className="text-white text-2xl font-semibold">
               Total Revenue
             </h1>
             <div className="flex items-center justify-between gap-20 w-[max-content]">
@@ -21,7 +21,7 @@ export default function RevenueDetails({ user }) {
             </div>
           </div>
           <div>
-            <h1 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+            <h1 className="text-white text-2xl font-semibold">
               Total Orders
             </h1>
             <div className="flex items-center justify-between gap-20 w-[max-content]">
@@ -39,7 +39,7 @@ export default function RevenueDetails({ user }) {
       <div>
         <div className="flex items-center justify-between w-full mt-4 gap-20">
           <div>
-            <h1 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+            <h1 className="text-white text-2xl font-semibold">
               Monthly Growth
             </h1>
             <div className="flex items-center justify-between gap-20 w-[max-content]">
@@ -53,7 +53,7 @@ export default function RevenueDetails({ user }) {
             </div>
           </div>
           <div>
-            <h1 className="text-[#DF5B30] dark:text-[#fff] text-2xl font-semibold">
+            <h1 className="text-white text-2xl font-semibold">
               Orders Today
             </h1>
             <div className="flex items-center justify-between gap-20 w-[max-content]">

@@ -73,7 +73,7 @@ const router = useRouter();
     },
   ];
   return (
-    <div className="min-h-screen  p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen  p-6 text-white">
       {/* Stats */}
       <h1 className="text-xl font-bold">Shipment Overview</h1>
       <div className="flex items-center justify-between w-full gap-3 mt-2">
@@ -208,7 +208,7 @@ const router = useRouter();
 
             {/* Vertical lines */}
             <div className="flex w-full justify-between mt-4">
-              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 0
                 <div className="mt-4 w-full">
                   <div className="absolute items-center justify-between">
@@ -227,22 +227,22 @@ const router = useRouter();
                   </div>
                 </div>
               </div>
-              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 10k
               </div>
-              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 20k
               </div>
-              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 30k
               </div>
-              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 40k
               </div>
-              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 ">
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 50k
               </div>
-              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-[#56577A] dark:bg-white/10 "></div>
+              <div class="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 "></div>
             </div>
           </div>
         </div>

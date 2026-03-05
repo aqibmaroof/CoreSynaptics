@@ -116,7 +116,7 @@ export default function KanbanBoard() {
     // },
   ];
   return (
-    <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen font-gilroy p-6 text-white">
       <h1 className="font-bold text-2xl text-white">Delta Developers</h1>
       <div className="flex flex-row">
         <div className="w-45  font-gilroy mt-6 mb-6 text-[#A0AEC0]">

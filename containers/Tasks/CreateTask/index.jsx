@@ -51,7 +51,7 @@ export default function KanbanBoard() {
   ];
 
   return (
-    <div className="min-h-screen  p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen  p-6 text-white">
       <div className="flex items-center gap-8 justify-between mx-3">
         <div className="flex items-center gap-4">
           <p className="text-2xl font-bold">Design Homepage layout</p>

@@ -31,14 +31,17 @@ const Sidebar = () => {
     user?.activeRole?.name || user?.platformRole,
   );
 
-  useEffect(async () => {
+  useEffect(() => {
     getRolesList();
+    getUserFromApi();
+  }, []);
+
+  const getUserFromApi = async () => {
     if (accessToken) {
       const userResponse = await GetUser();
       setUser({ user: userResponse });
     }
-  }, []);
-
+  };
   const getRolesList = async () => {
     try {
       const res = await getRoles();
@@ -76,7 +79,7 @@ const Sidebar = () => {
 
             {/* MAIN ITEM */}
             <div
-              className={`flex items-center py-5 w-[250px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-[#2B3340] dark:text-white hover:text-[#101437] dark:hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] ${
+              className={`flex items-center py-5 w-[250px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-white hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] ${
                 pathname === item?.path
                   ? "bg-[url('/images/hover_background.png')]"
                   : ""
@@ -124,7 +127,7 @@ const Sidebar = () => {
                         <div className="flex items-center justify-start">
                           <Link
                             href={sub.path}
-                            className="cursor-pointer py-1 text-[#101437] dark:text-white dark:hover:text-[#A9D18E] hover:underline"
+                            className="cursor-pointer py-1 text-white hover:text-[#A9D18E] hover:underline"
                           >
                             {sub.title}
                           </Link>
@@ -150,7 +153,7 @@ const Sidebar = () => {
                             {sub.submenu.map((subSub, subSubIdx) => (
                               <li
                                 key={subSubIdx}
-                                className="cursor-pointer py-1 text-[#101437] dark:text-white hover:underline"
+                                className="cursor-pointer py-1 text-white hover:underline"
                                 onClick={() => router.push(subSub.path)}
                               >
                                 {subSub.title}
@@ -168,15 +171,13 @@ const Sidebar = () => {
                       <li
                         key={subIdx}
                         onClick={() => setActiveSubIndex(subIdx)}
-                        className="mb-2 text-[#101437] dark:text-white font-medium text-[16px] cursor-pointer"
+                        className="mb-2 text-white font-medium text-[16px] cursor-pointer"
                       >
                         <span className="mr-3">{item.icon}</span>
                         <a
                           href={sub.path}
-                          className={`no-underline hover:text-[#A9D18E] dark:hover:text-[#A9D18E] hover:underline ${
-                            subIdx === activeSubIndex
-                              ? "text-[#fe3610] dark:text-white"
-                              : ""
+                          className={`no-underline hover:text-[#A9D18E] hover:underline ${
+                            subIdx === activeSubIndex ? "text-white" : ""
                           }`}
                         >
                           {sub.title}

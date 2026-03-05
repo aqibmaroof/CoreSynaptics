@@ -81,10 +81,10 @@ const LoginPage = () => {
         
         <div className="mb-10 mt-18">
           <h3 className="text-[#00E691] text-xl font-sora tracking-widest">C O M I N G  S O O N</h3>
-          <h2 className="text-7xl font-bold dark:text-white mt-4">
+          <h2 className="text-7xl font-bold text-white mt-4">
             Data Center
           </h2>
-          <p className="text-6xl text-[#101437] dark:text-gray-300">
+          <p className="text-6xl text-gray-300">
             one window solution
           </p>
         </div>

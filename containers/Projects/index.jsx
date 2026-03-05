@@ -161,7 +161,7 @@ export default function KanbanBoard() {
   ];
 
   return (
-    <div className="min-h-screen font-gilroy p-6 text-[#101437] dark:text-white">
+    <div className="min-h-screen font-gilroy p-6 text-white">
       <h1 className="font-bold text-2xl">Task overveiw</h1>
       <div className="w-full px-3 gap-10 flex items-center justify-between font-gilroy mt-6 mb-6">
         {/* LEFT SIDE */}
