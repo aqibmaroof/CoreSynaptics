@@ -103,7 +103,11 @@ const LoginPage = () => {
     setMessage({ type: "", text: "" });
 
     try {
-      const response = await AcceptInvite(formData);
+      const payload = {
+        token: formData?.token,
+        password:formData?.password 
+      };
+      const response = await AcceptInvite(payload);
       if (response) {
         setMessage({ type: "success", text: "Login successful! 🚀" });
 
@@ -184,9 +188,7 @@ const LoginPage = () => {
           {/* Password Field */}
           <div className="form-control w-full">
             <label className="label py-1">
-              <span className="label-text text-lg text-white">
-                Password
-              </span>
+              <span className="label-text text-lg text-white">Password</span>
             </label>
             <div className="relative">
               <input

@@ -40,7 +40,7 @@ export default function PricingPlans() {
     }
   };
   return (
-    <div className=" flex flex-col justify-center py-5 px-7">
+    <div className="text-white flex flex-col justify-center py-5 px-7">
       {/* Header */}
       <div className="mb-5">
         <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">

@@ -70,7 +70,7 @@ export default function PricingPlans() {
   };
 
   return (
-    <div className="bg-[url('/images/background.png')] bg-cover bg-center bg-no-repeat min-h-screen flex flex-col items-center justify-center py-16 px-4">
+    <div className="text-white bg-[url('/images/background.png')] bg-cover bg-center bg-no-repeat min-h-screen flex flex-col items-center justify-center py-16 px-4">
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">

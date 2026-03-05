@@ -298,7 +298,7 @@ const LoginPage = () => {
             )}
           </button>
         </form>
-        <div className="flex items-center justify-center mt-5 gap-2">
+        <div className="flex items-center justify-center mt-5 gap-2 text-white">
           dont't have an account ?{" "}
           <a className="text-info hover:underline" href="/Auth/Register">
             Click Here
