@@ -1,11 +1,9 @@
 "use client";
-import config from "../../../../config";
 import { useRouter } from "next/navigation";
+import config from "../../../../config";
 
-const LoginPage = () => {
+const Modules = ({ step, setStep }) => {
   const router = useRouter();
- 
-
   return (
     <div className="flex min-h-screen">
       {/* Left Side: Illustration */}
@@ -25,122 +23,137 @@ const LoginPage = () => {
             alt="Brand Dark"
           />
         </div>
-        
+
         <div className="mb-10 mt-18">
-          <h3 className=" text-4xl font-sora font-bold">Customize Your Experience</h3>
-          <h2 className="text-base dark:text-[#A0AEC0] mt-4">
+          <h3 className="text-white text-4xl font-sora font-bold">
+            Customize Your Experience
+          </h3>
+          <h2 className="text-[#A0AEC0] mt-4">
             Let’s choose the best plan to fulfill your needs
           </h2>
         </div>
         <div>
-            <progress className="progress progress-success w-xl" value="50" max="100"></progress>
+          <progress
+            className="progress progress-success w-xl"
+            value="50"
+            max="100"
+          ></progress>
         </div>
-            
+
         <div>
-            <h3 className="text-base font-bold mt-4">Plan must have modules included</h3> 
+          <h3 className="text-white font-bold mt-4">
+            Plan must have modules included
+          </h3>
         </div>
         {/* Tags */}
         <div className="flex flex-wrap gap-4 mt-4">
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Projects
-            </button>
-            <button
-              type="submit"
-              className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Sales
-            </button>
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Scheduling
-            </button>
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              RMA/RCA
-            </button>
-            <button
-              type="submit"
-              className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Field Execution
-            </button>
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              QA/QC
-            </button>
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Safety
-            </button>
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Finance
-            </button>
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Commissioning
-            </button>
-            <button
-              type="submit"
-              className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Supply Chain
-            </button>
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Documents
-            </button>
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              HR
-            </button>
-            <button
-              type="submit"
-              className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Reports
-            </button>
-            <button
-              type="submit"
-              className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
-            >
-              Admin
-            </button>
-            
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Projects
+          </button>
+          <button
+            type="submit"
+            className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Sales
+          </button>
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Scheduling
+          </button>
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            RMA/RCA
+          </button>
+          <button
+            type="submit"
+            className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Field Execution
+          </button>
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            QA/QC
+          </button>
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Safety
+          </button>
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Finance
+          </button>
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Commissioning
+          </button>
+          <button
+            type="submit"
+            className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Supply Chain
+          </button>
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Documents
+          </button>
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            HR
+          </button>
+          <button
+            type="submit"
+            className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Reports
+          </button>
+          <button
+            type="submit"
+            className="backdrop-blur-2xl border-3 border-blue-500 text-white px-3 py-3 text-xl md:rounded-2xl"
+          >
+            Admin
+          </button>
         </div>
         <div className="mt-20 flex items-center justify-between">
-          
-          <h2 className="text-sm text-[#A0AEC0] mt-2 underline" >See all plans</h2>
+          <h2 className="text-sm text-[#A0AEC0] mt-2 underline">
+            See all plans
+          </h2>
           <div className="flex items-center gap-4">
             <button
-              onClick={()=> router.push("/Auth/Questionnaire/AdvanceReporting")}
+              onClick={() => {
+                router.push(`/Auth/Questionnaire?step=${step - 1}`);
+                setStep(step - 1);
+              }}
               type="submit"
-              className="bg-gradient-to-r from-[#656A80] to-[#1A1F37] border-3 border-blue-700 text-white px-5 py-2 md: rounded-2xl"
+              className="cursor-pointer bg-gradient-to-r from-[#656A80] to-[#1A1F37] border-3 border-blue-700 text-white px-5 py-2 md: rounded-2xl"
             >
               Back
             </button>
             <button
+              // onClick={() => {
+              //   router.push(`/Auth/Questionnaire?step=${step + 1}`);
+              //   setStep(step + 1);
+              // }}
               type="submit"
-              className="bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-700 text-white px-5 py-2 md: rounded-2xl"
+              className="cursor-pointer bg-gradient-to-r from-[#0075F8] to-[#00387A] border-3 border-blue-700 text-white px-5 py-2 md: rounded-2xl"
             >
               Next
             </button>
@@ -151,4 +164,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default Modules;
