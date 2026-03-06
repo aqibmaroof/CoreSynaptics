@@ -75,7 +75,7 @@ const Layout = ({ children }) => {
                     pathname === "/ProjectDetails") && (
                     <FaArrowLeft
                       onClick={() => router.back()}
-                      className="text-2xl"
+                      className="text-2xl text-white"
                     />
                   )}
                   <p className="text-2xl font-semibold text-white">

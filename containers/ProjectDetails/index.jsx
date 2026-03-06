@@ -2,11 +2,61 @@
 import { FaCircle } from "react-icons/fa";
 import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import {
+  AddUsersToProjects,
+  GetProjectsById,
+  UpdateProjects,
+} from "@/services/Projects";
+import { getUsers } from "@/services/Users";
+
+const CapitalizeText = (text) => {
+  return text
+    .replace(/([A-Z])/g, " $1") // insert space before each uppercase letter
+    .replace(/\b\w/g, (char) => char.toUpperCase()) // capitalize first letter of each word
+    .trim(); // remove any leading space
+};
+
+const formatToDatetimeLocal = (isoString) => {
+  if (!isoString) return "";
+  return isoString.slice(0, 16); // "2026-03-07T18:41"
+};
 
 export default function KanbanBoard() {
   const router = useRouter();
+  const params = useParams();
+  const { id } = params;
+  const [message, setMessage] = useState({ type: "", text: "" });
+  const [users, setUsers] = useState([]);
 
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+    timezone: "",
+    address: "",
+    contractValue: null,
+    clientName: "",
+    assignee: [],
+  });
+
+  useEffect(() => {
+    if (id) {
+      getProjectDetails();
+    }
+    getUsersList();
+  }, [id]);
+
+  const getUsersList = async () => {
+    try {
+      const res = await getUsers();
+      setUsers(res);
+    } catch (error) {
+      console.log("error fetching users : ", error);
+    }
+  };
   const members = [
     {
       id: 1,
@@ -115,106 +165,274 @@ export default function KanbanBoard() {
     //   ],
     // },
   ];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  const updateProject = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        name: form?.name,
+        description: form?.description,
+        startDate: form?.startDate,
+        endDate: form?.endDate,
+        timezone: form?.timezone,
+        address: form?.address,
+        metadata: {
+          contractValue: form?.contractValue,
+          clientName: form?.clientName,
+        },
+      };
+      const requiredFields = [
+        "name",
+        "description",
+        "startDate",
+        "endDate",
+        "timezone",
+        "address",
+      ];
+
+      for (const field of requiredFields) {
+        const value = payload[field];
+        if (value === undefined || value === null || value === "") {
+          setMessage({
+            type: "error",
+            text: `Missing value for field: ${CapitalizeText(field)}`,
+          });
+          return;
+        }
+      }
+      await UpdateProjects(id, payload);
+      setMessage({ type: "success", text: "Project Updated successfully! 🚀" });
+
+      router.push("/Projects");
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text:
+          `Error updating Project : ${error?.message}` ||
+          "Error updating Project.",
+      });
+    }
+  };
+
+  const getProjectDetails = async () => {
+    try {
+      const res = await GetProjectsById(id);
+      console.log(res);
+      setForm({
+        name: res.name,
+        description: res?.description,
+        startDate: formatToDatetimeLocal(res?.startDate),
+        endDate: formatToDatetimeLocal(res.startDate),
+        timezone: res?.timezone,
+        address: res?.address,
+        contractValue: res?.metadata?.contractValue,
+        clientName: res?.metadata?.clientName,
+        assignee: res?.assignedUsers,
+      });
+    } catch (error) {
+      console.log(`Error fetching details`, error);
+    }
+  };
+
+  const handleAssignProject = async (e) => {
+    try {
+      setForm({
+        ...form,
+        assigneeId: e.target.value,
+      });
+      const payload = {
+        userId: e.target.value,
+        siteId: null,
+      };
+      const requiredFields = ["userId"];
+
+      for (const field of requiredFields) {
+        const value = payload[field];
+        if (value === undefined || value === null || value === "") {
+          setMessage({
+            type: "error",
+            text: `Missing value for field: ${CapitalizeText(field)}`,
+          });
+          return;
+        }
+      }
+      await AddUsersToProjects(id, payload);
+      setMessage({
+        type: "success",
+        text: "Project Assigned successfully! 🚀",
+      });
+      setTimeout(() => {
+        router.push("/Projects");
+      }, 3000);
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text:
+          `Error assigning Project : ${error?.message}` ||
+          "Error assigning Project.",
+      });
+    }
+  };
   return (
     <div className="min-h-screen font-gilroy p-6 text-white">
-      <h1 className="font-bold text-2xl text-white">Delta Developers</h1>
-      <div className="flex flex-row">
-        <div className="w-45  font-gilroy mt-6 mb-6 text-[#A0AEC0]">
-          <div className="flex justify-between items-center">
-            <h2>Project Status:</h2>
+      <div className="w-full flex items-center justtify-end">
+        <h1 className="font-bold text-2xl text-white">
+          {form?.name ? form?.name : "Delta Developers"}
+        </h1>
+
+        {/* Status Messages */}
+        {message.text && (
+          <div
+            className={`p-3 rounded-lg mb-4 text-sm animate-fade-in ${
+              message.type === "success"
+                ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                : "bg-red-900/30 text-red-400 border border-red-500/30"
+            }`}
+          >
+            {message.text}
           </div>
-          <div className="flex items-center mt-6">
-            <span class="text-slate-400">Progress:</span>
-          </div>
-          <div className="flex justify-between items-center mt-4">
-            <h2>Dates:</h2>
-          </div>
-          <div className="flex justify-between items-center mt-3">
-            <h2>Project Manager:</h2>
-          </div>
-          <div className="flex justify-between items-center mt-7">
-            <h2>Team Members:</h2>
+        )}
+        <button
+          onClick={(e) => updateProject(e)}
+          className="ml-auto bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white font-[510] py-2 px-4 border-none rounded-xl transition-all cursor-pointer w-50"
+        >
+          Update Project
+        </button>
+      </div>
+      <div className="w-250 font-gilroy mt-6 mb-6 text-[#A0AEC0]">
+        <div className="flex justify-left gap-28 items-center">
+          <h2>Name:</h2>
+          <input
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+            type="text"
+            name="name"
+            value={form?.name}
+            onChange={handleChange}
+            placeholder="Project Name"
+          />
+        </div>
+        <div className="flex items-center justify-left gap-19 mt-3">
+          <span class="text-slate-400">description:</span>
+          <input
+            type="text"
+            placeholder="Project Description"
+            name="description"
+            value={form?.description}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
+        </div>
+        <div className="flex justify-left gap-20 items-center mt-3">
+          <h2>Start Date:</h2>
+          <div class="relative max-w-sm">
+            <div class="absolute inset-y-0 start-0 flex items-center "></div>
+            <input
+              className="text-lg font-semibold appearance-none"
+              datepicker
+              id="default-datepicker"
+              type="datetime-local"
+              name="startDate"
+              value={form?.startDate}
+              onChange={handleChange}
+              class="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              placeholder="Select Calender"
+            />
           </div>
         </div>
-        {/* ........ */}
-        <div className="mt-6">
-          <div>
-            <button className="px-3 py-2 rounded-3xl text-white bg-[#0075FF]">
-              In Progress
-            </button>
+        <div className="flex justify-left gap-22 items-center mt-3">
+          <h2>End Date:</h2>
+          <div class="relative max-w-sm">
+            <div class="absolute inset-y-0 start-0 flex items-center "></div>
+            <input
+              className="text-lg font-semibold appearance-none"
+              datepicker
+              id="default-datepicker"
+              type="datetime-local"
+              name="endDate"
+              value={form?.endDate}
+              onChange={handleChange}
+              class="block bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              placeholder="Select Calender"
+            />
           </div>
-          <div className="mt-3">
-            <span class="text-sm">60%</span>
-            <progress
-              className="progress progress-accent w-56 ml-2"
-              value="60"
-              max="100"
-            ></progress>
-          </div>
-          <div class="relative max-w-sm mt-3">
-            <span>January 15, 2026 - February 20, 2026</span>
-          </div>
-          <div className="w-35 mt-3">
-            {members.slice(0, 1).map((member) => (
-              <div
-                key={member.id}
-                className={`flex items-center justify-between w-full font-geist border border-white/[0.03] border-t-white/[0.09] mt-2 rounded-2xl ${
-                  member.isActive
-                    ? "bg-emerald-600/30 border border-emerald-500/50"
-                    : "bg-[#575975]"
-                }`}
-              >
-                {/* Left Side - Avatar and Info */}
-                <div className="flex items-center gap-3 ">
-                  <div className={`avatar ${member.isActive ? "online" : ""}`}>
-                    <div className="w-7 h-7 rounded-full border-2 border-white">
-                      <img src={member.avatar} alt={member.name} />
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-white font-semibold text-sm">
-                      {member.name}
-                    </h3>
-                  </div>
-                </div>
-              </div>
+        </div>
+        <div className="flex justify-left gap-20 items-center mt-3">
+          <h2>Time Zone:</h2>
+          <input
+            type="text"
+            placeholder="Time Zone"
+            name="timezone"
+            value={form?.timezone}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
+        </div>
+        <div className="flex justify-left gap-24 items-center mt-3">
+          <h2>Address:</h2>
+          <input
+            type="text"
+            placeholder="Address"
+            name="address"
+            value={form?.address}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
+        </div>
+
+        <div className="flex justify-left gap-11 items-center mt-3">
+          <h2>Contract Value:</h2>
+          <input
+            type="text"
+            placeholder="Contract Value"
+            name="contractValue"
+            value={form?.contractValue}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
+        </div>
+
+        <div className="flex justify-left gap-16 items-center mt-3">
+          <h2>Client Name:</h2>
+          <input
+            type="text"
+            placeholder="Client Name"
+            name="clientName"
+            value={form?.clientName}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
+        </div>
+
+        <div className="flex justify-left gap-7 items-center mt-3">
+          <h2>Assignees Names:</h2>
+          <div className="flex items-center justify-left gap-2 capitalize">
+            {form?.assignee?.map((item) => (
+              <p>
+                {item?.firstName} {item?.lastName}
+              </p>
             ))}
           </div>
-          <div className="flex items-center justify-between mt-3 gap-2">
-            <div className="flex flex-row gap-2">
-              {members.slice(0, 3).map((member) => (
-                <div
-                  key={member.id}
-                  className={`flex items-center h-8 justify-between w-34 font-geist border border-white/[0.03] border-t-white/[0.09] mt-2 rounded-2xl ${
-                    member.isActive
-                      ? "bg-emerald-600/30 border border-emerald-500/50"
-                      : "bg-[#575975]"
-                  }`}
-                >
-                  {/* Left Side - Avatar and Info */}
-                  <div className="flex items-center gap-3 ">
-                    <div
-                      className={`avatar ${member.isActive ? "online" : ""}`}
-                    >
-                      <div className="w-7 h-7 rounded-full border-2 border-white">
-                        <img src={member.avatar} alt={member.name} />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-white font-semibold text-sm">
-                        {member.name}
-                      </h3>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div>
-              <button class="flex items-center justify-center w-[129px] text-white text-[18.82px] font-[600] bg-transparent font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] px-2 mt-2 rounded-3xl">
-                <span className="text-3xl font-normal">+</span> &nbsp; Invite
-              </button>
-            </div>
-          </div>
+        </div>
+        <div className="flex justify-left gap-13 items-center mt-3">
+          <h2>Update Assignee:</h2>
+          <select
+            onChange={(e) => handleAssignProject(e)}
+            className="select border-none shadow-none bg-[#12153d] w-full placeholder:text-white border-white text-white focus:border-accent focus:outline-none h-10 text-sm"
+          >
+            <option value="">Select Assignee</option>
+            {users?.map((item, index) => (
+              <option value={item.id} key={index}>
+                {item.firstName} {item?.lastName}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       {/* Task Views */}
@@ -249,13 +467,16 @@ export default function KanbanBoard() {
               className="font-[500] w-[max-content] text-white border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
             >
               <span className="h-8 w-40 flex items-center justify-center rounded-3xl  flex flex-row gap-2 items-center">
-                <img src="/images/calender.png" alt="Vector" className="h-3 w-3" />
+                <img
+                  src="/images/calender.png"
+                  alt="Vector"
+                  className="h-3 w-3"
+                />
                 Calender
               </span>
             </button>
 
             {/* calendar view button */}
-       
           </div>
           {/* Add new button */}
           <div className="flex items-center gap-5">

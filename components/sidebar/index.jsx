@@ -23,9 +23,7 @@ const Sidebar = () => {
   const [openIndex, setOpenIndex] = useState(null);
   const [activeSubIndex, setActiveSubIndex] = useState(null);
   const [activeSubSubIndex, setActiveSubSubIndex] = useState(null);
-  const [roles, setRoles] = useState([]);
   const accessToken = getAccessToken();
-  console.log(accessToken);
   // Filter sidebar items to only those allowed for this role
   const visibleItems = getMenuByRole(
     user?.activeRole?.name || user?.platformRole,

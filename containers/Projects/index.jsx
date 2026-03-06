@@ -1,56 +1,39 @@
 "use client";
 
-import { FaEllipsisV, FaStar, FaEdit, FaCommentDots } from "react-icons/fa";
+import { FaEllipsisV, FaStar, FaEdit, FaCircle, FaTrash } from "react-icons/fa";
 import CardWrapper from "@/components/CardWrapper";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
-import { FaCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { DeleteProjects, getProjects } from "@/services/Projects";
 
 export default function KanbanBoard() {
-  const [openDropdown, setOpenDropdown] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [projects, setProjects] = useState([]);
   const router = useRouter();
 
-  const projects = [
-    {
-      id: 1,
-      name: "Primor Project",
-      email: "6 Tasks due soon",
-      avatar: "https://i.pravatar.cc/150?img=1",
-    },
-    {
-      id: 2,
-      name: "Trustworth Project",
-      email: "3 Tasks due soon",
-      avatar: "https://i.pravatar.cc/150?img=5",
-    },
-    {
-      id: 3,
-      name: "New App Launch",
-      email: "1 Tasks due soon",
-      avatar: "https://i.pravatar.cc/150?img=3",
-    },
-    {
-      id: 4,
-      name: "Sulivan Project",
-      email: "3 Tasks due soon",
-      avatar: "https://i.pravatar.cc/150?img=4",
-    },
-    {
-      id: 5,
-      name: "Marketing Campaign",
-      email: "1 Tasks due soon",
-      avatar: "https://i.pravatar.cc/150?img=4",
-    },
-    {
-      id: 6,
-      name: "Website Redesign",
-      email: "No tasks",
-      avatar: "https://i.pravatar.cc/150?img=4",
-    },
-  ];
+  useEffect(() => {
+    getProjectsList();
+  }, []);
+
+  const getProjectsList = async () => {
+    try {
+      const res = await getProjects();
+      setProjects(res.projects);
+    } catch (error) {
+      console.log("error fetching projects : ", error);
+    }
+  };
+
+  const deleteProject = async (id) => {
+    try {
+      const res = await DeleteProjects(id);
+      getProjectsList();
+    } catch (error) {
+      console.log("error fetching projects : ", error);
+    }
+  };
   const members = [
     {
       id: 1,
@@ -162,7 +145,7 @@ export default function KanbanBoard() {
 
   return (
     <div className="min-h-screen font-gilroy p-6 text-white">
-      <h1 className="font-bold text-2xl">Task overveiw</h1>
+      <h1 className="font-bold text-2xl">Projects overveiw</h1>
       <div className="w-full px-3 gap-10 flex items-center justify-between font-gilroy mt-6 mb-6">
         {/* LEFT SIDE */}
         <div className="flex items-center justify-between w-full gap-3">
@@ -171,7 +154,7 @@ export default function KanbanBoard() {
             <div className="flex flex-col items-start justify-end text-xl w-30">
               <p>
                 Total <br />
-                Tasks
+                Projects
               </p>
             </div>
           </div>
@@ -179,7 +162,7 @@ export default function KanbanBoard() {
             <p className="text-6xl font-bold text-7xl">15</p>
             <div className="flex flex-col items-right justify-end text-xl w-40">
               <p>
-                Tasks Due <br />
+                Projects Due <br />
                 Today
               </p>
             </div>
@@ -189,7 +172,7 @@ export default function KanbanBoard() {
             <div className="flex flex-col items-start justify-end text-xl">
               <p>
                 Overdue <br />
-                Tasks
+                Projects
               </p>
             </div>
           </div>
@@ -197,7 +180,7 @@ export default function KanbanBoard() {
             <p className="text-6xl font-bold text-7xl">150</p>
             <div className="flex flex-col items-start justify-end text-right text-xl">
               <p>
-                Tasks <br />
+                Projects <br />
                 Completed
               </p>
             </div>
@@ -223,7 +206,10 @@ export default function KanbanBoard() {
                   Nearest Due Date <span className="ml-3">▼</span>
                 </button>
               </div>
-              <button className="bg-[#66ACFF] text-white p-2 rounded-xl hover:bg-[#fbbf24] transition-all">
+              <button
+                onClick={() => router.push("/CreateProject")}
+                className="bg-[#66ACFF] text-white p-2 rounded-xl hover:bg-[#fbbf24] transition-all cursor-pointer"
+              >
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -257,63 +243,80 @@ export default function KanbanBoard() {
           </div>
           {/* Members List */}
           <div className="space-y-1 grid grid-cols-2 grid-rows-3 gap-3">
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-4 mt-2 rounded-2xl  ${
-                  project.isActive
-                    ? "bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]"
-                    : "bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]"
-                }`}
-              >
-                {/* Left Side - Avatar and Info */}
-                <div className="flex items-center gap-3">
-                  <div className={`avatar ${project.isActive ? "online" : ""}`}>
-                    <div className="w-8 h-8 text-center justify-center border-2 border-[#62647A] rounded-full bg-gradient-to-r from-[#01e590] to-[#17323f]">
-                      <p className="mt-1">
-                        {project.name.slice(0, 1)}
-                        {project.name.split(" ")[1].slice(0, 1)}
+            {projects.length === 0 ? (
+              <div className="col-span-2 flex items-center justify-center h-20">
+                <p className="w-full text-center flex items-center justify-center">NO PROJECTS FOUND</p>
+              </div>
+            ) : (
+              projects.map((project) => (
+                <div
+                  key={project.id}
+                  className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-4 mt-2 rounded-2xl bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]`}
+                >
+                  {/* Left Side - Avatar and Info */}
+                  <div className="flex items-center gap-3">
+                    <div className={`avatar online`}>
+                      <div className="w-8 h-8 text-center justify-center border-2 border-[#62647A] rounded-full bg-gradient-to-r from-[#01e590] to-[#17323f]">
+                        <p className="mt-1">
+                          {project.name.slice(0, 1)}
+                          {/* {project.name.split(" ")[1].slice(0, 1)} */}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-sm">
+                        {project.name}
+                      </h3>
+                      <p className="text-gray-400 text-xs">
+                        {project.organization?.name}
+                      </p>
+                      <p className="text-gray-400 text-xs">
+                       Assignee :{project.assignedUsers?.map((item) => (<p>{item?.firstName} {item?.lastName}</p>))}
                       </p>
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-white font-semibold text-sm">
-                      {project.name}
-                    </h3>
-                    <p className="text-gray-400 text-xs">{project.email}</p>
+
+                  <div className="dropdown dropdown-end">
+                    <label
+                      tabIndex={0}
+                      className="btn btn-ghost hover:shadow-none focus:shadow-none active:shadow-none hover:bg-[transparent] focus:bg-[transparent] active:bg-[transparent] hover:border-[transparent] focus:border-[transparent] active:border-[transparent] btn-circle avatar online w-15 h-15"
+                    >
+                      <div className="avatar online">
+                        <div className="relative inline-block ">
+                          <div className="text-white/70 hover:text-white">
+                            <FaEllipsisV size={14} />
+                          </div>
+                          {/* The Green Dot */}
+                        </div>
+                      </div>
+                    </label>
+                    <ul
+                      tabIndex={0}
+                      className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a] border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-[max-content] border border-white/10"
+                    >
+                      <li>
+                        <button
+                          className={`text-[16px] text-white gap-3 mt-2 `}
+                          onClick={() =>
+                            router.push(`/ProjectDetails/${project?.id}`)
+                          }
+                        >
+                          <FaPencil className="text-lg text-info" /> Edit
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          className={`text-[16px] text-white gap-3 mt-2 `}
+                          onClick={() => deleteProject(project?.id)}
+                        >
+                          <FaTrash className="text-lg text-error" /> Delete
+                        </button>
+                      </li>
+                    </ul>
                   </div>
                 </div>
-                <button className="text-gray-400 hover:text-white transition-colors p-2">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                    />
-                  </svg>
-                </button>
-
-                {/* Right Side - Action Icons */}
-                {project.isActive && (
-                  <div className="flex items-center gap-3">
-                    <div className="dropdown dropdown-end">
-                      <label
-                        tabIndex={0}
-                        className="btn btn-ghost btn-xs text-white/70 hover:text-white"
-                      >
-                        <FaEllipsisV size={14} />
-                      </label>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardWrapper>
         {/* Right side card */}
@@ -424,10 +427,7 @@ export default function KanbanBoard() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Task List</h1>
           <div className="flex items-center gap-5">
-            <button
-              onClick={() => router.push("/CreateProject")}
-              className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white px-4 py-2 border-none rounded-xl transition-all cursor-pointer"
-            >
+            <button className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white px-4 py-2 border-none rounded-xl transition-all cursor-pointer">
               <div className="flex flex-row gap-2">
                 <svg
                   className="w-5 h-5"
@@ -510,8 +510,8 @@ export default function KanbanBoard() {
               viewBox="0 0 24 24"
             >
               <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 strokeWidth={2}
                 d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
               />
@@ -552,7 +552,7 @@ export default function KanbanBoard() {
         </div>
         {/* Table */}
         <div className="overflow-x-auto ml-4">
-          <table className="w-full flex flex-col">
+          <table className="w-full">
             <thead className="bg-[#080C26] rounded-2xl">
               <tr className="rounded-2xl">
                 <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
@@ -581,12 +581,12 @@ export default function KanbanBoard() {
                 </th>
               </tr>
             </thead>
-            <tbody className="flex flex-col items-center justify-between">
+            <tbody>
               {tasks.map((task, index) => (
                 <tr
                   key={task.id}
-                  className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                  onClick={() => router.push(`/Profile/Managers/${task.id}`)}
+                  className="w-full hover:bg-white/5 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/ProjectDetails/${task.id}`)}
                 >
                   <td className="py-4 px-4">
                     <input
@@ -678,42 +678,42 @@ export default function KanbanBoard() {
 
       {/* Pagination */}
       <div className="flex w-full bg-gradient-to-r  from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
-        <div class="flex flex-1 justify-between sm:hidden">
+        <div className="flex flex-1 justify-between sm:hidden">
           <a
             href="#"
-            class="relative inline-flex items-center rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
+            className="relative inline-flex items-center rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
           >
             Previous
           </a>
           <a
             href="#"
-            class="relative ml-3 inline-flex items-center rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
+            className="relative ml-3 inline-flex items-center rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-white/10"
           >
             Next
           </a>
         </div>
-        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
           <div>
             <nav
               aria-label="Pagination"
-              class="isolate inline-flex -space-x-px rounded-2xl"
+              className="isolate inline-flex -space-x-px rounded-2xl"
             >
               <a
                 href="#"
-                class="relative inline-flex items-center rounded-xl mr-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+                className="relative inline-flex items-center rounded-xl mr-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
               >
-                <span class="sr-only">Previous</span>
+                <span className="sr-only">Previous</span>
                 <svg
                   viewBox="0 0 20 20"
                   fill="currentColor"
                   data-slot="icon"
                   aria-hidden="true"
-                  class="size-5"
+                  className="size-5"
                 >
                   <path
                     d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z"
-                    clip-rule="evenodd"
-                    fill-rule="evenodd"
+                    clipRule="evenodd"
+                    fillRule="evenodd"
                   />
                 </svg>
               </a>
@@ -721,60 +721,60 @@ export default function KanbanBoard() {
               <a
                 href="#"
                 aria-current="page"
-                class="relative z-10 inline-flex items-center bg-[#656A80] px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 rounded-xl focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                className="relative z-10 inline-flex items-center bg-[#656A80] px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 rounded-xl focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
               >
                 1
               </a>
               <a
                 href="#"
-                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+                className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0"
               >
                 2
               </a>
               <a
                 href="#"
-                class="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0 md:inline-flex"
+                className="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0 md:inline-flex"
               >
                 3
               </a>
-              <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-400 rounded-xl focus:outline-offset-0">
+              <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-400 rounded-xl focus:outline-offset-0">
                 ...
               </span>
               <a
                 href="#"
-                class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+                className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0"
               >
                 10
               </a>
               <a
                 href="#"
-                class="relative inline-flex items-center rounded-xl ml-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+                className="relative inline-flex items-center rounded-xl ml-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
               >
-                <span class="sr-only">Next</span>
+                <span className="sr-only">Next</span>
                 <svg
                   viewBox="0 0 20 20"
                   fill="currentColor"
                   data-slot="icon"
                   aria-hidden="true"
-                  class="size-5"
+                  className="size-5"
                 >
                   <path
                     d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z"
-                    clip-rule="evenodd"
-                    fill-rule="evenodd"
+                    clipRule="evenodd"
+                    fillRule="evenodd"
                   />
                 </svg>
               </a>
             </nav>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <p class="text-sm text-gray-300">
+            <p className="text-sm text-gray-300">
               Showing
-              <span class="font-medium"> 1 </span>
+              <span className="font-medium"> 1 </span>
               to
-              <span class="font-medium"> 10 </span>
+              <span className="font-medium"> 10 </span>
               of
-              <span class="font-medium"> 97 </span>
+              <span className="font-medium"> 97 </span>
               entries
             </p>
             <div className="dropdown dropdown-top">

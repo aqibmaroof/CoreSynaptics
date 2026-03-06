@@ -1,60 +1,210 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { CreateProjects } from "@/services/Projects";
+
+const CapitalizeText = (text) => {
+  return text
+    .replace(/([A-Z])/g, " $1") // insert space before each uppercase letter
+    .replace(/\b\w/g, (char) => char.toUpperCase()) // capitalize first letter of each word
+    .trim(); // remove any leading space
+};
 
 export default function KanbanBoard() {
   const router = useRouter();
+  const [message, setMessage] = useState({ type: "", text: "" });
+
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+    timezone: "",
+    address: "",
+    contractValue: null,
+    clientName: "",
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  const createProject = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        name: form?.name,
+        description: form?.description,
+        startDate: form?.startDate,
+        endDate: form?.endDate,
+        timezone: form?.timezone,
+        address: form?.address,
+        metadata: {
+          contractValue: form?.contractValue,
+          clientName: form?.clientName,
+        },
+      };
+      const requiredFields = [
+        "name",
+        "description",
+        "startDate",
+        "endDate",
+        "timezone",
+        "address",
+      ];
+
+      for (const field of requiredFields) {
+        const value = payload[field];
+        if (value === undefined || value === null || value === "") {
+          setMessage({
+            type: "error",
+            text: `Missing value for field: ${CapitalizeText(field)}`,
+          });
+          return;
+        }
+      }
+      await CreateProjects(payload);
+      setMessage({ type: "success", text: "Project Created successfully! 🚀" });
+
+      router.push("/Projects")
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text:
+          `$Error creating Project : ${error?.message}` ||
+          "Error creating Project.",
+      });
+    }
+  };
 
   return (
-    <div className="min-h-screen font-gilroy p-6 font-gilroy text-white">
-      <h1 className="font-bold font-gilroy text-2xl text-[#A0AEC0]">
-        Project Name
-      </h1>
-      <div className="w-100  font-gilroy mt-6 mb-6 text-[#A0AEC0]">
-        <div className="flex justify-left gap-14 items-center">
-          <h2>Project Status:</h2>
+    <div className="min-h-screen w-full font-gilroy p-6 font-gilroy text-white">
+      <div className="w-full flex items-center justtify-end">
+        {/* Status Messages */}
+        {message.text && (
+          <div
+            className={`p-3 rounded-lg mb-4 text-sm animate-fade-in ${
+              message.type === "success"
+                ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                : "bg-red-900/30 text-red-400 border border-red-500/30"
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
+        <button
+          onClick={(e) => createProject(e)}
+          className="ml-auto bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white font-[510] py-2 px-4 border-none rounded-xl transition-all cursor-pointer w-50"
+        >
+          Create Project
+        </button>
+      </div>
+
+      <div className="w-100 font-gilroy mt-6 mb-6 text-[#A0AEC0]">
+        <div className="flex justify-left gap-28 items-center">
+          <h2>Name:</h2>
           <input
-            className="text-lg text-[#656A80] font-[600] "
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
             type="text"
-            placeholder="Empty"
+            name="name"
+            value={form?.name}
+            onChange={handleChange}
+            placeholder="Project Name"
           />
         </div>
-        <div className="flex items-center justify-left gap-24 mt-3">
-          <span class="text-slate-400">Progress:</span>
-          <div className="flex items-center gap-2">
-            <span class="text-sm text-[#656A80]">0%</span>
-            <progress
-              className="progress progress-[#656A80] w-56"
-              value={0}
-              max="100"
-            ></progress>
-          </div>
+        <div className="flex items-center justify-left gap-19 mt-3">
+          <span class="text-slate-400">description:</span>
+          <input
+            type="text"
+            placeholder="Project Description"
+            name="description"
+            value={form?.description}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
         </div>
-        <div className="flex justify-left gap-27 items-center mt-3">
-          <h2>Dates:</h2>
+        <div className="flex justify-left gap-20 items-center mt-3">
+          <h2>Start Date:</h2>
           <div class="relative max-w-sm">
             <div class="absolute inset-y-0 start-0 flex items-center "></div>
             <input
               className="text-lg font-semibold appearance-none"
               datepicker
               id="default-datepicker"
-              type="text"
-              class="block pl-1 bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body"
+              type="datetime-local"
+              name="startDate"
+              value={form?.startDate}
+              onChange={handleChange}
+              class="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
               placeholder="Select Calender"
-            ></input>
+            />
           </div>
         </div>
-        <div className="flex justify-left gap-8 items-center mt-3">
-          <h2>Project Manager:</h2>
-          <select className="bg-transparent text-[18px] font-[600] text-[#656A80] rounded-2xl border-none focus:outline-none appearance-none">
-            <option>Select Project Manager</option>
-            <option>All Projects</option>
-          </select>
+        <div className="flex justify-left gap-22 items-center mt-3">
+          <h2>End Date:</h2>
+          <div class="relative max-w-sm">
+            <div class="absolute inset-y-0 start-0 flex items-center "></div>
+            <input
+              className="text-lg font-semibold appearance-none"
+              datepicker
+              id="default-datepicker"
+              type="datetime-local"
+              name="endDate"
+              value={form?.endDate}
+              onChange={handleChange}
+              class="block bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              placeholder="Select Calender"
+            />
+          </div>
         </div>
-        <div className="flex justify-left gap-10 items-center mt-3">
-          <h2>Team Members:</h2>
-          <button class="flex items-center justify-center w-[129px] text-white text-[18.82px] font-[600] bg-transparent font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] px-2 py-1 mt-2 rounded-3xl">
-            <span className="text-3xl font-normal">+</span> &nbsp; Invite
-          </button>
+        <div className="flex justify-left gap-20 items-center mt-3">
+          <h2>Time Zone:</h2>
+          <input
+            type="text"
+            placeholder="Time Zone"
+            name="timezone"
+            value={form?.timezone}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
+        </div>
+        <div className="flex justify-left gap-24 items-center mt-3">
+          <h2>Address:</h2>
+          <input
+            type="text"
+            placeholder="Address"
+            name="address"
+            value={form?.address}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
+        </div>
+
+        <div className="flex justify-left gap-11 items-center mt-3">
+          <h2>Contract Value:</h2>
+          <input
+            type="text"
+            placeholder="Contract Value"
+            name="contractValue"
+            value={form?.contractValue}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
+        </div>
+
+        <div className="flex justify-left gap-16 items-center mt-3">
+          <h2>Client Name:</h2>
+          <input
+            type="text"
+            placeholder="Client Name"
+            name="clientName"
+            value={form?.clientName}
+            onChange={handleChange}
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+          />
         </div>
       </div>
       {/* Task List */}
@@ -85,7 +235,7 @@ export default function KanbanBoard() {
                 <span>Add new</span>
               </div>
             </button>
-            
+
             <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
               <span className="text-gray-100 text-sm">Sort by</span>
               Top
