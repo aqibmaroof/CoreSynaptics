@@ -1,5 +1,10 @@
-import AcceptInvite from "../../containers/Auth/acceptInvite"
+import { Suspense } from "react";
+import AcceptInvite from "../../containers/Auth/acceptInvite";
 
 export default function List() {
-    return <AcceptInvite />
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AcceptInvite />
+    </Suspense>
+  );
 }

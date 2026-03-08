@@ -1,10 +1,13 @@
 import Permissions from "@/containers/Permissions/Add";
 import Layout from "@/containers/Layout";
+import { Suspense } from "react";
 
 export default function List() {
   return (
-    <Layout>
-      <Permissions />
-    </Layout>
+    <Suspense fallback={<div>Loading...</div>}>
+      <Layout>
+        <Permissions />
+      </Layout>
+    </Suspense>
   );
 }
