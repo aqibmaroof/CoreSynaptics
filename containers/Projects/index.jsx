@@ -427,7 +427,9 @@ export default function KanbanBoard() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Task List</h1>
           <div className="flex items-center gap-5">
-            <button className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white px-4 py-2 border-none rounded-xl transition-all cursor-pointer">
+            <button 
+            onClick={() => document.getElementById("my_modal_4").showModal()}
+            className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white px-4 py-2 border-none rounded-xl transition-all cursor-pointer">
               <div className="flex flex-row gap-2">
                 <svg
                   className="w-5 h-5"
@@ -486,7 +488,7 @@ export default function KanbanBoard() {
               placeholder="Search Task"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-transparent text-white placeholder-gray-500 pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              className="w-full bg-transparent text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
             />
           </div>
 
@@ -534,7 +536,7 @@ export default function KanbanBoard() {
             </svg>
           </button>
 
-          <button className="bg-[#facc15] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20">
+          <button className="bg-[#F2F962] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#facc15] border border-white/10 hover:border-white/20 transition-all shadow-lg shadow-yellow-500/20">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -675,6 +677,190 @@ export default function KanbanBoard() {
           </table>
         </div>
       </div>
+
+      {/* Popup box */}
+      <dialog id="my_modal_4" className="modal ">
+        <div className="modal-box pt-0 px-0  border border-[#656A80] backdrop-blur-2xl bg-transparent scrollbar-hide">
+          <div className="modal-action flex items-center justify-between pt-0 px-4">
+            <div>
+              <h3 className="font-bold text-lg">Create New Project</h3>
+            </div>
+            <form method="dialog" className="gap-2 flex">
+              <button
+                
+                className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]"
+              >
+                <img src="/images/maximize.svg" alt="Maximize" />
+              </button>
+              <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#FB5874]">
+                <img src="/images/close.svg" alt="Close" />
+              </button>
+            </form>
+          </div>
+          <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
+          
+          <div className="px-4">
+            <div className="mt-4">
+              <p className="text-sm">Project Name</p>
+              <input
+                type="text"
+                placeholder="Delta Developers"
+                className="w-full bg-transparent text-white placeholder-white gray-500 mt-1 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              />
+            </div>
+            <div className="mt-4">
+              <p className="text-sm">Date</p>
+              <div
+                tabIndex={0}
+                role="button"
+                className="p-3 w-full flex mt-1 items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+              >
+                <span className="font-normal">
+                  Feb 01, 2026 {"->"} Feb 11, 2026
+                </span>
+                <img src={"/images/calendar_1.svg"} />
+              </div>
+            </div>
+            
+            <div className="flex flex-row gap-4 w-full items-center justify-between mt-4">
+                <div className="w-full">
+                    <h1 className="text-sm">Status</h1>
+                    <div className="dropdown dropdown-bottom w-full">
+                    <div
+                        tabIndex={0}
+                        role="button"
+                        className="p-3 w-full flex mt-1 items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+                    >
+                        <span className="flex items-center justify-center gap-3 font-[510] bg-[#B6CFFF] text-[#4D81E7] rounded-full px-2">
+                        <img src="/images/dot.svg" alt="diot" />
+                        Inprogress
+                        </span>
+                        <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                        />
+                        </svg>
+                    </div>
+                    <div
+                        tabIndex={0}
+                        className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg shadow-xl bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
+                    >
+                        <div className="p-2 space-y-1">
+                        <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
+                            <input
+                            type="checkbox"
+                            className="checkbox checkbox-info checkbox-xs"
+                            />
+                            <span className="text-white text-sm">In progress</span>
+                        </label>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <div className="w-full">
+                    <h1 className="text-sm">Project Manager</h1>
+                    <div className="dropdown dropdown-bottom w-full">
+                    <div
+                        tabIndex={0}
+                        role="button"
+                        className="p-3 w-full flex mt-1 items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+                    >
+                        <span className="flex items-center justify-center gap-3 font-[510] bg-[#FFC6D0] text-[#FB5874] rounded-full px-2">
+                        <img src="/images/red_dot.svg" alt="diot" />
+                        Urgent
+                        </span>
+                        <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                        />
+                        </svg>
+                    </div>
+                    <div
+                        tabIndex={0}
+                        className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
+                    >
+                        <div className="p-2 space-y-1">
+                        <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
+                            <input
+                            type="checkbox"
+                            className="checkbox checkbox-info checkbox-xs"
+                            />
+                            <span className="text-white text-sm">Urgent</span>
+                        </label>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div className="flex items-center gap-2 mt-4">
+              <h2 className="text-sm">Team Members</h2>
+              <div className="flex flex-row items-center gap-2 ml-3">
+                {members.slice(0, 1).map((member) => (
+                  <div
+                    key={member.id}
+                    className={`flex items-center h-8 justify-between w-34 font-geist border border-[#656A80]  rounded-2xl ${
+                      member.isActive
+                        ? "bg-emerald-600/30 border border-emerald-500/50"
+                        : "bg-[#575975]"
+                    }`}
+                  >
+                    {/* Left Side - Avatar and Info */}
+                    <div className="flex items-center gap-3 ">
+                      <div
+                        className={`avatar ${member.isActive ? "online" : ""}`}
+                      >
+                        <div className="w-7 h-7 rounded-full">
+                          <img src={member.avatar} alt={member.name} />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-white font-semibold text-sm">
+                          {member.name}
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-medium bg-[#454A62] rounded-2xl h-8 font-semibold text-white text-sm border border-[#656A80] hover:bg-slate-700">
+                + Invite
+              </button>
+            </div>
+            
+          </div>
+          
+          <hr class="w-full mt-3 bg-neutral-quaternary border-[#656A80]"></hr>
+          <div className="flex items-center justify-end gap-2 mr-4">
+            <button className="btn mt-3 backdrop-blur-md text-white p-3 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all">
+              <div className="flex flex-row gap-2">
+                <span className="flex flex-row gap-2 items-center">Cancel</span>
+              </div>
+            </button>
+            <button className="btn mt-3 bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white p-4 border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all">
+              <div className="flex flex-row gap-2">
+                <span className="flex flex-row gap-2 items-center">Save</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </dialog>
 
       {/* Pagination */}
       <div className="flex w-full bg-gradient-to-r  from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
