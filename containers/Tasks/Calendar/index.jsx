@@ -634,7 +634,7 @@ export default function KanbanBoard() {
         </div>
       </div>
       {/* Popup box */}
-      <dialog id="my_modal_4" className="modal ">
+      <dialog id="my_modal_4" className="modal items-start justify-end p-4">
         <div className="modal-box pt-0 px-0 w-[1000px] h-[850px] border border-[#656A80] backdrop-blur-2xl bg-transparent scrollbar-hide">
           <div className="modal-action flex items-center justify-between pt-0 px-4">
             <div>
