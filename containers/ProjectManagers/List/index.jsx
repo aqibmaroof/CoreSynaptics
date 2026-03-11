@@ -99,8 +99,8 @@ export default function ProjectManagersList() {
       {/* TABLE */}
       <div className="flex w-full bg-gradient-to-r  from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-2 rounded-3xl card">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-white mt-5 ml-4 text-3xl">Projects</h1>
+        <div className="flex flex-row md:flex-row gap-4 justify-between mb-8">
+          <h1 className="text-white mt-5 ml-4 text-xl md:text-3xl">Projects</h1>
           <div className="flex items-center gap-2">
             <span className="text-gray-400 text-sm">Sort by</span>
             <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
@@ -123,99 +123,102 @@ export default function ProjectManagersList() {
         </div>
 
         {/* Filters and Search */}
-        <div className="flex items-center gap-4 mb-6 ml-4">
-          {/* Search Input */}
-          <div className="flex-1 relative">
-            <svg
-              className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6 ml-4">
+          <div className="flex gap-2 w-full md:w-full">
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <svg
+                className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search PMs"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#0a1128] text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
               />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search PMs"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#0a1128] text-white placeholder-gray-500 pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-            />
+            </div>
+
+            {/* Dropdown Filters */}
+            <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
+              <option>Projects</option>
+              <option>All Projects</option>
+              <option>Active Projects</option>
+            </select>
           </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
+              <option>Country</option>
+              <option>Netherlands</option>
+              <option>USA</option>
+              <option>UK</option>
+            </select>
 
-          {/* Dropdown Filters */}
-          <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
-            <option>Projects</option>
-            <option>All Projects</option>
-            <option>Active Projects</option>
-          </select>
+            <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
+              <option>Status</option>
+              <option>Active</option>
+              <option>In-active</option>
+            </select>
 
-          <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
-            <option>Country</option>
-            <option>Netherlands</option>
-            <option>USA</option>
-            <option>UK</option>
-          </select>
+            {/* Action Buttons */}
+            <button className="bg-[#0a1128] text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
 
-          <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
-            <option>Status</option>
-            <option>Active</option>
-            <option>In-active</option>
-          </select>
+            <button className="bg-[#0a1128] text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
+              </svg>
+            </button>
 
-          {/* Action Buttons */}
-          <button className="bg-[#0a1128] text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
-
-          <button className="bg-[#0a1128] text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-          </button>
-
-          <button className="bg-[#facc15] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
+            <button className="bg-[#F2F962] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Table */}

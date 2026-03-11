@@ -145,45 +145,43 @@ export default function KanbanBoard() {
 
   return (
     <div className="min-h-screen font-gilroy p-6 text-white">
-      <h1 className="font-bold text-2xl">Projects overveiw</h1>
-      <div className="w-full px-3 gap-10 flex items-center justify-between font-gilroy mt-6 mb-6">
-        {/* LEFT SIDE */}
-        <div className="flex items-center justify-between w-full gap-3">
-          <div className="flex items-center justify-left gap-10 w-full ">
-            <p className="text-7xl font-bold font-gilroy">80</p>
-            <div className="flex flex-col items-start justify-end text-xl w-30">
-              <p>
-                Total <br />
-                Projects
-              </p>
-            </div>
+      <h1 className="font-bold text-xl md:text-2xl">Task overveiw</h1>
+      {/* Stats */}
+      <div className="flex items-center justify-between w-full gap-20 md:gap-8 px-3 font-gilroy mt-6 mb-6">
+        <div className="flex items-center justify-left gap-2 md:gap-6 w-full ">
+          <p className="text-4xl md:text-7xl font-bold font-gilroy">80</p>
+          <div className="flex flex-col items-start justify-end text-xs md:text-sm">
+            <p>
+              Total <br />
+              Projects
+            </p>
           </div>
-          <div className="flex items-center justify-left gap-10 w-full">
-            <p className="text-6xl font-bold text-7xl">15</p>
-            <div className="flex flex-col items-right justify-end text-xl w-40">
-              <p>
-                Projects Due <br />
-                Today
-              </p>
-            </div>
+        </div>
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="text-4xl md:text-7xl font-bold ">15</p>
+          <div className="flex flex-col items-right justify-end text-xs md:text-sm ">
+            <p>
+              Projects Due <br />
+              Today
+            </p>
           </div>
-          <div className="flex items-center justify-left gap-10 w-full">
-            <p className="text-6xl font-bold text-7xl">20</p>
-            <div className="flex flex-col items-start justify-end text-xl">
-              <p>
-                Overdue <br />
-                Projects
-              </p>
-            </div>
+        </div>
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="text-4xl md:text-7xl font-bold">20</p>
+          <div className="flex flex-col items-start justify-end text-xs md:text-sm">
+            <p>
+              Overdue <br />
+              Projects
+            </p>
           </div>
-          <div className="flex items-center justify-left gap-10 w-full">
-            <p className="text-6xl font-bold text-7xl">150</p>
-            <div className="flex flex-col items-start justify-end text-right text-xl">
-              <p>
-                Projects <br />
-                Completed
-              </p>
-            </div>
+        </div>
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="text-4xl md:text-7xl font-bold">150</p>
+          <div className="flex flex-col items-start justify-end text-right text-xs md:text-sm">
+            <p>
+              Projects <br />
+              Completed
+            </p>
           </div>
         </div>
       </div>
@@ -195,13 +193,13 @@ export default function KanbanBoard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-white text-xl font-semibold">
+              <h2 className="text-white text-sm md:text-xl font-semibold">
                 Projects List
               </h2>
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="border border-[#FFFFFF]/30 rounded-full px-2 py-2">
-                <button className="font-semibold text-[14.74px] mx-2">
+                <button className="font-semibold text-xs md:text-sm mx-2">
                   {" "}
                   Nearest Due Date <span className="ml-3">▼</span>
                 </button>
@@ -325,7 +323,7 @@ export default function KanbanBoard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-white text-xl font-semibold">Members</h2>
+              <h2 className="text-white text-sm md:text-xl font-semibold">Members</h2>
             </div>
             <div className="flex items-center justify-between gap-2">
               <button className="bg-[#66ACFF] text-white p-2 rounded-xl hover:bg-[#fbbf24] transition-all">
@@ -361,18 +359,18 @@ export default function KanbanBoard() {
             </div>
           </div>
           {/* Managers List */}
-          <div className="space-y-1 grid grid-cols-2 grid-rows-3 gap-3">
+          <div className="space-y-1 grid grid-cols md:grid-cols-2 grid-rows-3 gap-1 md:gap-3">
             {members.map((member) => (
               <div
                 key={member.id}
-                className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-4 mt-2 rounded-2xl ${
+                className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-1 md:p-3 mt-2 rounded-2xl ${
                   member.isActive
                     ? "bg-emerald-600/30 border border-emerald-500/50"
                     : "bg-gradient-to-r from-[#0d2963] via-[#0d2963] to-[#19213d]"
                 }`}
               >
                 {/* Left Side - Avatar and Info */}
-                <div className="flex items-center gap-3 ">
+                <div className="flex items-center gap-1 md:gap-3 ">
                   <div className={`avatar ${member.isActive ? "online" : ""}`}>
                     <div className="w-7 h-7 rounded-full">
                       <img src={member.avatar} alt={member.name} />
@@ -421,11 +419,11 @@ export default function KanbanBoard() {
         </CardWrapper>
       </div>
 
-      {/* Task List */}
+      {/* Task List Table */}
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Task List</h1>
+        <div className="flex items-center justify-between gap-16 mb-8">
+          <h1 className="text-white mt-5 ml-4 text-lg md:text-xl font-bold">Task List</h1>
           <div className="flex items-center gap-5">
             <button 
             onClick={() => document.getElementById("my_modal_4").showModal()}
@@ -444,7 +442,7 @@ export default function KanbanBoard() {
                     d="M12 4v16m8-8H4 "
                   />
                 </svg>
-                <span>Add new</span>
+                <span className="text-xs md:text-sm">Add new</span>
               </div>
             </button>
             <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
@@ -467,90 +465,93 @@ export default function KanbanBoard() {
           </div>
         </div>
         {/* Filters and Search */}
-        <div className="flex items-center gap-4 mb-6 ml-4">
+        <div className="flex flex-col md:flex-row items-center gap-2 mb-6 ml-4">
           {/* Search Input */}
-          <div className="flex-1 relative">
-            <svg
-              className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          <div className="flex gap-2 w-full md:w-full">
+            <div className="flex-1 relative">
+              <svg
+                className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search Task"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-transparent text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
               />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search Task"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-transparent text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-            />
-          </div>
-
-          {/* Dropdown Filters */}
-          <select className="bg-transparent text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
+            </div>
+            <select className="bg-transparent text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
             <option>Assignee</option>
             <option>All Projects</option>
           </select>
+          </div>
 
-          <select className="bg-transparent text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
-            <option>Priority</option>
-            <option>Urgent</option>
-          </select>
+          {/* Dropdown Filters */}
+          <div className="flex gap-2 w-full md:w-auto">
+            <select className="bg-transparent text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
+              <option>Priority</option>
+              <option>Urgent</option>
+            </select>
 
-          {/* Action Buttons */}
-          <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
-              />
-            </svg>
-          </button>
+            {/* Action Buttons */}
+            <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
+                />
+              </svg>
+            </button>
 
-          <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"
-              />
-            </svg>
-          </button>
+            <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"
+                />
+              </svg>
+            </button>
 
-          <button className="bg-[#F2F962] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#facc15] border border-white/10 hover:border-white/20 transition-all shadow-lg shadow-yellow-500/20">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
-              />
-            </svg>
-          </button>
+            <button className="bg-[#F2F962] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#facc15] border border-white/10 hover:border-white/20 transition-all shadow-lg shadow-yellow-500/20">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
         {/* Table */}
         <div className="overflow-x-auto ml-4">

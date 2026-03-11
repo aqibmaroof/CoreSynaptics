@@ -155,7 +155,7 @@ const LoginPage = () => {
       <div className="bg-[url('/images/login-illustration.png')] bg-cover bg-center bg-no-repeat w-full flex items-center justify-center"></div>
 
       {/* Right Side: Form */}
-      <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat flex flex-col justify-center w-full lg:w-1/3 p-8 md:p-16 lg:p-12 xl:p-20">
+      <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat flex flex-col justify-center w-full lg:w-1/2 p-8 md:p-16 lg:p-12 xl:p-20">
         <div className="flex items-center gap-2 mb-5">
           <img
             src={config?.brand}

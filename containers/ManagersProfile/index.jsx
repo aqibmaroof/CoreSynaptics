@@ -153,10 +153,10 @@ export default function ManagersProfile() {
   return (
     <div className="min-h-screen font-gilroy p-6 text-white">
       {/* STATS */}
-      <div className="flex items-center gap-9 justify-center mb-8 ">
-        <div className="flex w-full bg-gradient-to-r  font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl w-full max-w-sm h-full">
+      <div className="flex items-center gap-4 justify-center mb-8 ">
+        <div className="flex bg-gradient-to-r  font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl w-auto max-w-sm h-full">
           {/* Card Container */}
-          <div className="p-6">
+          <div className="p-4">
             {/* Profile Avatar and Name */}
             <div className="flex flex-col items-center mb-8">
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 mb-4 overflow-hidden">
@@ -183,21 +183,6 @@ export default function ManagersProfile() {
                 {/* Email Row */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-5 h-5 text-blue-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
                     <div>
                       <p className="text-gray-400 text-sm mb-0.5">Email</p>
                       <p className="text-white text-sm">
@@ -208,24 +193,9 @@ export default function ManagersProfile() {
                 </div>
 
                 {/* Phone and Date Row */}
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-6">
                   {/* Phone */}
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-5 h-5 text-blue-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                        />
-                      </svg>
-                    </div>
+                  <div className="flex items-center ">
                     <div>
                       <p className="text-gray-400 text-sm mb-0.5">Phone</p>
                       <p className="text-white text-sm">+1 234 567 890</p>
@@ -234,21 +204,6 @@ export default function ManagersProfile() {
 
                   {/* Date Joined */}
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-5 h-5 text-blue-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
                     <div>
                       <p className="text-gray-400 text-sm mb-0.5">
                         Date Joined
@@ -261,27 +216,6 @@ export default function ManagersProfile() {
                 {/* Country Row */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-5 h-5 text-blue-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    </div>
                     <div>
                       <p className="text-gray-400 text-sm mb-0.5">Country</p>
                       <p className="text-white text-sm">Netherlands</p>
@@ -325,8 +259,8 @@ export default function ManagersProfile() {
       {/* TABLE */}
       <div className="flex w-full bg-gradient-to-r  font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl card">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-white mt-5 ml-4 text-3xl">Projects Managers</h1>
+        <div className="flex flex-row md:flex-row gap-4 justify-between mb-8">
+          <h1 className="text-white mt-5 ml-4 text-xl md:text-3xl">Projects</h1>
           <div className="flex items-center gap-2">
             <span className="text-gray-400 text-sm">Sort by</span>
             <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
@@ -349,99 +283,102 @@ export default function ManagersProfile() {
         </div>
 
         {/* Filters and Search */}
-        <div className="flex items-center gap-4 mb-6 ml-4">
-          {/* Search Input */}
-          <div className="flex-1 relative">
-            <svg
-              className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div className="flex flex-col md:flex-row items-center justify-between gap-2 mb-6 ml-4">
+          <div className="flex gap-2 w-full md:w-full">
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <svg
+                className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search Projects"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#0a1128] text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
               />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search PMs"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#0a1128] text-white placeholder-gray-500 pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-            />
+            </div>
+
+            {/* Dropdown Filters */}
+            <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
+              <option>Client</option>
+              <option>All Projects</option>
+              <option>Active Projects</option>
+            </select>
           </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
+              <option>Last Modified</option>
+              <option>Netherlands</option>
+              <option>USA</option>
+              <option>UK</option>
+            </select>
 
-          {/* Dropdown Filters */}
-          <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
-            <option>Projects</option>
-            <option>All Projects</option>
-            <option>Active Projects</option>
-          </select>
+            <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
+              <option>Status</option>
+              <option>Active</option>
+              <option>In-active</option>
+            </select>
 
-          <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
-            <option>Country</option>
-            <option>Netherlands</option>
-            <option>USA</option>
-            <option>UK</option>
-          </select>
+            {/* Action Buttons */}
+            <button className="bg-[#0a1128] text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
 
-          <select className="bg-[#0a1128] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
-            <option>Status</option>
-            <option>Active</option>
-            <option>In-active</option>
-          </select>
+            <button className="bg-[#0a1128] text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
+              </svg>
+            </button>
 
-          {/* Action Buttons */}
-          <button className="bg-[#0a1128] text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          </button>
-
-          <button className="bg-[#0a1128] text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-          </button>
-
-          <button className="bg-[#facc15] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
+            <button className="bg-[#F2F962] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Table */}

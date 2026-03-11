@@ -192,14 +192,9 @@ export default function WarehouseAnalysis() {
     <CardWrapper className="flex flex-col font-gilroy">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
           <h2 className="text-white text-2xl font-semibold">
             Warehouse Analysis
           </h2>
-          <span className="bg-slate-800/50 text-gray-400 text-sm px-3 py-1 rounded-full">
-            800
-          </span>
-        </div>
       </div>
 
       {/* Chart */}

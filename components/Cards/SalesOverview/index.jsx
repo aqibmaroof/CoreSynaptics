@@ -131,7 +131,7 @@ export default function SalesOverview({ heading, description }) {
     <CardWrapper className="flex flex-col font-gilroy">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white text-2xl font-semibold">
+        <h2 className="text-white text-xl font-semibold">
           {heading ? heading : "Sales Overview"}
           {description && <p className="font-normal font-[16.99px]">{description}</p>}
         </h2>

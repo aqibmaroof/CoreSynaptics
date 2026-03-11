@@ -55,9 +55,9 @@ export default function UPSTrackerOverview({heading, data}) {
       <div className="flex items-start justify-between mb-6">
         {/* Left side - Number and badge */}
         <div>
-          <h1 className="text-white text-7xl font-bold mb-2">255</h1>
-          <p className="text-gray-400 text-sm mb-3">This month</p>
-          <p className="text-[20px] text-white gap-1 bg-gradient-to-r from-[#080c26] to-[#056050] text-xs px-4 py-1 rounded-md flex items-center justify-center mt-1 w-[max-content]">
+          <h1 className="text-white text-4xl md:text-6xl font-bold mb-2">$10K</h1>
+          <p className="text-gray-400 text-xs md:text-sm mb-3">This month</p>
+          <p className="text-base md:text-lg text-white gap-1 bg-gradient-to-r from-[#080c26] to-[#056050] px-4 py-1 rounded-md flex items-center justify-center mt-1 w-[max-content]">
             <FiArrowUp className="text-md"/> 80%
           </p>
         </div>
@@ -75,8 +75,8 @@ export default function UPSTrackerOverview({heading, data}) {
       <div className="space-y-4">
         {stats.map((stat, index) => (
           <div key={index} className="flex items-center justify-between">
-            <p className="text-gray-400 text-sm font-medium">{stat.label}</p>
-            <p className="text-white text-lg font-semibold">{stat.value}</p>
+            <p className="text-gray-400 text-xs md:text-sm font-medium">{stat.label}</p>
+            <p className="text-white text-xs md:text-lg font-semibold">{stat.value}</p>
           </div>
         ))}
       </div>
