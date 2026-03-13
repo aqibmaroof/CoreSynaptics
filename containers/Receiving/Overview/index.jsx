@@ -88,20 +88,20 @@ const router = useRouter();
     return(
     <div className="min-h-screen  p-6 text-white">
         {/* Stats */}
-        <h1 className="text-xl font-bold">Shipment Overview</h1>
-        <div className="flex items-center justify-between w-full gap-3 mt-2">
-            <div className="flex items-center justify-left gap-6 w-full ">
-                <p className="text-7xl font-bold font-gilroy">09</p>
-                <div className="flex flex-col items-start justify-end text-sm w-30">
+        <h1 className="text-xl md:text-2xl font-bold">Shipment Overview</h1>
+        <div className="flex items-center justify-between w-full gap-20 md:gap-8 mt-2">
+            <div className="flex items-center justify-left gap-4 w-full ">
+                <p className="text-4xl md:text-7xl font-bold font-gilroy">09</p>
+                <div className="flex flex-col items-start justify-end text-xs md:text-sm w-20 md:w-30">
                 <p>
                     Total Equipment<br />
                     Received Today
                 </p>
                 </div>
             </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">1250</p>
-                <div className="flex flex-col items-right justify-end text-sm w-40">
+            <div className="flex items-center justify-left gap-4 w-full">
+                <p className="font-bold text-4xl md:text-7xl">1250</p>
+                <div className="flex flex-col items-right justify-end text-xs md:text-sm w-30">
                 <p>
                     Total Equipment <br /> last month
                 </p>
@@ -111,18 +111,18 @@ const router = useRouter();
                 </p>
                 </div>
             </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">147</p>
-                <div className="flex flex-col items-start justify-end text-sm">
+            <div className="flex items-center justify-left gap-4 w-full">
+                <p className="font-bold text-4xl md:text-7xl">147</p>
+                <div className="flex flex-col items-start justify-end text-xs md:text-sm">
                 <p>
                     Total <br />
                     Transactions
                 </p>
                 </div>
             </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="text-7xl font-bold ">10K</p>
-                <div className="flex flex-col items-start justify-end text-right text-base">
+            <div className="flex items-center justify-left gap-4 w-full">
+                <p className="text-4xl md:text-7xl font-bold ">10K</p>
+                <div className="flex flex-col items-start justify-end text-right text-xs md:text-sm">
                 <p>
                     Total <br />
                     Receiving
@@ -144,7 +144,7 @@ const router = useRouter();
       <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-2xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-white text-[24px] font-normal">Receiving List</h1>
+          <h1 className="text-white text-xl md:text-2xl font-normal">Receiving List</h1>
           {/* Add new button */}
           <div className="flex items-center gap-5">
             <button
@@ -165,7 +165,7 @@ const router = useRouter();
                     d="M12 4v16m8-8H4 "
                   />
                 </svg>
-                <span>Add Shipment</span>
+                <span className="text-xs md:text-sm">Add Shipment</span>
               </div>
             </button>
             {/* Sort by */}

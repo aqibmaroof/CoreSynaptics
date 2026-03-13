@@ -78,7 +78,7 @@ export default function IntegratorChart({heading}) {
   return (
     <div className="flex flex-col w-full bg-gradient-to-r font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl">
       {/* Header */}
-        <h2 className="text-white text-xl font-semibold">
+        <h2 className="text-white text-base md:text-xl font-semibold">
           {heading ? heading : "Test Cases Overview"}
         </h2>
 
@@ -89,7 +89,7 @@ export default function IntegratorChart({heading}) {
             <div key={index} className="flex items-center gap-3">
               <div className={`w-2 h-4 ${item.color} rounded-full`}></div>
               <div>
-                <p className="text-white text-sm font-bold">{item.name}</p>
+                <p className="text-white text-xs md:text-sm font-bold">{item.name}</p>
               </div>
             </div>
           ))}
@@ -100,7 +100,7 @@ export default function IntegratorChart({heading}) {
           <div className="relative">
             {/* Glow effect */}
             <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full"></div>
-            <div className="relative">
+            <div className="relative w-32 md:w-64 h-32 md:h-64">
               <DynamicChart
                 options={ChartOptions}
                 series={ChartOptions.series}

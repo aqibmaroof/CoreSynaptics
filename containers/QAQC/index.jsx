@@ -92,36 +92,36 @@ const tasks = [
   return (
     <div className="min-h-screen font-gilroy p-6 text-white">
       {/* Stats */}
-        <h1 className="text-xl font-bold">QA QC Overview</h1>
-        <div className="flex items-center justify-between w-full gap-3 mt-2">
-            <div className="flex items-center justify-left gap-6 w-full ">
-                <p className="text-7xl font-bold font-gilroy">1120</p>
-                <div className="flex flex-col items-start justify-end text-sm w-30">
+        <h1 className="text-xl md:text-2xl font-bold">QA QC Overview</h1>
+        <div className="flex items-center justify-between w-full gap-20 md:gap-8 mt-2">
+            <div className="flex items-center justify-left gap-2 w-full ">
+                <p className="text-4xl md:text-6xl font-bold font-gilroy">1120</p>
+                <div className="flex flex-col items-start justify-end text-xs md:text-sm w-30">
                 <p>
                     Total Equipment<br/>
                     Tested
                 </p>
                 </div>
             </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">70%</p>
-                <div className="flex flex-col items-right justify-end text-sm ">
+            <div className="flex items-center justify-left gap-2 w-full">
+                <p className="font-bold text-4xl md:text-6xl">70%</p>
+                <div className="flex flex-col items-right justify-end text-xs md:text-sm ">
                 <p>
                     Test Equipment <br/>Approved
                 </p>
                 </div>
             </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">20%</p>
-                <div className="flex flex-col items-start justify-end text-sm">
+            <div className="flex items-center justify-left gap-2 w-full">
+                <p className="font-bold text-4xl md:text-6xl">20%</p>
+                <div className="flex flex-col items-start justify-end text-xs md:text-sm">
                 <p>
                     Test Equipment <br />Rejected
                 </p>
                 </div>
             </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="text-7xl font-bold ">10%</p>
-                <div className="flex flex-col items-start justify-end text-right text-base">
+            <div className="flex items-center justify-left gap-2 w-full">
+                <p className="text-4xl md:text-6xl font-bold ">10%</p>
+                <div className="flex flex-col items-start justify-end text-right text-xs md:text-sm">
                 <p>
                     Test Equipment <br />N/A
                 </p>
@@ -137,32 +137,33 @@ const tasks = [
 
         {/* Task Views */}
         <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
+            {/* Header */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex gap-4">
-                <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Task Views</h1>
+                <h1 className="text-white mt-5 ml-4 text-lg md:text-2xl font-bold">Task Views</h1>
                 <button  className="btn mt-5 bg-transparent text-white p-4 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
                   <div >
-                    <span className="flex flex-row gap-2 items-center"><img src="/images/list.png" alt="Vector" className="h-3 w-3" />
+                    <span className="flex flex-row text-xs md:text-sm gap-2 items-center"><img src="/images/list.png" alt="Vector" className="h-3 w-3" />
                     List
                     </span>
                   </div>
                 </button>
                 <button className="btn mt-5 bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]  text-white p-2 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
                   <div className="flex flex-row gap-2">
-                  <span className="flex flex-row gap-2 items-center"><img src="/images/kanban.png" alt="Vector" className="h-3 w-3" />
+                  <span className="flex flex-row text-xs md:text-sm gap-2 items-center"><img src="/images/kanban.png" alt="Vector" className="h-3 w-3" />
                     Kanban
                     </span>
                   </div>
                 </button>
                 <button onClick={()=> router.push("/CalendarView")} className="btn mt-5 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] text-white p-2  rounded-3xl transition-all">
                   <div className="flex flex-row gap-2">
-                    <span className="flex flex-row gap-2 items-center"><img src="/images/calender.png" alt="Vector" className="h-3 w-3" />
+                    <span className="flex flex-row text-xs md:text-sm gap-2 items-center"><img src="/images/calender.png" alt="Vector" className="h-3 w-3" />
                     Calender
                     </span>
                   </div>
                 </button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 <button onClick={()=> router.push("/ProjectDetails")} className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all">
                   <div className="flex flex-row gap-2">
                   <svg
@@ -178,26 +179,47 @@ const tasks = [
                       d="M12 4v16m8-8H4 "
                     />
                   </svg>
-                  <span>Add new</span>
+                  <span className="text-xs md:text-sm">Add new</span>
                   </div>
                 </button>
-                <span className="text-gray-400 text-sm">Sort by</span>
-                <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
-                  Top
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div className="dropdown dropdown-end">
+                  <label
+                    tabIndex={0}
+                    className="text-white/80 text-sm cursor-pointer hover:text-white transition-colors flex items-center gap-1"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
+                    Sort by <span className="font-semibold">Top</span>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </label>
+                  <ul
+                    tabIndex={0}
+                    className="dropdown-content z-[1] menu p-2 shadow-lg bg-[#1e3a8a] rounded-box w-40 mt-2"
+                  >
+                    <li>
+                      <a className="text-white hover:bg-white/10">Daily</a>
+                    </li>
+                    <li>
+                      <a className="text-white hover:bg-white/10">Weekly</a>
+                    </li>
+                    <li>
+                      <a className="text-white hover:bg-white/10">Monthly</a>
+                    </li>
+                    <li>
+                      <a className="text-white hover:bg-white/10">Yearly</a>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
             {/* Filters and Search */}
@@ -268,7 +290,7 @@ const tasks = [
                 </svg>
             </button>
 
-            <button className="bg-[#facc15] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20">
+            <button className="bg-[#F2F962] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20">
                 <svg
                 className="w-5 h-5"
                 fill="none"

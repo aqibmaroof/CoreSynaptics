@@ -52,10 +52,10 @@ export default function KanbanBoard() {
 
   return (
     <div className="min-h-screen  p-6 text-white">
-      <div className="flex items-center gap-8 justify-between mx-3">
-        <div className="flex items-center gap-4">
-          <p className="text-2xl font-bold">Design Homepage layout</p>
-          <div className="flex items-center justify-between gap-6">
+      <div className="flex items-center gap-16 md:gap-8 justify-between mx-3">
+        <div className="flex items-center gap-2 md:gap-4">
+          <p className="text-xl md:text-2xl font-bold">Design Homepage layout</p>
+          <div className="flex items-center justify-between gap-2 md:gap-6">
             <img src="/images/line-md_link.svg" alt="line-md_link" />
             <img
               src="/images/mingcute_attachment-2-line.svg"
@@ -66,17 +66,18 @@ export default function KanbanBoard() {
         </div>
         <div className="flex items-center gap-4">
           <progress
-            className="progress progress-accent w-56 ml-2"
+            className="progress progress-accent w-30 md:w-56 ml-2"
             value="80"
             max="100"
           ></progress>
-          <span class="text-sm">80%</span>
+          <span class="text-xs md:text-sm">80%</span>
         </div>
       </div>
+      {/* Create Task */}
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-2xl card">
         <div>
           <select
-            className="text-2xl font-bold"
+            className="text-xl md:text-2xl font-bold"
             name="Create Task"
             id="Create Task"
           >
@@ -85,17 +86,17 @@ export default function KanbanBoard() {
         </div>
         <div className="w-full flex flex-row gap-4 mt-8 mx-2">
           <div>
-            <p>Task Name</p>
+            <p className="text-sm md:text-base">Task Name</p>
             <input
               type="text"
               placeholder="Enter task name"
-              className="w-[470px] bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              className="w-48 md:w-[470px] text-sm md:text-base bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
             />
           </div>
           <div>
-            <p>Project</p>
+            <p className="text-sm md:text-base">Project</p>
             <select
-              className="w-[470px] bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              className="w-48 md:w-[470px] text-sm md:text-base bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
               name="Create Task"
               id="Create Task"
             >
@@ -509,13 +510,13 @@ export default function KanbanBoard() {
               </div>
             </div>
             <div>
-              <h3 className="text-3xl mt-4">Welcome to CoreSynaptics</h3>
-              <p className="mt-4">
+              <h3 className="text-xl md:text-3xl mt-4">Welcome to CoreSynaptics</h3>
+              <p className="text-sm md:text-base mt-4">
                 Lorem ipsum dolor sit amet consectetur adipiscing elit Ut et
                 massa mi. Aliquam in hendrerit urna. Pellentesque sit amet
                 sapien.
               </p>
-              <ul className="list-disc pl-5 mt-4 ml-2">
+              <ul className="list-disc pl-5 mt-4 ml-2 text-sm md:text-base">
                 <li>Lorem ipsum dolor sit amet consectetur adipiscing.</li>
                 <li>Lorem ipsum dolor sit amet consectetur adipiscing.</li>
                 <li>Lorem ipsum dolor sit amet consectetur adipiscing.</li>
@@ -524,10 +525,11 @@ export default function KanbanBoard() {
           </div>
         </div>
       </div>
+      {/* Task Information */}
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-2xl card">
         <div>
           <select
-            className="text-2xl font-bold"
+            className="text-xl md:text-2xl font-bold"
             name="Create Task"
             id="Create Task"
           >
@@ -536,17 +538,17 @@ export default function KanbanBoard() {
         </div>
         <div className="w-full flex flex-row gap-4 mt-8 mx-2">
           <div>
-            <p>Task Name</p>
+            <p className="text-sm md:text-base">Task Name</p>
             <input
               type="text"
               placeholder="Enter task name"
-              className="w-[470px] bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              className="w-48 md:w-[470px] text-sm md:text-base bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
             />
           </div>
           <div>
-            <p>Project</p>
+            <p className="text-sm md:text-base">Project</p>
             <select
-              className="w-[470px] bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              className="w-48 md:w-[470px] text-sm md:text-base bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
               name="Create Task"
               id="Create Task"
             >
@@ -554,9 +556,9 @@ export default function KanbanBoard() {
             </select>
           </div>
         </div>
-        <div className="flex flex-row gap-4 w-full items-center justify-between mt-4">
+        <div className="flex flex-row md:flex-row gap-4 w-full items-center justify-between mt-4">
           <div className="w-full">
-            <h1 className="mt-3 text-xl mb-3">Date:</h1>
+            <h1 className="mt-3 text-sm md:text-base mb-3">Date:</h1>
             <div className="dropdown dropdown-bottom w-full">
               <div
                 tabIndex={0}
@@ -568,24 +570,11 @@ export default function KanbanBoard() {
                 </span>
                 <img src={"/images/calendar_1.svg"} />
               </div>
-              <div
-                tabIndex={0}
-                className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg shadow-xl bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
-              >
-                <div className="p-2 space-y-1">
-                  <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
-                    <input
-                      type="checkbox"
-                      className="checkbox checkbox-info checkbox-xs"
-                    />
-                    <span className="text-white text-sm">In progress</span>
-                  </label>
-                </div>
-              </div>
+              
             </div>
           </div>
           <div className="w-full">
-            <h1 className="mt-3 text-xl mb-3">Tasks Status:</h1>
+            <h1 className="mt-3 text-sm md:text-base mb-3">Tasks Status:</h1>
             <div className="dropdown dropdown-bottom w-full">
               <div
                 tabIndex={0}
@@ -627,7 +616,7 @@ export default function KanbanBoard() {
             </div>
           </div>
           <div className="w-full">
-            <h1 className="mt-3 text-xl mb-3">Priority:</h1>
+            <h1 className="mt-3 text-sm md:text-base mb-3">Priority:</h1>
             <div className="dropdown dropdown-bottom w-full">
               <div
                 tabIndex={0}
@@ -710,18 +699,19 @@ export default function KanbanBoard() {
           </button>
         </div>
       </div>
+      {/* Comments/Sub-task */}
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy  mt-8 rounded-2xl card">
-        <div className="flex items-center gap-4 border-b-[0.5px] border-[#E5E5EC6E] px-6 pt-6">
-          <h3 className="text-[#5B5A64] text-lg font-medium">Comments</h3>
-          <h3 className="border-b-2 border-[#00E691] text-white text-lg font-medium">
+        <div className="flex items-center text-base md:text-lg gap-4 border-b-[0.5px] border-[#E5E5EC6E] px-6 pt-6">
+          <h3 className="text-[#5B5A64] font-medium">Comments</h3>
+          <h3 className="border-b-2 border-[#00E691] text-white font-medium">
             Sub Task
           </h3>
-          <h3 className="text-[#5B5A64] text-lg font-medium">Documents</h3>
-          <h3 className="text-[#5B5A64] text-lg font-medium">Issues</h3>
-          <h3 className="text-[#5B5A64] text-lg font-medium">Activities</h3>
+          <h3 className="text-[#5B5A64] font-medium">Documents</h3>
+          <h3 className="text-[#5B5A64] font-medium">Issues</h3>
+          <h3 className="text-[#5B5A64] font-medium">Activities</h3>
         </div>
         <div className="flex items-center justify-between px-6 mt-6">
-          <p>Our Design Process</p>
+          <p className="text-sm md:text-base">Our Design Process</p>
           <CircularProgress value={60} label="Progress" />
         </div>
         <div className="px-6 pb-6">
@@ -729,9 +719,9 @@ export default function KanbanBoard() {
             <div className="flex items-center gap-4">
               <input
                 type="checkbox"
-                className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
+                className="checkbox checkbox-xs md:checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
               />
-              <h3>Research and Gather Inspiration</h3>
+              <h3 className="text-sm md:text-base">Research and Gather Inspiration</h3>
             </div>
             <div>
               <img src="/images/move_icon.svg" alt="Move Icon" />
@@ -741,9 +731,9 @@ export default function KanbanBoard() {
             <div className="flex items-center gap-4">
               <input
                 type="checkbox"
-                className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
+                className="checkbox checkbox-xs md:checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
               />
-              <h3>Define Ad Content and Copy</h3>
+              <h3 className="text-sm md:text-base">Define Ad Content and Copy</h3>
             </div>
             <div>
               <img src="/images/move_icon.svg" alt="Move Icon" />
@@ -753,9 +743,9 @@ export default function KanbanBoard() {
             <div className="flex items-center gap-4">
               <input
                 type="checkbox"
-                className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
+                className="checkbox checkbox-xs md:checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
               />
-              <h3>Design Ad Templates</h3>
+              <h3 className="text-sm md:text-base">Design Ad Templates</h3>
             </div>
             <div>
               <img src="/images/move_icon.svg" alt="Move Icon" />
@@ -765,9 +755,9 @@ export default function KanbanBoard() {
             <div className="flex items-center gap-4">
               <input
                 type="checkbox"
-                className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
+                className="checkbox checkbox-xs md:checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
               />
-              <h3>Review and Iterate</h3>
+              <h3 className="text-sm md:text-base">Review and Iterate</h3>
             </div>
             <div>
               <img src="/images/move_icon.svg" alt="Move Icon" />
@@ -777,9 +767,9 @@ export default function KanbanBoard() {
             <div className="flex items-center gap-4">
               <input
                 type="checkbox"
-                className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
+                className="checkbox checkbox-xs md:checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
               />
-              <h3>Finalize and Deliver Assets</h3>
+              <h3 className="text-sm md:text-base">Finalize and Deliver Assets</h3>
             </div>
             <div>
               <img src="/images/move_icon.svg" alt="Move Icon" />
