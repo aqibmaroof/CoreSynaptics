@@ -71,7 +71,7 @@ const tasks = [
         <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-                <h1 className="text-white mt-5 ml-4 text-2xl font-bold">Estimates Based on Status</h1>
+                <h1 className="text-white mt-5 ml-4 text-base md:text-xl font-bold">Estimates Based on Status</h1>
                 <div className="flex items-center gap-5">
                     <button
                     className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white px-4 py-2 border-none rounded-xl transition-all cursor-pointer"
@@ -90,7 +90,7 @@ const tasks = [
                             d="M12 4v16m8-8H4 "
                         />
                         </svg>
-                        <span>Create</span>
+                        <span className="text-xs md:text-sm">Create</span>
                     </div>
                     </button>
                     <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
@@ -113,17 +113,17 @@ const tasks = [
                 </div>
             </div>
             {/* Filters */}
-            <div className="flex items-center gap-4 mb-6 ml-4">
+            <div className="flex items-center gap-2 mb-6 ml-4">
                 {/* Dropdown Filters */}
-                <select className="bg-transparent text-white w-full py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
+                <select className="bg-transparent text-white w-full text-sm py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
                     <option>Date & Time</option>
                 </select>
         
-                <select className="bg-transparent text-white w-full py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
+                <select className="bg-transparent text-white w-full text-sm py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
                     <option>This Month</option>
                 </select>
 
-                <select className="bg-transparent text-white w-full  py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
+                <select className="bg-transparent text-white w-full text-sm  py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
                     <option>Crearted By</option>
                 </select>
     
@@ -173,40 +173,40 @@ const tasks = [
                     </svg>
                 </button>
             </div>
-            <h1 className="font-bold text-xl ml-4">February 2026</h1>
+            <h1 className="font-bold text-lg md:text-base ml-4">February 2026</h1>
             {/* Table */}
             <div className="overflow-x-auto ml-4 mt-4">
             <table className="w-full ">
                 <thead className="bg-[#080C26] rounded-2xl ">
                 <tr className="rounded-2xl">
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     #
                     </th>
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     Status
                     </th>
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     Estimate Name
                     </th>
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     Summary
                     </th>
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     Grand Total ($)
                     </th>
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     Contact
                     </th>
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     Company
                     </th>
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     Date & Time
                     </th>
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     Estimate Owner
                     </th>
-                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                    <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                     Action
                     </th>
                 </tr>

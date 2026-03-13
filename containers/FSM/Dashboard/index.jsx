@@ -40,11 +40,11 @@ ter: "Zyl",
     return(
         <div className="min-h-screen font-gilroy p-6 text-white">
             {/* Stats */}
-            <h1 className="text-xl font-bold">Overview</h1>
-            <div className="flex items-center justify-between w-full gap-3 mt-2">
-                <div className="flex items-center justify-left gap-6 w-full ">
-                    <p className="text-7xl font-bold font-gilroy">1050</p>
-                    <div className="flex flex-col items-start justify-end text-sm w-30">
+            <h1 className="text-xl md:text-2xl font-bold">Overview</h1>
+            <div className="flex items-center justify-between w-full gap-20 md:gap-16 mt-2">
+                <div className="flex items-center justify-left gap-2 w-full ">
+                    <p className="text-4xl md:text-6xl font-bold font-gilroy">1050</p>
+                    <div className="flex flex-col items-start justify-end text-xs md:text-sm">
                     <p>
                         Total Work Orders
                     </p>
@@ -54,9 +54,9 @@ ter: "Zyl",
                     </p>
                     </div>
                 </div>
-                <div className="flex items-center justify-left gap-6 w-full">
-                    <p className="font-bold text-7xl">877</p>
-                    <div className="flex flex-col items-right justify-end text-sm ">
+                <div className="flex items-center justify-left gap-2 w-full">
+                    <p className="text-4xl md:text-6xl font-bold">877</p>
+                    <div className="flex flex-col items-right justify-end text-xs md:text-sm ">
                     <p>
                         Completed Work Orders
                     </p>
@@ -66,9 +66,9 @@ ter: "Zyl",
                     </p>
                     </div>
                 </div>
-                <div className="flex items-center justify-left gap-6 w-full">
-                    <p className="font-bold text-7xl">154</p>
-                    <div className="flex flex-col items-start justify-end text-sm">
+                <div className="flex items-center justify-left gap-2 w-full">
+                    <p className="text-4xl md:text-6xl font-bold">154</p>
+                    <div className="flex flex-col items-start justify-end text-xs md:text-sm">
                     <p>
                         Total Service Appointments
                     </p>
@@ -78,9 +78,9 @@ ter: "Zyl",
                     </p>
                     </div>
                 </div>
-                <div className="flex items-center justify-left gap-6 w-full">
-                    <p className="text-7xl font-bold ">89</p>
-                    <div className="flex flex-col items-start justify-end text-right text-sm">
+                <div className="flex items-center justify-left gap-2 w-full">
+                    <p className="text-4xl md:text-6xl font-bold ">89</p>
+                    <div className="flex flex-col items-start justify-end  text-xs md:text-sm">
                     <p>
                         Completed Service Appointments
                     </p>
@@ -93,9 +93,10 @@ ter: "Zyl",
             </div>
 
             <div className="flex gap-5">
-                <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 rounded-2xl card">
-                    <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-white text-xl font-gilroy font-bold">New Requests</h1>
+                
+                <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-1 rounded-2xl card">
+                    <div className="flex items-center justify-between gap-4 p-2">
+                    <h1 className="text-white text-base md:text-xl font-gilroy font-bold">New Requests</h1>
                     {/* Sort by */}
                     <div className="dropdown dropdown-end">
                         <label
@@ -199,9 +200,9 @@ ter: "Zyl",
                     </div>
                 </div>
 
-                <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 rounded-2xl card">
-                    <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-white text-xl font-gilroy font-bold">New Work Orders</h1>
+                <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-1 rounded-2xl card">
+                    <div className="flex items-center justify-between gap-4 p-2">
+                    <h1 className="text-white text-base md:text-xl font-gilroy font-bold">New Work Orders</h1>
                     {/* Sort by */}
                     <div className="dropdown dropdown-end">
                         <label
@@ -307,9 +308,10 @@ ter: "Zyl",
             </div>
 
             <div className="flex gap-5">
-                <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 rounded-2xl card">
-                    <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-white text-xl font-gilroy font-bold">Approved Estimates</h1>
+
+                <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-1 rounded-2xl card">
+                    <div className="flex items-center justify-between gap-4 p-2">
+                    <h1 className="text-white text-base md:text-xl font-gilroy font-bold">Approved Estimates</h1>
                     {/* Sort by */}
                     <div className="dropdown dropdown-end">
                         <label
@@ -413,9 +415,9 @@ ter: "Zyl",
                     </div>
                 </div>
 
-                <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 rounded-2xl card">
-                    <div className="flex items-center justify-between gap-4">
-                    <h1 className="text-white text-xl font-gilroy font-bold">Estimates Waiting for Approval</h1>
+                <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-1 rounded-2xl card">
+                    <div className="flex items-center justify-between gap-4 p-2">
+                    <h1 className="text-white text-base md:text-xl font-gilroy font-bold">Estimates Waiting for Approval</h1>
                     {/* Sort by */}
                     <div className="dropdown dropdown-end">
                         <label

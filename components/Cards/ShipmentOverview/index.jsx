@@ -135,7 +135,7 @@ export default function SalesOverview({ heading, description }) {
           {heading ? heading : "Shipment Overview"}
           {description && <p className="font-normal text-sm md:text-base">{description}</p>}
         </h2>
-        <div className="flex gap-4">
+        <div className="flex gap-2">
           <button className="bg-transparent text-white px-5 py-2 text-xs md:text-base rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
             Day
           </button>

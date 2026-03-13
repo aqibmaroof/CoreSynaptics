@@ -75,7 +75,7 @@ const tasks = [
             <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-white mt-5 ml-4 text-2xl font-bold">All Services And Parts</h1>
+                    <h1 className="text-white mt-5 ml-4 text-xl md:text-2xl font-bold">All Services And Parts</h1>
                     <div className="flex items-center gap-5">
                         <button
                         
@@ -95,7 +95,7 @@ const tasks = [
                                 d="M12 4v16m8-8H4 "
                             />
                             </svg>
-                            <span>Create</span>
+                            <span className="text-xs md:text-sm">Create</span>
                         </div>
                         </button>
                         <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
@@ -118,7 +118,7 @@ const tasks = [
                     </div>
                 </div>
                 {/* Filters and Search */}
-                <div className="flex items-center gap-4 mb-6 ml-4">
+                <div className="flex items-center gap-2 mb-6 ml-4">
                     {/* Search Input */}
                     <div className="flex-1 relative">
                         <svg

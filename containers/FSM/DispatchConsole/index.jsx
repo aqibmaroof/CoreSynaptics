@@ -42,17 +42,18 @@ export default function KanbanBoard() {
   return (
     <div className="min-h-screen flex flex-row gap-2 font-gilroy p-6 text-white w-full">
       {/* All service appointment */}
-      <div className="flex min-h-screen w-128 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-2 mt-8 rounded-2xl card">
+      <div className="flex min-h-screen w-116 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-2 mt-8 rounded-2xl card">
         <div>
           <select
-            className="text-xl font-bold p-1"
+            className="text-base md:text-xl font-bold p-1"
             name="Create Task"
             id="Create Task"
           >
             <option>All Service Appointment</option>
           </select>
         </div>
-        <div className="flex items-center justify-between mx-1 mt-4 gap-1 ">
+        {/* Buttons */}
+        <div className="flex items-center justify-between mt-4">
           <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
             <svg
               width="14"
@@ -155,7 +156,7 @@ export default function KanbanBoard() {
               fill-rule="evenodd"
             />
           </svg>
-          <h2 className="ml-4 mr-4">16 Feb, 2026</h2>
+          <h2 className="ml-4 mr-4 text-xs md:text-sm">16 Feb, 2026</h2>
           <svg
             viewBox="0 0 20 20"
             fill="currentColor"
@@ -222,12 +223,12 @@ export default function KanbanBoard() {
 
       {/* Service Resources card */}
         <div className="flex mt-8 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-4 rounded-2xl card">
-          <h1 className="text-white text-2xl font-gilroy font-bold">
+          <h1 className="text-white text-xl md:text-2xl font-gilroy font-bold">
             Service Resource
           </h1>
 
           {/* Filters and Search */}
-          <div className="flex items-center gap-4 mb-6 mt-6">
+          <div className="flex items-center gap-2 mb-6 mt-6">
             {/* Search Input */}
             <div className="flex-1 relative">
               <svg
@@ -313,7 +314,7 @@ export default function KanbanBoard() {
                   fill-rule="evenodd"
                 />
               </svg>
-              <h2 className="ml-4 mr-4">16 Feb, 2026</h2>
+              <h2 className="ml-4 mr-4 text-xs md:text-sm">16 Feb, 2026</h2>
               <svg
                 viewBox="0 0 20 20"
                 fill="currentColor"

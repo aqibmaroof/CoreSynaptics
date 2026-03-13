@@ -49,13 +49,12 @@ const tasks = [
     
   ];
     return(
-        <div className="min-h-screen flex flex-row gap-2 font-gilroy p-6 text-white">
-            
+        <div className="min-h-screen flex flex-row gap-2 font-gilroy p-6 text-white">            
             {/* Folder */}
             <div className="flex min-h-screen w-78 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-2 mt-8 rounded-2xl card">
                 <div>
                     <select
-                        className="text-xl font-bold p-1"
+                        className="text-base md:text-xl font-bold p-1"
                         name="Create Task"
                         id="Create Task"
                     >
@@ -82,46 +81,46 @@ const tasks = [
                         <input
                         type="text"
                         placeholder="Search folder"
-                        className="w-full bg-transparent text-white placeholder-gray-500 pl-12 pr-4 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                        className="w-full text-sm bg-transparent text-white placeholder-white pl-12 pr-4 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
                         />
                     </div>
                     <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M6.75 2.25V0.75M6.75 2.25C5.92157 2.25 5.25 2.92157 5.25 3.75C5.25 4.57843 5.92157 5.25 6.75 5.25M6.75 2.25C7.57843 2.25 8.25 2.92157 8.25 3.75C8.25 4.57843 7.57843 5.25 6.75 5.25M2.25 11.25C3.07843 11.25 3.75 10.5784 3.75 9.75C3.75 8.92157 3.07843 8.25 2.25 8.25M2.25 11.25C1.42157 11.25 0.75 10.5784 0.75 9.75C0.75 8.92157 1.42157 8.25 2.25 8.25M2.25 11.25V12.75M2.25 8.25V0.75M6.75 5.25V12.75M11.25 11.25C12.0784 11.25 12.75 10.5784 12.75 9.75C12.75 8.92157 12.0784 8.25 11.25 8.25M11.25 11.25C10.4216 11.25 9.75 10.5784 9.75 9.75C9.75 8.92157 10.4216 8.25 11.25 8.25M11.25 11.25V12.75M11.25 8.25V0.75" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
                     
                 </div>
                 <div className="ml-2 mr-2">
-                    <h2 className="p-2 mt-6 text-base font-gilroy font-regular">All Reports</h2>
+                    <h2 className="p-2 mt-6 text-xs font-gilroy font-regular">All Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">My Exported Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">My Exported Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-4 text-base">Request Reports</h2>
+                    <h2 className="p-2 mt-4 text-xs">Request Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">Estimate Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">Estimate Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">Work Order Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">Work Order Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">Service Appointment Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">Service Appointment Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">Service & Parts Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">Service & Parts Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">Contact / Company Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">Contact / Company Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">Asset Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">Asset Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">Other Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">Other Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">Custom Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">Custom Reports</h2>
                     <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
-                    <h2 className="p-2 mt-1 text-base">Billing Reports</h2>
+                    <h2 className="p-2 mt-1 text-xs">Billing Reports</h2>
                 </div>
             </div>
 
             <div className="flex min-h-screen w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-2 mt-8 rounded-2xl card">
                 <div>
-                    <h2 className="text-xl font-bold p-2">Search service & parts reports</h2>
+                    <h2 className="text-base md:text-xl font-bold p-2">Search service & parts reports</h2>
                 </div>
                 <div className="flex items-center justify-between mx-2 mt-4 gap-1 ">
                     {/* Search Input */}
@@ -142,11 +141,11 @@ const tasks = [
                         <input
                         type="text"
                         placeholder="Search service & parts reports"
-                        className="w-full bg-transparent text-white placeholder-gray-500 pl-12 pr-4 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                        className="w-full text-sm bg-transparent text-white placeholder-white pl-12 pr-4 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
                         />
                     </div>
                     <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M6.75 2.25V0.75M6.75 2.25C5.92157 2.25 5.25 2.92157 5.25 3.75C5.25 4.57843 5.92157 5.25 6.75 5.25M6.75 2.25C7.57843 2.25 8.25 2.92157 8.25 3.75C8.25 4.57843 7.57843 5.25 6.75 5.25M2.25 11.25C3.07843 11.25 3.75 10.5784 3.75 9.75C3.75 8.92157 3.07843 8.25 2.25 8.25M2.25 11.25C1.42157 11.25 0.75 10.5784 0.75 9.75C0.75 8.92157 1.42157 8.25 2.25 8.25M2.25 11.25V12.75M2.25 8.25V0.75M6.75 5.25V12.75M11.25 11.25C12.0784 11.25 12.75 10.5784 12.75 9.75C12.75 8.92157 12.0784 8.25 11.25 8.25M11.25 11.25C10.4216 11.25 9.75 10.5784 9.75 9.75C9.75 8.92157 10.4216 8.25 11.25 8.25M11.25 11.25V12.75M11.25 8.25V0.75" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </button>
@@ -156,22 +155,22 @@ const tasks = [
                 <table className="w-full ">
                     <thead className="bg-[#080C26] rounded-2xl ">
                     <tr className="rounded-2xl">
-                        <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                        <th className="text-left py-1 px-4 text-gray-400 rounded-bl-2xl rounded-tl-2xl font-medium text-sm">
                         #
                         </th>
-                        <th className="text-left py-1 px-2 text-gray-400 font-medium text-sm">
+                        <th className="text-left py-1 px-2 text-gray-400 font-medium text-xs">
                         Report Name
                         </th>
-                        <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                        <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                         Description
                         </th>
-                        <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                        <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                         Last Accessed
                         </th>
-                        <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                        <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                         Created By
                         </th>
-                        <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                        <th className="text-left py-1 px-4 text-gray-400 rounded-tr-2xl rounded-br-2xl font-medium text-xs">
                         Action
                         </th>
                     </tr>
@@ -189,12 +188,12 @@ const tasks = [
                             className="checkbox checkbox-sm border-white [--chkbg:#3b82f6]"
                             />
                         </td>
-                        <td className="py-4 px-1 text-xs ">{task.reportName}</td>
+                        <td className="py-4 px-1 text-[10px] ">{task.reportName}</td>
                         
-                        <td className="py-4 px-4 text-gray-400 text-xs">
+                        <td className="py-4 px-4 text-[10px]">
                             {task.description}
                         </td>
-                        <td className="py-4 px-1 text-xs">
+                        <td className="py-4 px-1 text-[10px]">
                             {task.lastAcces}
                         </td>
                         
@@ -217,13 +216,13 @@ const tasks = [
                             </div>
                             ))}
                         </td>
-                        <td className="py-4 px-1  text-xs">
+                        <td className="py-4 px-1  text-[10px]">
                             {task.createdBy}
                         </td>
                         </div>
                         
                         <td className="py-4 px-1 ">
-                            <div className="flex items-center gap-2 text-[14px]">
+                            <div className="flex items-center gap-2 text-[12px]">
                             <button className="text-gray-400 hover:text-white transition-colors p-2">
                                 <FiMessageCircle className="text-white" />
                             </button>
@@ -255,10 +254,7 @@ const tasks = [
                     </tbody>
                 </table>
                 </div>
-                
             </div>
-            
-        
         </div>
     );
 }

@@ -99,27 +99,27 @@ const managers = [
     return(
     <div className="min-h-screen font-gilroy p-6 text-white">
         {/* Stats */}
-        <h1 className="text-xl font-bold">Overview</h1>
-        <div className="flex items-center justify-between w-full gap-3 mt-2">
-            <div className="flex items-center justify-left gap-6 w-full ">
-                <p className="text-7xl font-bold font-gilroy">$100K</p>
-                <div className="flex flex-col items-start justify-end text-sm w-30">
+        <h1 className="text-xl md:text-2xl font-bold">Overview</h1>
+        <div className="flex items-center justify-between w-full gap-20 md:gap-16 mt-4">
+            <div className="flex items-center justify-left gap-2 w-full ">
+                <p className="text-4xl md:text-6xl font-bold font-gilroy">$100K</p>
+                <div className="flex flex-col items-start justify-end text-xs md:text-sm">
                 <p>
                     Revenue
                 </p>
                 </div>
             </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">$70K</p>
-                <div className="flex flex-col items-right justify-end text-sm ">
+            <div className="flex items-center justify-left gap-2 w-full">
+                <p className="text-4xl md:text-6xl font-bold">$70K</p>
+                <div className="flex flex-col items-right justify-end text-xs md:text-sm ">
                 <p>
                     Total Profit
                 </p>
                 </div>
             </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">20%</p>
-                <div className="flex flex-col items-start justify-end text-sm">
+            <div className="flex items-center justify-left gap-2 w-full">
+                <p className="text-4xl md:text-6xl font-bold">20%</p>
+                <div className="flex flex-col items-start justify-end text-xs md:text-sm">
                 <p>
                    ROI 
                 </p>
@@ -129,9 +129,9 @@ const managers = [
                 </p>
                 </div>
             </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="text-7xl font-bold ">10%</p>
-                <div className="flex flex-col items-start justify-end text-right text-base">
+            <div className="flex items-center justify-left gap-2 w-full">
+                <p className="text-4xl md:text-6xl font-bold ">10%</p>
+                <div className="flex flex-col items-start justify-end text-right text-xs md:text-sm">
                 <p>
                     Turnover
                 </p>
@@ -155,8 +155,8 @@ const managers = [
         <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 rounded-2xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-                <h1 className="text-white text-2xl font-gilroy font-bold">Recent Activities</h1>
+            <div className="flex items-center gap-2">
+                <h1 className="text-white text-lg md:text-2xl font-gilroy font-bold">Recent Activities</h1>
                 <button  className="btn text-xs bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-2 border-white/[0.03] border-t-white/[0.09] rounded-3xl transition-all">
                   Invoices
                 </button>
@@ -189,7 +189,7 @@ const managers = [
                     d="M12 4v16m8-8H4 "
                   />
                 </svg>
-                <span>Add New</span>
+                <span className="text-xs md:text-sm">Add New</span>
               </div>
             </button>
             {/* Sort by */}
@@ -235,7 +235,7 @@ const managers = [
         </div>
 
         {/* Filters and Search */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-2 mb-6">
           {/* Search Input */}
           <div className="flex-1 relative">
             <svg
@@ -261,7 +261,8 @@ const managers = [
           {/* Dropdown Filters */}
           <select className="w-[max-content] bg-transparent text-white px-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance hover:border-white/20 transition-colors">
             <option>Status</option>
-            <option>All Projects</option>
+            <option>Done</option>
+            <option>Pending</option>
           </select>
 
           <select className="bg-transparent text-white px-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
