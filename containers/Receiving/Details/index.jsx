@@ -47,25 +47,28 @@ export default function KanbanBoard() {
   ];
   return (
     <div className="min-h-screen  p-6 text-white">
-      <h1 className="font-bold text-2xl">UPS-1500-STD</h1>
-      <h3 className="text-[#A0AEC0] mt-1">UB123900026BA</h3>
+      <h1 className="font-bold text-xl md:text-2xl">UPS-1500-STD</h1>
+      <h3 className="text-[#A0AEC0] mt-1 text-xs md:text-sm">UB123900026BA</h3>
+
       <div className="flex flex-row items-center justify-between -mt-8">
         <div className="flex">
           <div className="text-[#A0AEC0] ">
-            <h2>Shipment Status:</h2>
-            <h2 className="mt-6">Recent Status Update :</h2>
-            <h2 className="mt-4">Shipping UPS Tracker Owner:</h2>
+            <h2 className="text-xs md:text-sm">Shipment Status:</h2>
+            <h2 className="mt-7 text-xs md:text-sm">Recent Status Update :</h2>
+            <h2 className="mt-5 text-xs md:text-sm">
+              Shipping UPS Tracker Owner:
+            </h2>
           </div>
           <div className="ml-4">
             <div>
-              <button className="px-3 py-1.5 rounded-3xl text-white bg-[#0075FF]">
+              <button className="px-3 py-1.5 text-xs md:text-sm font-semibold rounded-3xl text-white bg-[#0075FF]">
                 In Progress
               </button>
             </div>
-            <div className="mt-3">
+            <div className="mt-4 text-xs md:text-sm font-semibold">
               <span>January 15, 2026</span>
             </div>
-            <div className="w-35 mt-3">
+            <div className="w-35 mt-4">
               {members.slice(0, 1).map((member) => (
                 <div
                   key={member.id}
@@ -95,15 +98,15 @@ export default function KanbanBoard() {
             </div>
           </div>
         </div>
-        <div className="h-[250px] w-[250px] mr-10">
+        <div className="h-[150px] w-[150px] md:h-[250px] md:w-[250px] mr-10">
           <img src="/images/UPS.png" alt="UPS" />
         </div>
       </div>
-      {/* Equipment's Information */}
+      {/* Task Information */}
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy  mt-8 rounded-2xl card">
         <div className="flex items-center justify-between ml-4 mt-6 mr-4">
           <select
-            className="text-2xl font-bold"
+            className="text-xl md:text-2xl font-bold"
             name="Create Task"
             id="Create Task"
           >
@@ -128,14 +131,14 @@ export default function KanbanBoard() {
             />
           </svg>
         </div>
-        <div className="flex items-center justify-start gap-10 mx-6 mt-6">
+        <div className="flex items-center justify-start gap-16 mx-6 mt-6">
           <div>
-            <h3 className="text-base">Equipment</h3>
-            <h2 className="font-semibold text-lg">UPS-1500-STD</h2>
+            <h3 className="text-xs md:text-sm">Equipment</h3>
+            <h2 className="font-semibold text-sm md:text-base">UPS-1500-STD</h2>
           </div>
           <div className="ml-4">
-            <h3 className="text-base">Date inspection performed</h3>
-            <h2 className="font-semibold text-lg flex items-center gap-4 ">
+            <h3 className="text-xs md:text-sm">Date inspection performed</h3>
+            <h2 className="font-semibold text-sm md:text-base flex items-center gap-4 ">
               <span>Feb 01, 2026 </span>
               <svg
                 width="18"
@@ -222,33 +225,35 @@ export default function KanbanBoard() {
             </h2>
           </div>
           <div className="ml-4">
-            <h3 className="text-base">Inspection performed by</h3>
-            <h2 className="font-semibold text-lg">John Robert</h2>
+            <h3 className="text-xs md:text-sm">Inspection performed by</h3>
+            <h2 className="font-semibold text-sm md:text-base">John Robert</h2>
           </div>
           <div className="ml-4">
-            <h3 className="text-base">Serial Number</h3>
-            <h2 className="font-semibold text-lg">56463525353466</h2>
+            <h3 className="text-xs md:text-sm">Serial Number</h3>
+            <h2 className="font-semibold text-sm md:text-base">
+              56463525353466
+            </h2>
           </div>
         </div>
 
-        <div className="flex items-center justify-start gap-10 mx-6 mt-8 mb-8">
+        <div className="flex items-center justify-start gap-15 mx-6 mt-8 mb-8">
           <div>
-            <h3 className="text-base">Model Number</h3>
-            <h2 className="font-semibold text-lg">AS-157851651</h2>
+            <h3 className="text-xs md:text-sm">Model Number</h3>
+            <h2 className="font-semibold text-sm md:text-base">AS-157851651</h2>
           </div>
           <div className="ml-8">
-            <h3 className="text-base">Manufacturer</h3>
-            <h2 className="font-semibold text-lg flex items-center gap-4 ">
+            <h3 className="text-xs md:text-sm">Manufacturer</h3>
+            <h2 className="font-semibold text-sm md:text-base flex items-center gap-4 ">
               ABC Company
             </h2>
           </div>
           <div className="ml-22">
-            <h3 className="text-base">Equipment received by</h3>
-            <h2 className="font-semibold text-lg">Alex Miller</h2>
+            <h3 className="text-xs md:text-sm">Equipment received by</h3>
+            <h2 className="font-semibold text-sm md:text-base">Alex Miller</h2>
           </div>
           <div className="ml-8">
-            <h3 className="text-base">Equipment description/type</h3>
-            <h2 className="font-semibold text-lg">
+            <h3 className="text-xs md:text-sm">Equipment description/type</h3>
+            <h2 className="font-semibold text-sm md:text-base">
               Equipment description here
             </h2>
           </div>
@@ -259,7 +264,7 @@ export default function KanbanBoard() {
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy  mt-8 rounded-2xl card">
         <div className="flex items-center justify-between ml-4 mt-6 mr-4">
           <select
-            className="text-2xl font-bold"
+            className="text-xl md:text-2xl font-bold"
             name="Create Task"
             id="Create Task"
           >
@@ -287,18 +292,18 @@ export default function KanbanBoard() {
 
         <div className="flex items-center justify-start gap-20 mx-6 mt-8 mb-8">
           <div>
-            <h3 className="text-base">Conforming</h3>
-            <h2 className="font-semibold text-lg">03</h2>
+            <h3 className="text-xs md:text-sm">Conforming</h3>
+            <h2 className="font-semibold text-sm md:text-base">03</h2>
           </div>
           <div className="ml-8">
-            <h3 className="text-base">Deficient</h3>
-            <h2 className="font-semibold text-lg flex items-center gap-4 ">
+            <h3 className="text-xs md:text-sm">Deficient</h3>
+            <h2 className="font-semibold text-sm md:text-base flex items-center gap-4 ">
               02
             </h2>
           </div>
           <div className="ml-22">
-            <h3 className="text-base">N/A</h3>
-            <h2 className="font-semibold text-lg">01</h2>
+            <h3 className="text-xs md:text-sm">N/A</h3>
+            <h2 className="font-semibold text-sm md:text-base">01</h2>
           </div>
         </div>
       </div>
@@ -307,7 +312,7 @@ export default function KanbanBoard() {
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy  mt-8 rounded-2xl card">
         <div className="flex items-center justify-between ml-4 mt-6 mr-4">
           <select
-            className="text-2xl font-bold"
+            className="text-xl md:text-2xl font-bold"
             name="Create Task"
             id="Create Task"
           >
@@ -317,8 +322,8 @@ export default function KanbanBoard() {
 
         <div className="mt-8 mb-4">
           <div className="flex items-center justify-between mx-6">
-            <h3 className="text-base font-semibold">
-              <span className="text-base">#1 </span>
+            <h3 className="text-xs md:text-sm font-semibold">
+              <span className="text-sm">#1 </span>
               Confirm shipping bill of lading or shipping invoic
             </h3>
             <select
@@ -330,8 +335,8 @@ export default function KanbanBoard() {
             </select>
           </div>
           <div className="flex items-center justify-between mx-6 mt-4">
-            <h3 className="text-base font-semibold">
-              <span className="text-base">#2 </span>
+            <h3 className="text-xs md:text-sm font-semibold">
+              <span className="text-sm">#2 </span>
               Confirm damage, missing components, or deficienci
             </h3>
             <select
@@ -343,8 +348,8 @@ export default function KanbanBoard() {
             </select>
           </div>
           <div className="flex items-center justify-between mx-6 mt-4">
-            <h3 className="text-base font-semibold">
-              <span className="text-base">#3 </span>
+            <h3 className="text-xs md:text-sm font-semibold">
+              <span className="text-sm">#3 </span>
               Confirm equipment was properly protected from weat
             </h3>
             <select
@@ -356,8 +361,8 @@ export default function KanbanBoard() {
             </select>
           </div>
           <div className="flex items-center justify-between mx-6 mt-4">
-            <h3 className="text-base font-semibold">
-              <span className="text-base">#4 </span>
+            <h3 className="text-xs md:text-sm font-semibold">
+              <span className="text-sm">#4 </span>
               Confirm equipment is clean and dry
             </h3>
             <select
@@ -375,7 +380,7 @@ export default function KanbanBoard() {
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy  mt-8 rounded-2xl card">
         <div className="flex items-center justify-between ml-4 mt-6 mr-4">
           <select
-            className="text-2xl font-bold"
+            className="text-xl md:text-2xl font-bold"
             name="Create Task"
             id="Create Task"
           >
@@ -403,80 +408,76 @@ export default function KanbanBoard() {
 
         <div className="flex items-center justify-start gap-20 mx-6 mt-8 mb-8">
           <div>
-            <h3 className="text-base">KAIC Rating</h3>
-            <h2 className="font-semibold text-lg">-</h2>
+            <h3 className="text-xs md:text-sm">KAIC Rating</h3>
+            <h2 className="font-semibold text-sm md:text-base">-</h2>
           </div>
           <div className="ml-8">
-            <h3 className="text-base">Current Rating</h3>
-            <h2 className="font-semibold text-lg flex items-center gap-4 ">
+            <h3 className="text-xs md:text-sm">Current Rating</h3>
+            <h2 className="font-semibold text-sm md:text-base flex items-center gap-4 ">
               -
             </h2>
           </div>
           <div className="ml-22">
-            <h3 className="text-base">Voltage Rating</h3>
-            <h2 className="font-semibold text-lg">-</h2>
+            <h3 className="text-xs md:text-sm">Voltage Rating</h3>
+            <h2 className="font-semibold text-sm md:text-base">-</h2>
           </div>
           <div className="ml-14">
-            <h3 className="text-base">Phase/Wire</h3>
-            <h2 className="font-semibold text-lg">-</h2>
+            <h3 className="text-xs md:text-sm">Phase/Wire</h3>
+            <h2 className="font-semibold text-sm md:text-base">-</h2>
           </div>
         </div>
         <div className="flex items-center justify-start gap-20 mx-6 mt-8 mb-8">
           <div>
-            <h3 className="text-base">kW/kVA Rating</h3>
-            <h2 className="font-semibold text-lg">-</h2>
+            <h3 className="text-xs md:text-sm">kW/kVA Rating</h3>
+            <h2 className="font-semibold text-sm md:text-base">-</h2>
           </div>
           <div className="ml-3">
-            <h3 className="text-base">Main breaker size</h3>
-            <h2 className="font-semibold text-lg flex items-center gap-4 ">
+            <h3 className="text-xs md:text-sm">Main breaker size</h3>
+            <h2 className="font-semibold text-sm md:text-base flex items-center gap-4 ">
               -
             </h2>
           </div>
           <div className="ml-17">
-            <h3 className="text-base">RPM</h3>
-            <h2 className="font-semibold text-lg">-</h2>
+            <h3 className="text-xs md:text-sm">RPM</h3>
+            <h2 className="font-semibold text-sm md:text-base">-</h2>
           </div>
           <div className="ml-32">
-            <h3 className="text-base">HP</h3>
-            <h2 className="font-semibold text-lg">-</h2>
+            <h3 className="text-xs md:text-sm">HP</h3>
+            <h2 className="font-semibold text-sm md:text-base">-</h2>
           </div>
         </div>
         <div className="flex items-center justify-start gap-20 mx-6 mt-8 mb-8">
           <div>
-            <h3 className="text-base">CFM</h3>
-            <h2 className="font-semibold text-lg">-</h2>
+            <h3 className="text-xs md:text-sm">CFM</h3>
+            <h2 className="font-semibold text-sm md:text-base">-</h2>
           </div>
           <div className="ml-22">
-            <h3 className="text-base">Tonnage</h3>
-            <h2 className="font-semibold text-lg flex items-center gap-4 ">
-              -
-            </h2>
+            <h3 className="text-xs md:text-sm">Tonnage</h3>
+            <h2 className="font-semibold text-sm md:text-base">-</h2>
           </div>
         </div>
       </div>
 
       {/* texet area */}
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy  mt-8 rounded-2xl card">
-        <div className="flex items-center gap-4 border-b-[0.5px] border-[#E5E5EC6E] px-6 pt-6">
-          <h3 className="text-[#5B5A64] text-lg font-medium">Emails</h3>
-          <h3 className="border-b-2 border-[#00E691] text-white text-lg font-medium">
+        <div className="flex items-center gap-4 text-base md:text-lg border-b-[0.5px] border-[#E5E5EC6E] px-6 pt-6">
+          <h3 className="text-[#5B5A64] font-medium">Emails</h3>
+          <h3 className="border-b-2 border-[#00E691] text-white font-medium">
             Notes
           </h3>
-          <h3 className="text-[#5B5A64] text-lg font-medium">Attachments</h3>
-          <h3 className="text-[#5B5A64] text-lg font-medium">
-            Connected Records
-          </h3>
-          <h3 className="text-[#5B5A64] text-lg font-medium">Reports</h3>
+          <h3 className="text-[#5B5A64] font-medium">Attachments</h3>
+          <h3 className="text-[#5B5A64] font-medium">Connected Records</h3>
+          <h3 className="text-[#5B5A64] font-medium">Reports</h3>
         </div>
 
         <div className="px-6 pb-6">
-          <div className="flex items-center justify-between mt-8">
+          <div className="flex items-center justify-between mt-8 text-sm md:text-base">
             <h3>Important Notes</h3>
           </div>
           <textarea
             type="text"
             placeholder="Write your note here"
-            className="w-full h-60 font-medium bg-transparent text-white placeholder-gray-500 pl-4 py-4 mt-6 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+            className="w-full h-60 text-sm md:text-base font-medium bg-transparent text-white placeholder-gray-500 pl-4 py-4 mt-6 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
           />
           <div className="flex items-center justify-end gap-2 mr-4">
             <button className="btn mt-5 backdrop-blur-md text-white p-3 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all">

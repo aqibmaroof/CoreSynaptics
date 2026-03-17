@@ -70,7 +70,7 @@ export default function KanbanBoard() {
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-white mt-5 ml-4 text-2xl font-bold">
+          <h1 className="text-white mt-5 ml-4 text-base md:text-xl font-bold">
             Estimates Based on Status
           </h1>
           <div className="flex items-center gap-5">
@@ -89,7 +89,7 @@ export default function KanbanBoard() {
                     d="M12 4v16m8-8H4 "
                   />
                 </svg>
-                <span>Create</span>
+                <span className="text-xs md:text-sm">Create</span>
               </div>
             </button>
             <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
@@ -112,17 +112,17 @@ export default function KanbanBoard() {
           </div>
         </div>
         {/* Filters */}
-        <div className="flex items-center gap-4 mb-6 ml-4">
+        <div className="flex items-center gap-2 mb-6 ml-4">
           {/* Dropdown Filters */}
-          <select className="bg-transparent text-white w-full py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
+          <select className="bg-transparent text-white w-full text-sm py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
             <option>Date & Time</option>
           </select>
 
-          <select className="bg-transparent text-white w-full py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
+          <select className="bg-transparent text-white w-full text-sm py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
             <option>This Month</option>
           </select>
 
-          <select className="bg-transparent text-white w-full  py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
+          <select className="bg-transparent text-white w-full text-sm  py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
             <option>Crearted By</option>
           </select>
 
@@ -135,7 +135,7 @@ export default function KanbanBoard() {
               viewBox="0 0 24 24"
             >
               <path
-                strokeLinecap="round"
+                     strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
@@ -154,7 +154,7 @@ export default function KanbanBoard() {
               <path
                 d="M3.75 11.25C2.09315 11.25 0.75 9.90685 0.75 8.25C0.75 6.81971 1.75092 5.6232 3.09053 5.32271C3.03127 5.05796 3 4.78263 3 4.5C3 2.42893 4.67893 0.75 6.75 0.75C8.56448 0.75 10.078 2.03869 10.4251 3.75073C10.45 3.75025 10.475 3.75 10.5 3.75C12.5711 3.75 14.25 5.42893 14.25 7.5C14.25 9.31422 12.9617 10.8275 11.25 11.175M9.75 9L7.5 6.75M7.5 6.75L5.25 9M7.5 6.75L7.5 15.75"
                 stroke="white"
-                strokeWidth="1.5"
+                  strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -177,40 +177,40 @@ export default function KanbanBoard() {
             </svg>
           </button>
         </div>
-        <h1 className="font-bold text-xl ml-4">February 2026</h1>
+        <h1 className="font-bold text-lg md:text-base ml-4">February 2026</h1>
         {/* Table */}
         <div className="overflow-x-auto ml-4 mt-4">
           <table className="w-full ">
             <thead className="bg-[#080C26] rounded-2xl ">
               <tr className="rounded-2xl">
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   #
                 </th>
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   Status
                 </th>
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   Estimate Name
                 </th>
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   Summary
                 </th>
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   Grand Total ($)
                 </th>
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   Contact
                 </th>
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   Company
                 </th>
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   Date & Time
                 </th>
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   Estimate Owner
                 </th>
-                <th className="text-left py-1 px-4 text-gray-400 font-medium text-sm">
+                <th className="text-left py-1 px-4 text-gray-400 font-medium text-xs">
                   Action
                 </th>
               </tr>

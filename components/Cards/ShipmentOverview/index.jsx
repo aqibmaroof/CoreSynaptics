@@ -131,18 +131,18 @@ export default function SalesOverview({ heading, description }) {
     <CardWrapper className="flex flex-col font-gilroy">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white text-2xl font-semibold">
+        <h2 className="text-white text-xl md:text-2xl font-semibold">
           {heading ? heading : "Shipment Overview"}
-          {description && <p className="font-normal text-base">{description}</p>}
+          {description && <p className="font-normal text-sm md:text-base">{description}</p>}
         </h2>
-        <div className="flex gap-4">
-          <button className="bg-transparent text-white px-5 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
+        <div className="flex gap-2">
+          <button className="bg-transparent text-white px-5 py-2 text-xs md:text-base rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
             Day
           </button>
-          <button className="bg-[#656A80] text-white px-5 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
+          <button className="bg-[#656A80] text-white px-5 py-2 text-xs md:text-base rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
             Week
           </button>
-          <button className="bg-transparent text-white px-5 py-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
+          <button className="bg-transparent text-white px-5 py-2 text-xs md:text-base rounded-xl border border-white/10 focus:border-white/20 focus:outline-none">
             Month
           </button>
         </div>

@@ -75,11 +75,11 @@ export default function KanbanBoard() {
   return (
     <div className="min-h-screen  p-6 text-white">
       {/* Stats */}
-      <h1 className="text-xl font-bold">Shipment Overview</h1>
-      <div className="flex items-center justify-between w-full gap-3 mt-2">
+      <h1 className="text-xl md:text-2xl font-bold">Shipment Overview</h1>
+      <div className="flex items-center justify-between w-full gap-20 md:gap-8 mt-2">
         <div className="flex items-center justify-left gap-6 w-full ">
-          <p className="text-7xl font-bold font-gilroy">10</p>
-          <div className="flex flex-col items-start justify-end text-sm w-30">
+          <p className="text-4xl md:text-7xl font-bold font-gilroy">10</p>
+          <div className="flex flex-col items-start justify-end text-xs md:text-sm w-20 md:w-30">
             <p>
               Total Shipment
               <br />
@@ -88,8 +88,8 @@ export default function KanbanBoard() {
           </div>
         </div>
         <div className="flex items-center justify-left gap-6 w-full">
-          <p className="font-bold text-7xl">1500</p>
-          <div className="flex flex-col items-right justify-end text-sm w-40">
+          <p className="font-bold text-4xl md:text-7xl">1500</p>
+          <div className="flex flex-col items-right justify-end text-xs md:text-sm w-30">
             <p>
               Total shipment <br /> last month
             </p>
@@ -100,8 +100,8 @@ export default function KanbanBoard() {
           </div>
         </div>
         <div className="flex items-center justify-left gap-6 w-full">
-          <p className="font-bold text-7xl">147</p>
-          <div className="flex flex-col items-start justify-end text-sm">
+          <p className="font-bold text-4xl md:text-7xl">147</p>
+          <div className="flex flex-col items-start justify-end text-xs md:text-sm">
             <p>
               Total <br />
               Transactions
@@ -109,8 +109,8 @@ export default function KanbanBoard() {
           </div>
         </div>
         <div className="flex items-center justify-left gap-6 w-full ml-4">
-          <p className="text-7xl font-bold ">22</p>
-          <div className="flex flex-col items-start justify-end text-right text-base">
+          <p className="text-4xl md:text-7xl font-bold ">22</p>
+          <div className="flex flex-col items-start justify-end text-right text-xs md:text-sm">
             <p>
               Total <br />
               Receiving
@@ -123,12 +123,12 @@ export default function KanbanBoard() {
         {/* Shipment card */}
         <div className="flex flex-col justify-between w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  p-6 mt-8 rounded-2xl card">
           <div className="">
-            <h1 className="text-xl font-bold">Shipment Status</h1>
+            <h1 className="text-base md:text-xl font-bold">Shipment Status</h1>
           </div>
           <div className="flex flex-col mt-4 w-full">
             <div className="flex flex-row items-center justify-between mt-8">
               <div>
-                <p className="font-bold text-7xl">2500</p>
+                <p className="font-bold text-4xl md:text-6xl">2500</p>
                 <p className="bg-gradient-to-r from-[#080c26] to-[#6d1726] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content]">
                   <FiArrowDown />
                   25%
@@ -154,25 +154,25 @@ export default function KanbanBoard() {
                 </div>
                 <div className="flex flex-row gap-10 items-center mt-4">
                   <div className="flex flex-col items-center ">
-                    <p className="flex items-center gap-2">
+                    <p className="flex items-center gap-2 text-xs md:text-sm">
                       <FaCircle className="text-[#00E691]" />
                       At Warehouse
                     </p>
-                    <h3 className="text-2xl font-bold mt-2">53%</h3>
+                    <h3 className="text-xl md:text-2xl font-bold mt-2">53%</h3>
                   </div>
                   <div className="flex flex-col items-center ">
-                    <p className="flex items-center gap-2">
+                    <p className="flex items-center gap-2 text-xs md:text-sm">
                       <FaCircle className="text-[#0075FF]" />
                       In Transits
                     </p>
-                    <h3 className="text-2xl font-bold mt-2">64%</h3>
+                    <h3 className="text-xl md:text-2xl font-bold mt-2">64%</h3>
                   </div>
                   <div className="flex flex-col items-center ">
-                    <p className="flex items-center gap-2">
+                    <p className="flex items-center gap-2 text-xs md:text-sm">
                       <FaCircle className="text-[#E7844D]" />
                       Reached at Site
                     </p>
-                    <h3 className="text-2xl font-bold mt-2">72%</h3>
+                    <h3 className="text-xl md:text-2xl font-bold mt-2">72%</h3>
                   </div>
                 </div>
               </div>
@@ -183,7 +183,7 @@ export default function KanbanBoard() {
         <div className="flex flex-row items-center justify-between w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  p-6 mt-8 rounded-2xl card">
           <div className="flex flex-col w-full">
             <div className="flex items-center w-full justify-between">
-              <h1 className="text-xl font-bold justify-between">
+              <h1 className="text-base md:text-xl font-bold justify-between">
                 Avg. Delivery Time
               </h1>
               <svg
@@ -203,12 +203,12 @@ export default function KanbanBoard() {
               </svg>
             </div>
             <div>
-              <p className="font-bold text-6xl mt-4">2.5 Days</p>
+              <p className="font-bold text-4xl md:text-6xl mt-4">2.5 Days</p>
             </div>
 
             {/* Vertical lines */}
             <div className="flex w-full justify-between mt-4">
-              <div className="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 0
                 <div className="mt-4 w-full">
                   <div className="absolute items-center justify-between">
@@ -216,30 +216,30 @@ export default function KanbanBoard() {
                       className="progress progress-accent w-35 h-6"
                       value="70"
                     ></progress>
-                    <span className="text-sm">3 Days</span>
+                    <span className="text-xs md:text-sm">3 Days</span>
                   </div>
                   <div className="absolute items-center justify-between mt-10">
                     <progress
                       className="progress progress-accent w-70 h-6 text-[#0075FF]"
                       value="80"
                     ></progress>
-                    <span className="text-sm">2 Days</span>
+                    <span className="text-xs md:text-sm">2 Days</span>
                   </div>
                 </div>
               </div>
-              <div className="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 10k
               </div>
-              <div className="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 20k
               </div>
-              <div className="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 30k
               </div>
-              <div className="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 40k
               </div>
-              <div className="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 50k
               </div>
               <div className="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 "></div>
@@ -257,7 +257,9 @@ export default function KanbanBoard() {
       <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-2xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-white text-[24px] font-normal">Shipping List</h1>
+          <h1 className="text-white text-xl md:text-2xl font-normal">
+            Shipping List
+          </h1>
           {/* Add new button */}
           <div className="flex items-center gap-5">
             <button
@@ -278,7 +280,7 @@ export default function KanbanBoard() {
                     d="M12 4v16m8-8H4 "
                   />
                 </svg>
-                <span>Add Shipment</span>
+                <span className="text-xs md:text-sm">Add Shipment</span>
               </div>
             </button>
             {/* Sort by */}
@@ -411,7 +413,6 @@ export default function KanbanBoard() {
         </div>
 
         {/* Table */}
-
         <div className="overflow-x-auto">
           <table className="table text-center">
             {/* head */}

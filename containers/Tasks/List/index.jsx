@@ -119,38 +119,39 @@ export default function KanbanBoard() {
 
   return (
     <div className="min-h-screen font-gilroy p-6 text-white">
-      <h1 className="font-bold text-2xl">Task overveiw</h1>
-      <div className="flex items-center justify-between w-full gap-3">
-        <div className="flex items-center justify-left gap-10 w-full ">
-          <p className="text-7xl font-bold font-gilroy">80</p>
-          <div className="flex flex-col items-start justify-end text-xl w-30">
+      {/* Stats */}
+      <h1 className="font-bold text-xl md:text-2xl">Task overveiw</h1>
+      <div className="flex items-center justify-between w-full gap-20 md:gap-8 px-3 font-gilroy mt-6 mb-6">
+        <div className="flex items-center justify-left gap-2 md:gap-6 w-full ">
+          <p className="text-4xl md:text-7xl font-bold font-gilroy">80</p>
+          <div className="flex flex-col items-start justify-end text-xs md:text-sm">
             <p>
               Total <br />
               Tasks
             </p>
           </div>
         </div>
-        <div className="flex items-center justify-left gap-10 w-full">
-          <p className="text-6xl font-bold text-7xl">15</p>
-          <div className="flex flex-col items-right justify-end text-xl w-40">
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="text-4xl md:text-7xl font-bold ">15</p>
+          <div className="flex flex-col items-right justify-end text-xs md:text-sm ">
             <p>
               Tasks Due <br />
               Today
             </p>
           </div>
         </div>
-        <div className="flex items-center justify-left gap-10 w-full">
-          <p className="text-6xl font-bold text-7xl">20</p>
-          <div className="flex flex-col items-start justify-end text-xl">
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="text-4xl md:text-7xl font-bold">20</p>
+          <div className="flex flex-col items-start justify-end text-xs md:text-sm">
             <p>
               Overdue <br />
               Tasks
             </p>
           </div>
         </div>
-        <div className="flex items-center justify-left gap-10 w-full">
-          <p className="text-6xl font-bold text-7xl">150</p>
-          <div className="flex flex-col items-start justify-end text-right text-xl">
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="text-4xl md:text-7xl font-bold">150</p>
+          <div className="flex flex-col items-start justify-end text-right text-xs md:text-sm">
             <p>
               Tasks <br />
               Completed
@@ -221,7 +222,7 @@ export default function KanbanBoard() {
                     d="M12 4v16m8-8H4 "
                   />
                 </svg>
-                <span>Add new</span>
+                <span className="text-xs md:text-sm">Add new</span>
               </div>
             </button>
 

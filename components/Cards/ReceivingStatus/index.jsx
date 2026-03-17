@@ -193,7 +193,7 @@ export default function WarehouseAnalysis() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h2 className="text-white text-2xl font-semibold">
+          <h2 className="text-white text-xl md:text-2xl font-semibold">
             Receiving Status
           </h2>          
         </div>
@@ -203,13 +203,13 @@ export default function WarehouseAnalysis() {
       <div className="w-[100%] flex justify-center items-center gap-6">
         {/* Time period buttons */}
         <div className="flex flex-col gap-2">
-          <button className="px-4 py-2 rounded-lg text-gray-400 text-sm bg-[#1A1F37D1] hover:bg-[#464667] transition-colors">
+          <button className="px-4 py-2 rounded-lg text-gray-400 text-xs md:text-sm bg-[#1A1F37D1] hover:bg-[#464667] transition-colors">
             Yearly
           </button>
-          <button className="px-4 py-2 rounded-lg bg-[#1A1F37D1] hover:bg-[#464667] text-white text-sm">
+          <button className="px-4 py-2 rounded-lg bg-[#1A1F37D1] hover:bg-[#464667] text-white text-xs md:text-sm">
             Monthly
           </button>
-          <button className="px-4 py-2 rounded-lg text-gray-400 text-sm bg-[#1A1F37D1] hover:bg-[#464667] transition-colors">
+          <button className="px-4 py-2 rounded-lg text-gray-400 text-xs md:text-sm bg-[#1A1F37D1] hover:bg-[#464667] transition-colors">
             Weekly
           </button>
         </div>
