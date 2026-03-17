@@ -1,19 +1,39 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { CreateProjects } from "@/services/Projects";
+import { CreateSite } from "@/services/Sites";
+import { CreateZone } from "@/services/Zones";
+import { CreateEquipment } from "@/services/Equipment";
 
 const CapitalizeText = (text) => {
   return text
-    .replace(/([A-Z])/g, " $1") // insert space before each uppercase letter
-    .replace(/\b\w/g, (char) => char.toUpperCase()) // capitalize first letter of each word
-    .trim(); // remove any leading space
+    .replace(/([A-Z])/g, " $1")
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .trim();
 };
 
+const date = new Date();
+const yyyy = date.getFullYear();
+const mm = String(date.getMonth() + 1).padStart(2, "0");
+const dd = String(date.getDate()).padStart(2, "0");
+const hh = String(date.getHours()).padStart(2, "0");
+const min = String(date.getMinutes()).padStart(2, "0");
+const today = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+
+const READINESS_GATES = [
+  { gate: "SAFETY_APPROVAL", status: "PENDING" },
+  { gate: "PERMIT_APPROVAL", status: "PENDING" },
+];
 export default function KanbanBoard() {
   const router = useRouter();
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const params = useParams();
+  const { projectType, id, type, subId } = params;
+  // type === "Sites" or "Zones"
+  // id === projectId or siteId depending on type
 
+  const [message, setMessage] = useState({ type: "", text: "" });
+  // Project form
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -23,19 +43,177 @@ export default function KanbanBoard() {
     address: "",
     contractValue: null,
     clientName: "",
+    projectType: "",
+    parentProjectId: "",
+    parentSiteId: "",
+  });
+
+  // Site form
+  const [siteForm, setSiteForm] = useState({
+    name: "",
+    location: "",
+    status: "NOT_READY",
+    safetyStatus: "PENDING",
+    permitStatus: "PENDING",
+    metadata: {},
+  });
+
+  // Zone form
+  const [zoneForm, setZoneForm] = useState({
+    name: "",
+    type: "",
+    metadata: {
+      capacity: "",
+      coolingType: "",
+    },
+  });
+
+  const [equipmentForm, setEquipmentForm] = useState({
+    name: "",
+    serialNumber: "",
+    type: "",
+    status: "ORDERED",
+    lifecyclePhase: "",
+    certificationReq: "",
+    metadata: {},
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handleSiteChange = (e) => {
+    const { name, value } = e.target;
+    setSiteForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleZoneChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "capacity" || name === "coolingType") {
+      setZoneForm((prev) => ({
+        ...prev,
+        metadata: { ...prev.metadata, [name]: value },
+      }));
+    } else {
+      setZoneForm((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleEquipmentChange = (e) => {
+    const { name, value } = e.target;
+    setEquipmentForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const createEquipment = async (e) => {
+    e.preventDefault();
+    try {
+      const requiredFields = ["name", "serialNumber", "type", "lifecyclePhase"];
+      for (const field of requiredFields) {
+        if (!equipmentForm[field]) {
+          setMessage({
+            type: "error",
+            text: `Missing value for field: ${CapitalizeText(field)}`,
+          });
+          return;
+        }
+      }
+      const payload = {
+        name: equipmentForm.name,
+        serialNumber: equipmentForm.serialNumber,
+        type: equipmentForm.type,
+        status: equipmentForm.status,
+        lifecyclePhase: equipmentForm.lifecyclePhase,
+        certificationReq: equipmentForm.certificationReq,
+        zoneId: id, // id from useParams
+        metadata: equipmentForm.metadata,
+      };
+      await CreateEquipment(id, payload); // id = projectId
+      setMessage({
+        type: "success",
+        text: "Equipment Created successfully! 🚀",
+      });
+      router.back();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: `Error creating Equipment: ${error?.message}`,
+      });
+    }
+  };
+
+  // ─── CREATE SITE ────────────────────────────────────────────
+  const createSite = async (e) => {
+    e.preventDefault();
+    try {
+      const requiredFields = ["name", "location"];
+      for (const field of requiredFields) {
+        if (!siteForm[field]) {
+          setMessage({
+            type: "error",
+            text: `Missing value for field: ${CapitalizeText(field)}`,
+          });
+          return;
+        }
+      }
+      const payload = {
+        name: siteForm.name,
+        location: siteForm.location,
+        status: siteForm.status,
+        readinessGates: READINESS_GATES,
+        safetyStatus: siteForm.safetyStatus,
+        permitStatus: siteForm.permitStatus,
+        metadata: siteForm.metadata,
+      };
+      await CreateSite(id, payload); // id = projectId
+      setMessage({ type: "success", text: "Site Created successfully! 🚀" });
+      router.back();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: `Error creating Site: ${error?.message}`,
+      });
+    }
+  };
+
+  // ─── CREATE ZONE ────────────────────────────────────────────
+  const createZone = async (e) => {
+    e.preventDefault();
+    try {
+      const requiredFields = ["name", "type"];
+      for (const field of requiredFields) {
+        if (!zoneForm[field]) {
+          setMessage({
+            type: "error",
+            text: `Missing value for field: ${CapitalizeText(field)}`,
+          });
+          return;
+        }
+      }
+      const payload = {
+        name: zoneForm.name,
+        type: zoneForm.type,
+        metadata: {
+          capacity: zoneForm.metadata.capacity,
+          coolingType: zoneForm.metadata.coolingType,
+        },
+      };
+      await CreateZone(id, payload); // id = siteId
+      setMessage({ type: "success", text: "Zone Created successfully! 🚀" });
+      router.back();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: `Error creating Zone: ${error?.message}`,
+      });
+    }
+  };
+
+  // ─── CREATE PROJECT ─────────────────────────────────────────
   const createProject = async (e) => {
     e.preventDefault();
     try {
-      const payload = {
+      let payload = {
         name: form?.name,
         description: form?.description,
         startDate: form?.startDate,
@@ -46,7 +224,15 @@ export default function KanbanBoard() {
           contractValue: form?.contractValue,
           clientName: form?.clientName,
         },
+        projectType: form?.projectType,
       };
+      if (id && params.subId) {
+        payload = {
+          ...payload,
+          parentProjectId: params?.subId,
+          parentSiteId: id,
+        };
+      }
       const requiredFields = [
         "name",
         "description",
@@ -55,7 +241,6 @@ export default function KanbanBoard() {
         "timezone",
         "address",
       ];
-
       for (const field of requiredFields) {
         const value = payload[field];
         if (value === undefined || value === null || value === "") {
@@ -68,16 +253,35 @@ export default function KanbanBoard() {
       }
       await CreateProjects(payload);
       setMessage({ type: "success", text: "Project Created successfully! 🚀" });
-
-      router.push("/Projects")
+      router.back();
     } catch (error) {
       setMessage({
         type: "error",
-        text:
-          `$Error creating Project : ${error?.message}` ||
-          "Error creating Project.",
+        text: `Error creating Project: ${error?.message}`,
       });
     }
+  };
+
+  const handleAssignProject = async (e, selected) => {
+    if (selected === "parentProjectId") {
+      setForm({ ...form, parentProjectId: e.target.value });
+    } else if (selected === "parentSiteId") {
+      setForm({ ...form, parentSiteId: e.target.value });
+    } else if (selected === "projectType") {
+      setForm({ ...form, projectType: e.target.value });
+    }
+  };
+  console.log(projectType, type);
+  const isSiteForm = projectType === "Project" && type === "Sites";
+  const isZoneForm = projectType === "Projects" && type === "Zones";
+  const isEquipmentForm = projectType === "Zone" && type === "Assets";
+  const isProjectForm = !isSiteForm && !isZoneForm && !isEquipmentForm;
+
+  const handleSubmit = (e) => {
+    if (isSiteForm) return createSite(e);
+    if (isZoneForm) return createZone(e);
+    if (isEquipmentForm) return createEquipment(e);
+    return createProject(e);
   };
 
   return (
@@ -96,279 +300,327 @@ export default function KanbanBoard() {
           </div>
         )}
         <button
-          onClick={(e) => createProject(e)}
+          onClick={handleSubmit}
           className="ml-auto bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white font-[510] py-2 px-4 border-none rounded-xl transition-all cursor-pointer w-50"
         >
-          Create Project
+          {isSiteForm
+            ? "Create Site"
+            : isZoneForm
+              ? "Create Zone"
+              : isEquipmentForm
+                ? "Create Equipment"
+                : "Create Project"}
         </button>
       </div>
 
-      <div className="w-100 font-gilroy mt-6 mb-6 text-[#A0AEC0]">
-        <div className="flex justify-left gap-28 items-center">
-          <h2>Name:</h2>
-          <input
-            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-            type="text"
-            name="name"
-            value={form?.name}
-            onChange={handleChange}
-            placeholder="Project Name"
-          />
-        </div>
-        <div className="flex items-center justify-left gap-19 mt-3">
-          <span class="text-slate-400">description:</span>
-          <input
-            type="text"
-            placeholder="Project Description"
-            name="description"
-            value={form?.description}
-            onChange={handleChange}
-            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-          />
-        </div>
-        <div className="flex justify-left gap-20 items-center mt-3">
-          <h2>Start Date:</h2>
-          <div class="relative max-w-sm">
-            <div class="absolute inset-y-0 start-0 flex items-center "></div>
-            <input
-              className="text-lg font-semibold appearance-none"
-              datepicker
-              id="default-datepicker"
-              type="datetime-local"
-              name="startDate"
-              value={form?.startDate}
-              onChange={handleChange}
-              class="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              placeholder="Select Calender"
-            />
-          </div>
-        </div>
-        <div className="flex justify-left gap-22 items-center mt-3">
-          <h2>End Date:</h2>
-          <div class="relative max-w-sm">
-            <div class="absolute inset-y-0 start-0 flex items-center "></div>
-            <input
-              className="text-lg font-semibold appearance-none"
-              datepicker
-              id="default-datepicker"
-              type="datetime-local"
-              name="endDate"
-              value={form?.endDate}
-              onChange={handleChange}
-              class="block bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              placeholder="Select Calender"
-            />
-          </div>
-        </div>
-        <div className="flex justify-left gap-20 items-center mt-3">
-          <h2>Time Zone:</h2>
-          <input
-            type="text"
-            placeholder="Time Zone"
-            name="timezone"
-            value={form?.timezone}
-            onChange={handleChange}
-            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-          />
-        </div>
-        <div className="flex justify-left gap-24 items-center mt-3">
-          <h2>Address:</h2>
-          <input
-            type="text"
-            placeholder="Address"
-            name="address"
-            value={form?.address}
-            onChange={handleChange}
-            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-          />
-        </div>
-
-        <div className="flex justify-left gap-11 items-center mt-3">
-          <h2>Contract Value:</h2>
-          <input
-            type="text"
-            placeholder="Contract Value"
-            name="contractValue"
-            value={form?.contractValue}
-            onChange={handleChange}
-            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-          />
-        </div>
-
-        <div className="flex justify-left gap-16 items-center mt-3">
-          <h2>Client Name:</h2>
-          <input
-            type="text"
-            placeholder="Client Name"
-            name="clientName"
-            value={form?.clientName}
-            onChange={handleChange}
-            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-          />
-        </div>
-      </div>
-      {/* Task List */}
-      <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-white mt-5 ml-4 text-2xl font-bold">
-            Task Views
-          </h1>
-          <div className="flex items-center gap-5">
-            <button
-              onClick={() => router.push("/ProjectDetails")}
-              className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
-            >
-              <div className="flex flex-row gap-2">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4 "
-                  />
-                </svg>
-                <span>Add new</span>
-              </div>
-            </button>
-
-            <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
-              <span className="text-gray-100 text-sm">Sort by</span>
-              Top
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-        {/* Filters and Search */}
-        <div className="flex items-center gap-4 mb-6 ml-4">
-          {/* Search Input */}
-          <div className="flex-1 relative">
-            <svg
-              className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      <div className="w-full font-gilroy mt-6 mb-6 text-[#A0AEC0]">
+        {/* ─── SITE FORM ─── */}
+        {isSiteForm && (
+          <>
+            <div className="flex justify-left gap-28 items-center">
+              <h2>Name:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="name"
+                value={siteForm.name}
+                onChange={handleSiteChange}
+                placeholder="Site Name"
               />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search Task"
-              className="w-full bg-transparent text-white placeholder-gray-500 pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-            />
-          </div>
-
-          {/* Dropdown Filters */}
-          <select className="bg-transparent text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
-            <option>Assignee</option>
-            <option>All Projects</option>
-          </select>
-
-          <select className="bg-transparent text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
-            <option>Date</option>
-            <option>Urgent</option>
-          </select>
-
-          {/* Action Buttons */}
-          <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                strokeWidth={2}
-                d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
-              />
-            </svg>
-          </button>
-
-          <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"
-              />
-            </svg>
-          </button>
-
-          <button className="bg-[#facc15] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
-              />
-            </svg>
-          </button>
-        </div>
-        <div className="justify-center text-center">
-          <figure>
-            <img src="/images/add_task.png" alt="Add Task" />
-          </figure>
-          <h2 className="text-xl font-bold font-sora mt-2">Empty Task</h2>
-          <h2 className="text-base font-sora mt-2">
-            Let’s add your first task now
-          </h2>
-          <button
-            onClick={() => router.push("/CreateProject")}
-            className="mt-5 bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white p-2 border-none rounded-xl transition-all"
-          >
-            <div className="flex flex-row gap-2">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4 "
-                />
-              </svg>
-              <span>Add new</span>
             </div>
-          </button>
-        </div>
+            <div className="flex justify-left gap-24 items-center mt-3">
+              <h2>Location:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="location"
+                value={siteForm.location}
+                onChange={handleSiteChange}
+                placeholder="Site Location"
+              />
+            </div>
+            <div className="flex justify-left gap-9 items-center mt-3">
+              <h2 className="w-30">Status:</h2>
+              <select
+                name="status"
+                value={siteForm.status}
+                onChange={handleSiteChange}
+                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+              >
+                <option value="NOT_READY">NOT_READY</option>
+                <option value="READY">READY</option>
+                <option value="ACTIVE">ACTIVE</option>
+              </select>
+            </div>
+            <div className="flex justify-left gap-9 items-center mt-3">
+              <h2 className="w-30">Safety Status:</h2>
+              <select
+                name="safetyStatus"
+                value={siteForm.safetyStatus}
+                onChange={handleSiteChange}
+                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="APPROVED">APPROVED</option>
+                <option value="REJECTED">REJECTED</option>
+              </select>
+            </div>
+            <div className="flex justify-left gap-9 items-center mt-3">
+              <h2 className="w-30">Permit Status:</h2>
+              <select
+                name="permitStatus"
+                value={siteForm.permitStatus}
+                onChange={handleSiteChange}
+                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="APPROVED">APPROVED</option>
+                <option value="REJECTED">REJECTED</option>
+              </select>
+            </div>
+          </>
+        )}
+
+        {/* ─── ZONE FORM ─── */}
+        {isZoneForm && (
+          <>
+            <div className="flex justify-left gap-28 items-center">
+              <h2>Name:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="name"
+                value={zoneForm.name}
+                onChange={handleZoneChange}
+                placeholder="Zone Name"
+              />
+            </div>
+            <div className="flex justify-left gap-28 items-center mt-3">
+              <h2>Type:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="type"
+                value={zoneForm.type}
+                onChange={handleZoneChange}
+                placeholder="Zone Type e.g. server_room"
+              />
+            </div>
+            <div className="flex justify-left gap-24 items-center mt-3">
+              <h2>Capacity:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="capacity"
+                value={zoneForm.metadata.capacity}
+                onChange={handleZoneChange}
+                placeholder="e.g. 100 racks"
+              />
+            </div>
+            <div className="flex justify-left gap-20 items-center mt-3">
+              <h2>Cooling Type:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="coolingType"
+                value={zoneForm.metadata.coolingType}
+                onChange={handleZoneChange}
+                placeholder="e.g. hot-aisle containment"
+              />
+            </div>
+          </>
+        )}
+
+        {/* ─── PROJECT FORM ─── */}
+        {isProjectForm && (
+          <>
+            <div className="flex justify-left gap-28 items-center">
+              <h2>Name:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="name"
+                value={form?.name}
+                onChange={handleChange}
+                placeholder="Project Name"
+              />
+            </div>
+            <div className="flex items-center justify-left gap-19 mt-3">
+              <span className="text-slate-400">Description:</span>
+              <input
+                type="text"
+                placeholder="Project Description"
+                name="description"
+                value={form?.description}
+                onChange={handleChange}
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              />
+            </div>
+            <div className="flex justify-left gap-20 items-center mt-3">
+              <h2>Start Date:</h2>
+              <input
+                type="datetime-local"
+                name="startDate"
+                min={today}
+                value={form?.startDate}
+                onChange={handleChange}
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              />
+            </div>
+            <div className="flex justify-left gap-22 items-center mt-3">
+              <h2>End Date:</h2>
+              <input
+                type="datetime-local"
+                name="endDate"
+                min={form.startDate}
+                value={form?.endDate}
+                onChange={handleChange}
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              />
+            </div>
+            <div className="flex justify-left gap-20 items-center mt-3">
+              <h2>Time Zone:</h2>
+              <input
+                type="text"
+                placeholder="Time Zone"
+                name="timezone"
+                value={form?.timezone}
+                onChange={handleChange}
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              />
+            </div>
+            <div className="flex justify-left gap-24 items-center mt-3">
+              <h2>Address:</h2>
+              <input
+                type="text"
+                placeholder="Address"
+                name="address"
+                value={form?.address}
+                onChange={handleChange}
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              />
+            </div>
+            <div className="flex justify-left gap-11 items-center mt-3">
+              <h2>Contract Value:</h2>
+              <input
+                type="text"
+                placeholder="Contract Value"
+                name="contractValue"
+                value={form?.contractValue}
+                onChange={handleChange}
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              />
+            </div>
+            <div className="flex justify-left gap-16 items-center mt-3">
+              <h2>Client Name:</h2>
+              <input
+                type="text"
+                placeholder="Client Name"
+                name="clientName"
+                value={form?.clientName}
+                onChange={handleChange}
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+              />
+            </div>
+            <div className="flex justify-left gap-9 items-center mt-3">
+              <h2 className="w-30">Project Type:</h2>
+              <select
+                onChange={(e) => handleAssignProject(e, "projectType")}
+                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+              >
+                <option value="">Select Project Type</option>
+                {[
+                  { name: "ZONE" },
+                  { name: "ASSETS" },
+                  { name: "SITE" },
+                  { name: "OTHERS" },
+                ]
+                  ?.filter((item) => item?.name !== projectType)
+                  ?.map((item, index) => (
+                    <option value={item.name} key={index}>
+                      {item.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </>
+        )}
+        {/* ─── EQUIPMENT FORM ─── */}
+        {isEquipmentForm && (
+          <>
+            <div className="flex justify-left gap-28 items-center">
+              <h2>Name:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="name"
+                value={equipmentForm.name}
+                onChange={handleEquipmentChange}
+                placeholder="Equipment Name"
+              />
+            </div>
+            <div className="flex justify-left gap-20 items-center mt-3">
+              <h2>Serial Number:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="serialNumber"
+                value={equipmentForm.serialNumber}
+                onChange={handleEquipmentChange}
+                placeholder="Serial Number"
+              />
+            </div>
+            <div className="flex justify-left gap-28 items-center mt-3">
+              <h2>Type:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="type"
+                value={equipmentForm.type}
+                onChange={handleEquipmentChange}
+                placeholder="Equipment Type"
+              />
+            </div>
+            <div className="flex justify-left gap-9 items-center mt-3">
+              <h2 className="w-30">Status:</h2>
+              <select
+                name="status"
+                value={equipmentForm.status}
+                onChange={handleEquipmentChange}
+                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+              >
+                <option value="ORDERED">ORDERED</option>
+                <option value="MANUFACTURING">MANUFACTURING</option>
+                <option value="FAT">FAT</option>
+                <option value="SHIPPED">SHIPPED</option>
+                <option value="INSTALLED">INSTALLED</option>
+                <option value="COMMISSIONED">COMMISSIONED</option>
+              </select>
+            </div>
+            <div className="flex justify-left gap-18 items-center mt-3">
+              <h2>Lifecycle Phase:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="lifecyclePhase"
+                value={equipmentForm.lifecyclePhase}
+                onChange={handleEquipmentChange}
+                placeholder="Lifecycle Phase"
+              />
+            </div>
+            <div className="flex justify-left gap-14 items-center mt-3">
+              <h2>Certification Req:</h2>
+              <input
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                type="text"
+                name="certificationReq"
+                value={equipmentForm.certificationReq}
+                onChange={handleEquipmentChange}
+                placeholder="Certification Requirement"
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

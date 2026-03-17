@@ -15,6 +15,7 @@ import ProjectManagers from "../../components/Cards/ProjectManagers";
 import SalesOverview from "../../components/Cards/SalesOverview";
 import WareHouseOverview from "../../components/Cards/WareHouseOverview";
 import WarehouseAnalysis from "../../components/Cards/WarehouseAnalysis";
+import { Spinner } from "react-bootstrap";
 
 // Mock data (replace with actual data fetching in a real app)
 const orderStatsData = {
@@ -100,9 +101,11 @@ const transactionsData = {
 
 const HomePage = () => {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(true); // <-- track client mount
 
   // CTRL + K listener
   useEffect(() => {
+    setMounted(false);
     const handler = (e) => {
       if (e.ctrlKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -117,41 +120,49 @@ const HomePage = () => {
   const handleClose = (val) => setOpen(val);
 
   return (
-    <div className="min-h-screen">
-      <div className="px-5 pt-5">
-        <CongratsCard user={JSON.parse(getUser())} />
-        {/* <StatsCards /> */}
-      </div>
+    <>
+      {mounted ? (
+        <div className="w-full flex items-center justify-center h-full">
+          <span className="loading loading-dots loading-xl text-info"></span>
+        </div>
+      ) : (
+        <div className="min-h-screen">
+          <div className="px-5 pt-5">
+            <CongratsCard user={JSON.parse(getUser())} />
+            {/* <StatsCards /> */}
+          </div>
 
-      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
-        <RevenueCard />
-        <ProfileReportCard />
-      </div>
-      <div className="px-5 pt-5">
-        <CongratsCard user={JSON.parse(getUser())} />
-        {/* <StatsCards /> */}
-      </div>
-      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
-        <ProjectManagers />
-        <SalesOverview />
-      </div>
-      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
-        <OrderStatisticsCard data={orderStatsData} />
-        <IncomeOverviewCard data={incomeData} />
-        <TransactionCard
-          data={transactionsData}
-          heading="UPS Tracker Overview"
-        />
-      </div>
-      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
-        <WareHouseOverview />
-      </div>
-      <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
-        <WarehouseAnalysis />
-      </div>
+          <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
+            <RevenueCard />
+            <ProfileReportCard />
+          </div>
+          <div className="px-5 pt-5">
+            <CongratsCard user={JSON.parse(getUser())} />
+            {/* <StatsCards /> */}
+          </div>
+          <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
+            <ProjectManagers />
+            <SalesOverview />
+          </div>
+          <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
+            <OrderStatisticsCard data={orderStatsData} />
+            <IncomeOverviewCard data={incomeData} />
+            <TransactionCard
+              data={transactionsData}
+              heading="UPS Tracker Overview"
+            />
+          </div>
+          <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
+            <WareHouseOverview />
+          </div>
+          <div className="flex justify-center gap-10 w-full px-5 pt-5 font-gilroy">
+            <WarehouseAnalysis />
+          </div>
 
-      {open && <TailwindDialog open={open} setOpen={handleClose} />}
-    </div>
+          {open && <TailwindDialog open={open} setOpen={handleClose} />}
+        </div>
+      )}
+    </>
   );
 };
 

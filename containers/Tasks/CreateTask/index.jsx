@@ -70,7 +70,7 @@ export default function KanbanBoard() {
             value="80"
             max="100"
           ></progress>
-          <span class="text-sm">80%</span>
+          <span className="text-sm">80%</span>
         </div>
       </div>
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-2xl card">
@@ -106,16 +106,16 @@ export default function KanbanBoard() {
         <div className="mt-8">
           <h2>Task Description</h2>
           <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-2 border-white/3 border-t p-6 mt-2 rounded-2xl card">
-            <div class="flex items-center justify-between space-x-1 rtl:space-x-reverse flex-wrap">
-              <div class="flex items-center space-x-1 rtl:space-x-reverse flex-wrap">
+            <div className="flex items-center justify-between space-x-1 rtl:space-x-reverse flex-wrap">
+              <div className="flex items-center space-x-1 rtl:space-x-reverse flex-wrap">
                 <button
                   id="toggleBoldButton"
                   data-tooltip-target="tooltip-bold"
                   type="button"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -125,30 +125,30 @@ export default function KanbanBoard() {
                   >
                     <path
                       stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
                       d="M8 5h4.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0-7H6m2 7h6.5a3.5 3.5 0 1 1 0 7H8m0-7v7m0 0H6"
                     />
                   </svg>
-                  <span class="sr-only">Bold</span>
+                  <span className="sr-only">Bold</span>
                 </button>
                 <div
                   id="tooltip-bold"
                   role="tooltip"
-                  class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
+                  className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
                 >
                   Toggle bold
-                  <div class="tooltip-arrow" data-popper-arrow></div>
+                  <div className="tooltip-arrow" data-popper-arrow></div>
                 </div>
                 <button
                   id="toggleItalicButton"
                   data-tooltip-target="tooltip-italic"
                   type="button"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -158,30 +158,30 @@ export default function KanbanBoard() {
                   >
                     <path
                       stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
                       d="m8.874 19 6.143-14M6 19h6.33m-.66-14H18"
                     />
                   </svg>
-                  <span class="sr-only">Italic</span>
+                  <span className="sr-only">Italic</span>
                 </button>
                 <div
                   id="tooltip-italic"
                   role="tooltip"
-                  class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
+                  className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
                 >
                   Toggle italic
-                  <div class="tooltip-arrow" data-popper-arrow></div>
+                  <div className="tooltip-arrow" data-popper-arrow></div>
                 </div>
                 <button
                   id="toggleUnderlineButton"
                   data-tooltip-target="tooltip-underline"
                   type="button"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -191,22 +191,22 @@ export default function KanbanBoard() {
                   >
                     <path
                       stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-width="2"
+                      strokeLinecap="round"
+                      strokeWidth="2"
                       d="M6 19h12M8 5v9a4 4 0 0 0 8 0V5M6 5h4m4 0h4"
                     />
                   </svg>
-                  <span class="sr-only">Underline</span>
+                  <span className="sr-only">Underline</span>
                 </button>
                 <button
                   id="toggleTextSizeButton"
                   data-dropdown-toggle="textSizeDropdown"
                   type="button"
                   data-tooltip-target="tooltip-text-size"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -216,37 +216,37 @@ export default function KanbanBoard() {
                   >
                     <path
                       stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
                       d="M3 6.2V5h11v1.2M8 5v14m-3 0h6m2-6.8V11h8v1.2M17 11v8m-1.5 0h3"
                     />
                   </svg>
-                  <span class="sr-only">Text size</span>
+                  <span className="sr-only">Text size</span>
                 </button>
                 <div
                   id="tooltip-text-size"
                   role="tooltip"
-                  class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
+                  className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
                 >
                   Text size
-                  <div class="tooltip-arrow" data-popper-arrow></div>
+                  <div className="tooltip-arrow" data-popper-arrow></div>
                 </div>
               </div>
 
               <div
                 id="textSizeDropdown"
-                class="z-10 hidden bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg w-72"
+                className="z-10 hidden bg-neutral-primary-medium border border-default-medium rounded-base shadow-lg w-72"
               >
                 <ul
-                  class="p-2 space-y-1 text-sm text-body font-medium"
+                  className="p-2 space-y-1 text-sm text-body font-medium"
                   aria-labelledby="toggleTextSizeButton"
                 >
                   <li>
                     <button
                       data-text-size="16px"
                       type="button"
-                      class="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-sm"
+                      className="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-sm"
                     >
                       16px (Default)
                     </button>
@@ -255,7 +255,7 @@ export default function KanbanBoard() {
                     <button
                       data-text-size="12px"
                       type="button"
-                      class="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-xs"
+                      className="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-xs"
                     >
                       12px (Tiny)
                     </button>
@@ -264,7 +264,7 @@ export default function KanbanBoard() {
                     <button
                       data-text-size="14px"
                       type="button"
-                      class="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-sm"
+                      className="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-sm"
                     >
                       14px (Small)
                     </button>
@@ -273,7 +273,7 @@ export default function KanbanBoard() {
                     <button
                       data-text-size="18px"
                       type="button"
-                      class="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-lg"
+                      className="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-lg"
                     >
                       18px (Lead)
                     </button>
@@ -282,7 +282,7 @@ export default function KanbanBoard() {
                     <button
                       data-text-size="24px"
                       type="button"
-                      class="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-2xl"
+                      className="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-2xl"
                     >
                       24px (Large)
                     </button>
@@ -291,7 +291,7 @@ export default function KanbanBoard() {
                     <button
                       data-text-size="36px"
                       type="button"
-                      class="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-4xl"
+                      className="inline-flex items-center w-full p-2 hover:bg-neutral-tertiary-medium hover:text-heading rounded text-4xl"
                     >
                       36px (Huge)
                     </button>
@@ -299,15 +299,15 @@ export default function KanbanBoard() {
                 </ul>
               </div>
 
-              <div class="flex items-center space-x-1 rtl:space-x-reverse flex-wrap">
+              <div className="flex items-center space-x-1 rtl:space-x-reverse flex-wrap">
                 <button
                   id="toggleLeftAlignButton"
                   type="button"
                   data-tooltip-target="tooltip-left-align"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -317,30 +317,30 @@ export default function KanbanBoard() {
                   >
                     <path
                       stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
                       d="M6 6h8m-8 4h12M6 14h8m-8 4h12"
                     />
                   </svg>
-                  <span class="sr-only">Align left</span>
+                  <span className="sr-only">Align left</span>
                 </button>
                 <div
                   id="tooltip-left-align"
                   role="tooltip"
-                  class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
+                  className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
                 >
                   Align left
-                  <div class="tooltip-arrow" data-popper-arrow></div>
+                  <div className="tooltip-arrow" data-popper-arrow></div>
                 </div>
                 <button
                   id="toggleCenterAlignButton"
                   type="button"
                   data-tooltip-target="tooltip-center-align"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -350,30 +350,30 @@ export default function KanbanBoard() {
                   >
                     <path
                       stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
                       d="M8 6h8M6 10h12M8 14h8M6 18h12"
                     />
                   </svg>
-                  <span class="sr-only">Align center</span>
+                  <span className="sr-only">Align center</span>
                 </button>
                 <div
                   id="tooltip-center-align"
                   role="tooltip"
-                  class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
+                  className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
                 >
                   Align center
-                  <div class="tooltip-arrow" data-popper-arrow></div>
+                  <div className="tooltip-arrow" data-popper-arrow></div>
                 </div>
                 <button
                   id="toggleRightAlignButton"
                   type="button"
                   data-tooltip-target="tooltip-right-align"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -383,33 +383,33 @@ export default function KanbanBoard() {
                   >
                     <path
                       stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
                       d="M18 6h-8m8 4H6m12 4h-8m8 4H6"
                     />
                   </svg>
-                  <span class="sr-only">Align right</span>
+                  <span className="sr-only">Align right</span>
                 </button>
                 <div
                   id="tooltip-right-align"
                   role="tooltip"
-                  class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
+                  className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
                 >
                   Align right
-                  <div class="tooltip-arrow" data-popper-arrow></div>
+                  <div className="tooltip-arrow" data-popper-arrow></div>
                 </div>
               </div>
 
-              <div class="flex items-center space-x-1 rtl:space-x-reverse flex-wrap">
+              <div className="flex items-center space-x-1 rtl:space-x-reverse flex-wrap">
                 <button
                   id="toggleListButton"
                   type="button"
                   data-tooltip-target="tooltip-list"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -419,32 +419,32 @@ export default function KanbanBoard() {
                   >
                     <path
                       stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-width="2"
+                      strokeLinecap="round"
+                      strokeWidth="2"
                       d="M9 8h10M9 12h10M9 16h10M4.99 8H5m-.02 4h.01m0 4H5"
                     />
                   </svg>
-                  <span class="sr-only">Toggle list</span>
+                  <span className="sr-only">Toggle list</span>
                 </button>
                 <div
                   id="tooltip-list"
                   role="tooltip"
-                  class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
+                  className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
                 >
                   Toggle list
-                  <div class="tooltip-arrow" data-popper-arrow></div>
+                  <div className="tooltip-arrow" data-popper-arrow></div>
                 </div>
               </div>
 
-              <div class="flex items-center space-x-1 rtl:space-x-reverse flex-wrap">
+              <div className="flex items-center space-x-1 rtl:space-x-reverse flex-wrap">
                 <button
                   id="addImageButton"
                   type="button"
                   data-tooltip-target="tooltip-image"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -463,24 +463,24 @@ export default function KanbanBoard() {
                       clip-rule="evenodd"
                     />
                   </svg>
-                  <span class="sr-only">Add image</span>
+                  <span className="sr-only">Add image</span>
                 </button>
                 <div
                   id="tooltip-image"
                   role="tooltip"
-                  class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
+                  className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
                 >
                   Add image
-                  <div class="tooltip-arrow" data-popper-arrow></div>
+                  <div className="tooltip-arrow" data-popper-arrow></div>
                 </div>
                 <button
                   id="toggleLinkButton"
                   data-tooltip-target="tooltip-link"
                   type="button"
-                  class="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
+                  className="p-1.5 text-body rounded-sm cursor-pointer hover:text-heading hover:bg-neutral-quaternary"
                 >
                   <svg
-                    class="w-5 h-5"
+                    className="w-5 h-5"
                     aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -490,21 +490,21 @@ export default function KanbanBoard() {
                   >
                     <path
                       stroke="currentColor"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
                       d="M13.213 9.787a3.391 3.391 0 0 0-4.795 0l-3.425 3.426a3.39 3.39 0 0 0 4.795 4.794l.321-.304m-.321-4.49a3.39 3.39 0 0 0 4.795 0l3.424-3.426a3.39 3.39 0 0 0-4.794-4.795l-1.028.961"
                     />
                   </svg>
-                  <span class="sr-only">Link</span>
+                  <span className="sr-only">Link</span>
                 </button>
                 <div
                   id="tooltip-link"
                   role="tooltip"
-                  class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
+                  className="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white transition-opacity duration-300 bg-dark-strong rounded-base shadow-xs opacity-0 tooltip"
                 >
                   Add link
-                  <div class="tooltip-arrow" data-popper-arrow></div>
+                  <div className="tooltip-arrow" data-popper-arrow></div>
                 </div>
               </div>
             </div>

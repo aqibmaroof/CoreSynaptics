@@ -1,9 +1,14 @@
 import sendRequest from "../instance/sendRequest";
 
-export const getProjects = async (limit = 25, currentPage) => {
+export const getProjects = async (
+  limit = 25,
+  currentPage,
+  id = null,
+  subId = null,
+) => {
   try {
     const data = await sendRequest({
-      url: `/projects`,
+      url: `/projects?parentSiteId=${id}&parentProjectId=${subId}`,
       method: "GET",
     });
     return data;
@@ -36,6 +41,7 @@ export const UpdateProjects = async (id, payload) => {
     throw error;
   }
 };
+
 export const ArchiveProjects = async (id, payload) => {
   try {
     const data = await sendRequest({
@@ -92,6 +98,58 @@ export const DeleteUsersToProjects = async (id, userId) => {
     const data = await sendRequest({
       url: `/projects/${id}/users/${userId}`,
       method: "Delete",
+    });
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Tasks
+export const CreateProjectTask = async (id, payload) => {
+  try {
+    const data = await sendRequest({
+      url: `/projects/${id}/tasks`,
+      method: "POST",
+      data: payload,
+    });
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const GetProjectTasks = async (id) => {
+  try {
+    const data = await sendRequest({
+      url: `/projects/${id}/tasks`,
+      method: "GET",
+    });
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Subtasks
+export const CreateProjectSubtask = async (id, payload) => {
+  try {
+    const data = await sendRequest({
+      url: `/projects/${id}/subtasks`,
+      method: "POST",
+      data: payload,
+    });
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const GetProjectSubtasks = async (id) => {
+  try {
+    const data = await sendRequest({
+      url: `/projects/${id}/subtasks`,
+      method: "GET",
     });
     return data;
   } catch (error) {

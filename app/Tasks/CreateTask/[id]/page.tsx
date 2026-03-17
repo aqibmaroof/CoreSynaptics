@@ -1,4 +1,4 @@
-import CreateTask from "../../../containers/Tasks/CreateTask";
+import CreateTask from "../../../../containers/Tasks/CreateTask";
 import Layout from "@/containers/Layout";
 
 export default function KanbanBoard() {
@@ -6,6 +6,5 @@ export default function KanbanBoard() {
     <Layout>
       <CreateTask />
     </Layout>
-    
   );
 }

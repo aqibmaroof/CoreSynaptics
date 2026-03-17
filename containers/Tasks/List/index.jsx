@@ -116,7 +116,7 @@ export default function KanbanBoard() {
       bgColor: "bg-gray-500/20",
     },
   ];
-  
+
   return (
     <div className="min-h-screen font-gilroy p-6 text-white">
       <h1 className="font-bold text-2xl">Task overveiw</h1>
@@ -288,8 +288,8 @@ export default function KanbanBoard() {
               viewBox="0 0 24 24"
             >
               <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 strokeWidth={2}
                 d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
               />
@@ -1579,7 +1579,7 @@ export default function KanbanBoard() {
               </button>
             </form>
           </div>
-          <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
           <div className="px-4">
             <div className="mt-4">
               <p>Task Name</p>
@@ -1591,8 +1591,8 @@ export default function KanbanBoard() {
             </div>
             <div className="mt-4">
               <p>Date</p>
-              <div class="relative">
-                <div class="absolute right-4 inset-y-0 flex items-center ps-3 pointer-events-none">
+              <div className="relative">
+                <div className="absolute right-4 inset-y-0 flex items-center ps-3 pointer-events-none">
                   <img src="/images/calendar_1.svg" alt="Calendar" />
                 </div>
                 <input
@@ -1681,9 +1681,9 @@ export default function KanbanBoard() {
               <div className="flex items-center justify-center w-full mt-1">
                 <label
                   for="dropzone-file"
-                  class="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors cursor-pointer hover:bg-neutral-tertiary-medium"
+                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors cursor-pointer hover:bg-neutral-tertiary-medium"
                 >
-                  <div class="flex flex-col items-center justify-center text-body pt-5 pb-6">
+                  <div className="flex flex-col items-center justify-center text-body pt-5 pb-6">
                     <svg
                       width="30"
                       height="30"
@@ -1694,37 +1694,37 @@ export default function KanbanBoard() {
                       <path
                         d="M11.1041 20.9724V13.5703L8.63672 16.0377"
                         stroke="#0075FF"
-                        stroke-width="1.85053"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                        strokeWidth="1.85053"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
                       <path
                         d="M11.1016 13.5703L13.5689 16.0377"
                         stroke="#0075FF"
-                        stroke-width="1.85053"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                        strokeWidth="1.85053"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
                       <path
                         d="M27.1425 12.3373V18.5057C27.1425 24.6741 24.6751 27.1415 18.5067 27.1415H11.1046C4.93612 27.1415 2.46875 24.6741 2.46875 18.5057V11.1036C2.46875 4.93515 4.93612 2.46777 11.1046 2.46777H17.273"
                         stroke="#0075FF"
-                        stroke-width="1.85053"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                        strokeWidth="1.85053"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
                       <path
                         d="M27.1429 12.3373H22.2082C18.5071 12.3373 17.2734 11.1036 17.2734 7.40252V2.46777L27.1429 12.3373Z"
                         stroke="#0075FF"
-                        stroke-width="1.85053"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                        strokeWidth="1.85053"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
                     </svg>
-                    <p class="mb-2 text-sm">
+                    <p className="mb-2 text-sm">
                       Drag here or upload from directory
                     </p>
                   </div>
-                  <input id="dropzone-file" type="file" class="hidden" />
+                  <input id="dropzone-file" type="file" className="hidden" />
                 </label>
               </div>
             </div>
@@ -1758,7 +1758,7 @@ export default function KanbanBoard() {
               </div>
             </button>
           </div>
-          <hr class="w-full mt-3 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full mt-3 bg-neutral-quaternary border-[#656A80]"></hr>
           <div className="flex items-center justify-end gap-2 mr-4">
             <button className="btn mt-5 backdrop-blur-md text-white p-3 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all">
               <div className="flex flex-row gap-2">

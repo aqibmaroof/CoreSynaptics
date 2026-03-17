@@ -1,11 +1,10 @@
 // components/Layout.js
 "use client";
 import Sidebar from "../../components/sidebar";
-import { FaBell, FaSun, FaMoon, FaArrowLeft } from "react-icons/fa";
+import { FaBell, FaArrowLeft } from "react-icons/fa";
 import { FiPower, FiSearch, FiSettings, FiUser } from "react-icons/fi";
 import config from "../../config";
 import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 import {
   clearTokens,
   getAccessToken,
@@ -20,8 +19,6 @@ const Layout = ({ children }) => {
   const params = useParams();
   const [search, setSearch] = useState("");
   const user = JSON.parse(getUser());
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false); // <-- track client mount
 
   const handleChange = (e) => {
     const { value } = e.target;
@@ -30,17 +27,11 @@ const Layout = ({ children }) => {
 
   // Wait for client to mount to avoid SSR mismatch
   useEffect(() => {
-    setMounted(true);
     if (!getAccessToken()) {
       router.replace("/Auth/Login");
     }
   }, []);
 
-  const toggleTheme = () => {
-    // toggle between light and dark using next-themes
-    if (!mounted) return;
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-  };
   const handleLogout = async () => {
     try {
       const response = await Logout();
@@ -51,9 +42,6 @@ const Layout = ({ children }) => {
       console.error("Logout failed:", error);
     }
   };
-
-  // Do not render theme-dependent UI until mounted
-  if (!mounted) return null;
 
   return (
     <div className="bg-[url('/images/background.png')] bg-cover bg-center bg-no-repeat flex flex-col min-h-screen">
@@ -206,7 +194,6 @@ const Layout = ({ children }) => {
                         </span>
                       </a>
                     </li> */}
-
 
                     {/* <li>
                       <a className="text-[16px] text-white gap-3">

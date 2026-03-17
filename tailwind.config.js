@@ -12,9 +12,6 @@ module.exports = {
         sans: ["Gilroy", "sans-serif"], // This makes it default
         gilroy: ["Gilroy", "sans-serif"],
       },
-      backgroundImage: {
-        "main-bg": "url('/images/mainBackground.png'), url('/images/bg.png') ",
-      },
     },
   },
   plugins: [],

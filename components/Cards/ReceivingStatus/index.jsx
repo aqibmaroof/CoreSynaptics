@@ -153,9 +153,9 @@ export default function WarehouseAnalysis() {
       custom: function ({ series, seriesIndex, dataPointIndex, w }) {
         const value = series[seriesIndex][dataPointIndex];
         if (value === 620) {
-          return `<div class="bg-white text-slate-900 px-3 py-1.5 rounded-lg font-semibold text-sm shadow-lg">${value}</div>`;
+          return `<div className="bg-white text-slate-900 px-3 py-1.5 rounded-lg font-semibold text-sm shadow-lg">${value}</div>`;
         }
-        return `<div class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-sm">${value}</div>`;
+        return `<div className="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-sm">${value}</div>`;
       },
     },
     annotations: {

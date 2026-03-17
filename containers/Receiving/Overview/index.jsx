@@ -5,7 +5,7 @@ import ReceivingStatus from "@/components/Cards/ReceivingStatus";
 import { useRouter } from "next/navigation";
 
 export default function KanbanBoard() {
-const router = useRouter();
+  const router = useRouter();
   const managers = [
     {
       id: 1,
@@ -85,62 +85,64 @@ const router = useRouter();
       status: "Approved",
     },
   ];
-    return(
+  return (
     <div className="min-h-screen  p-6 text-white">
-        {/* Stats */}
-        <h1 className="text-xl font-bold">Shipment Overview</h1>
-        <div className="flex items-center justify-between w-full gap-3 mt-2">
-            <div className="flex items-center justify-left gap-6 w-full ">
-                <p className="text-7xl font-bold font-gilroy">09</p>
-                <div className="flex flex-col items-start justify-end text-sm w-30">
-                <p>
-                    Total Equipment<br />
-                    Received Today
-                </p>
-                </div>
-            </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">1250</p>
-                <div className="flex flex-col items-right justify-end text-sm w-40">
-                <p>
-                    Total Equipment <br /> last month
-                </p>
-                <p className="bg-gradient-to-r from-[#080c26] to-[#6d1726] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content] ">
-                    <FiArrowDown />
-                    25%
-                </p>
-                </div>
-            </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="font-bold text-7xl">147</p>
-                <div className="flex flex-col items-start justify-end text-sm">
-                <p>
-                    Total <br />
-                    Transactions
-                </p>
-                </div>
-            </div>
-            <div className="flex items-center justify-left gap-6 w-full">
-                <p className="text-7xl font-bold ">10K</p>
-                <div className="flex flex-col items-start justify-end text-right text-base">
-                <p>
-                    Total <br />
-                    Receiving
-                </p>
-                </div>
-            </div>
+      {/* Stats */}
+      <h1 className="text-xl font-bold">Shipment Overview</h1>
+      <div className="flex items-center justify-between w-full gap-3 mt-2">
+        <div className="flex items-center justify-left gap-6 w-full ">
+          <p className="text-7xl font-bold font-gilroy">09</p>
+          <div className="flex flex-col items-start justify-end text-sm w-30">
+            <p>
+              Total Equipment
+              <br />
+              Received Today
+            </p>
+          </div>
         </div>
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="font-bold text-7xl">1250</p>
+          <div className="flex flex-col items-right justify-end text-sm w-40">
+            <p>
+              Total Equipment <br /> last month
+            </p>
+            <p className="bg-gradient-to-r from-[#080c26] to-[#6d1726] text-xs px-2 py-1 rounded-lg flex items-center mt-1 w-[max-content] ">
+              <FiArrowDown />
+              25%
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="font-bold text-7xl">147</p>
+          <div className="flex flex-col items-start justify-end text-sm">
+            <p>
+              Total <br />
+              Transactions
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center justify-left gap-6 w-full">
+          <p className="text-7xl font-bold ">10K</p>
+          <div className="flex flex-col items-start justify-end text-right text-base">
+            <p>
+              Total <br />
+              Receiving
+            </p>
+          </div>
+        </div>
+      </div>
 
-        {/* warehouse analysis */}
-        <ReceivingStatus />
-        
-        {/* Header */}
-        <ShipmentOverview className="mt-4"
+      {/* warehouse analysis */}
+      <ReceivingStatus />
+
+      {/* Header */}
+      <ShipmentOverview
+        className="mt-4"
         heading="Receiving Statistics"
         description="Product receiving performance and delivery status overview."
-        />
+      />
 
-        {/* Shipping list Table */}
+      {/* Shipping list Table */}
       <div className="flex mt-5 w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-2xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -148,7 +150,7 @@ const router = useRouter();
           {/* Add new button */}
           <div className="flex items-center gap-5">
             <button
-              onClick={() => router.push("/ProjectDetails")}
+              onClick={() => router.push("/ProjectDetails/Create/12")}
               className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
             >
               <div className="flex flex-row gap-2">
@@ -170,42 +172,42 @@ const router = useRouter();
             </button>
             {/* Sort by */}
             <div className="dropdown dropdown-end">
-                <label
-                    tabIndex={0}
-                    className="text-white/80 text-sm cursor-pointer hover:text-white transition-colors flex items-center gap-1"
+              <label
+                tabIndex={0}
+                className="text-white/80 text-sm cursor-pointer hover:text-white transition-colors flex items-center gap-1"
+              >
+                Sort by <span className="font-semibold">Top</span>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                    Sort by <span className="font-semibold">Top</span>
-                    <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                    />
-                    </svg>
-                </label>
-                <ul
-                    tabIndex={0}
-                    className="dropdown-content z-[1] menu p-2 shadow-lg bg-[#1e3a8a] rounded-box w-40 mt-2"
-                >
-                    <li>
-                    <a className="text-white hover:bg-white/10">Daily</a>
-                    </li>
-                    <li>
-                    <a className="text-white hover:bg-white/10">Weekly</a>
-                    </li>
-                    <li>
-                    <a className="text-white hover:bg-white/10">Monthly</a>
-                    </li>
-                    <li>
-                    <a className="text-white hover:bg-white/10">Yearly</a>
-                    </li>
-                </ul>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </label>
+              <ul
+                tabIndex={0}
+                className="dropdown-content z-[1] menu p-2 shadow-lg bg-[#1e3a8a] rounded-box w-40 mt-2"
+              >
+                <li>
+                  <a className="text-white hover:bg-white/10">Daily</a>
+                </li>
+                <li>
+                  <a className="text-white hover:bg-white/10">Weekly</a>
+                </li>
+                <li>
+                  <a className="text-white hover:bg-white/10">Monthly</a>
+                </li>
+                <li>
+                  <a className="text-white hover:bg-white/10">Yearly</a>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -254,8 +256,8 @@ const router = useRouter();
               viewBox="0 0 24 24"
             >
               <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 strokeWidth={2}
                 d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
               />
@@ -273,9 +275,9 @@ const router = useRouter();
               <path
                 d="M3.75 11.25C2.09315 11.25 0.75 9.90685 0.75 8.25C0.75 6.81971 1.75092 5.6232 3.09053 5.32271C3.03127 5.05796 3 4.78263 3 4.5C3 2.42893 4.67893 0.75 6.75 0.75C8.56448 0.75 10.078 2.03869 10.4251 3.75073C10.45 3.75025 10.475 3.75 10.5 3.75C12.5711 3.75 14.25 5.42893 14.25 7.5C14.25 9.31422 12.9617 10.8275 11.25 11.175M9.75 9L7.5 6.75M7.5 6.75L5.25 9M7.5 6.75L7.5 15.75"
                 stroke="white"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
           </button>
@@ -320,7 +322,8 @@ const router = useRouter();
             </thead>
             <tbody>
               {managers.map((manager, index) => (
-                <tr  onClick={() => router.push("/Receiving/Details")}
+                <tr
+                  onClick={() => router.push("/Receiving/Details")}
                   key={manager.id}
                   className="hover:bg-white/5 transition-colors"
                 >
@@ -332,11 +335,13 @@ const router = useRouter();
                   <td className="py-4 text-gray-100">{manager.deficient}</td>
                   <td className="py-4 text-gray-100">{manager.conforming}</td>
                   <td className="py-4 text-gray-100">{manager.NA}</td>
-                  <td className="py-4 text-gray-100">{manager.receivingDate}</td>
+                  <td className="py-4 text-gray-100">
+                    {manager.receivingDate}
+                  </td>
                   <td className="py-4 text-gray-100">{manager.receiveOwner}</td>
 
                   <td className="py-4">
-                    <span 
+                    <span
                       className={`px-4 py-1.5 rounded-full text-xs font-medium ${
                         manager.status === "Approved"
                           ? "bg-[#00E691] text-white"
@@ -355,5 +360,5 @@ const router = useRouter();
         </div>
       </div>
     </div>
-);
+  );
 }

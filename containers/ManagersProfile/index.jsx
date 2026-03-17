@@ -153,8 +153,8 @@ export default function ManagersProfile() {
   return (
     <div className="min-h-screen font-gilroy p-6 text-white">
       {/* STATS */}
-      <div className="flex items-center gap-4 justify-center mb-8 ">
-        <div className="flex bg-gradient-to-r  font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl w-auto max-w-sm h-full">
+      <div className="w-full flex items-center gap-4 justify-center mb-8 ">
+        <div className="flex bg-gradient-to-r  font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 mt-2 rounded-3xl w-full max-w-sm h-full">
           {/* Card Container */}
           <div className="p-4">
             {/* Profile Avatar and Name */}
@@ -241,7 +241,7 @@ export default function ManagersProfile() {
             </button>
           </div>
         </div>
-        <div>
+        <div className="w-full">
           <div>
             <ManagersProjects />
           </div>

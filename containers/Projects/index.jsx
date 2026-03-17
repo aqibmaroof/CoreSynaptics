@@ -12,6 +12,7 @@ export default function KanbanBoard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [projects, setProjects] = useState([]);
   const router = useRouter();
+  const [message, setMessage] = useState({ type: "", text: "" });
 
   useEffect(() => {
     getProjectsList();
@@ -28,12 +29,27 @@ export default function KanbanBoard() {
 
   const deleteProject = async (id) => {
     try {
-      const res = await DeleteProjects(id);
+      await DeleteProjects(id);
       getProjectsList();
+      setMessage({
+        type: "success",
+        text: "Project Deleted Successfully!",
+      });
+      setTimeout(() => {
+        setMessage({
+          type: "",
+          text: "",
+        });
+      }, [5000]);
     } catch (error) {
-      console.log("error fetching projects : ", error);
+      setMessage({
+        type: "error",
+        text: `Error Deleting projects : ${error?.message}`,
+      });
+      console.log("error Deleting projects : ", error);
     }
   };
+
   const members = [
     {
       id: 1,
@@ -197,6 +213,7 @@ export default function KanbanBoard() {
                 Projects List
               </h2>
             </div>
+
             <div className="flex items-center justify-between gap-3">
               <div className="border border-[#FFFFFF]/30 rounded-full px-2 py-2">
                 <button className="font-semibold text-xs md:text-sm mx-2">
@@ -243,7 +260,9 @@ export default function KanbanBoard() {
           <div className="space-y-1 grid grid-cols-2 grid-rows-3 gap-3">
             {projects.length === 0 ? (
               <div className="col-span-2 flex items-center justify-center h-20">
-                <p className="w-full text-center flex items-center justify-center">NO PROJECTS FOUND</p>
+                <p className="w-full text-center flex items-center justify-center">
+                  NO PROJECTS FOUND
+                </p>
               </div>
             ) : (
               projects.map((project) => (
@@ -266,10 +285,15 @@ export default function KanbanBoard() {
                         {project.name}
                       </h3>
                       <p className="text-gray-400 text-xs">
-                        {project.organization?.name}
+                        {project.organization?.name} - {project?.projectType}
                       </p>
-                      <p className="text-gray-400 text-xs">
-                       Assignee :{project.assignedUsers?.map((item) => (<p>{item?.firstName} {item?.lastName}</p>))}
+                      <p className="flex items-center gap-1 flex-wrap text-gray-400 text-xs">
+                        Assignee :
+                        {project.assignedUsers?.map((item) => (
+                          <p>
+                            {item?.firstName} {item?.lastName}
+                          </p>
+                        ))}
                       </p>
                     </div>
                   </div>
@@ -296,7 +320,9 @@ export default function KanbanBoard() {
                         <button
                           className={`text-[16px] text-white gap-3 mt-2 `}
                           onClick={() =>
-                            router.push(`/ProjectDetails/${project?.id}`)
+                            router.push(
+                              `/ProjectDetails/Project/${project?.id}`,
+                            )
                           }
                         >
                           <FaPencil className="text-lg text-info" /> Edit
@@ -316,6 +342,17 @@ export default function KanbanBoard() {
               ))
             )}
           </div>
+          {message.text && (
+            <div
+              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${
+                message.type === "success"
+                  ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                  : "bg-red-900/30 text-red-400 border border-red-500/30"
+              }`}
+            >
+              {message.text}
+            </div>
+          )}
         </CardWrapper>
         {/* Right side card */}
         <CardWrapper className="font-gilroy flex-col">
@@ -323,7 +360,9 @@ export default function KanbanBoard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-white text-sm md:text-xl font-semibold">Members</h2>
+              <h2 className="text-white text-sm md:text-xl font-semibold">
+                Members
+              </h2>
             </div>
             <div className="flex items-center justify-between gap-2">
               <button className="bg-[#66ACFF] text-white p-2 rounded-xl hover:bg-[#fbbf24] transition-all">
@@ -423,11 +462,14 @@ export default function KanbanBoard() {
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
         {/* Header */}
         <div className="flex items-center justify-between gap-16 mb-8">
-          <h1 className="text-white mt-5 ml-4 text-lg md:text-xl font-bold">Task List</h1>
+          <h1 className="text-white mt-5 ml-4 text-lg md:text-xl font-bold">
+            Task List
+          </h1>
           <div className="flex items-center gap-5">
-            <button 
-            onClick={() => document.getElementById("my_modal_4").showModal()}
-            className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white px-4 py-2 border-none rounded-xl transition-all cursor-pointer">
+            <button
+              onClick={() => document.getElementById("my_modal_4").showModal()}
+              className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white px-4 py-2 border-none rounded-xl transition-all cursor-pointer"
+            >
               <div className="flex flex-row gap-2">
                 <svg
                   className="w-5 h-5"
@@ -491,9 +533,9 @@ export default function KanbanBoard() {
               />
             </div>
             <select className="bg-transparent text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
-            <option>Assignee</option>
-            <option>All Projects</option>
-          </select>
+              <option>Assignee</option>
+              <option>All Projects</option>
+            </select>
           </div>
 
           {/* Dropdown Filters */}
@@ -589,7 +631,9 @@ export default function KanbanBoard() {
                 <tr
                   key={task.id}
                   className="w-full hover:bg-white/5 transition-colors cursor-pointer"
-                  onClick={() => router.push(`/ProjectDetails/${task.id}`)}
+                  onClick={() =>
+                    router.push(`/ProjectDetails/Update/${task.id}`)
+                  }
                 >
                   <td className="py-4 px-4">
                     <input
@@ -687,10 +731,7 @@ export default function KanbanBoard() {
               <h3 className="font-bold text-lg">Create New Project</h3>
             </div>
             <form method="dialog" className="gap-2 flex">
-              <button
-                
-                className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]"
-              >
+              <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]">
                 <img src="/images/maximize.svg" alt="Maximize" />
               </button>
               <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#FB5874]">
@@ -698,8 +739,8 @@ export default function KanbanBoard() {
               </button>
             </form>
           </div>
-          <hr class="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-          
+          <hr className="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
+
           <div className="px-4">
             <div className="mt-4">
               <p className="text-sm">Project Name</p>
@@ -722,94 +763,94 @@ export default function KanbanBoard() {
                 <img src={"/images/calendar_1.svg"} />
               </div>
             </div>
-            
+
             <div className="flex flex-row gap-4 w-full items-center justify-between mt-4">
-                <div className="w-full">
-                    <h1 className="text-sm">Status</h1>
-                    <div className="dropdown dropdown-bottom w-full">
-                    <div
-                        tabIndex={0}
-                        role="button"
-                        className="p-3 w-full flex mt-1 items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+              <div className="w-full">
+                <h1 className="text-sm">Status</h1>
+                <div className="dropdown dropdown-bottom w-full">
+                  <div
+                    tabIndex={0}
+                    role="button"
+                    className="p-3 w-full flex mt-1 items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+                  >
+                    <span className="flex items-center justify-center gap-3 font-[510] bg-[#B6CFFF] text-[#4D81E7] rounded-full px-2">
+                      <img src="/images/dot.svg" alt="diot" />
+                      Inprogress
+                    </span>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                        <span className="flex items-center justify-center gap-3 font-[510] bg-[#B6CFFF] text-[#4D81E7] rounded-full px-2">
-                        <img src="/images/dot.svg" alt="diot" />
-                        Inprogress
-                        </span>
-                        <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                  <div
+                    tabIndex={0}
+                    className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg shadow-xl bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
+                  >
+                    <div className="p-2 space-y-1">
+                      <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-info checkbox-xs"
                         />
-                        </svg>
+                        <span className="text-white text-sm">In progress</span>
+                      </label>
                     </div>
-                    <div
-                        tabIndex={0}
-                        className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg shadow-xl bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
-                    >
-                        <div className="p-2 space-y-1">
-                        <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
-                            <input
-                            type="checkbox"
-                            className="checkbox checkbox-info checkbox-xs"
-                            />
-                            <span className="text-white text-sm">In progress</span>
-                        </label>
-                        </div>
-                    </div>
-                    </div>
+                  </div>
                 </div>
-                <div className="w-full">
-                    <h1 className="text-sm">Project Manager</h1>
-                    <div className="dropdown dropdown-bottom w-full">
-                    <div
-                        tabIndex={0}
-                        role="button"
-                        className="p-3 w-full flex mt-1 items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+              </div>
+              <div className="w-full">
+                <h1 className="text-sm">Project Manager</h1>
+                <div className="dropdown dropdown-bottom w-full">
+                  <div
+                    tabIndex={0}
+                    role="button"
+                    className="p-3 w-full flex mt-1 items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+                  >
+                    <span className="flex items-center justify-center gap-3 font-[510] bg-[#FFC6D0] text-[#FB5874] rounded-full px-2">
+                      <img src="/images/red_dot.svg" alt="diot" />
+                      Urgent
+                    </span>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                        <span className="flex items-center justify-center gap-3 font-[510] bg-[#FFC6D0] text-[#FB5874] rounded-full px-2">
-                        <img src="/images/red_dot.svg" alt="diot" />
-                        Urgent
-                        </span>
-                        <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                  <div
+                    tabIndex={0}
+                    className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
+                  >
+                    <div className="p-2 space-y-1">
+                      <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-info checkbox-xs"
                         />
-                        </svg>
+                        <span className="text-white text-sm">Urgent</span>
+                      </label>
                     </div>
-                    <div
-                        tabIndex={0}
-                        className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
-                    >
-                        <div className="p-2 space-y-1">
-                        <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
-                            <input
-                            type="checkbox"
-                            className="checkbox checkbox-info checkbox-xs"
-                            />
-                            <span className="text-white text-sm">Urgent</span>
-                        </label>
-                        </div>
-                    </div>
-                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
-            
+
             <div className="flex items-center gap-2 mt-4">
               <h2 className="text-sm">Team Members</h2>
               <div className="flex flex-row items-center gap-2 ml-3">
@@ -844,10 +885,9 @@ export default function KanbanBoard() {
                 + Invite
               </button>
             </div>
-            
           </div>
-          
-          <hr class="w-full mt-3 bg-neutral-quaternary border-[#656A80]"></hr>
+
+          <hr className="w-full mt-3 bg-neutral-quaternary border-[#656A80]"></hr>
           <div className="flex items-center justify-end gap-2 mr-4">
             <button className="btn mt-3 backdrop-blur-md text-white p-3 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all">
               <div className="flex flex-row gap-2">
