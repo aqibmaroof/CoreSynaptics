@@ -208,7 +208,7 @@ export default function KanbanBoard() {
 
             {/* Vertical lines */}
             <div className="flex w-full justify-between mt-4">
-              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div className="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 0
                 <div className="mt-4 w-full">
                   <div className="absolute items-center justify-between">
@@ -227,19 +227,19 @@ export default function KanbanBoard() {
                   </div>
                 </div>
               </div>
-              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div className="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 10k
               </div>
-              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div className="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 20k
               </div>
-              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div className="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 30k
               </div>
-              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div className="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 40k
               </div>
-              <div class="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
+              <div className="text-xs md:text-sm text-[#9BA9BB] inline-block h-48 min-h-[1em] w-0.5  bg-white/10 ">
                 50k
               </div>
               <div className="inline-block h-48 min-h-[1em] w-0.5  bg-white/10 "></div>

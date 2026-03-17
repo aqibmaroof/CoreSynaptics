@@ -72,7 +72,7 @@ export default function KanbanBoard() {
             value="80"
             max="100"
           ></progress>
-          <span class="text-xs md:text-sm">80%</span>
+          <span className="text-xs md:text-sm">80%</span>
         </div>
       </div>
       {/* Create Task */}

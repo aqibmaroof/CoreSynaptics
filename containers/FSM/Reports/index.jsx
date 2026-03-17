@@ -104,27 +104,27 @@ export default function KanbanBoard() {
           <h2 className="p-2 mt-6 text-xs font-gilroy font-regular">
             All Reports
           </h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">My Exported Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-4 text-xs">Request Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">Estimate Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">Work Order Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">Service Appointment Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">Service & Parts Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">Contact / Company Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">Asset Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">Other Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">Custom Reports</h2>
-          <hr class="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
+          <hr className="w-full my-1 bg-neutral-quaternary border-[#656A80]"></hr>
           <h2 className="p-2 mt-1 text-xs">Billing Reports</h2>
         </div>
       </div>
