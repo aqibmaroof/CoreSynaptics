@@ -12,10 +12,11 @@ export default function PricingPlans() {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
-  const roles = JSON.parse(localStorage.getItem("roles"));
+  const [roles, setRoles] = useState([]);
 
   useEffect(() => {
     GetAllUsers();
+    setRoles(JSON.parse(localStorage.getItem("roles")));
   }, []);
 
   const GetAllUsers = async () => {
