@@ -1,10 +1,9 @@
 import sendRequest from "../instance/sendRequest";
 
-// Zones
-export const CreateZone = async (siteId, payload) => {
+export const createSubTask = async (taskId, payload) => {
   try {
     const data = await sendRequest({
-      url: `/projects/${siteId}/zones`,
+      url: `/tasks/${taskId}/subtasks`,
       method: "POST",
       data: payload,
     });
@@ -14,10 +13,10 @@ export const CreateZone = async (siteId, payload) => {
   }
 };
 
-export const GetZones = async (siteId) => {
+export const getSubTasksByTaskId = async (taskId) => {
   try {
     const data = await sendRequest({
-      url: `/projects/${siteId}/zones`,
+      url: `/tasks/${taskId}/subtasks`,
       method: "GET",
     });
     return data;
@@ -26,10 +25,10 @@ export const GetZones = async (siteId) => {
   }
 };
 
-export const GetZoneById = async (id,siteId) => {
+export const getSubTaskByTaskId = async (taskId, id) => {
   try {
     const data = await sendRequest({
-      url: `/projects/${siteId}/zones/${id}`,
+      url: `/tasks/${taskId}/subtasks/${id}`,
       method: "GET",
     });
     return data;
@@ -38,10 +37,10 @@ export const GetZoneById = async (id,siteId) => {
   }
 };
 
-export const UpdateZone = async (siteId, id, payload) => {
+export const updateSubTaskByTaskId = async (taskId, id, payload) => {
   try {
     const data = await sendRequest({
-      url: `/projects/${siteId}/zones/${id}`,
+      url: `/tasks/${taskId}/subtasks/${id}`,
       method: "PATCH",
       data: payload,
     });
@@ -51,10 +50,10 @@ export const UpdateZone = async (siteId, id, payload) => {
   }
 };
 
-export const DeleteZone = async (siteId, id) => {
+export const deleteSubTaskByTaskId = async (taskId, id) => {
   try {
     const data = await sendRequest({
-      url: `/projects/${siteId}/zones/${id}`,
+      url: `/tasks/${taskId}/subtasks/${id}`,
       method: "DELETE",
     });
     return data;

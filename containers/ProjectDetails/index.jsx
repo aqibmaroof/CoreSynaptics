@@ -31,6 +31,18 @@ import {
   GetEquipments,
   UpdateEquipment,
 } from "@/services/Equipment";
+import {
+  CreateTask,
+  getAllTasks,
+  updateTask,
+  DeleteTask,
+} from "@/services/Tasks";
+import {
+  createSubTask,
+  getSubTasksByTaskId,
+  updateSubTaskByTaskId,
+  deleteSubTaskByTaskId,
+} from "@/services/SubTasks";
 
 const CapitalizeText = (text) => {
   return text
@@ -166,6 +178,28 @@ export default function KanbanBoard() {
   const [zones, setZones] = useState([]);
   const [equipments, setEquipments] = useState([]);
 
+  // Task and Sub-Task
+  const [tasksList, setTasksList] = useState([]);
+  const [subtasksList, setSubtasksList] = useState([]);
+  const [selectedTask, setSelectedTask] = useState(null); // clicked task for subtask creation
+  const [taskForm, setTaskForm] = useState({ name: "", description: "" });
+  const [editingTask, setEditingTask] = useState(null); // task being edited
+  const [editingSubtask, setEditingSubtask] = useState(null); // subtask being edited
+  const [editTaskForm, setEditTaskForm] = useState({
+    name: "",
+    description: "",
+    status: "PENDING",
+  });
+  const [editSubtaskForm, setEditSubtaskForm] = useState({
+    name: "",
+    description: "",
+    status: "PENDING",
+  });
+  const [subtaskInputs, setSubtaskInputs] = useState([
+    { name: "", description: "" },
+  ]);
+  const [taskLoading, setTaskLoading] = useState(false);
+
   const [form, setForm] = useState({
     // Project fields
     name: "",
@@ -198,18 +232,220 @@ export default function KanbanBoard() {
   const isProject = type === "Site";
   const isZone = type === "Projects";
   const isEquipment = type === "Zone";
-  console.log(params);
+
   useEffect(() => {
-    if (id) getProjectDetails();
+    if (id) {
+      getProjectDetails();
+      fetchTasks();
+    }
     if (isSite) {
-      getSites();
       getUsersList();
+      getSites();
     }
     if (isProject) getProjectList();
     if (isZone) getZones();
     if (isEquipment) getEquipments();
-    getUsersList();
   }, [id]);
+
+  // Separate effect: fetch subtasks once tasksList is populated
+  useEffect(() => {
+    if (tasksList.length > 0) {
+      fetchSubtasks();
+    }
+  }, [tasksList.length]);
+
+  const fetchTasks = async () => {
+    try {
+      // Build query param based on current type
+      const params = {};
+      if (type === "Project") params.projectId = id;
+      else if (type === "Projects") params.subProjectId = id;
+      else if (type === "Site") params.siteId = id;
+      else if (type === "Zone") params.zoneId = id;
+      else if (type === "Equipment") params.equipmentId = id;
+
+      const res = await getAllTasks(params);
+      setTasksList(res || []);
+    } catch (error) {
+      console.log("Error fetching tasks:", error);
+    }
+  };
+
+  const fetchSubtasks = async (taskId = null) => {
+    try {
+      if (taskId) {
+        // Fetch subtasks for a specific task
+        const res = await getSubTasksByTaskId(taskId);
+        setSubtasksList((prev) => {
+          // Merge: remove old subtasks for this taskId, add new ones
+          const others = prev.filter((s) => s.taskId !== taskId);
+          return [...others, ...(res || [])];
+        });
+      } else {
+        // Fetch subtasks for ALL tasks in tasksList
+        const allSubs = [];
+        for (const task of tasksList) {
+          try {
+            const res = await getSubTasksByTaskId(task.id);
+            allSubs.push(...(res || []));
+          } catch (_) {}
+        }
+        setSubtasksList(allSubs);
+      }
+    } catch (error) {
+      console.log("Error fetching subtasks:", error);
+    }
+  };
+
+  const createTask = async () => {
+    if (!taskForm.name) {
+      setMessage({ type: "error", text: "Task name is required" });
+      return;
+    }
+    setTaskLoading(true);
+    try {
+      // Build payload with only the relevant ID for the current type
+      const payload = {
+        name: taskForm.name,
+        description: taskForm.description,
+        ...(type === "Project" && { projectId: id }),
+        ...(type === "Projects" && { subProjectId: id }),
+        ...(type === "Site" && { siteId: id }),
+        ...(type === "Zone" && { zoneId: id }),
+        ...(type === "Equipment" && { equipmentId: id }),
+      };
+
+      await CreateTask(payload);
+      setMessage({ type: "success", text: "Task created successfully! 🚀" });
+      setTaskForm({ name: "", description: "" });
+      setSubtaskInputs([{ name: "", description: "" }]);
+      setSelectedTask(null);
+      await fetchTasks();
+      document.getElementById("my_modal_4").close();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: `Error creating task: ${error?.message}`,
+      });
+    } finally {
+      setTaskLoading(false);
+    }
+  };
+
+  const createSubtask = async () => {
+    if (!selectedTask) {
+      setMessage({
+        type: "error",
+        text: "Please select a task first to add subtasks",
+      });
+      return;
+    }
+    const validSubtasks = subtaskInputs.filter((s) => s.name);
+    if (!validSubtasks.length) {
+      setMessage({
+        type: "error",
+        text: "At least one subtask name is required",
+      });
+      return;
+    }
+    setTaskLoading(true);
+    try {
+      for (const subtask of validSubtasks) {
+        await createSubTask(selectedTask.id, {
+          name: subtask.name,
+          description: subtask.description,
+        });
+      }
+      setMessage({
+        type: "success",
+        text: "Subtasks created successfully! 🚀",
+      });
+      setSubtaskInputs([{ name: "", description: "" }]);
+      await fetchSubtasks(selectedTask.id);
+      document.getElementById("my_modal_4").close();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: `Error creating subtask: ${error?.message}`,
+      });
+    } finally {
+      setTaskLoading(false);
+    }
+  };
+
+  const deleteTask = async (e, taskId) => {
+    e.stopPropagation();
+    e.preventDefault();
+    try {
+      await DeleteTask(taskId);
+      setMessage({ type: "success", text: "Task deleted successfully!" });
+      // Also clear subtasks for this task from local state
+      setSubtasksList((prev) => prev.filter((s) => s.taskId !== taskId));
+      await fetchTasks();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: `Error deleting task: ${error?.message}`,
+      });
+    }
+  };
+
+  const deleteSubtask = async (e, taskId, subtaskId) => {
+    e.stopPropagation();
+    e.preventDefault();
+    try {
+      await deleteSubTaskByTaskId(taskId, subtaskId);
+      setMessage({ type: "success", text: "Subtask deleted successfully!" });
+      setSubtasksList((prev) => prev.filter((s) => s.id !== subtaskId));
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: `Error deleting subtask: ${error?.message}`,
+      });
+    }
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editingTask) return;
+    setTaskLoading(true);
+    try {
+      await updateTask(editingTask.id, editTaskForm);
+      setMessage({ type: "success", text: "Task updated successfully! 🚀" });
+      setEditingTask(null);
+      await fetchTasks();
+      document.getElementById("edit_task_modal").close();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: `Error updating task: ${error?.message}`,
+      });
+    } finally {
+      setTaskLoading(false);
+    }
+  };
+
+  const handleUpdateSubtask = async () => {
+    if (!editingSubtask) return;
+    setTaskLoading(true);
+    try {
+      await updateSubTaskByTaskId(
+        editingSubtask.taskId,
+        editingSubtask.id,
+        editSubtaskForm,
+      );
+      setMessage({ type: "success", text: "Subtask updated successfully! 🚀" });
+      setEditingSubtask(null);
+      await fetchSubtasks(editingSubtask.taskId);
+      document.getElementById("edit_subtask_modal").close();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: `Error updating subtask: ${error?.message}`,
+      });
+    } finally {
+      setTaskLoading(false);
+    }
+  };
 
   const getUsersList = async () => {
     try {
@@ -526,7 +762,6 @@ export default function KanbanBoard() {
   const getProjectList = async () => {
     try {
       const res = await getProjects(25, 1, id, params?.subId);
-      console.log(res);
       setProjects(res?.projects || []);
     } catch (error) {
       console.log(error);
@@ -751,11 +986,12 @@ export default function KanbanBoard() {
                 className="select border-none shadow-none bg-[#12153d] w-full text-white focus:outline-none h-10 text-sm"
               >
                 <option value="">Select Assignee</option>
-                {users?.map((item, index) => (
-                  <option value={item.id} key={index}>
-                    {item.firstName} {item?.lastName}
-                  </option>
-                ))}
+                {users?.length > 0 &&
+                  users?.map((item, index) => (
+                    <option value={item.id} key={index}>
+                      {item.firstName} {item?.lastName}
+                    </option>
+                  ))}
               </select>
             </div>
           </>
@@ -992,11 +1228,10 @@ export default function KanbanBoard() {
         {activeView === "task" ? (
           <>
             <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
+              {/* <div className="flex items-center gap-4">
                 <h1 className="text-white ml-4 text-2xl font-bold">
                   Task Views
                 </h1>
-                {/* List view button */}
                 <button
                   onClick={() => setView("list")}
                   className="font-[500] w-[max-content] text-white border-3 cursor-pointer border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
@@ -1045,10 +1280,9 @@ export default function KanbanBoard() {
                   </span>
                 </button>
 
-                {/* calendar view button */}
-              </div>
+              </div> */}
               {/* Add new button */}
-              <div className="flex items-center gap-5">
+              <div className="flex items-center justify-end ml-auto gap-5">
                 <button
                   onClick={() =>
                     document.getElementById("my_modal_4").showModal()
@@ -1180,1107 +1414,174 @@ export default function KanbanBoard() {
               <>
                 {/* To do */}
                 <div className="flex w-full bg-gradient-to-b from-[#00377e] from-5% via-[#11163b]/10 via-20% to-[#11163b]/10 to-10% border-3 border-white/[0.03] border-t-white/[0.09] font-gilroy py-6 px-3 mt-8 rounded-3xl card">
-                  <div className="flex items-center justify-between ">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex flex-row items-center gap-2">
                       <FaCircle className="text-[#4D81E7]" />
-                      <span className="text-xl font-semibold">To Do</span>
-                      <button className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#4D81E7] text-white">
-                        4
-                      </button>
+                      <span className="text-xl font-semibold">Tasks</span>
+                      <span className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#4D81E7] text-white flex items-center justify-center text-xs">
+                        {tasksList.length}
+                      </span>
                     </div>
                   </div>
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
+
+                  {tasksList.length === 0 ? (
+                    <div className="text-center text-gray-400 py-8">
+                      No tasks yet. Click "Add new Task" to create one.
+                    </div>
+                  ) : (
+                    tasksList.map((task) => (
+                      <div
+                        key={task.id}
+                        className="mt-3 rounded-xl border border-white/10 hover:border-white/20 transition-all"
+                      >
+                        {/* Task Row */}
+                        <div
+                          className="flex items-center justify-between w-full p-3 cursor-pointer hover:bg-white/5 rounded-t-xl"
+                          onClick={() => {
+                            setSelectedTask(
+                              selectedTask?.id === task.id ? null : task,
+                            );
+                            setSubtaskInputs([{ name: "", description: "" }]);
+                          }}
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <FaCircle className="text-[#4D81E7] text-[8px] shrink-0" />
+                            <span className="text-white text-sm font-medium">
+                              {task.name}
+                            </span>
+                            {task.description && (
+                              <span className="text-gray-500 text-xs hidden md:block">
+                                {task.description}
+                              </span>
+                            )}
                           </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
+                          <div className="flex items-center gap-2 ml-4">
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full shrink-0 ${
+                                task.status === "PENDING"
+                                  ? "bg-yellow-500/20 text-yellow-400"
+                                  : task.status === "IN_PROGRESS"
+                                    ? "bg-blue-500/20 text-blue-400"
+                                    : "bg-green-500/20 text-green-400"
+                              }`}
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
+                              {task.status}
+                            </span>
+                            <span className="text-gray-500 text-xs shrink-0">
+                              {subtasksList.filter((s) => s.taskId === task.id).length} subtasks
+                            </span>
+                            {/* Edit Task */}
+                            <button
+                              className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingTask(task);
+                                setEditTaskForm({
+                                  name: task.name,
+                                  description: task.description || "",
+                                  status: task.status,
+                                });
+                                document
+                                  .getElementById("edit_task_modal")
+                                  .showModal();
+                              }}
+                            >
+                              <FaPencil className="text-xs" />
+                            </button>
+                            {/* Delete Task */}
+                            <button
+                              className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
+                              onClick={(e) => deleteTask(e, task.id)}
+                            >
+                              <FaTrash className="text-xs" />
+                            </button>
+                            {/* Add Subtask */}
+                            <button
+                              className="text-xs border border-white/10 hover:border-blue-400 text-gray-400 hover:text-blue-400 px-2 py-1 rounded-lg transition-colors shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTask(task);
+                                setSubtaskInputs([
+                                  { name: "", description: "" },
+                                ]);
+                                document
+                                  .getElementById("my_modal_4")
+                                  .showModal();
+                              }}
+                            >
+                              + Subtask
+                            </button>
                           </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
                         </div>
-                      </td>
-                    </div>
-                  ))}
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
+
+                        {/* Subtasks for this task */}
+                        {subtasksList.filter((s) => s.taskId === task.id).length > 0 && (
+                          <div className="border-t border-white/5 px-4 py-2">
+                            {subtasksList.filter((s) => s.taskId === task.id).map((sub) => (
+                              <div
+                                key={sub.id}
+                                className="flex items-center justify-between py-1.5 pl-4 border-l border-white/10 ml-2"
+                              >
+                                <div className="flex items-center gap-2 flex-1">
+                                  <span className="text-gray-400 text-xs">
+                                    •
+                                  </span>
+                                  <span className="text-gray-300 text-xs">
+                                    {sub.name}
+                                  </span>
+                                  {sub.description && (
+                                    <span className="text-gray-600 text-xs hidden md:block">
+                                      {sub.description}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                      sub.status === "PENDING"
+                                        ? "bg-yellow-500/20 text-yellow-400"
+                                        : sub.status === "IN_PROGRESS"
+                                          ? "bg-blue-500/20 text-blue-400"
+                                          : "bg-green-500/20 text-green-400"
+                                    }`}
+                                  >
+                                    {sub.status}
+                                  </span>
+                                  {/* Edit Subtask */}
+                                  <button
+                                    className="p-1 text-gray-500 hover:text-blue-400 transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingSubtask(sub);
+                                      setEditSubtaskForm({
+                                        name: sub.name,
+                                        description: sub.description || "",
+                                        status: sub.status,
+                                      });
+                                      document
+                                        .getElementById("edit_subtask_modal")
+                                        .showModal();
+                                    }}
+                                  >
+                                    <FaPencil className="text-[10px]" />
+                                  </button>
+                                  {/* Delete Subtask */}
+                                  <button
+                                    className="p-1 text-gray-500 hover:text-red-400 transition-colors"
+                                    onClick={(e) =>
+                                      deleteSubtask(e, sub.taskId, sub.id)
+                                    }
+                                  >
+                                    <FaTrash className="text-[10px]" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                </div>
-                {/* In Progress */}
-                <div className="flex w-full bg-gradient-to-b from-[#00377e] from-5% via-[#11163b]/10 via-20% to-[#11163b]/10 to-10% border-3 border-white/[0.03] border-t-white/[0.09] font-gilroy py-6 px-3 mt-8 rounded-3xl card">
-                  <div className="flex items-center justify-between ">
-                    <div className="flex flex-row items-center gap-2">
-                      <FaCircle className="text-[#EFBA47]" />
-                      <span className="text-xl font-semibold">In Progress</span>
-                      <button className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#EFBA47] text-white">
-                        4
-                      </button>
-                    </div>
-                  </div>
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                </div>
-                {/* In Reviews */}
-                <div className="flex w-full bg-gradient-to-b from-[#00377e] from-5% via-[#11163b]/10 via-20% to-[#11163b]/10 to-10% border-3 border-white/[0.03] border-t-white/[0.09] font-gilroy py-6 px-3 mt-8 rounded-3xl card">
-                  <div className="flex items-center justify-between ">
-                    <div className="flex flex-row items-center gap-2">
-                      <FaCircle className="text-[#E7844D]" />
-                      <span className="text-xl font-semibold">In Reviews</span>
-                      <button className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#E7844D] text-white">
-                        4
-                      </button>
-                    </div>
-                  </div>
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                </div>
-                {/* Completed */}
-                <div className="flex w-full bg-gradient-to-b from-[#00377e] from-5% via-[#11163b]/10 via-20% to-[#11163b]/10 to-10% border-3 border-white/[0.03] border-t-white/[0.09] font-gilroy py-6 px-3 mt-8 rounded-3xl card">
-                  <div className="flex items-center justify-between ">
-                    <div className="flex flex-row items-center gap-2">
-                      <FaCircle className="text-[#00E691]" />
-                      <span className="text-xl font-semibold">Completed</span>
-                      <button className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#00E691] text-white">
-                        4
-                      </button>
-                    </div>
-                  </div>
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
-                  {tasks.map((task, index) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between w-full hover:bg-white/5 transition-colors cursor-pointer"
-                    >
-                      <td className="py-4">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-xs border-gray-600 [--chkbg:#3b82f6]"
-                        />
-                      </td>
-                      <td className="py-4 text-[12px]">{task.taskName}</td>
-                      <td className="py-4 px-1">
-                        <div className="flex items-center justify-center gap-2 ">
-                          <p className="w-12 h-12 rounded-full flex items-center justify-center bg-[#656A80] text-[16px] font-bold text-white">
-                            {task.project.slice(0, 1)}
-                            {task.project.split(" ")[1].slice(0, 1)}
-                          </p>
-                          <span className=" text-[14px]"> {task.project}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-1 text-[14px] ">
-                        {task.estimation}
-                      </td>
-                      <td className="py-4 px-1 text-[#FB5874] text-[14px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FaCircle className="text-[#FB5874] text-[10px]" />
-                          {task.priority}
-                        </div>
-                      </td>
-                      <td className="py-4 px-1  text-[14px]">
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-success w-25 "
-                            value="70"
-                            max="100"
-                          ></progress>
-                          {task.progress}
-                        </div>
-                      </td>
-                      <td className="flex items-center py-4 px-1 text-gray-400">
-                        {task.assignee.map((item, index) => (
-                          <div
-                            key={index}
-                            className={`avatar 
-                          ${index !== 0 ? "-ml-2" : ""} 
-                          transition-transform duration-300 z-${task.assignee.length - index}`}
-                          >
-                            <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
-                              <img
-                                src={item.avatar}
-                                alt={`User ${index}`}
-                                className="w-[25px] h-[25px] rounded-full object-cover"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-4 px-1 ">
-                        <div className="flex items-center gap-2 text-[14px]">
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <FiMessageCircle className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                            <FiStar className="text-white" />
-                          </button>
-                          <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                            <FaPencil className="text-white text-[12px]" />
-                          </button>
-                          <button className="text-gray-400 hover:text-white transition-colors p-2">
-                            <svg
-                              className="w-3 h-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </>
             ) : view === "kanban" ? (
@@ -4092,272 +3393,325 @@ export default function KanbanBoard() {
           </>
         )}
       </div>
-      <dialog id="my_modal_4" className="modal items-start justify-end p-4">
-        <div className="modal-box pt-0 px-0 w-[1000px] h-[850px] border border-[#656A80] backdrop-blur-2xl bg-transparent scrollbar-hide">
-          <div className="modal-action flex items-center justify-between pt-0 px-4">
-            <div>
-              <h3 className="font-bold text-lg">New Task</h3>
-            </div>
+      <dialog id="my_modal_4" className="modal items-start justify-center p-10">
+        <div className="modal-box pt-0 px-0 w-[1000px] max-h-[90vh] border border-[#656A80] backdrop-blur-2xl bg-[#0a1128] scrollbar-hide overflow-y-auto">
+          <div className="modal-action flex items-center justify-between pt-4 px-4">
+            <h3 className="font-bold text-lg text-white">
+              {selectedTask ? `Task: ${selectedTask.name}` : "New Task"}
+            </h3>
             <form method="dialog" className="gap-2 flex">
-              <button
-                onClick={() => router.push(`/Tasks/CreateTask/${id}`)}
+              {/* <button
+                type="button"
+                onClick={() => {
+                  setSelectedTask(null);
+                  setTaskForm({ name: "", description: "" });
+                  setSubtaskInputs([{ name: "", description: "" }]);
+                }}
                 className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]"
               >
-                <img src="/images/maximize.svg" alt="Maximize" />
-              </button>
-              <button className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#FB5874]">
+                <img src="/images/maximize.svg" alt="Reset" />
+              </button> */}
+              <button
+                className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#FB5874]"
+                onClick={() => {
+                  setSelectedTask(null);
+                  setTaskForm({ name: "", description: "" });
+                }}
+              >
                 <img src="/images/close.svg" alt="Close" />
               </button>
             </form>
           </div>
-          <hr className="w-full my-3 bg-neutral-quaternary border-[#656A80]"></hr>
-          <div className="px-4">
-            <div className="mt-4">
-              <p>Task Name</p>
-              <input
-                type="text"
-                placeholder="Enter Task Name"
-                className="w-full bg-transparent text-white placeholder-gray-500 mt-1 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-              />
+          <hr className="w-full my-3 border-[#656A80]" />
+
+          {/* ── CREATE NEW TASK FORM (only when no task selected) ── */}
+          {!selectedTask && (
+            <div className="px-4 mt-4">
+              <h4 className="text-white font-semibold mb-3">Create New Task</h4>
+              <div className="mt-2">
+                <p className="text-gray-400 text-sm mb-1">Task Name *</p>
+                <input
+                  type="text"
+                  placeholder="Enter Task Name"
+                  value={taskForm.name}
+                  onChange={(e) =>
+                    setTaskForm({ ...taskForm, name: e.target.value })
+                  }
+                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                />
+              </div>
+              <div className="mt-4">
+                <p className="text-gray-400 text-sm mb-1">Task Description</p>
+                <textarea
+                  rows="2"
+                  placeholder="Enter Task Description"
+                  value={taskForm.description}
+                  onChange={(e) =>
+                    setTaskForm({ ...taskForm, description: e.target.value })
+                  }
+                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                />
+              </div>
             </div>
-            <div className="mt-4">
-              <p>Date</p>
-              <div
-                tabIndex={0}
-                role="button"
-                className="p-3 w-full flex items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+          )}
+
+          {/* ── CREATE SUBTASKS FORM (only when task selected) ── */}
+          {selectedTask && (
+            <div className="px-4 mt-4">
+              <h4 className="text-white font-semibold mb-3">
+                Add Subtasks to:{" "}
+                <span className="text-blue-400">{selectedTask.name}</span>
+              </h4>
+              {subtaskInputs.map((subtask, index) => (
+                <div
+                  key={index}
+                  className="mb-3 p-3 rounded-xl border border-white/10"
+                >
+                  <p className="text-gray-400 text-sm mb-1">
+                    Subtask {index + 1} Name *
+                  </p>
+                  <input
+                    type="text"
+                    placeholder="Enter Subtask Name"
+                    value={subtask.name}
+                    onChange={(e) => {
+                      const updated = [...subtaskInputs];
+                      updated[index].name = e.target.value;
+                      setSubtaskInputs(updated);
+                    }}
+                    className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors mb-2"
+                  />
+                  <p className="text-gray-400 text-sm mb-1">Description</p>
+                  <input
+                    type="text"
+                    placeholder="Enter Subtask Description"
+                    value={subtask.description}
+                    onChange={(e) => {
+                      const updated = [...subtaskInputs];
+                      updated[index].description = e.target.value;
+                      setSubtaskInputs(updated);
+                    }}
+                    className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                  />
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  setSubtaskInputs([
+                    ...subtaskInputs,
+                    { name: "", description: "" },
+                  ])
+                }
+                className="bg-gradient-to-r from-[#080C26] to-[#00E691] text-white p-2 px-4 mt-2 border-none rounded-xl transition-all"
               >
-                <span className="font-normal">
-                  Feb 01, 2026 {"->"} Feb 11, 2026
-                </span>
-                <img src={"/images/calendar_1.svg"} />
-              </div>
-            </div>
-            <div className="flex flex-row gap-4 w-full items-center justify-between mt-4">
-              <div className="w-full">
-                <h1>Tasks Status:</h1>
-                <div className="dropdown dropdown-bottom w-full">
-                  <div
-                    tabIndex={0}
-                    role="button"
-                    className="p-3 w-full flex items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
+                <div className="flex flex-row gap-2 items-center">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <span className="flex items-center justify-center gap-3 font-[510] bg-[#B6CFFF] text-[#4D81E7] rounded-full px-2">
-                      <img src="/images/dot.svg" alt="diot" />
-                      Inprogress
-                    </span>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                  <div
-                    tabIndex={0}
-                    className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg shadow-xl bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
-                  >
-                    <div className="p-2 space-y-1">
-                      <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-info checkbox-xs"
-                        />
-                        <span className="text-white text-sm">In progress</span>
-                      </label>
-                    </div>
-                  </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  <span>Add Another Subtask</span>
                 </div>
-              </div>
-              <div className="w-full">
-                <h1>Priority:</h1>
-                <div className="dropdown dropdown-bottom w-full">
-                  <div
-                    tabIndex={0}
-                    role="button"
-                    className="p-3 w-full flex items-center justify-between border-3 bg-transparent shadow-none rounded-2xl border-white/[0.04] border-t-white/[0.1] text-white"
-                  >
-                    <span className="flex items-center justify-center gap-3 font-[510] bg-[#FFC6D0] text-[#FB5874] rounded-full px-2">
-                      <img src="/images/red_dot.svg" alt="diot" />
-                      Urgent
-                    </span>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                  <div
-                    tabIndex={0}
-                    className="dropdown-content z-[9999] mt-2 w-full max-h-60 overflow-y-auto rounded-lg bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]"
-                  >
-                    <div className="p-2 space-y-1">
-                      <label className="flex items-center gap-3 cursor-pointer  p-2 rounded">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-info checkbox-xs"
-                        />
-                        <span className="text-white text-sm">Urgent</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4">
-              <p>Task Description</p>
-              <textarea
-                id="comment"
-                name="Description"
-                rows="2"
-                placeholder="Enter Tasks Description"
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-              />
-            </div>
-            <div className="flex items-center gap-2 mt-4">
-              <h2>Priority:</h2>
-              <div className="flex flex-row items-center gap-2 ml-6">
-                {members.slice(0, 1).map((member) => (
-                  <div
-                    key={member.id}
-                    className={`flex items-center h-8 justify-between w-34 font-geist border border-[#656A80]  rounded-2xl ${
-                      member.isActive
-                        ? "bg-emerald-600/30 border border-emerald-500/50"
-                        : "bg-[#575975]"
-                    }`}
-                  >
-                    {/* Left Side - Avatar and Info */}
-                    <div className="flex items-center gap-3 ">
-                      <div
-                        className={`avatar ${member.isActive ? "online" : ""}`}
-                      >
-                        <div className="w-7 h-7 rounded-full">
-                          <img src={member.avatar} alt={member.name} />
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-white font-semibold text-sm">
-                          {member.name}
-                        </h3>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button className="btn btn-medium bg-[#454A62] rounded-2xl h-8 font-semibold text-white border border-[#656A80] hover:bg-slate-700">
-                + Invite
               </button>
             </div>
-            {/* Attach files */}
-            <div className="mt-4">
-              <p>Attach Files</p>
-              <div className="flex items-center justify-center w-full mt-1">
-                <label
-                  htmlFor="dropzone-file"
-                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors cursor-pointer hover:bg-neutral-tertiary-medium"
-                >
-                  <div className="flex flex-col items-center justify-center text-body pt-5 pb-6">
-                    <svg
-                      width="30"
-                      height="30"
-                      viewBox="0 0 30 30"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M11.1041 20.9724V13.5703L8.63672 16.0377"
-                        stroke="#0075FF"
-                        strokeWidth="1.85053"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M11.1016 13.5703L13.5689 16.0377"
-                        stroke="#0075FF"
-                        strokeWidth="1.85053"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M27.1425 12.3373V18.5057C27.1425 24.6741 24.6751 27.1415 18.5067 27.1415H11.1046C4.93612 27.1415 2.46875 24.6741 2.46875 18.5057V11.1036C2.46875 4.93515 4.93612 2.46777 11.1046 2.46777H17.273"
-                        stroke="#0075FF"
-                        strokeWidth="1.85053"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M27.1429 12.3373H22.2082C18.5071 12.3373 17.2734 11.1036 17.2734 7.40252V2.46777L27.1429 12.3373Z"
-                        stroke="#0075FF"
-                        strokeWidth="1.85053"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    <p className="mb-2 text-sm">
-                      Drag here or upload from directory
-                    </p>
-                  </div>
-                  <input id="dropzone-file" type="file" className="hidden" />
-                </label>
-              </div>
+          )}
+
+          <hr className="w-full mt-4 border-[#656A80]" />
+          <div className="flex items-center justify-between gap-2 mx-4 mt-4 mb-2">
+            {selectedTask && (
+              <button
+                onClick={() => {
+                  setSelectedTask(null);
+                  setSubtaskInputs([{ name: "", description: "" }]);
+                }}
+                className="text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                ← Back to Create Task
+              </button>
+            )}
+            <div className="flex gap-2 ml-auto">
+              <button
+                onClick={() => {
+                  document.getElementById("my_modal_4").close();
+                  setSelectedTask(null);
+                  setTaskForm({ name: "", description: "" });
+                }}
+                className="btn backdrop-blur-md text-white p-3 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={selectedTask ? createSubtask : createTask}
+                disabled={taskLoading}
+                className="btn bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white px-6 border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all disabled:opacity-50"
+              >
+                {taskLoading
+                  ? "Saving..."
+                  : selectedTask
+                    ? "Save Subtasks"
+                    : "Create Task"}
+              </button>
             </div>
           </div>
-          <div className="mt-4 px-4">
-            <h3 className="font-bold text-lg mt-2">Sub Tasks</h3>
-            <div className="mt-3">
-              <p>Sub Task 1</p>
+        </div>
+      </dialog>
+
+      {/* ── EDIT TASK MODAL ── */}
+      <dialog
+        id="edit_task_modal"
+        className="modal items-start justify-end p-4"
+      >
+        <div className="modal-box pt-0 px-0 w-[600px] border border-[#656A80] backdrop-blur-2xl bg-[#0a1128]">
+          <div className="modal-action flex items-center justify-between pt-4 px-4">
+            <h3 className="font-bold text-lg text-white">Edit Task</h3>
+            <form method="dialog">
+              <button className="size-9 rounded-xl flex items-center justify-center border border-white bg-[#FB5874]">
+                <img src="/images/close.svg" alt="Close" />
+              </button>
+            </form>
+          </div>
+          <hr className="w-full my-3 border-[#656A80]" />
+          <div className="px-4 pb-4">
+            <div className="mt-2">
+              <p className="text-gray-400 text-sm mb-1">Task Name *</p>
               <input
                 type="text"
-                placeholder="Enter Task Name"
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 mt-1 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                value={editTaskForm.name}
+                onChange={(e) =>
+                  setEditTaskForm({ ...editTaskForm, name: e.target.value })
+                }
+                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
               />
             </div>
-            <button className="bg-gradient-to-r from-[#080C26] to-[#00E691] text-white p-2 px-4 mt-4 border-none rounded-xl transition-all">
-              <div className="flex flex-row gap-2">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4 "
-                  />
-                </svg>
-                <span>Add new Sub Task</span>
-              </div>
-            </button>
+            <div className="mt-4">
+              <p className="text-gray-400 text-sm mb-1">Description</p>
+              <textarea
+                rows="2"
+                value={editTaskForm.description}
+                onChange={(e) =>
+                  setEditTaskForm({
+                    ...editTaskForm,
+                    description: e.target.value,
+                  })
+                }
+                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              />
+            </div>
+            <div className="mt-4">
+              <p className="text-gray-400 text-sm mb-1">Status</p>
+              <select
+                value={editTaskForm.status}
+                onChange={(e) =>
+                  setEditTaskForm({ ...editTaskForm, status: e.target.value })
+                }
+                className="w-full bg-[#12153d] text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none"
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="COMPLETED">COMPLETED</option>
+              </select>
+            </div>
+            <div className="flex gap-2 justify-end mt-6">
+              <form method="dialog">
+                <button className="btn bg-transparent text-white border border-white/10 rounded-xl px-4">
+                  Cancel
+                </button>
+              </form>
+              <button
+                onClick={handleUpdateTask}
+                disabled={taskLoading}
+                className="btn bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white px-6 rounded-xl disabled:opacity-50"
+              >
+                {taskLoading ? "Saving..." : "Update Task"}
+              </button>
+            </div>
           </div>
-          <hr className="w-full mt-3 bg-neutral-quaternary border-[#656A80]"></hr>
-          <div className="flex items-center justify-end gap-2 mr-4">
-            <button className="btn mt-5 backdrop-blur-md text-white p-3 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all">
-              <div className="flex flex-row gap-2">
-                <span className="flex flex-row gap-2 items-center">Cancel</span>
-              </div>
-            </button>
-            <button className="btn mt-5 bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white p-4 border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all">
-              <div className="flex flex-row gap-2">
-                <span className="flex flex-row gap-2 items-center">Save</span>
-              </div>
-            </button>
+        </div>
+      </dialog>
+
+      {/* ── EDIT SUBTASK MODAL ── */}
+      <dialog
+        id="edit_subtask_modal"
+        className="modal items-start justify-end p-4"
+      >
+        <div className="modal-box pt-0 px-0 w-[600px] border border-[#656A80] backdrop-blur-2xl bg-[#0a1128]">
+          <div className="modal-action flex items-center justify-between pt-4 px-4">
+            <h3 className="font-bold text-lg text-white">Edit Subtask</h3>
+            <form method="dialog">
+              <button className="size-9 rounded-xl flex items-center justify-center border border-white bg-[#FB5874]">
+                <img src="/images/close.svg" alt="Close" />
+              </button>
+            </form>
+          </div>
+          <hr className="w-full my-3 border-[#656A80]" />
+          <div className="px-4 pb-4">
+            <div className="mt-2">
+              <p className="text-gray-400 text-sm mb-1">Subtask Name *</p>
+              <input
+                type="text"
+                value={editSubtaskForm.name}
+                onChange={(e) =>
+                  setEditSubtaskForm({
+                    ...editSubtaskForm,
+                    name: e.target.value,
+                  })
+                }
+                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              />
+            </div>
+            <div className="mt-4">
+              <p className="text-gray-400 text-sm mb-1">Description</p>
+              <textarea
+                rows="2"
+                value={editSubtaskForm.description}
+                onChange={(e) =>
+                  setEditSubtaskForm({
+                    ...editSubtaskForm,
+                    description: e.target.value,
+                  })
+                }
+                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              />
+            </div>
+            <div className="mt-4">
+              <p className="text-gray-400 text-sm mb-1">Status</p>
+              <select
+                value={editSubtaskForm.status}
+                onChange={(e) =>
+                  setEditSubtaskForm({
+                    ...editSubtaskForm,
+                    status: e.target.value,
+                  })
+                }
+                className="w-full bg-[#12153d] text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none"
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="COMPLETED">COMPLETED</option>
+              </select>
+            </div>
+            <div className="flex gap-2 justify-end mt-6">
+              <form method="dialog">
+                <button className="btn bg-transparent text-white border border-white/10 rounded-xl px-4">
+                  Cancel
+                </button>
+              </form>
+              <button
+                onClick={handleUpdateSubtask}
+                disabled={taskLoading}
+                className="btn bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white px-6 rounded-xl disabled:opacity-50"
+              >
+                {taskLoading ? "Saving..." : "Update Subtask"}
+              </button>
+            </div>
           </div>
         </div>
       </dialog>

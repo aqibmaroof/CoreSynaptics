@@ -158,10 +158,10 @@ const Layout = ({ children }) => {
                       </div>
                       <div className="flex flex-col justify-center items-start">
                         <span className="text-left font-semibold text-[16px] text-white">
-                          {user?.fullName}
+                          {user?.firstName} {user?.lastName}
                         </span>
                         <span className="text-left opacity-60 text-[16px] capitalize text-white">
-                          {user?.role}
+                          {user?.platformRole || user?.organizationType}
                         </span>
                       </div>
                     </li>

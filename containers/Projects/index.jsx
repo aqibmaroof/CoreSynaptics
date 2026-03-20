@@ -268,7 +268,10 @@ export default function KanbanBoard() {
               projects.map((project) => (
                 <div
                   key={project.id}
-                  className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-4 mt-2 rounded-2xl bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]`}
+                  onClick={() =>
+                    router.push(`/ProjectDetails/Project/${project?.id}`)
+                  }
+                  className={`flex cursor-pointer items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-4 mt-2 rounded-2xl bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]`}
                 >
                   {/* Left Side - Avatar and Info */}
                   <div className="flex items-center gap-3">

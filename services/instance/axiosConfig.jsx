@@ -36,7 +36,7 @@ axiosInstance.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // RESPONSE INTERCEPTOR - Handle 401 and refresh token
@@ -68,16 +68,17 @@ axiosInstance.interceptors.response.use(
 
       try {
         const refreshToken = getRefreshToken();
+        const token = getAccessToken();
 
-        if (!refreshToken) {
+        if (!refreshToken && token) {
           clearTokens();
           window.location.href = "/Auth/Login";
           return Promise.reject(error);
         }
 
         const response = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}auth/refresh-token`,
-          { refreshToken: String(refreshToken) }
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh-token`,
+          { refreshToken: String(refreshToken) },
         );
 
         const responseData = response.data?.data || response.data;
@@ -111,7 +112,7 @@ axiosInstance.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

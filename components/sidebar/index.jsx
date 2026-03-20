@@ -13,33 +13,39 @@ import {
 } from "@/services/instance/tokenService";
 import { getRoles } from "@/services/Roles";
 import { GetUser } from "@/services/auth";
-// Replace this with however you access the current user's role:
-// e.g. useSession(), useContext(AuthContext), useSelector(), etc.
 
 const Sidebar = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const user = JSON.parse(getUser());
+
+  const [mounted, setMounted] = useState(false);         // ✅ mounted guard
+  const [visibleItems, setVisibleItems] = useState([]);  // ✅ start empty on server
   const [openIndex, setOpenIndex] = useState(null);
   const [activeSubIndex, setActiveSubIndex] = useState(null);
   const [activeSubSubIndex, setActiveSubSubIndex] = useState(null);
-  const accessToken = getAccessToken();
-  // Filter sidebar items to only those allowed for this role
-  const visibleItems = getMenuByRole(
-    user?.activeRole?.name || user?.platformRole,
-  );
 
   useEffect(() => {
+    // ✅ All localStorage/auth logic runs only on client
+    const user = JSON.parse(getUser());
+    const accessToken = getAccessToken();
+
+    const items = getMenuByRole(
+      user?.activeRole?.name || user?.platformRole
+    );
+    setVisibleItems(items);
+    setMounted(true);
+
     getRolesList();
-    getUserFromApi();
+    if (accessToken) {
+      getUserFromApi();
+    }
   }, []);
 
   const getUserFromApi = async () => {
-    if (accessToken) {
-      const userResponse = await GetUser();
-      setUser({ user: userResponse });
-    }
+    const userResponse = await GetUser();
+    setUser({ user: userResponse });
   };
+
   const getRolesList = async () => {
     try {
       const res = await getRoles();
@@ -48,47 +54,41 @@ const Sidebar = () => {
       console.log("Error Fetching Roles : ", error);
     }
   };
+
   const toggleSubmenu = (index) => {
     setOpenIndex(openIndex === index ? null : index);
     setActiveSubIndex(null);
     setActiveSubSubIndex(null);
   };
 
+  // ✅ Render nothing on server — avoids mismatch entirely
+  if (!mounted) return null;
+
   return (
     <aside className="w-[280px] m-3 py-2 transition-colors bg-gradient-to-b from-[#060B26F0] to-[#1A1F3700] rounded rounded-t-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
       {/* LOGOS */}
       <div className="sticky z-10 px-4 py-5">
         <img src={config?.brand} className="w-55 h-auto m-auto dark:hidden" />
-        <img
-          src={config?.brand}
-          className="w-55 h-auto m-auto hidden dark:block"
-        />
+        <img src={config?.brand} className="w-55 h-auto m-auto hidden dark:block" />
       </div>
 
       <img src={config?.h_line} className="px-4 mt-6" />
 
       <ul className="list-none m-0 p-0 mt-8 mb-15">
-        {visibleItems.map((item, index) => (
+        {visibleItems?.map((item, index) => (
           <li key={index}>
-            {/* CATEGORY TITLE */}
             {item.category && (
               <p className="text-[#DF5B30] px-4 mb-1">{item.category}</p>
             )}
 
-            {/* MAIN ITEM */}
             <div
               className={`flex items-center py-5 w-[250px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-white hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] ${
-                pathname === item?.path
-                  ? "bg-[url('/images/hover_background.png')]"
-                  : ""
+                pathname === item?.path ? "bg-[url('/images/hover_background.png')]" : ""
               } bg-cover bg-center bg-no-repeat transition`}
               onClick={() => {
                 if (item.submenu.length > 0) {
                   toggleSubmenu(index);
-                } else if (
-                  item.title === "View Website" ||
-                  item.title === "Support"
-                ) {
+                } else if (item.title === "View Website" || item.title === "Support") {
                   window.open(item.path, "_blank");
                 } else {
                   router.push(item.path);
@@ -102,7 +102,6 @@ const Sidebar = () => {
                 } p-2 rounded-xl`}
               />
               <span className="flex-1 text-[14px]">{item.title}</span>
-
               {item.submenu.length > 0 && (
                 <span className="text-xs">
                   {openIndex === index ? <FaChevronDown /> : <FaChevronRight />}
@@ -110,42 +109,26 @@ const Sidebar = () => {
               )}
             </div>
 
-            {/* SUBMENU */}
             {item.submenu.length > 0 && openIndex === index && (
-              <ul
-                className={`list-none mt-1 ${
-                  item.title === "Orders" ? "pl-8" : "pl-10"
-                }`}
-              >
+              <ul className={`list-none mt-1 ${item.title === "Orders" ? "pl-8" : "pl-10"}`}>
                 {item.submenu.map((sub, subIdx) => {
-                  // LINK
                   if (sub.type === "link") {
                     return (
                       <li key={subIdx} className="py-1 w-full">
                         <div className="flex items-center justify-start">
-                          <Link
-                            href={sub.path}
-                            className="cursor-pointer py-1 text-white hover:text-[#A9D18E] hover:underline"
-                          >
+                          <Link href={sub.path} className="cursor-pointer py-1 text-white hover:text-[#A9D18E] hover:underline">
                             {sub.title}
                           </Link>
-
                           {sub.submenu && (
                             <span className="text-xs mr-5 cursor-pointer">
                               {activeSubSubIndex === subIdx ? (
-                                <FaChevronDown
-                                  onClick={() => setActiveSubSubIndex(null)}
-                                />
+                                <FaChevronDown onClick={() => setActiveSubSubIndex(null)} />
                               ) : (
-                                <FaChevronRight
-                                  onClick={() => setActiveSubSubIndex(subIdx)}
-                                />
+                                <FaChevronRight onClick={() => setActiveSubSubIndex(subIdx)} />
                               )}
                             </span>
                           )}
                         </div>
-
-                        {/* SUB-SUB MENU */}
                         {sub.submenu && activeSubSubIndex === subIdx && (
                           <ul className="list-none pl-5 mt-1">
                             {sub.submenu.map((subSub, subSubIdx) => (
@@ -163,28 +146,17 @@ const Sidebar = () => {
                     );
                   }
 
-                  // TEXT SECTION ITEM
                   if (sub.type === "text") {
                     return (
-                      <li
-                        key={subIdx}
-                        onClick={() => setActiveSubIndex(subIdx)}
-                        className="mb-2 text-white font-medium text-[16px] cursor-pointer"
-                      >
+                      <li key={subIdx} onClick={() => setActiveSubIndex(subIdx)} className="mb-2 text-white font-medium text-[16px] cursor-pointer">
                         <span className="mr-3">{item.icon}</span>
-                        <a
-                          href={sub.path}
-                          className={`no-underline hover:text-[#A9D18E] hover:underline ${
-                            subIdx === activeSubIndex ? "text-white" : ""
-                          }`}
-                        >
+                        <a href={sub.path} className={`no-underline hover:text-[#A9D18E] hover:underline ${subIdx === activeSubIndex ? "text-white" : ""}`}>
                           {sub.title}
                         </a>
                       </li>
                     );
                   }
 
-                  // STATUS GROUP
                   if (sub.type === "status-group") {
                     return (
                       <li key={subIdx}>
@@ -193,15 +165,11 @@ const Sidebar = () => {
                             <li
                               key={sIdx}
                               className={`mb-4 px-3 py-1 rounded w-fit inline-block text-sm cursor-pointer ${
-                                status.color === "orange"
-                                  ? "bg-[#fe5000] text-[#333]"
-                                  : status.color === "teal"
-                                    ? "bg-teal-500 text-white"
-                                    : status.color === "pink"
-                                      ? "bg-[#f9c2d1] text-[#900]"
-                                      : status.color === "yellow"
-                                        ? "bg-[#fef102] text-black"
-                                        : ""
+                                status.color === "orange" ? "bg-[#fe5000] text-[#333]"
+                                : status.color === "teal" ? "bg-teal-500 text-white"
+                                : status.color === "pink" ? "bg-[#f9c2d1] text-[#900]"
+                                : status.color === "yellow" ? "bg-[#fef102] text-black"
+                                : ""
                               }`}
                               onClick={() => router.push(status.path)}
                             >

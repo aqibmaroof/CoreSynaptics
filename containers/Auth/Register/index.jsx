@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import React from "react";
 import Link from "next/link";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { GetOrganization, GetUser, RegisterService } from "../../../services/auth";
+import {
+  GetOrganization,
+  GetUser,
+  RegisterService,
+} from "../../../services/auth";
 import { useRouter } from "next/navigation";
 import config from "../../../config";
 import {
@@ -202,12 +205,14 @@ export default function RegisterPage() {
                 className="input input-bordered border-gray-600 bg-transparent w-full placeholder:text-white border-white text-white focus:border-accent focus:outline-none h-10 text-sm"
                 required
               />
-              <span
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 cursor-pointer"
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </span>
+                {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+              </button>
             </div>
           </div>
 
