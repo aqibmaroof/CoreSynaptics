@@ -171,7 +171,7 @@ export default function KanbanBoard() {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [users, setUsers] = useState([]);
   const [view, setView] = useState("list");
-  const [activeView, setActiveView] = useState("task");
+  const [activeView, setActiveView] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sites, setSites] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -241,10 +241,20 @@ export default function KanbanBoard() {
     if (isSite) {
       getUsersList();
       getSites();
+      setActiveView("Sites");
     }
-    if (isProject) getProjectList();
-    if (isZone) getZones();
-    if (isEquipment) getEquipments();
+    if (isProject) {
+      getProjectList();
+      setActiveView("Projects");
+    }
+    if (isZone) {
+      getZones();
+      setActiveView("Zones");
+    }
+    if (isEquipment) {
+      getEquipments();
+      setActiveView("Assets");
+    }
   }, [id]);
 
   // Separate effect: fetch subtasks once tasksList is populated
@@ -1164,18 +1174,7 @@ export default function KanbanBoard() {
         {type !== "Equipment" && (
           <div className="flex items-center gap-4 mb-5">
             <h1 className="text-white ml-4 text-2xl font-bold">View</h1>
-            {/* List view button */}
-            <button
-              onClick={() => setActiveView("task")}
-              className="font-[500] w-[max-content] text-white border-3 cursor-pointer border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
-            >
-              <span
-                className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "task" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
-              >
-                <img src="/images/list.png" alt="Vector" className="h-3 w-3" />
-                Tasks
-              </span>
-            </button>
+
             {type === "Project" ? (
               <button
                 onClick={() => setActiveView("Sites")}
@@ -1221,6 +1220,18 @@ export default function KanbanBoard() {
                 </span>
               </button>
             )}
+            {/* List view button */}
+            <button
+              onClick={() => setActiveView("task")}
+              className="font-[500] w-[max-content] text-white border-3 cursor-pointer border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
+            >
+              <span
+                className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "task" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
+              >
+                <img src="/images/list.png" alt="Vector" className="h-3 w-3" />
+                Tasks
+              </span>
+            </button>
 
             {/* calendar view button */}
           </div>
