@@ -848,7 +848,7 @@ export default function KanbanBoard() {
               : type === "Equipment"
                 ? "Update Equipment"
                 : type === "Projects"
-                  ? "Update Site Project"
+                  ? "Update Sub Project"
                   : type === "Site"
                     ? "Update Site "
                     : "Update Project"}
@@ -1195,7 +1195,7 @@ export default function KanbanBoard() {
                 <span
                   className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Projects" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
                 >
-                  Projects
+                  Sub Projects
                 </span>
               </button>
             ) : type === "Projects" ? (
@@ -1284,9 +1284,12 @@ export default function KanbanBoard() {
               {/* Add new button */}
               <div className="flex items-center justify-end ml-auto gap-5">
                 <button
-                  onClick={() =>
-                    document.getElementById("my_modal_4").showModal()
-                  }
+                  onClick={() => {
+                    document.getElementById("my_modal_4").showModal();
+                    setSelectedTask(null);
+                    setTaskForm({ name: "", description: "" });
+                    setSubtaskInputs([{ name: "", description: "" }]);
+                  }}
                   className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
                 >
                   <div className="flex flex-row gap-2">
@@ -1303,7 +1306,7 @@ export default function KanbanBoard() {
                         d="M12 4v16m8-8H4 "
                       />
                     </svg>
-                    <span>Add new Task</span>
+                    <span>Add New Task</span>
                   </div>
                 </button>
 
@@ -1468,7 +1471,11 @@ export default function KanbanBoard() {
                               {task.status}
                             </span>
                             <span className="text-gray-500 text-xs shrink-0">
-                              {subtasksList.filter((s) => s.taskId === task.id).length} subtasks
+                              {
+                                subtasksList.filter((s) => s.taskId === task.id)
+                                  .length
+                              }{" "}
+                              subtasks
                             </span>
                             {/* Edit Task */}
                             <button
@@ -1515,68 +1522,71 @@ export default function KanbanBoard() {
                         </div>
 
                         {/* Subtasks for this task */}
-                        {subtasksList.filter((s) => s.taskId === task.id).length > 0 && (
+                        {subtasksList.filter((s) => s.taskId === task.id)
+                          .length > 0 && (
                           <div className="border-t border-white/5 px-4 py-2">
-                            {subtasksList.filter((s) => s.taskId === task.id).map((sub) => (
-                              <div
-                                key={sub.id}
-                                className="flex items-center justify-between py-1.5 pl-4 border-l border-white/10 ml-2"
-                              >
-                                <div className="flex items-center gap-2 flex-1">
-                                  <span className="text-gray-400 text-xs">
-                                    •
-                                  </span>
-                                  <span className="text-gray-300 text-xs">
-                                    {sub.name}
-                                  </span>
-                                  {sub.description && (
-                                    <span className="text-gray-600 text-xs hidden md:block">
-                                      {sub.description}
+                            {subtasksList
+                              .filter((s) => s.taskId === task.id)
+                              .map((sub) => (
+                                <div
+                                  key={sub.id}
+                                  className="flex items-center justify-between py-1.5 pl-4 border-l border-white/10 ml-2"
+                                >
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <span className="text-gray-400 text-xs">
+                                      •
                                     </span>
-                                  )}
+                                    <span className="text-gray-300 text-xs">
+                                      {sub.name}
+                                    </span>
+                                    {sub.description && (
+                                      <span className="text-gray-600 text-xs hidden md:block">
+                                        {sub.description}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                        sub.status === "PENDING"
+                                          ? "bg-yellow-500/20 text-yellow-400"
+                                          : sub.status === "IN_PROGRESS"
+                                            ? "bg-blue-500/20 text-blue-400"
+                                            : "bg-green-500/20 text-green-400"
+                                      }`}
+                                    >
+                                      {sub.status}
+                                    </span>
+                                    {/* Edit Subtask */}
+                                    <button
+                                      className="p-1 text-gray-500 hover:text-blue-400 transition-colors"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingSubtask(sub);
+                                        setEditSubtaskForm({
+                                          name: sub.name,
+                                          description: sub.description || "",
+                                          status: sub.status,
+                                        });
+                                        document
+                                          .getElementById("edit_subtask_modal")
+                                          .showModal();
+                                      }}
+                                    >
+                                      <FaPencil className="text-[10px]" />
+                                    </button>
+                                    {/* Delete Subtask */}
+                                    <button
+                                      className="p-1 text-gray-500 hover:text-red-400 transition-colors"
+                                      onClick={(e) =>
+                                        deleteSubtask(e, sub.taskId, sub.id)
+                                      }
+                                    >
+                                      <FaTrash className="text-[10px]" />
+                                    </button>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                      sub.status === "PENDING"
-                                        ? "bg-yellow-500/20 text-yellow-400"
-                                        : sub.status === "IN_PROGRESS"
-                                          ? "bg-blue-500/20 text-blue-400"
-                                          : "bg-green-500/20 text-green-400"
-                                    }`}
-                                  >
-                                    {sub.status}
-                                  </span>
-                                  {/* Edit Subtask */}
-                                  <button
-                                    className="p-1 text-gray-500 hover:text-blue-400 transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingSubtask(sub);
-                                      setEditSubtaskForm({
-                                        name: sub.name,
-                                        description: sub.description || "",
-                                        status: sub.status,
-                                      });
-                                      document
-                                        .getElementById("edit_subtask_modal")
-                                        .showModal();
-                                    }}
-                                  >
-                                    <FaPencil className="text-[10px]" />
-                                  </button>
-                                  {/* Delete Subtask */}
-                                  <button
-                                    className="p-1 text-gray-500 hover:text-red-400 transition-colors"
-                                    onClick={(e) =>
-                                      deleteSubtask(e, sub.taskId, sub.id)
-                                    }
-                                  >
-                                    <FaTrash className="text-[10px]" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                         )}
                       </div>
