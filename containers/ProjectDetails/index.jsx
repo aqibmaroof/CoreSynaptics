@@ -1041,7 +1041,7 @@ export default function KanbanBoard() {
               deleteUser={DeleteUserFromProject}
             />
             <MultiSelectDropdown
-              label="Assign Teams"
+              label="Assign Team"
               options={teams}
               selected={form?.team || []}
               setSelected={handleAssignTeamToProject}
