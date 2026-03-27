@@ -5,8 +5,11 @@ import { FiMessageCircle, FiStar } from "react-icons/fi";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  AddTeamsToProjects,
   AddUsersToProjects,
   DeleteProjects,
+  DeleteTeamsToProjects,
+  DeleteUsersToProjects,
   getProjects,
   GetProjectsById,
   UpdateProjects,
@@ -43,6 +46,8 @@ import {
   updateSubTaskByTaskId,
   deleteSubTaskByTaskId,
 } from "@/services/SubTasks";
+import { getTeams } from "@/services/Teams";
+import MultiSelectDropdown from "@/components/MultiSelectDropDown";
 
 const CapitalizeText = (text) => {
   return text
@@ -56,50 +61,6 @@ const formatToDatetimeLocal = (isoString) => {
   return isoString.slice(0, 16); // "2026-03-07T18:41"
 };
 
-const members = [
-  {
-    id: 1,
-    name: "Rainer Brown",
-    email: "Rainerbrown@mail.com",
-    avatar: "https://i.pravatar.cc/150?img=1",
-    bgColor: "bg-purple-500/20",
-  },
-  {
-    id: 2,
-    name: "Conny Rany",
-    email: "connyrany@mail.com",
-    avatar: "https://i.pravatar.cc/150?img=5",
-    bgColor: "bg-emerald-500/20",
-  },
-  {
-    id: 3,
-    name: "Armin Falcon",
-    email: "arfalcon@mail.com",
-    avatar: "https://i.pravatar.cc/150?img=3",
-    bgColor: "bg-gray-500/20",
-  },
-  {
-    id: 4,
-    name: "James Sullivan",
-    email: "Warren L.",
-    avatar: "https://i.pravatar.cc/150?img=4",
-    bgColor: "bg-gray-500/20",
-  },
-  {
-    id: 5,
-    name: "James Sullivan",
-    email: "Warren L.",
-    avatar: "https://i.pravatar.cc/150?img=4",
-    bgColor: "bg-gray-500/20",
-  },
-  {
-    id: 6,
-    name: "James Sullivan",
-    email: "Warren L.",
-    avatar: "https://i.pravatar.cc/150?img=4",
-    bgColor: "bg-gray-500/20",
-  },
-];
 const tasks = [
   {
     id: 1,
@@ -185,6 +146,8 @@ export default function KanbanBoard() {
   const [taskForm, setTaskForm] = useState({ name: "", description: "" });
   const [editingTask, setEditingTask] = useState(null); // task being edited
   const [editingSubtask, setEditingSubtask] = useState(null); // subtask being edited
+  const [teams, setTeams] = useState([]);
+
   const [editTaskForm, setEditTaskForm] = useState({
     name: "",
     description: "",
@@ -211,6 +174,7 @@ export default function KanbanBoard() {
     contractValue: null,
     clientName: "",
     assignee: [],
+    team: [],
     projectType: "",
     // Site fields
     location: "",
@@ -255,14 +219,13 @@ export default function KanbanBoard() {
       getEquipments();
       setActiveView("Assets");
     }
-  }, [id]);
-
-  // Separate effect: fetch subtasks once tasksList is populated
-  useEffect(() => {
     if (tasksList.length > 0) {
       fetchSubtasks();
     }
-  }, [tasksList.length]);
+    GetAllTeams();
+  }, [id, tasksList.length]);
+
+  // Separate effect: fetch subtasks once tasksList is populated
 
   const fetchTasks = async () => {
     try {
@@ -383,6 +346,14 @@ export default function KanbanBoard() {
     }
   };
 
+  const GetAllTeams = async () => {
+    try {
+      const res = await getTeams();
+      setTeams(res);
+    } catch (error) {
+      console.error("error Fetching data", error.message);
+    }
+  };
   const deleteTask = async (e, taskId) => {
     e.stopPropagation();
     e.preventDefault();
@@ -613,6 +584,7 @@ export default function KanbanBoard() {
           contractValue: res?.metadata?.contractValue || null,
           clientName: res?.metadata?.clientName || "",
           assignee: res?.assignedUsers || [],
+          team: res?.team?.id ? [res?.team] : [],
           projectType: res?.projectType || "",
           // reset other fields
           location: "",
@@ -720,36 +692,118 @@ export default function KanbanBoard() {
     }
   };
 
-  const handleAssignProject = async (e) => {
+  const DeleteUserFromProject = async (ItemId) => {
+    try {
+      await DeleteUsersToProjects(id, ItemId);
+
+      setMessage({
+        type: "success",
+        text: "User Deleted from Project successfully! 🚀",
+      });
+      getProjectDetails();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text:
+          `Error Deleting Project : ${error?.message}` ||
+          "Error Deleting Project.",
+      });
+    }
+  };
+
+  const handleAssignProject = async (item) => {
     try {
       setForm({
         ...form,
-        assigneeId: e.target.value,
+        assignee: [...(form.assignee || []), item], // ✅ update UI
+        assigneeId: item.id,
       });
+
       const payload = {
-        userId: e.target.value,
+        userId: item.id, // ✅ FIXED
         siteId: null,
       };
+
       const requiredFields = ["userId"];
 
       for (const field of requiredFields) {
         const value = payload[field];
-        if (value === undefined || value === null || value === "") {
+        if (!value) {
           setMessage({
             type: "error",
-            text: `Missing value for field: ${CapitalizeText(field)}`,
+            text: `Missing value for field: ${field}`,
           });
           return;
         }
       }
+
       await AddUsersToProjects(id, payload);
+
       setMessage({
         type: "success",
-        text: "Project Assigned successfully! 🚀",
+        text: "Project Assigned to user successfully! 🚀",
       });
-      setTimeout(() => {
-        router.back();
-      }, 3000);
+      getProjectDetails();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text:
+          `Error assigning Project : ${error?.message}` ||
+          "Error assigning Project.",
+      });
+    }
+  };
+
+  const DeleteTeamFromProject = async (ItemId) => {
+    try {
+      await DeleteTeamsToProjects(id, ItemId);
+
+      setMessage({
+        type: "success",
+        text: "User Deleted from Project successfully! 🚀",
+      });
+      getProjectDetails();
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text:
+          `Error Deleting Project : ${error?.message}` ||
+          "Error Deleting Project.",
+      });
+    }
+  };
+  console.log(form?.team);
+  const handleAssignTeamToProject = async (item) => {
+    try {
+      setForm({
+        ...form,
+        team: [...(form.team || []), item?.id], // ✅ update UI
+      });
+
+      const payload = {
+        teamId: item.id, // ✅ FIXED
+      };
+
+      const requiredFields = ["teamId"];
+
+      for (const field of requiredFields) {
+        const value = payload[field];
+        if (!value) {
+          setMessage({
+            type: "error",
+            text: `Missing value for field: ${field}`,
+          });
+          return;
+        }
+      }
+
+      await AddTeamsToProjects(id, payload);
+
+      setMessage({
+        type: "success",
+        text: "Project Assigned to team successfully! 🚀",
+      });
+      getProjectDetails();
     } catch (error) {
       setMessage({
         type: "error",
@@ -979,31 +1033,21 @@ export default function KanbanBoard() {
                 ))}
               </select>
             </div>
-            <div className="flex justify-left gap-7 items-center mt-3">
-              <h2>Assignees:</h2>
-              <div className="flex items-center justify-left gap-2 capitalize">
-                {form?.assignee?.map((item, i) => (
-                  <p key={i}>
-                    {item?.firstName} {item?.lastName}
-                  </p>
-                ))}
-              </div>
-            </div>
-            <div className="flex justify-left gap-5 items-center mt-3">
-              <h2 className="w-40">Update Assignee:</h2>
-              <select
-                onChange={(e) => handleAssignProject(e)}
-                className="select border-none shadow-none bg-[#12153d] w-full text-white focus:outline-none h-10 text-sm"
-              >
-                <option value="">Select Assignee</option>
-                {users?.length > 0 &&
-                  users?.map((item, index) => (
-                    <option value={item.id} key={index}>
-                      {item.firstName} {item?.lastName}
-                    </option>
-                  ))}
-              </select>
-            </div>
+            <MultiSelectDropdown
+              label="Assign Users"
+              options={users}
+              selected={form?.assignee || []}
+              setSelected={handleAssignProject}
+              deleteUser={DeleteUserFromProject}
+            />
+            <MultiSelectDropdown
+              label="Assign Teams"
+              options={teams}
+              selected={form?.team || []}
+              setSelected={handleAssignTeamToProject}
+              deleteUser={DeleteTeamFromProject}
+              setMessage={setMessage}
+            />
           </>
         )}
 

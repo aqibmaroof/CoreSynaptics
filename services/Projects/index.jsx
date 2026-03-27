@@ -104,3 +104,29 @@ export const DeleteUsersToProjects = async (id, userId) => {
     throw error;
   }
 };
+
+
+export const AddTeamsToProjects = async (id, payload) => {
+  try {
+    const data = await sendRequest({
+      url: `/projects/${id}/assign-team`,
+      method: "PATCH",
+      data: payload,
+    });
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const DeleteTeamsToProjects = async (id, teamId) => {
+  try {
+    const data = await sendRequest({
+      url: `/projects/${id}/unassign-team`,
+      method: "Delete",
+    });
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};

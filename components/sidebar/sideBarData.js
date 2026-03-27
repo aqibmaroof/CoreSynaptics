@@ -230,6 +230,25 @@ export const sidebarItems = [
     ],
   },
 
+    // ─── Teams ──────────────────────────────────────────────────────
+  {
+    title: "Teams",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Teams/List",
+    type: "link",
+    submenu: [],
+    // GC PM: Edit/Approve | OEM PM: Edit | FSM: View (limited) | QA/QC: View (limited)
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.OEM_ADMIN,
+      ROLES.OEM_PM,
+      ROLES.FSM,
+      ROLES.QA_QC,
+    ],
+  },
+
   // ─── Portfolio (Executive only) ────────────────────────────────────
   {
     title: "Portfolio",
