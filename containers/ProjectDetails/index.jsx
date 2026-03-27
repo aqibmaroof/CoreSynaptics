@@ -705,8 +705,8 @@ export default function KanbanBoard() {
       setMessage({
         type: "error",
         text:
-          `Error Deleting Project : ${error?.message}` ||
-          "Error Deleting Project.",
+          `Error Deleting User From Project : ${error?.message}` ||
+          "Error Deleting User From Project.",
       });
     }
   };
@@ -748,8 +748,8 @@ export default function KanbanBoard() {
       setMessage({
         type: "error",
         text:
-          `Error assigning Project : ${error?.message}` ||
-          "Error assigning Project.",
+          `Error assigning User To Project : ${error?.message}` ||
+          "Error assigning User To Project.",
       });
     }
   };
@@ -760,19 +760,19 @@ export default function KanbanBoard() {
 
       setMessage({
         type: "success",
-        text: "User Deleted from Project successfully! 🚀",
+        text: "Team Deleted from Project successfully! 🚀",
       });
       getProjectDetails();
     } catch (error) {
       setMessage({
         type: "error",
         text:
-          `Error Deleting Project : ${error?.message}` ||
-          "Error Deleting Project.",
+          `Error Deleting Team From Project  : ${error?.message}` ||
+          "Error Deleting Team From Project.",
       });
     }
   };
-  console.log(form?.team);
+
   const handleAssignTeamToProject = async (item) => {
     try {
       setForm({
@@ -808,8 +808,8 @@ export default function KanbanBoard() {
       setMessage({
         type: "error",
         text:
-          `Error assigning Project : ${error?.message}` ||
-          "Error assigning Project.",
+          `Error assigning Project To Team : ${error?.message}` ||
+          "Error assigning Project To Team.",
       });
     }
   };
