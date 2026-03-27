@@ -76,16 +76,27 @@ export default function TeamMembers() {
   };
 
   const handleAddMembers = async () => {
-    if (selectedUserIds.length === 0) return;
     try {
+      if (selectedUserIds.length === 0) return;
+
+      const existingUserIds = members.map((m) => m.userId);
+      const newUserIds = selectedUserIds.filter(
+        (id) => !existingUserIds.includes(id),
+      );
+
+      if (newUserIds.length === 0) {
+        showMessage("error", "Selected user(s) are already team members.");
+        return;
+      }
+
       setAddLoading(true);
-      await AddTeamMember(teamId, { userIds: selectedUserIds });
+      await AddTeamMember(teamId, { userIds: newUserIds });
       setSelectedUserIds([]);
       setUserSearch("");
       fetchMembers();
       showMessage(
         "success",
-        `${selectedUserIds.length} member(s) added successfully! 🚀`,
+        `${newUserIds.length} member(s) added successfully! 🚀`,
       );
     } catch (err) {
       showMessage("error", "Error adding members: " + err?.message);
