@@ -14,18 +14,26 @@ export default function KanbanBoard() {
   const router = useRouter();
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  useEffect(() => {
-    getProjectsList();
-  }, []);
-
   const getProjectsList = async () => {
     try {
-      const res = await getProjects();
-      setProjects(res.projects);
+      const res = await getProjects({
+        limit: 100,
+        page: 1,
+        parentSiteId: null,
+      });
+      setProjects(res?.projects || []);
     } catch (error) {
       console.log("error fetching projects : ", error);
     }
   };
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      await getProjectsList();
+    };
+
+    loadProjects();
+  }, []);
 
   const deleteProject = async (id) => {
     try {
@@ -290,12 +298,12 @@ export default function KanbanBoard() {
                         {project.name}
                       </h3>
                       <p className="text-gray-400 text-xs">
-                        {project.organization?.name} - {project?.projectType}
+                        {project.organization?.name} - {project?.projectCategory || project?.projectType || "Uncategorized"}
                       </p>
                       <p className="flex items-center gap-1 flex-wrap text-gray-400 text-xs">
                         Assignee :
                         {project.assignedUsers?.map((item) => (
-                          <p>
+                          <p key={item.id}>
                             {item?.firstName} {item?.lastName}
                           </p>
                         ))}

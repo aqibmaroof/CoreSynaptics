@@ -1,10 +1,10 @@
 import sendRequest from "../instance/sendRequest";
 
 // Equipment
-export const CreateEquipment = async (projectId, payload) => {
+export const CreateEquipment = async (zoneId, payload) => {
   try {
     const data = await sendRequest({
-      url: `/zones/${projectId}/equipment`,
+      url: `/zones/${zoneId}/equipment`,
       method: "POST",
       data: payload,
     });
@@ -14,10 +14,10 @@ export const CreateEquipment = async (projectId, payload) => {
   }
 };
 
-export const GetEquipments = async (projectId) => {
+export const GetEquipments = async (zoneId) => {
   try {
     const data = await sendRequest({
-      url: `/zones/${projectId}/equipment`,
+      url: `/zones/${zoneId}/equipment`,
       method: "GET",
     });
     return data;
@@ -26,10 +26,10 @@ export const GetEquipments = async (projectId) => {
   }
 };
 
-export const GetEquipmentById = async (projectId, id) => {
+export const GetEquipmentById = async (zoneId, id) => {
   try {
     const data = await sendRequest({
-      url: `/zones/${projectId}/equipment/${id}`,
+      url: `/zones/${zoneId}/equipment/${id}`,
       method: "GET",
     });
     return data;
@@ -38,10 +38,10 @@ export const GetEquipmentById = async (projectId, id) => {
   }
 };
 
-export const UpdateEquipment = async (projectId, id, payload) => {
+export const UpdateEquipment = async (zoneId, id, payload) => {
   try {
     const data = await sendRequest({
-      url: `/zones/${projectId}/equipment/${id}`,
+      url: `/zones/${zoneId}/equipment/${id}`,
       method: "PATCH",
       data: payload,
     });
@@ -51,10 +51,10 @@ export const UpdateEquipment = async (projectId, id, payload) => {
   }
 };
 
-export const DeleteEquipment = async (projectId, id) => {
+export const DeleteEquipment = async (zoneId, id) => {
   try {
     const data = await sendRequest({
-      url: `/zones/${projectId}/equipment/${id}`,
+      url: `/zones/${zoneId}/equipment/${id}`,
       method: "DELETE",
     });
     return data;

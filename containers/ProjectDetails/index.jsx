@@ -825,7 +825,11 @@ export default function KanbanBoard() {
 
   const getProjectList = async () => {
     try {
-      const res = await getProjects(25, 1, id, params?.subId);
+      const res = await getProjects({
+        limit: 100,
+        page: 1,
+        parentSiteId: id,
+      });
       setProjects(res?.projects || []);
     } catch (error) {
       console.log(error);
@@ -1484,7 +1488,7 @@ export default function KanbanBoard() {
 
                   {tasksList.length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
-                      No tasks yet. Click "Add new Task" to create one.
+                      No tasks yet. Click &quot;Add new Task&quot; to create one.
                     </div>
                   ) : (
                     tasksList.map((task) => (
@@ -3217,7 +3221,7 @@ export default function KanbanBoard() {
                             </span>
                           </td>
                           <td className="py-4 px-4 text-gray-400">
-                            {item.projectType}
+                            {item.projectCategory || item.projectType || "-"}
                           </td>
                           <td className="py-4 px-4 text-gray-400">
                             {item.startDate

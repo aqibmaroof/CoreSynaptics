@@ -1,14 +1,36 @@
 import sendRequest from "../instance/sendRequest";
 
-export const getProjects = async (
+export const getProjects = async ({
   limit = 25,
-  currentPage,
-  id = null,
-  subId = null,
-) => {
+  page = 1,
+  parentProjectId,
+  parentSiteId,
+  status,
+  search,
+} = {}) => {
   try {
+    const query = new URLSearchParams();
+    query.set("page", String(page));
+    query.set("limit", String(limit));
+
+    if (parentProjectId !== undefined) {
+      query.set("parentProjectId", parentProjectId === null ? "null" : parentProjectId);
+    }
+
+    if (parentSiteId !== undefined) {
+      query.set("parentSiteId", parentSiteId === null ? "null" : parentSiteId);
+    }
+
+    if (status) {
+      query.set("status", status);
+    }
+
+    if (search) {
+      query.set("search", search);
+    }
+
     const data = await sendRequest({
-      url: `/projects?parentSiteId=${id}&parentProjectId=${subId}`,
+      url: `/projects?${query.toString()}`,
       method: "GET",
     });
     return data;
