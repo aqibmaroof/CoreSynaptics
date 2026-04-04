@@ -49,6 +49,414 @@ import {
 import { getTeams } from "@/services/Teams";
 import MultiSelectDropdown from "@/components/MultiSelectDropDown";
 
+// Helper function to get all unique keys from an array of objects
+const getTableHeaders = (data) => {
+  if (!data || data.length === 0) return [];
+
+  // Get all unique keys from all objects
+  const allKeys = new Set();
+  data.forEach((item) => {
+    Object.keys(item).forEach((key) => {
+      // Skip nested objects that shouldn't be displayed as columns
+      if (key !== "assignedUsers" && key !== "team" && key !== "organization") {
+        if (key === "metadata" && item.metadata) {
+          // Expand metadata fields as separate columns
+          Object.keys(item.metadata).forEach((metaKey) => {
+            allKeys.add(`metadata.${metaKey}`);
+          });
+        } else {
+          allKeys.add(key);
+        }
+      } else if (key === "organization") {
+        // Add organization fields as separate columns
+        allKeys.add("organizationName");
+        allKeys.add("organizationType");
+        allKeys.add("organizationStatus");
+      } else if (key === "assignedUsers") {
+        allKeys.add("assignedUsersCount");
+      }
+    });
+  });
+
+  // Define priority order for columns
+  const priorityOrder = [
+    "name",
+    "type",
+    "status",
+    "organizationName",
+    "organizationType",
+  ];
+
+  // Sort keys based on priority order
+  const sortedKeys = Array.from(allKeys).sort((a, b) => {
+    const aIndex = priorityOrder.indexOf(a);
+    const bIndex = priorityOrder.indexOf(b);
+
+    // If both keys are in priorityOrder, sort by their index
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    }
+    // If only a is in priorityOrder, a comes first
+    if (aIndex !== -1) {
+      return -1;
+    }
+    // If only b is in priorityOrder, b comes first
+    if (bIndex !== -1) {
+      return 1;
+    }
+    // If neither is in priorityOrder, sort alphabetically
+    return a.localeCompare(b);
+  });
+
+  return sortedKeys;
+};
+
+// Update getCellValue to handle metadata fields
+const getCellValue = (item, header) => {
+  // Handle custom organization fields
+  if (header === "organizationName") {
+    return item.organization?.name || "-";
+  }
+  if (header === "organizationType") {
+    return item.organization?.type || "-";
+  }
+  if (header === "organizationStatus") {
+    return item.organization?.status || "-";
+  }
+  if (header === "assignedUsersCount") {
+    return item.assignedUsers?.length || 0;
+  }
+
+  // Handle metadata fields
+  if (header.startsWith("metadata.")) {
+    const metaKey = header.replace("metadata.", "");
+    return item.metadata?.[metaKey] || "-";
+  }
+
+  // Return regular field
+  return item[header];
+};
+// Helper function to format cell values
+const formatCellValue = (value) => {
+  if (value === null || value === undefined) return "-";
+  if (typeof value === "object" && !Array.isArray(value))
+    return JSON.stringify(value).slice(0, 50);
+  if (Array.isArray(value)) {
+    // Special handling for readinessGates array
+    if (value.length > 0 && value[0]?.gate && value[0]?.status) {
+      return (
+        <div className="flex flex-col gap-1">
+          {value.map((gate, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">
+                {gate.gate?.replace(/_/g, " ")}:
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs ${
+                  gate.status === "APPROVED" || gate.status === "PASSED"
+                    ? "bg-green-500/20 text-green-400"
+                    : gate.status === "PENDING"
+                      ? "bg-yellow-500/20 text-yellow-400"
+                      : gate.status === "REJECTED" || gate.status === "FAILED"
+                        ? "bg-red-500/20 text-red-400"
+                        : "bg-gray-500/20 text-gray-400"
+                }`}
+              >
+                {gate.status}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return JSON.stringify(value).slice(0, 50);
+  }
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (
+    value instanceof Date ||
+    (typeof value === "string" && value.includes("T") && value.includes("Z"))
+  ) {
+    return new Date(value).toLocaleDateString();
+  }
+  return String(value);
+};
+
+// Helper function to render cell content based on key and value
+// Helper function to render cell content based on key and value
+const renderCellContent = (item, header, activeView) => {
+  const value = getCellValue(item, header);
+  console.log(header, value);
+
+  // Handle readinessGates specially
+  if (header === "readinessGates" && Array.isArray(item.readinessGates)) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-1">
+        {item.readinessGates.map((gate, idx) => (
+          <div key={idx} className="flex items-center justify-center gap-2">
+            <span className="text-xs text-gray-400">
+              {gate.gate?.replace(/_/g, " ")}:
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs ${
+                gate.status === "APPROVED" || gate.status === "PASSED"
+                  ? "bg-green-500/20 text-green-400"
+                  : gate.status === "PENDING"
+                    ? "bg-yellow-500/20 text-yellow-400"
+                    : gate.status === "REJECTED" || gate.status === "FAILED"
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-gray-500/20 text-gray-400"
+              }`}
+            >
+              {gate.status}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Handle organization status
+  if (header === "organizationStatus") {
+    return (
+      <span
+        className={`px-2 py-1 rounded-full text-xs ${
+          value === "ACTIVE"
+            ? "bg-green-500/20 text-green-400"
+            : value === "INACTIVE"
+              ? "bg-red-500/20 text-red-400"
+              : "bg-yellow-500/20 text-yellow-400"
+        }`}
+      >
+        {value}
+      </span>
+    );
+  }
+
+  // Handle organization type
+  if (header === "organizationType") {
+    return (
+      <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">
+        {value}
+      </span>
+    );
+  }
+
+  // Handle assigned users count
+  if (header === "assignedUsersCount") {
+    return (
+      <div className="flex items-center justify-center gap-1">
+        <span className="text-white font-medium">{value}</span>
+        {value > 0 && (
+          <div className="flex items-center justify-center -space-x-2">
+            {item.assignedUsers?.slice(0, 3).map((user, idx) => (
+              <div
+                key={user.id}
+                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-[10px] text-white font-bold border border-white"
+                title={`${user.firstName} ${user.lastName}`}
+              >
+                {user.firstName?.[0]}
+                {user.lastName?.[0]}
+              </div>
+            ))}
+            {item.assignedUsers?.length > 3 && (
+              <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-[10px] text-white font-bold border border-white">
+                +{item.assignedUsers.length - 3}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Handle status fields with badges
+  if (
+    header === "status" ||
+    header === "safetyStatus" ||
+    header === "permitStatus"
+  ) {
+    return (
+      <span
+        className={`px-2 py-1 rounded-full text-xs ${
+          value === "ACTIVE" ||
+          value === "APPROVED" ||
+          value === "READY" ||
+          value === "COMPLETED" ||
+          value === "OPERATIONAL"
+            ? "bg-green-500/20 text-green-400"
+            : value === "PENDING" ||
+                value === "NOT_READY" ||
+                value === "PLANNING" ||
+                value === "MAINTENANCE"
+              ? "bg-yellow-500/20 text-yellow-400"
+              : value === "REJECTED" ||
+                  value === "FAILED" ||
+                  value === "CANCELLED" ||
+                  value === "DECOMMISSIONED"
+                ? "bg-red-500/20 text-red-400"
+                : value === "IN_PROGRESS" || value === "INSTALLING"
+                  ? "bg-blue-500/20 text-blue-400"
+                  : "bg-gray-500/20 text-gray-400"
+        }`}
+      >
+        {value?.replace(/_/g, " ")}
+      </span>
+    );
+  }
+
+  // Handle lifecyclePhase for equipment
+  if (header === "lifecyclePhase") {
+    return (
+      <span
+        className={`px-2 py-1 rounded-full text-xs ${
+          value === "ORDERED"
+            ? "bg-purple-500/20 text-purple-400"
+            : value === "MANUFACTURING"
+              ? "bg-indigo-500/20 text-indigo-400"
+              : value === "FAT"
+                ? "bg-blue-500/20 text-blue-400"
+                : value === "SHIPPED"
+                  ? "bg-cyan-500/20 text-cyan-400"
+                  : value === "INSTALLED"
+                    ? "bg-green-500/20 text-green-400"
+                    : value === "COMMISSIONED"
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : "bg-gray-500/20 text-gray-400"
+        }`}
+      >
+        {value?.replace(/_/g, " ")}
+      </span>
+    );
+  }
+
+  // Handle name with avatar (different colors for different entity types)
+  if (header === "name") {
+    // Determine gradient based on activeView
+    let gradientClass = "from-blue-400 to-purple-500";
+    if (activeView === "Zones") {
+      gradientClass = "from-green-400 to-teal-500";
+    } else if (activeView === "Assets") {
+      gradientClass = "from-orange-400 to-red-500";
+    } else if (activeView === "Projects") {
+      gradientClass = "from-blue-400 to-purple-500";
+    } else if (activeView === "Sites") {
+      gradientClass = "from-blue-400 to-purple-500";
+    }
+
+    return (
+      <div className="flex items-center justify-center gap-3">
+        <div
+          className={`w-10 h-10 rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center text-white font-bold`}
+        >
+          {value?.charAt(0) || "?"}
+        </div>
+        <span className="text-white font-medium">{value}</span>
+      </div>
+    );
+  }
+
+  // Handle type fields with badge
+  if (
+    header === "type" ||
+    header === "projectType" ||
+    header === "zoneType" ||
+    header === "equipmentType"
+  ) {
+    return (
+      <span className="px-2 py-1 rounded-full text-xs bg-purple-500/20 text-purple-400">
+        {value?.replace(/_/g, " ") || "-"}
+      </span>
+    );
+  }
+
+  // Handle serial number for equipment
+  if (header === "serialNumber") {
+    return <span className="text-gray-300 font-mono text-xs">{value}</span>;
+  }
+
+  // Handle certification requirement
+  if (header === "certificationReq") {
+    return (
+      <span
+        className={`px-2 py-1 rounded-full text-xs ${
+          value === "REQUIRED"
+            ? "bg-red-500/20 text-red-400"
+            : value === "NOT_REQUIRED"
+              ? "bg-gray-500/20 text-gray-400"
+              : "bg-yellow-500/20 text-yellow-400"
+        }`}
+      >
+        {value?.replace(/_/g, " ") || "-"}
+      </span>
+    );
+  }
+
+  // Handle metadata (truncate for display)
+  if (header === "metadata") {
+    const metadataStr = JSON.stringify(value, null, 2);
+    const previewStr = JSON.stringify(value).slice(0, 50);
+    const hasMore = JSON.stringify(value).length > 50;
+
+    return (
+      <div className="relative group">
+        <div className="max-w-[200px] truncate cursor-help" title={metadataStr}>
+          <span className="text-gray-400 text-xs">
+            {previewStr}
+            {hasMore ? "..." : ""}
+          </span>
+        </div>
+        {/* Optional: Add a hover tooltip with full metadata */}
+        <div className="absolute left-0 top-full mt-2 z-10 hidden group-hover:block bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-xl min-w-[300px]">
+          <pre className="text-xs text-gray-300 whitespace-pre-wrap">
+            {metadataStr}
+          </pre>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle dates
+  if (
+    header === "startDate" ||
+    header === "endDate" ||
+    header === "createdAt" ||
+    header === "updatedAt"
+  ) {
+    return <span className="text-gray-300">{formatCellValue(value)}</span>;
+  }
+
+  // Handle capacity or numeric fields
+  if (
+    header === "capacity" ||
+    header === "minCardinality" ||
+    header === "maxCardinality"
+  ) {
+    return <span className="text-gray-300 font-mono">{value || "-"}</span>;
+  }
+
+  // Handle boolean fields
+  if (
+    header === "bidirectional" ||
+    header === "required" ||
+    header === "isSystemRelationship"
+  ) {
+    return (
+      <span
+        className={`px-2 py-1 rounded-full text-xs ${
+          value
+            ? "bg-green-500/20 text-green-400"
+            : "bg-gray-500/20 text-gray-400"
+        }`}
+      >
+        {value ? "Yes" : "No"}
+      </span>
+    );
+  }
+
+  // Default formatting
+  return <span className="text-gray-300">{formatCellValue(value)}</span>;
+};
+
 const CapitalizeText = (text) => {
   return text
     .replace(/([A-Z])/g, " $1") // insert space before each uppercase letter
@@ -128,11 +536,11 @@ const tasks = [
 export default function KanbanBoard() {
   const router = useRouter();
   const params = useParams();
-  const { type, id, subId } = params;
+  const { parentCategory, type, id, subId } = params;
   const [message, setMessage] = useState({ type: "", text: "" });
   const [users, setUsers] = useState([]);
   const [view, setView] = useState("list");
-  const [activeView, setActiveView] = useState("");
+  const [activeView, setActiveView] = useState("task");
   const [searchTerm, setSearchTerm] = useState("");
   const [sites, setSites] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -905,14 +1313,14 @@ export default function KanbanBoard() {
           )}
           <button
             onClick={(e) => updateProject(e)}
-            className="ml-auto bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white font-[510] py-2 px-4 border-none rounded-xl transition-all cursor-pointer w-50"
+            className="ml-auto bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white font-[510] py-2 px-4 border border-1 border-white p-2 my-2 rounded-xl rounded-xl transition-all cursor-pointer w-50"
           >
             {type === "Zone"
               ? "Update Zone"
               : type === "Equipment"
                 ? "Update Equipment"
                 : type === "Projects"
-                  ? "Update Sub Project"
+                  ? "Update Area"
                   : type === "Site"
                     ? "Update Site "
                     : "Update Project"}
@@ -924,7 +1332,7 @@ export default function KanbanBoard() {
         <div className="flex justify-left gap-28 items-center">
           <h2>Name:</h2>
           <input
-            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
             type="text"
             name="name"
             value={form?.name}
@@ -944,7 +1352,7 @@ export default function KanbanBoard() {
                 name="description"
                 value={form?.description}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-20 items-center mt-3">
@@ -954,7 +1362,7 @@ export default function KanbanBoard() {
                 name="startDate"
                 value={form?.startDate}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-22 items-center mt-3">
@@ -964,7 +1372,7 @@ export default function KanbanBoard() {
                 name="endDate"
                 value={form?.endDate}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-20 items-center mt-3">
@@ -975,7 +1383,7 @@ export default function KanbanBoard() {
                 name="timezone"
                 value={form?.timezone}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-24 items-center mt-3">
@@ -986,7 +1394,7 @@ export default function KanbanBoard() {
                 name="address"
                 value={form?.address}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-11 items-center mt-3">
@@ -997,7 +1405,7 @@ export default function KanbanBoard() {
                 name="contractValue"
                 value={form?.contractValue}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-16 items-center mt-3">
@@ -1008,7 +1416,7 @@ export default function KanbanBoard() {
                 name="clientName"
                 value={form?.clientName}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-9 items-center mt-3">
@@ -1018,7 +1426,7 @@ export default function KanbanBoard() {
                   setForm({ ...form, projectType: e.target.value })
                 }
                 value={form?.projectType}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+                className="select border border-1 border-white p-2 my-2 rounded-xl shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
               >
                 <option value="">Select Project Type</option>
                 {[
@@ -1062,7 +1470,7 @@ export default function KanbanBoard() {
                 name="location"
                 value={form?.location}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-9 items-center mt-3">
@@ -1071,7 +1479,7 @@ export default function KanbanBoard() {
                 name="status"
                 value={form?.status}
                 onChange={handleChange}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+                className="select border border-1 border-white p-2 my-2 rounded-xl shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
               >
                 <option value="NOT_READY">NOT_READY</option>
                 <option value="READY">READY</option>
@@ -1084,7 +1492,7 @@ export default function KanbanBoard() {
                 name="safetyStatus"
                 value={form?.safetyStatus}
                 onChange={handleChange}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+                className="select border border-1 border-white p-2 my-2 rounded-xl shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
               >
                 <option value="PENDING">PENDING</option>
                 <option value="APPROVED">APPROVED</option>
@@ -1097,7 +1505,7 @@ export default function KanbanBoard() {
                 name="permitStatus"
                 value={form?.permitStatus}
                 onChange={handleChange}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+                className="select border border-1 border-white p-2 my-2 rounded-xl shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
               >
                 <option value="PENDING">PENDING</option>
                 <option value="APPROVED">APPROVED</option>
@@ -1118,7 +1526,7 @@ export default function KanbanBoard() {
                 name="zoneType"
                 value={form?.zoneType}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-28 items-center mt-3">
@@ -1129,7 +1537,7 @@ export default function KanbanBoard() {
                 name="capacity"
                 value={form?.capacity}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-28 items-center mt-3">
@@ -1140,7 +1548,7 @@ export default function KanbanBoard() {
                 name="coolingType"
                 value={form?.coolingType}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
           </>
@@ -1157,7 +1565,7 @@ export default function KanbanBoard() {
                 name="serialNumber"
                 value={form?.serialNumber}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-24 items-center mt-3">
@@ -1168,7 +1576,7 @@ export default function KanbanBoard() {
                 name="equipmentType"
                 value={form?.equipmentType}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-9 items-center mt-3">
@@ -1177,7 +1585,7 @@ export default function KanbanBoard() {
                 name="status"
                 value={form?.status}
                 onChange={handleChange}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
+                className="select border border-1 border-white p-2 my-2 rounded-xl shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
               >
                 <option value="ORDERED">ORDERED</option>
                 <option value="MANUFACTURING">MANUFACTURING</option>
@@ -1195,7 +1603,7 @@ export default function KanbanBoard() {
                 name="lifecyclePhase"
                 value={form?.lifecyclePhase}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
             <div className="flex justify-left gap-14 items-center mt-3">
@@ -1206,7 +1614,7 @@ export default function KanbanBoard() {
                 name="certificationReq"
                 value={form?.certificationReq}
                 onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
+                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-white placeholder:text-body outline-none border border-1 border-white p-2 my-2 rounded-xl"
               />
             </div>
           </>
@@ -1238,7 +1646,7 @@ export default function KanbanBoard() {
                 <span
                   className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Projects" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
                 >
-                  Sub Projects
+                  Areas
                 </span>
               </button>
             ) : type === "Projects" ? (
@@ -1345,7 +1753,7 @@ export default function KanbanBoard() {
                     setTaskForm({ name: "", description: "" });
                     setSubtaskInputs([{ name: "", description: "" }]);
                   }}
-                  className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
+                  className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border border-1 border-white p-2 my-2 rounded-xl rounded-xl transition-all cursor-pointer"
                 >
                   <div className="flex flex-row gap-2">
                     <svg
@@ -2926,7 +3334,7 @@ export default function KanbanBoard() {
             {/* Header */}
             <div className="flex flex-row md:flex-row gap-4 justify-between mb-8">
               <h1 className="text-white mt-5 ml-4 text-xl md:text-3xl capitalize">
-                {activeView}
+                {activeView === "Projects" ? "Areas" : activeView}
               </h1>
               <div className="flex items-center gap-2">
                 <span className="text-gray-400 text-sm">Sort by</span>
@@ -2969,7 +3377,7 @@ export default function KanbanBoard() {
                   </svg>
                   <input
                     type="text"
-                    placeholder={`Search ${activeView}`}
+                    placeholder={`Search ${activeView === "Projects" ? "Areas" : activeView}`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full bg-[#0a1128] text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
@@ -3034,43 +3442,37 @@ export default function KanbanBoard() {
                   onClick={() =>
                     router.push(
                       subId
-                        ? `/create-project/${type}/${activeView}/${id}/${subId}`
-                        : `/create-project/${type}/${activeView}/${id}`,
+                        ? `/create-project/${parentCategory}/${type}/${activeView}/${id}/${subId}`
+                        : `/create-project/${parentCategory}/${type}/${activeView}/${id}`,
                     )
                   }
                   className="bg-[#F2F962] w-[max-content] flex items-center justify-center font-semibold capitalize text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20 w-[max-content"
                 >
-                  Add {activeView}
+                  Add{" "}
+                  {activeView === "Projects" ? "Area" : activeView.slice(0, -1)}
                 </button>
               </div>
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto ml-4">
-              {/* ── SITES TABLE ── */}
-              {activeView === "Sites" && (
-                <table className="w-full">
-                  <thead className="bg-[#080C26] rounded-2xl">
+            {/* ── SITES TABLE ── */}
+            {activeView === "Sites" && (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[7500px]">
+                  <thead className="bg-[#080C26] text-center rounded-2xl">
                     <tr>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                      <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                         #
                       </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Name
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Safety Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Permit Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Location
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                      {getTableHeaders(sites).map((header) => (
+                        <th
+                          key={header}
+                          className="py-4 px-4 text-gray-400 font-medium text-sm capitalize"
+                        >
+                          {header.replace(/([A-Z])/g, " $1").trim()}
+                        </th>
+                      ))}
+                      <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                         Actions
                       </th>
                     </tr>
@@ -3082,57 +3484,38 @@ export default function KanbanBoard() {
                           ?.toLowerCase()
                           .includes(searchTerm.toLowerCase()),
                       )
-                      .map((item) => (
+                      .map((item, index) => (
                         <tr
                           key={item.id}
-                          className="hover:bg-white/5 transition-colors cursor-pointer"
+                          className="hover:bg-white/5 transition-colors cursor-pointer text-center"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/Site/${item.id}/${id}`,
+                              `/ProjectDetails/${parentCategory}/Site/${item.id}/${id}`,
                             );
                           }}
                         >
-                          <td className="py-4 px-4">
+                          <td className="py-4">
                             <input
                               type="checkbox"
                               className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
-                              <span className="text-white font-medium">
-                                {item.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">
-                              {item.safetyStatus}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">
-                              {item.permitStatus}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.location}
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
+                          {getTableHeaders(sites).map((header) => (
+                            <td key={header} className="py-4 ">
+                              {renderCellContent(item, header, activeView)}
+                            </td>
+                          ))}
+                          <td className="py-4">
+                            <div className="flex items-center justify-center gap-2">
                               <button
                                 className="p-2 cursor-pointer"
-                                onClick={(e) =>
-                                  deleteFunction(e, activeView, item?.id)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteFunction(e, activeView, item?.id);
+                                }}
                               >
                                 <FaTrash className="text-white" />
                               </button>
@@ -3142,38 +3525,26 @@ export default function KanbanBoard() {
                       ))}
                   </tbody>
                 </table>
-              )}
-
-              {/* ── PROJECTS TABLE ── */}
-              {activeView === "Projects" && (
-                <table className="w-full">
-                  <thead className="bg-[#080C26] rounded-2xl">
+              </div>
+            )}
+            {/* ── PROJECTS TABLE ── */}
+            {activeView === "Projects" && (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[5500px]">
+                  <thead className="bg-[#080C26] text-center rounded-2xl">
                     <tr>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                      <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                         #
                       </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Name
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Project Type
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Start Date
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        End Date
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Address
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Assigned Users
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                      {getTableHeaders(projects).map((header) => (
+                        <th
+                          key={header}
+                          className="py-4 px-4 text-gray-400 font-medium text-sm capitalize"
+                        >
+                          {header.replace(/([A-Z])/g, " $1").trim()}
+                        </th>
+                      ))}
+                      <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                         Actions
                       </th>
                     </tr>
@@ -3185,75 +3556,38 @@ export default function KanbanBoard() {
                           ?.toLowerCase()
                           .includes(searchTerm.toLowerCase()),
                       )
-                      .map((item) => (
+                      .map((item, index) => (
                         <tr
                           key={item.id}
-                          className="hover:bg-white/5 transition-colors cursor-pointer"
+                          className="hover:bg-white/5 transition-colors text-center cursor-pointer"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/Projects/${item.id}/${id}`,
+                              `/ProjectDetails/${parentCategory}/Projects/${item.id}/${id}`,
                             );
                           }}
                         >
-                          <td className="py-4 px-4">
+                          <td className="py-4">
                             <input
                               type="checkbox"
                               className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
-                              <span className="text-white font-medium">
-                                {item.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.projectType}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.startDate
-                              ? new Date(item.startDate).toLocaleDateString()
-                              : "-"}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.endDate
-                              ? new Date(item.endDate).toLocaleDateString()
-                              : "-"}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.address}
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex">
-                              {item.assignedUsers
-                                ?.slice(0, 3)
-                                .map((user, i) => (
-                                  <div
-                                    key={user.id}
-                                    className={`w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-xs text-white font-bold ${i !== 0 ? "-ml-2" : ""}`}
-                                  >
-                                    {user.firstName?.[0]}
-                                    {user.lastName?.[0]}
-                                  </div>
-                                ))}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
+                          {getTableHeaders(projects).map((header) => (
+                            <td key={header} className="py-4">
+                              {renderCellContent(item, header, activeView)}
+                            </td>
+                          ))}
+                          <td className="py-4">
+                            <div className="flex items-center justify-center gap-2">
                               <button
                                 className="p-2 cursor-pointer"
-                                onClick={(e) =>
-                                  deleteFunction(e, activeView, item?.id)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteFunction(e, activeView, item?.id);
+                                }}
                               >
                                 <FaTrash className="text-white" />
                               </button>
@@ -3263,29 +3597,28 @@ export default function KanbanBoard() {
                       ))}
                   </tbody>
                 </table>
-              )}
+              </div>
+            )}
 
-              {/* ── ZONES TABLE ── */}
-              {activeView === "Zones" && (
-                <table className="w-full">
+            {/* ── ZONES TABLE ── */}
+            {/* ── ZONES TABLE (DYNAMIC) ── */}
+            {activeView === "Zones" && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-center min-w-[6000px]">
                   <thead className="bg-[#080C26] rounded-2xl">
                     <tr>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                      <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                         #
                       </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Name
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Type
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Site ID
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Created At
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                      {getTableHeaders(zones).map((header) => (
+                        <th
+                          key={header}
+                          className="py-4 px-4 text-gray-400 font-medium text-sm capitalize"
+                        >
+                          {header.replace(/([A-Z])/g, " $1").trim()}
+                        </th>
+                      ))}
+                      <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                         Actions
                       </th>
                     </tr>
@@ -3297,90 +3630,72 @@ export default function KanbanBoard() {
                           ?.toLowerCase()
                           .includes(searchTerm.toLowerCase()),
                       )
-                      .map((item) => (
+                      .map((item, index) => (
                         <tr
                           key={item.id}
-                          className="hover:bg-white/5 transition-colors cursor-pointer"
+                          className="hover:bg-white/5 transition-colors text-center cursor-pointer"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/Zone/${item.id}/${id}`,
+                              `/ProjectDetails/${parentCategory}/Zone/${item.id}/${id}`,
                             );
                           }}
                         >
-                          <td className="py-4 px-4">
+                          <td className="py-4">
                             <input
                               type="checkbox"
                               className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-teal-500"></div>
-                              <span className="text-white font-medium">
-                                {item.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.type}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400 text-xs">
-                            {item.siteId}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.createdAt
-                              ? new Date(item.createdAt).toLocaleDateString()
-                              : "-"}
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  className="p-2 cursor-pointer"
-                                  onClick={(e) =>
-                                    deleteFunction(e, activeView, item?.id)
-                                  }
-                                >
-                                  <FaTrash className="text-white" />
-                                </button>
-                              </div>
+                          {getTableHeaders(zones).map((header) => (
+                            <td key={header} className="py-4">
+                              {renderCellContent(item, header, activeView)}
+                            </td>
+                          ))}
+                          <td className="py-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                className="p-2 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteFunction(e, activeView, item?.id);
+                                }}
+                              >
+                                <FaTrash className="text-white" />
+                              </button>
                             </div>
                           </td>
                         </tr>
                       ))}
                   </tbody>
                 </table>
-              )}
+              </div>
+            )}
 
-              {/* ── EQUIPMENT TABLE ── */}
-              {activeView === "Assets" && (
-                <table className="w-full">
+            {/* ── EQUIPMENT/ASSETS TABLE (DYNAMIC) ── */}
+            {activeView === "Assets" && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-center min-w-[6000px]">
                   <thead className="bg-[#080C26] rounded-2xl">
                     <tr>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                      <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                         #
                       </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Name
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Serial Number
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Type
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Lifecycle Phase
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Certification Req
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
+                      {getTableHeaders(equipments).map((header) => (
+                        <th
+                          key={header}
+                          className="py-4 px-4 text-gray-400 font-medium text-sm capitalize"
+                        >
+                          {header
+                            .replace("metadata.", "")
+                            .replace(/_/g, " ")
+                            .replace(/([A-Z])/g, " $1")
+                            .trim()}
+                        </th>
+                      ))}
+                      <th className="py-4 px-4 text-gray-400 font-medium text-sm">
                         Actions
                       </th>
                     </tr>
@@ -3392,7 +3707,7 @@ export default function KanbanBoard() {
                           ?.toLowerCase()
                           .includes(searchTerm.toLowerCase()),
                       )
-                      .map((item) => (
+                      .map((item, index) => (
                         <tr
                           key={item.id}
                           className="hover:bg-white/5 transition-colors cursor-pointer"
@@ -3400,61 +3715,41 @@ export default function KanbanBoard() {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/Equipment/${item.id}/${id}`,
+                              `/ProjectDetails/${parentCategory}/Equipment/${item.id}/${id}`,
                             );
                           }}
                         >
-                          <td className="py-4 px-4">
+                          <td className="py-4">
                             <input
                               type="checkbox"
                               className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
+                              onClick={(e) => e.stopPropagation()}
                             />
                           </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-red-500"></div>
-                              <span className="text-white font-medium">
-                                {item.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.serialNumber}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.type}
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-orange-500/20 text-orange-400">
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.lifecyclePhase}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.certificationReq}
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  className="p-2 cursor-pointer"
-                                  onClick={(e) =>
-                                    deleteFunction(e, activeView, item?.id)
-                                  }
-                                >
-                                  <FaTrash className="text-white" />
-                                </button>
-                              </div>
+                          {getTableHeaders(equipments).map((header) => (
+                            <td key={header} className="py-4">
+                              {renderCellContent(item, header, activeView)}
+                            </td>
+                          ))}
+                          <td className="py-4">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                className="p-2 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteFunction(e, activeView, item?.id);
+                                }}
+                              >
+                                <FaTrash className="text-white" />
+                              </button>
                             </div>
                           </td>
                         </tr>
                       ))}
                   </tbody>
                 </table>
-              )}
-            </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -3567,7 +3862,7 @@ export default function KanbanBoard() {
                     { name: "", description: "" },
                   ])
                 }
-                className="bg-gradient-to-r from-[#080C26] to-[#00E691] text-white p-2 px-4 mt-2 border-none rounded-xl transition-all"
+                className="bg-gradient-to-r from-[#080C26] to-[#00E691] text-white p-2 px-4 mt-2 border border-1 border-white p-2 my-2 rounded-xl rounded-xl transition-all"
               >
                 <div className="flex flex-row gap-2 items-center">
                   <svg

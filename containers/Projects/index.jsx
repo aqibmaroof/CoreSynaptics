@@ -274,7 +274,7 @@ export default function KanbanBoard() {
                   <div
                     className="flex items-center gap-3"
                     onClick={() =>
-                      router.push(`/ProjectDetails/Project/${project?.id}`)
+                      router.push(`/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`)
                     }
                   >
                     <div className={`avatar online`}>
