@@ -8,36 +8,29 @@ import { setOrganization, setUser } from "@/services/instance/tokenService";
 
 const plans = [
   {
-    nameColor: "text-emerald-400",
-    dividerColor: "border-emerald-400/40",
-    buttonClass: "bg-emerald-400 hover:bg-emerald-300 text-white",
-    cardClass:
-      "bg-gradient-to-bl from-[#00E691] via-[#000]/30 to-[#151515]/0 border border-2 border-white/20",
-    glowClass: "shadow-[0_0_60px_rgba(52,211,153,0.15)]",
-    modules: ["Projects", "Field Execution", "Documents", "Reports", "Admin"],
+    nameColor: "#00d4ff",
+    accentColor: "#00ff88",
+    borderColor: "rgba(0,180,220,0.22)",
+    glowColor: "rgba(0,212,255,0.1)",
   },
   {
-    nameColor: "text-blue-400",
-    dividerColor: "border-blue-400/40",
-    buttonClass: "bg-blue-500 hover:bg-blue-400 text-white",
-    cardClass:
-      "bg-gradient-to-bl from-[#0075FF] via-[#000]/30 to-[#151515]/0 border border-2 border-white/20",
-    glowClass: "shadow-[0_0_60px_rgba(59,130,246,0.15)]",
+    nameColor: "#00d4ff",
+    accentColor: "#00ff88",
+    borderColor: "rgba(0,180,220,0.22)",
+    glowColor: "rgba(0,212,255,0.1)",
   },
   {
-    nameColor: "text-orange-400",
-    dividerColor: "border-orange-400/40",
-    buttonClass:
-      "bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-400 hover:to-orange-300 text-white",
-    cardClass:
-      "bg-gradient-to-bl from-[#FF8E4E] via-[#000]/30 to-[#151515]/0  border border-2 border-white/20",
-    glowClass: "shadow-[0_0_60px_rgba(249,115,22,0.15)]",
+    nameColor: "#00d4ff",
+    accentColor: "#00ff88",
+    borderColor: "rgba(0,180,220,0.22)",
+    glowColor: "rgba(0,212,255,0.1)",
   },
 ];
 
 export default function PricingPlans() {
   const router = useRouter();
   const [subscriptions, setSubscriptions] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     GetAllSubscriptions();
@@ -55,6 +48,7 @@ export default function PricingPlans() {
 
   const SelectSubscription = async (id) => {
     try {
+      setLoading(true);
       const payload = {
         subscriptionPlanId: id,
       };
@@ -66,82 +60,305 @@ export default function PricingPlans() {
       setTimeout(() => router.push("/"), 2000);
     } catch (error) {
       console.log("error selecting subscription : ", error);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="text-white bg-[url('/images/background.png')] bg-cover bg-center bg-no-repeat min-h-screen flex flex-col items-center justify-center py-16 px-4">
+    <div
+      className="text-white min-h-screen flex flex-col items-center justify-center py-20 px-4"
+      style={{ backgroundColor: "#020d16" }}
+    >
+      {/* Background glow */}
+      <div
+        className="absolute top-0 left-1/2 transform -translate-x-1/2 pointer-events-none"
+        style={{
+          width: "800px",
+          height: "400px",
+          background:
+            "radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%)",
+          filter: "blur(40px)",
+        }}
+      />
+
       {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">
-          Pricing Plans
+      <div className="text-center mb-16 relative z-10">
+        <h1
+          className="text-5xl font-bold mb-3 tracking-wider"
+          style={{
+            fontFamily: "'Rajdhani', sans-serif",
+            letterSpacing: "0.12em",
+            color: "#fff",
+          }}
+        >
+          PRICING PLANS
         </h1>
-        <p className="text-gray-400 text-base">
-          Choose the best plan for your business wisely!
+        <p
+          className="text-lg"
+          style={{
+            fontFamily: "'Share Tech Mono', monospace",
+            color: "#4a7a92",
+            letterSpacing: "0.06em",
+          }}
+        >
+          Choose the best plan for your organization
         </p>
       </div>
 
-      {/* Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+      {/* Plans Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl relative z-10">
         {subscriptions.map((plan, index) => (
           <div
             key={index}
-            className={`h-150 rounded-2xl p-6 flex flex-col ${plans[index].cardClass} transition-transform duration-300`}
+            className="rounded-lg border transition-all duration-300 hover:shadow-lg"
+            style={{
+              backgroundColor: "rgba(5,15,26,0.8)",
+              borderColor: plans[index].borderColor,
+              backdropFilter: "blur(10px)",
+              boxShadow: `0 0 30px ${plans[index].glowColor}`,
+            }}
           >
-            {/* Plan Name */}
-            <h2 className={`text-2xl font-bold mb-2 ${plans[index].nameColor}`}>
-              {plan.name}
-            </h2>
+            {/* Card Content */}
+            <div className="p-8 flex flex-col h-full">
+              {/* Plan Name */}
+              <h2
+                className="text-2xl font-bold mb-2 tracking-wide"
+                style={{
+                  fontFamily: "'Rajdhani', sans-serif",
+                  color: plans[index].nameColor,
+                  letterSpacing: "0.08em",
+                }}
+              >
+                {plan.name}
+              </h2>
 
-            {/* Price */}
-            <div className="flex flex-col items-start gap-1 mb-1">
-              <span className="text-5xl font-semibold text-white leading-none">
-                ${plan.price || "20"}
-              </span>
-              <span className="text-gray-400 text-sm mb-1">
-                Projects Limit: {plan.projectLimit || "♾️"}
-              </span>
-            </div>
-            <p className="text-gray-400 text-sm mb-4">
-              Users Limit: {plan.userLimit || "♾️"}
-            </p>
+              {/* Divider */}
+              <div
+                className="h-px mb-6"
+                style={{
+                  background: `linear-gradient(90deg, ${plans[index].nameColor} 0%, transparent 100%)`,
+                  opacity: "0.3",
+                }}
+              />
 
-            {/* Divider */}
-            <div className={`border-t ${plans[index].dividerColor} mb-4`} />
-
-            {/* Features */}
-            <div className="flex flex-col gap-2 text-gray-300 text-sm mb-4">
-              {Object.entries(plan?.features).map(([key, value]) => (
-                <div key={key}>
-                  <span>{key}</span>: <span>{String(value)}</span>
+              {/* Price Section */}
+              <div className="mb-6">
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span
+                    className="text-4xl font-bold"
+                    style={{
+                      color: "#c8eaf5",
+                      fontFamily: "'Rajdhani', sans-serif",
+                    }}
+                  >
+                    ${plan.price || "0"}
+                  </span>
+                  <span
+                    style={{
+                      color: "#4a7a92",
+                      fontFamily: "'Share Tech Mono', monospace",
+                    }}
+                  >
+                    / month
+                  </span>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            {/* Modules */}
-            <div className="flex flex-col gap-2 text-sm flex-1">
-              <p className={`font-bold ${plans[index].nameColor}`}>
-                Modules Included
-              </p>
-              {plan.moduleAccess.map((mod) => (
-                <p key={mod} className="text-gray-300">
-                  {mod}
+              {/* Limits */}
+              <div className="mb-6 space-y-2">
+                <div
+                  className="text-sm"
+                  style={{
+                    fontFamily: "'Share Tech Mono', monospace",
+                    color: "#7ab8cc",
+                  }}
+                >
+                  <span style={{ color: "#5a9ab5" }}>Projects: </span>
+                  <span style={{ color: "#c8eaf5" }}>
+                    {plan.projectLimit || "Unlimited"}
+                  </span>
+                </div>
+                <div
+                  className="text-sm"
+                  style={{
+                    fontFamily: "'Share Tech Mono', monospace",
+                    color: "#7ab8cc",
+                  }}
+                >
+                  <span style={{ color: "#5a9ab5" }}>Users: </span>
+                  <span style={{ color: "#c8eaf5" }}>
+                    {plan.userLimit || "Unlimited"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Features Divider */}
+              <div
+                className="h-px my-6"
+                style={{
+                  borderTop: `1px solid ${plans[index].borderColor}`,
+                }}
+              />
+
+              {/* Features */}
+              <div className="mb-8 flex-1">
+                <p
+                  className="text-xs font-bold mb-3 uppercase tracking-wider"
+                  style={{
+                    fontFamily: "'Share Tech Mono', monospace",
+                    color: plans[index].nameColor,
+                    letterSpacing: "0.2em",
+                  }}
+                >
+                  Features
                 </p>
-              ))}
-            </div>
+                <div className="space-y-2">
+                  {Object.entries(plan?.features || {}).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="text-xs flex justify-between items-center"
+                      style={{
+                        fontFamily: "'Exo 2', sans-serif",
+                        color: "#7ab8cc",
+                      }}
+                    >
+                      <span style={{ color: "#5a9ab5" }}>{key}:</span>
+                      <span
+                        className="font-semibold"
+                        style={{
+                          color: plans[index].accentColor,
+                        }}
+                      >
+                        {String(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            {/* Button */}
-            <div className="mt-8">
+              {/* Modules */}
+              {plan.moduleAccess && plan.moduleAccess.length > 0 && (
+                <div className="mb-8">
+                  <p
+                    className="text-xs font-bold mb-3 uppercase tracking-wider"
+                    style={{
+                      fontFamily: "'Share Tech Mono', monospace",
+                      color: plans[index].nameColor,
+                      letterSpacing: "0.2em",
+                    }}
+                  >
+                    Modules Included
+                  </p>
+                  <div className="space-y-2">
+                    {plan.moduleAccess.map((mod) => (
+                      <div
+                        key={mod}
+                        className="text-xs flex items-center gap-2"
+                        style={{
+                          fontFamily: "'Exo 2', sans-serif",
+                          color: "#7ab8cc",
+                        }}
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{
+                            background: plans[index].accentColor,
+                            boxShadow: `0 0 4px ${plans[index].accentColor}`,
+                          }}
+                        />
+                        {mod}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Select Button */}
               <button
                 onClick={() => SelectSubscription(plan?.id)}
-                className={`w-auto px-8 py-2.5 rounded-xl text-sm font-semibold transition-all translate-y-10 duration-200 cursor-pointer ${plans[index].buttonClass}`}
+                disabled={loading}
+                className="w-full py-3 rounded font-bold text-sm uppercase tracking-wider transition-all"
+                style={{
+                  fontFamily: "'Rajdhani', sans-serif",
+                  backgroundColor: loading ? "#0088aa" : "#00d4ff",
+                  color: "#020d16",
+                  fontSize: "0.9rem",
+                  letterSpacing: "0.2em",
+                  cursor: loading ? "not-allowed" : "pointer",
+                  opacity: loading ? 0.6 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading) {
+                    e.target.style.backgroundColor = "#10eaff";
+                    e.target.style.boxShadow = "0 0 22px rgba(0,212,255,0.45)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading) {
+                    e.target.style.backgroundColor = "#00d4ff";
+                    e.target.style.boxShadow = "none";
+                  }
+                }}
               >
-                Get Started
+                {loading ? (
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      style={{ animation: "spin 1s linear infinite" }}
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    SELECTING...
+                  </span>
+                ) : (
+                  <>SELECT PLAN →</>
+                )}
               </button>
+
+              <style>{`
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Footer Text */}
+      <p
+        className="mt-16 text-center"
+        style={{
+          fontFamily: "'Share Tech Mono', monospace",
+          color: "#4a7a92",
+          fontSize: "0.75rem",
+          letterSpacing: "0.08em",
+        }}
+      >
+        All plans include 24/7 support and can be upgraded or downgraded anytime
+      </p>
     </div>
   );
 }

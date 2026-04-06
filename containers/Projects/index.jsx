@@ -7,12 +7,16 @@ import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { DeleteProjects, getProjects } from "@/services/Projects";
+import EntityModal from "@/components/EntityModal";
 
 export default function KanbanBoard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [projects, setProjects] = useState([]);
   const router = useRouter();
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [isEntityModalOpen, setIsEntityModalOpen] = useState(false);
+  const [modalEntityType, setModalEntityType] = useState("project");
+  const [modalProjectCategory, setModalProjectCategory] = useState(null);
 
   useEffect(() => {
     getProjectsList();
@@ -222,7 +226,10 @@ export default function KanbanBoard() {
                 </button>
               </div>
               <button
-                onClick={() => router.push("/CreateProject")}
+                onClick={() => {
+                  setModalEntityType("project");
+                  setIsEntityModalOpen(true);
+                }}
                 className="bg-[#66ACFF] text-white p-2 rounded-xl hover:bg-[#fbbf24] transition-all cursor-pointer"
               >
                 <svg
@@ -274,7 +281,9 @@ export default function KanbanBoard() {
                   <div
                     className="flex items-center gap-3"
                     onClick={() =>
-                      router.push(`/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`)
+                      router.push(
+                        `/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`
+                      )
                     }
                   >
                     <div className={`avatar online`}>
@@ -326,7 +335,7 @@ export default function KanbanBoard() {
                           className={`text-[16px] text-white gap-3 mt-2 `}
                           onClick={() =>
                             router.push(
-                              `/ProjectDetails/Project/${project?.id}`,
+                              `/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`
                             )
                           }
                         >
@@ -681,7 +690,9 @@ export default function KanbanBoard() {
                         key={index}
                         className={`avatar 
                               ${index !== 0 ? "-ml-2" : ""} 
-                              transition-transform duration-300 z-${task.assignee.length - index}`}
+                              transition-transform duration-300 z-${
+                                task.assignee.length - index
+                              }`}
                       >
                         <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
                           <img
@@ -1032,6 +1043,18 @@ export default function KanbanBoard() {
           </div>
         </div>
       </div>
+
+      {/* EntityModal - Unified component for creating Projects */}
+      <EntityModal
+        isOpen={isEntityModalOpen}
+        onClose={() => setIsEntityModalOpen(false)}
+        entityType={modalEntityType}
+        projectCategory={modalProjectCategory}
+        onSuccess={(entityType) => {
+          // Refresh projects list after successful creation
+          getProjectsList();
+        }}
+      />
     </div>
   );
 }

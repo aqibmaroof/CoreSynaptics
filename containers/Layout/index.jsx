@@ -70,28 +70,28 @@ const Layout = ({ children }) => {
                     {pathname === `/Managers/List`
                       ? "Project Managers"
                       : pathname === `/Profile/Managers/${params?.id}`
-                        ? "Project Manager Profile"
-                        : pathname === "/Warehouse/List"
-                          ? "Warehouse"
-                          : pathname === "/Sales/List"
-                            ? "Sales"
-                            : pathname === "/QA/QC"
-                              ? "QA/QC"
-                              : pathname === "/FSEs"
-                                ? "FSEs"
-                                : pathname === "/Safety"
-                                  ? "Safety"
-                                  : pathname === "/Settings"
-                                    ? "Settings"
-                                    : pathname === "/UserProfile"
-                                      ? "My Profile"
-                                      : pathname === "/CreateProject"
-                                        ? "Create Project"
-                                        : pathname === "/ProjectDetails"
-                                          ? "Project Details"
-                                          : pathname === "/Shipment/Dashboard"
-                                            ? "Shipment"
-                                            : "Dashboard"}
+                      ? "Project Manager Profile"
+                      : pathname === "/Warehouse/List"
+                      ? "Warehouse"
+                      : pathname === "/Sales/List"
+                      ? "Sales"
+                      : pathname === "/QA/QC"
+                      ? "QA/QC"
+                      : pathname === "/FSEs"
+                      ? "FSEs"
+                      : pathname === "/Safety"
+                      ? "Safety"
+                      : pathname === "/Settings"
+                      ? "Settings"
+                      : pathname === "/UserProfile"
+                      ? "My Profile"
+                      : pathname === "/CreateProject"
+                      ? "Create Project"
+                      : pathname === "/ProjectDetails"
+                      ? "Project Details"
+                      : pathname === "/Shipment/Dashboard"
+                      ? "Shipment"
+                      : "Dashboard"}
                   </p>
                 </div>
               </div>
@@ -132,7 +132,7 @@ const Layout = ({ children }) => {
                           />
                         </div>
                         {/* The Green Dot */}
-                        <span className="absolute bottom-[2px] right-[2px] block h-3 w-3 rounded-full ring-2 ring-white bg-green-500"></span>
+                        <span className="absolute bottom-[2px] right-[2px] block h-2 w-2 rounded-full ring-2 ring-white bg-green-500"></span>
                       </div>
                     </div>
                   </label>
@@ -141,10 +141,10 @@ const Layout = ({ children }) => {
                     className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-60 border border-white/10"
                   >
                     {/* User Info Header */}
-                    <li className=" flex flex-row items-center justify-start">
-                      <div className="avatar online">
+                    <li className="flex flex-row items-center justify-start">
+                      <div className="w-[max-content] avatar online">
                         <div className="relative inline-block ">
-                          <div className="w-15 h-15 rounded-full overflow-hidden">
+                          <div className="w-13 h-13 rounded-full overflow-hidden">
                             <img
                               src={
                                 config?.user_icon ||
@@ -153,14 +153,17 @@ const Layout = ({ children }) => {
                             />
                           </div>
                           {/* The Green Dot */}
-                          <span className="absolute bottom-[2px] right-[2px] block h-3 w-3 rounded-full ring-2 ring-white bg-green-500"></span>
+                          <span className="absolute bottom-[2px] right-[2px] block h-2 w-2 rounded-full ring-2 ring-white bg-green-500"></span>
                         </div>
                       </div>
-                      <div className="flex flex-col justify-center items-start">
-                        <span className="text-left font-semibold text-[16px] text-white">
+                      <div className="w-[max-content] flex flex-col justify-center items-start">
+                        <span className="text-left font-semibold text-[13px] text-white">
                           {user?.firstName} {user?.lastName}
                         </span>
-                        <span className="text-left opacity-60 text-[16px] capitalize text-white">
+                        <span className="text-left opacity-60 text-[12px] capitalize text-white">
+                          {user?.organizationName || ""}
+                        </span>
+                        <span className="text-left opacity-60 text-[11px] capitalize text-white">
                           {user?.platformRole || user?.organizationType}
                         </span>
                       </div>
@@ -171,7 +174,9 @@ const Layout = ({ children }) => {
                     <li>
                       <a
                         href="/UserProfile"
-                        className={`text-[16px] text-white gap-3 mt-2 ${pathname === "/UserProfile" ? "bg-gray-400/20" : ""}`}
+                        className={`text-[16px] text-white gap-3 mt-2 ${
+                          pathname === "/UserProfile" ? "bg-gray-400/20" : ""
+                        }`}
                       >
                         <FiUser className="text-lg" /> My Profile
                       </a>
@@ -179,7 +184,9 @@ const Layout = ({ children }) => {
                     <li>
                       <a
                         href="/Settings"
-                        className={`text-[16px] text-white mb-3 gap-3 ${pathname === "/Settings" ? "bg-gray-400/20" : ""}`}
+                        className={`text-[16px] text-white mb-3 gap-3 ${
+                          pathname === "/Settings" ? "bg-gray-400/20" : ""
+                        }`}
                       >
                         <FiSettings className="text-lg" /> Settings
                       </a>

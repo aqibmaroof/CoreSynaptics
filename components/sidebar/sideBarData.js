@@ -1,107 +1,3 @@
-// import config from "@/config";
-
-// export const sidebarItems = [
-//   {
-//     title: "Dashboard",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     path: "/",
-//     type: "link",
-//     submenu: [],
-//     role:['GCPM']
-//   },
-//   {
-//     title: "Project Managers",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     category: "",
-//     path: "/Managers/List",
-//     submenu: [],
-//   },
-//   {
-//     title: "Projects",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     path: "/Projects",
-//     type: "link",
-//     submenu: [],
-//   },
-//   {
-//     title: "Tasks",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     path: "/Tasks/List",
-//     type: "link",
-//     submenu: [],
-//   },
-//   {
-//     title: "Shipment",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     path: "/Shipment/Dashboard",
-//     type: "link",
-//     submenu: [],
-//   },
-//   {
-//     title: "Receiving",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     path: "/Receiving/Overview",
-//     type: "link",
-//     submenu: [],
-//   },
-//   {
-//     title: "QA/QC",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     path: "/QA/QC",
-//     submenu: [],
-//   },
-//   {
-//     title: "FSEs",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     category: "",
-//     path: "/FSEs",
-//     submenu: [],
-//   },
-//   {
-//     title: "Safety",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     category: "",
-//     path: "/Safety",
-//     submenu: [],
-//   },
-//   {
-//     title: "Warehouse",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     path: "/Warehouse/List",
-//     submenu: [],
-//   },
-//   {
-//     title: "Sales",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     path: "/Sales/List",
-//     submenu: [],
-//   },
-//   {
-//     title: "Subscriptions",
-//     path: "/Subscriptions/List",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     submenu: [],
-//   },
-//   {
-//     title: "Settings",
-//     path: "/Settings",
-//     icon: config?.chart,
-//     iconActive: config?.home,
-//     submenu: [],
-//   },
-// ];
 "use client";
 import config from "@/config";
 
@@ -130,8 +26,7 @@ export const sidebarItems = [
     path: "/",
     type: "link",
     submenu: [],
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN],
-    
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
   },
 
   // ─── OEM PM Dashboard ──────────────────────────────────────────────
@@ -142,7 +37,7 @@ export const sidebarItems = [
     path: "/OEM/Dashboard",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
   },
 
   // ─── FSM / Scheduler Dashboard ─────────────────────────────────────
@@ -153,7 +48,7 @@ export const sidebarItems = [
     path: "/Dispatch/Dashboard",
     type: "link",
     submenu: [],
-    roles: [ROLES.FSM],
+    roles: [ROLES.FSM, ROLES.SUPERADMIN],
   },
 
   // ─── Superintendent Field Dashboard ────────────────────────────────
@@ -164,7 +59,7 @@ export const sidebarItems = [
     path: "/Field/Dashboard",
     type: "link",
     submenu: [],
-    roles: [ROLES.SUPERINTENDENT],
+    roles: [ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
   },
 
   // ─── QA/QC Dashboard ───────────────────────────────────────────────
@@ -175,7 +70,7 @@ export const sidebarItems = [
     path: "/QAQC/Dashboard",
     type: "link",
     submenu: [],
-    roles: [ROLES.QA_QC],
+    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
   },
 
   // ─── Safety Dashboard ──────────────────────────────────────────────
@@ -186,7 +81,7 @@ export const sidebarItems = [
     path: "/Safety/Audits",
     type: "link",
     submenu: [],
-    roles: [ROLES.SAFETY],
+    roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
   },
 
   // ─── Finance Dashboard ─────────────────────────────────────────────
@@ -197,7 +92,7 @@ export const sidebarItems = [
     path: "/Finance/Dashboard",
     type: "link",
     submenu: [],
-    roles: [ROLES.FINANCE],
+    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
   },
 
   // ─── Executive Dashboard ───────────────────────────────────────────
@@ -208,7 +103,7 @@ export const sidebarItems = [
     path: "/Executive/Dashboard",
     type: "link",
     submenu: [],
-    roles: [ROLES.EXECUTIVE],
+    roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
   },
 
   // ─── Projects ──────────────────────────────────────────────────────
@@ -227,10 +122,11 @@ export const sidebarItems = [
       ROLES.OEM_PM,
       ROLES.FSM,
       ROLES.QA_QC,
+      ROLES.SUPERADMIN,
     ],
   },
 
-    // ─── Teams ──────────────────────────────────────────────────────
+  // ─── Teams ──────────────────────────────────────────────────────
   {
     title: "Teams",
     icon: config?.chart,
@@ -246,6 +142,7 @@ export const sidebarItems = [
       ROLES.OEM_PM,
       ROLES.FSM,
       ROLES.QA_QC,
+      ROLES.SUPERADMIN,
     ],
   },
 
@@ -257,7 +154,7 @@ export const sidebarItems = [
     path: "/Portfolio",
     type: "link",
     submenu: [],
-    roles: [ROLES.EXECUTIVE],
+    roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
   },
 
   // ─── KPIs (Executive only) ─────────────────────────────────────────
@@ -268,7 +165,7 @@ export const sidebarItems = [
     path: "/KPIs",
     type: "link",
     submenu: [],
-    roles: [ROLES.EXECUTIVE],
+    roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
   },
 
   // ─── Schedule & Look-Ahead ─────────────────────────────────────────
@@ -280,7 +177,12 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // GC PM: Edit | Superintendent: View
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERINTENDENT],
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.SUPERINTENDENT,
+      ROLES.SUPERADMIN,
+    ],
   },
 
   // ─── Service Schedule / Dispatch ───────────────────────────────────
@@ -291,7 +193,7 @@ export const sidebarItems = [
     path: "/ServiceSchedule",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
   },
 
   // ─── Assignments (FSM) ─────────────────────────────────────────────
@@ -302,7 +204,7 @@ export const sidebarItems = [
     path: "/Assignments",
     type: "link",
     submenu: [],
-    roles: [ROLES.FSM],
+    roles: [ROLES.FSM, ROLES.SUPERADMIN],
   },
 
   // ─── Schedule & Windows (FSM) ──────────────────────────────────────
@@ -313,7 +215,7 @@ export const sidebarItems = [
     path: "/ScheduleWindows",
     type: "link",
     submenu: [],
-    roles: [ROLES.FSM],
+    roles: [ROLES.FSM, ROLES.SUPERADMIN],
   },
 
   // ─── My Assignments (FSE) ──────────────────────────────────────────
@@ -324,7 +226,7 @@ export const sidebarItems = [
     path: "/MyAssignments",
     type: "link",
     submenu: [],
-    roles: [ROLES.FSE],
+    roles: [ROLES.FSE, ROLES.SUPERADMIN],
   },
 
   // ─── Tasks ─────────────────────────────────────────────────────────
@@ -336,7 +238,7 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // FSE & Superintendent: Execute
-    roles: [ROLES.FSE, ROLES.SUPERINTENDENT],
+    roles: [ROLES.FSE, ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
   },
 
   // ─── Logistics (Site Deliveries) ───────────────────────────────────
@@ -347,7 +249,7 @@ export const sidebarItems = [
     path: "/Logistics",
     type: "link",
     submenu: [],
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
   },
 
   // ─── Supply Chain ──────────────────────────────────────────────────
@@ -358,7 +260,7 @@ export const sidebarItems = [
     path: "/SupplyChain",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
   },
 
   // ─── Outbound Logistics / Shipments ────────────────────────────────
@@ -369,7 +271,7 @@ export const sidebarItems = [
     path: "/Shipment/Dashboard",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
   },
 
   // ─── Receiving / Inspection ────────────────────────────────────────
@@ -411,7 +313,7 @@ export const sidebarItems = [
     path: "/Receiving/Overview",
     type: "link",
     submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN],
+    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
   },
 
   // ─── Field Reports ─────────────────────────────────────────────────
@@ -422,7 +324,7 @@ export const sidebarItems = [
     path: "/FieldReports",
     type: "link",
     submenu: [],
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
   },
 
   // ─── Daily Reports (Superintendent) ───────────────────────────────
@@ -433,7 +335,7 @@ export const sidebarItems = [
     path: "/DailyReports",
     type: "link",
     submenu: [],
-    roles: [ROLES.SUPERINTENDENT],
+    roles: [ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
   },
 
   // ─── Quality / NCR ─────────────────────────────────────────────────
@@ -445,7 +347,12 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // GC PM: View/Escalate | Superintendent: Edit (Install QC)
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERINTENDENT],
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.SUPERINTENDENT,
+      ROLES.SUPERADMIN,
+    ],
   },
 
   // ─── QA/QC (Inspections, NCRs, Corrective Actions) ────────────────
@@ -456,7 +363,7 @@ export const sidebarItems = [
     path: "/QAQC/Inspections",
     type: "link",
     submenu: [],
-    roles: [ROLES.QA_QC],
+    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
   },
   {
     title: "NCRs / Defects",
@@ -465,7 +372,7 @@ export const sidebarItems = [
     path: "/QAQC/NCRs",
     type: "link",
     submenu: [],
-    roles: [ROLES.QA_QC],
+    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
   },
   {
     title: "Corrective Actions",
@@ -474,7 +381,7 @@ export const sidebarItems = [
     path: "/QAQC/CorrectiveActions",
     type: "link",
     submenu: [],
-    roles: [ROLES.QA_QC],
+    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
   },
   {
     title: "Evidence Library",
@@ -483,7 +390,7 @@ export const sidebarItems = [
     path: "/QAQC/EvidenceLibrary",
     type: "link",
     submenu: [],
-    roles: [ROLES.QA_QC],
+    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
   },
 
   // ─── Safety ────────────────────────────────────────────────────────
@@ -495,7 +402,7 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // GC PM: View | Superintendent: Execute
-    roles: [ROLES.GC_PM, ROLES.SUPERINTENDENT],
+    roles: [ROLES.GC_PM, ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
   },
   {
     title: "JHAs/JSAs & Permits",
@@ -504,7 +411,7 @@ export const sidebarItems = [
     path: "/Safety/Reports",
     type: "link",
     submenu: [],
-    roles: [ROLES.SAFETY],
+    roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
   },
   {
     title: "Incidents",
@@ -513,7 +420,7 @@ export const sidebarItems = [
     path: "/Safety/Incidents",
     type: "link",
     submenu: [],
-    roles: [ROLES.SAFETY, ROLES.GC_ADMIN],
+    roles: [ROLES.SAFETY, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
   },
   {
     title: "Audits",
@@ -522,7 +429,7 @@ export const sidebarItems = [
     path: "/Safety/Audits",
     type: "link",
     submenu: [],
-    roles: [ROLES.SAFETY],
+    roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
   },
   {
     title: "Training Compliance",
@@ -531,7 +438,7 @@ export const sidebarItems = [
     path: "/Safety/Training",
     type: "link",
     submenu: [],
-    roles: [ROLES.SAFETY],
+    roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
   },
 
   // ─── Commissioning ─────────────────────────────────────────────────
@@ -550,6 +457,7 @@ export const sidebarItems = [
       ROLES.OEM_ADMIN,
       ROLES.FSM,
       ROLES.FSE,
+      ROLES.SUPERADMIN,
     ],
   },
 
@@ -561,7 +469,7 @@ export const sidebarItems = [
     path: "/TestResults",
     type: "link",
     submenu: [],
-    roles: [ROLES.FSE],
+    roles: [ROLES.FSE, ROLES.SUPERADMIN],
   },
 
   // ─── RMA / Service ─────────────────────────────────────────────────
@@ -573,7 +481,13 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     // OEM PM: Edit | FSM: View | FSE: Edit
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.FSM, ROLES.FSE],
+    roles: [
+      ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
+      ROLES.FSM,
+      ROLES.FSE,
+      ROLES.SUPERADMIN,
+    ],
   },
 
   // ─── Change Orders ─────────────────────────────────────────────────
@@ -584,7 +498,7 @@ export const sidebarItems = [
     path: "/ChangeOrders",
     type: "link",
     submenu: [],
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
   },
 
   // ─── Finance ───────────────────────────────────────────────────────
@@ -595,7 +509,7 @@ export const sidebarItems = [
     path: "/Finance/AP",
     type: "link",
     submenu: [],
-    roles: [ROLES.FINANCE],
+    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
   },
   {
     title: "AR (Customers / Invoices)",
@@ -604,7 +518,7 @@ export const sidebarItems = [
     path: "/Finance/AR",
     type: "link",
     submenu: [],
-    roles: [ROLES.FINANCE],
+    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
   },
   {
     title: "Payments",
@@ -613,7 +527,7 @@ export const sidebarItems = [
     path: "/Finance/Payments",
     type: "link",
     submenu: [],
-    roles: [ROLES.FINANCE],
+    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
   },
   {
     title: "PO / SO",
@@ -622,7 +536,7 @@ export const sidebarItems = [
     path: "/Finance/POSO",
     type: "link",
     submenu: [],
-    roles: [ROLES.FINANCE],
+    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
   },
   {
     title: "Budget vs Actual",
@@ -631,7 +545,7 @@ export const sidebarItems = [
     path: "/Finance/Budget",
     type: "link",
     submenu: [],
-    roles: [ROLES.FINANCE],
+    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
   },
 
   // ─── Documents ─────────────────────────────────────────────────────
@@ -649,6 +563,7 @@ export const sidebarItems = [
       ROLES.OEM_PM,
       ROLES.OEM_ADMIN,
       ROLES.FSE,
+      ROLES.SUPERADMIN,
       ROLES.SUPERINTENDENT,
     ],
   },
@@ -672,6 +587,7 @@ export const sidebarItems = [
       ROLES.SAFETY,
       ROLES.FINANCE,
       ROLES.EXECUTIVE,
+      ROLES.SUPERADMIN,
     ],
   },
 
@@ -696,7 +612,7 @@ export const sidebarItems = [
     iconActive: config?.home,
     type: "link",
     submenu: [],
-    roles: [ROLES.SUPERADMIN, ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN],
+    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN],
   },
 
   // ─── Permissions (all roles – adjust as needed) ───────────────────────
@@ -743,6 +659,7 @@ export const sidebarItems = [
       ROLES.SAFETY,
       ROLES.FINANCE,
       ROLES.EXECUTIVE,
+      ROLES.SUPERADMIN,
     ],
   },
 ];
@@ -758,9 +675,8 @@ export const sidebarItems = [
  */
 export function getMenuByRole(role) {
   // SUPERADMIN sees everything
-  if (role === "SUPERADMIN") return sidebarItems;
 
   return sidebarItems.filter(
-    (item) => !item.roles || item.roles.includes(role),
+    (item) => !item.roles || item.roles.includes(role)
   );
 }

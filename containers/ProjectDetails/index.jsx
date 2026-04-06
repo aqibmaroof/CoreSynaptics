@@ -48,6 +48,7 @@ import {
 } from "@/services/SubTasks";
 import { getTeams } from "@/services/Teams";
 import MultiSelectDropdown from "@/components/MultiSelectDropDown";
+import EntityModal from "@/components/EntityModal";
 
 // Helper function to get all unique keys from an array of objects
 const getTableHeaders = (data) => {
@@ -156,10 +157,10 @@ const formatCellValue = (value) => {
                   gate.status === "APPROVED" || gate.status === "PASSED"
                     ? "bg-green-500/20 text-green-400"
                     : gate.status === "PENDING"
-                      ? "bg-yellow-500/20 text-yellow-400"
-                      : gate.status === "REJECTED" || gate.status === "FAILED"
-                        ? "bg-red-500/20 text-red-400"
-                        : "bg-gray-500/20 text-gray-400"
+                    ? "bg-yellow-500/20 text-yellow-400"
+                    : gate.status === "REJECTED" || gate.status === "FAILED"
+                    ? "bg-red-500/20 text-red-400"
+                    : "bg-gray-500/20 text-gray-400"
                 }`}
               >
                 {gate.status}
@@ -201,10 +202,10 @@ const renderCellContent = (item, header, activeView) => {
                 gate.status === "APPROVED" || gate.status === "PASSED"
                   ? "bg-green-500/20 text-green-400"
                   : gate.status === "PENDING"
-                    ? "bg-yellow-500/20 text-yellow-400"
-                    : gate.status === "REJECTED" || gate.status === "FAILED"
-                      ? "bg-red-500/20 text-red-400"
-                      : "bg-gray-500/20 text-gray-400"
+                  ? "bg-yellow-500/20 text-yellow-400"
+                  : gate.status === "REJECTED" || gate.status === "FAILED"
+                  ? "bg-red-500/20 text-red-400"
+                  : "bg-gray-500/20 text-gray-400"
               }`}
             >
               {gate.status}
@@ -223,8 +224,8 @@ const renderCellContent = (item, header, activeView) => {
           value === "ACTIVE"
             ? "bg-green-500/20 text-green-400"
             : value === "INACTIVE"
-              ? "bg-red-500/20 text-red-400"
-              : "bg-yellow-500/20 text-yellow-400"
+            ? "bg-red-500/20 text-red-400"
+            : "bg-yellow-500/20 text-yellow-400"
         }`}
       >
         {value}
@@ -285,18 +286,18 @@ const renderCellContent = (item, header, activeView) => {
           value === "OPERATIONAL"
             ? "bg-green-500/20 text-green-400"
             : value === "PENDING" ||
-                value === "NOT_READY" ||
-                value === "PLANNING" ||
-                value === "MAINTENANCE"
-              ? "bg-yellow-500/20 text-yellow-400"
-              : value === "REJECTED" ||
-                  value === "FAILED" ||
-                  value === "CANCELLED" ||
-                  value === "DECOMMISSIONED"
-                ? "bg-red-500/20 text-red-400"
-                : value === "IN_PROGRESS" || value === "INSTALLING"
-                  ? "bg-blue-500/20 text-blue-400"
-                  : "bg-gray-500/20 text-gray-400"
+              value === "NOT_READY" ||
+              value === "PLANNING" ||
+              value === "MAINTENANCE"
+            ? "bg-yellow-500/20 text-yellow-400"
+            : value === "REJECTED" ||
+              value === "FAILED" ||
+              value === "CANCELLED" ||
+              value === "DECOMMISSIONED"
+            ? "bg-red-500/20 text-red-400"
+            : value === "IN_PROGRESS" || value === "INSTALLING"
+            ? "bg-blue-500/20 text-blue-400"
+            : "bg-gray-500/20 text-gray-400"
         }`}
       >
         {value?.replace(/_/g, " ")}
@@ -312,16 +313,16 @@ const renderCellContent = (item, header, activeView) => {
           value === "ORDERED"
             ? "bg-purple-500/20 text-purple-400"
             : value === "MANUFACTURING"
-              ? "bg-indigo-500/20 text-indigo-400"
-              : value === "FAT"
-                ? "bg-blue-500/20 text-blue-400"
-                : value === "SHIPPED"
-                  ? "bg-cyan-500/20 text-cyan-400"
-                  : value === "INSTALLED"
-                    ? "bg-green-500/20 text-green-400"
-                    : value === "COMMISSIONED"
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-gray-500/20 text-gray-400"
+            ? "bg-indigo-500/20 text-indigo-400"
+            : value === "FAT"
+            ? "bg-blue-500/20 text-blue-400"
+            : value === "SHIPPED"
+            ? "bg-cyan-500/20 text-cyan-400"
+            : value === "INSTALLED"
+            ? "bg-green-500/20 text-green-400"
+            : value === "COMMISSIONED"
+            ? "bg-emerald-500/20 text-emerald-400"
+            : "bg-gray-500/20 text-gray-400"
         }`}
       >
         {value?.replace(/_/g, " ")}
@@ -382,8 +383,8 @@ const renderCellContent = (item, header, activeView) => {
           value === "REQUIRED"
             ? "bg-red-500/20 text-red-400"
             : value === "NOT_REQUIRED"
-              ? "bg-gray-500/20 text-gray-400"
-              : "bg-yellow-500/20 text-yellow-400"
+            ? "bg-gray-500/20 text-gray-400"
+            : "bg-yellow-500/20 text-yellow-400"
         }`}
       >
         {value?.replace(/_/g, " ") || "-"}
@@ -570,6 +571,11 @@ export default function KanbanBoard() {
     { name: "", description: "" },
   ]);
   const [taskLoading, setTaskLoading] = useState(false);
+
+  // EntityModal state
+  const [isEntityModalOpen, setIsEntityModalOpen] = useState(false);
+  const [entityModalType, setEntityModalType] = useState(""); // "site", "zone", "equipment"
+  const [entityModalParentId, setEntityModalParentId] = useState(null);
 
   const [form, setForm] = useState({
     // Project fields
@@ -820,7 +826,7 @@ export default function KanbanBoard() {
       await updateSubTaskByTaskId(
         editingSubtask.taskId,
         editingSubtask.id,
-        editSubtaskForm,
+        editSubtaskForm
       );
       setMessage({ type: "success", text: "Subtask updated successfully! 🚀" });
       setEditingSubtask(null);
@@ -1282,7 +1288,17 @@ export default function KanbanBoard() {
       }
       setMessage({
         type: "success",
-        text: `${deleteType === "Sites" ? "Site" : deleteType === "Projects" ? "Sub Project" : deleteType === "Zones" ? "Zone" : deleteType === "Assets" ? "Asset" : ""} Deleted Successfully !`,
+        text: `${
+          deleteType === "Sites"
+            ? "Site"
+            : deleteType === "Projects"
+            ? "Sub Project"
+            : deleteType === "Zones"
+            ? "Zone"
+            : deleteType === "Assets"
+            ? "Asset"
+            : ""
+        } Deleted Successfully !`,
       });
     } catch (error) {
       setMessage({
@@ -1318,12 +1334,12 @@ export default function KanbanBoard() {
             {type === "Zone"
               ? "Update Zone"
               : type === "Equipment"
-                ? "Update Equipment"
-                : type === "Projects"
-                  ? "Update Area"
-                  : type === "Site"
-                    ? "Update Site "
-                    : "Update Project"}
+              ? "Update Equipment"
+              : type === "Projects"
+              ? "Update Area"
+              : type === "Site"
+              ? "Update Site "
+              : "Update Project"}
           </button>
         </div>
       </div>
@@ -1633,7 +1649,11 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Sites" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
+                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                    activeView === "Sites"
+                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                      : "bg-transparent"
+                  }`}
                 >
                   Sites
                 </span>
@@ -1644,7 +1664,11 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Projects" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
+                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                    activeView === "Projects"
+                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                      : "bg-transparent"
+                  }`}
                 >
                   Areas
                 </span>
@@ -1655,7 +1679,11 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Zones" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
+                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                    activeView === "Zones"
+                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                      : "bg-transparent"
+                  }`}
                 >
                   Zones
                 </span>
@@ -1666,7 +1694,11 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Assets" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
+                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                    activeView === "Assets"
+                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                      : "bg-transparent"
+                  }`}
                 >
                   Assets
                 </span>
@@ -1678,7 +1710,11 @@ export default function KanbanBoard() {
               className="font-[500] w-[max-content] text-white border-3 cursor-pointer border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
             >
               <span
-                className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "task" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
+                className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                  activeView === "task"
+                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                    : "bg-transparent"
+                }`}
               >
                 <img src="/images/list.png" alt="Vector" className="h-3 w-3" />
                 Tasks
@@ -1905,7 +1941,7 @@ export default function KanbanBoard() {
                           className="flex items-center justify-between w-full p-3 cursor-pointer hover:bg-white/5 rounded-t-xl"
                           onClick={() => {
                             setSelectedTask(
-                              selectedTask?.id === task.id ? null : task,
+                              selectedTask?.id === task.id ? null : task
                             );
                             setSubtaskInputs([{ name: "", description: "" }]);
                           }}
@@ -1927,8 +1963,8 @@ export default function KanbanBoard() {
                                 task.status === "PENDING"
                                   ? "bg-yellow-500/20 text-yellow-400"
                                   : task.status === "IN_PROGRESS"
-                                    ? "bg-blue-500/20 text-blue-400"
-                                    : "bg-green-500/20 text-green-400"
+                                  ? "bg-blue-500/20 text-blue-400"
+                                  : "bg-green-500/20 text-green-400"
                               }`}
                             >
                               {task.status}
@@ -2014,8 +2050,8 @@ export default function KanbanBoard() {
                                         sub.status === "PENDING"
                                           ? "bg-yellow-500/20 text-yellow-400"
                                           : sub.status === "IN_PROGRESS"
-                                            ? "bg-blue-500/20 text-blue-400"
-                                            : "bg-green-500/20 text-green-400"
+                                          ? "bg-blue-500/20 text-blue-400"
+                                          : "bg-green-500/20 text-green-400"
                                       }`}
                                     >
                                       {sub.status}
@@ -2128,7 +2164,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2219,7 +2257,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2313,7 +2353,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2422,7 +2464,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2512,7 +2556,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2621,7 +2667,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2711,7 +2759,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2801,7 +2851,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2908,7 +2960,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -3377,7 +3431,9 @@ export default function KanbanBoard() {
                   </svg>
                   <input
                     type="text"
-                    placeholder={`Search ${activeView === "Projects" ? "Areas" : activeView}`}
+                    placeholder={`Search ${
+                      activeView === "Projects" ? "Areas" : activeView
+                    }`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full bg-[#0a1128] text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
@@ -3439,13 +3495,19 @@ export default function KanbanBoard() {
                 </button>
 
                 <button
-                  onClick={() =>
-                    router.push(
-                      subId
-                        ? `/create-project/${parentCategory}/${type}/${activeView}/${id}/${subId}`
-                        : `/create-project/${parentCategory}/${type}/${activeView}/${id}`,
-                    )
-                  }
+                  onClick={() => {
+                    // Map activeView to entityType
+                    let entityType = "";
+                    if (activeView === "Sites") entityType = "site";
+                    else if (activeView === "Projects")
+                      entityType = "site"; // "Areas" map to Sites
+                    else if (activeView === "Zones") entityType = "zone";
+                    else if (activeView === "Assets") entityType = "equipment";
+
+                    setEntityModalType(entityType);
+                    setEntityModalParentId(id); // Current project/site/zone ID
+                    setIsEntityModalOpen(true);
+                  }}
                   className="bg-[#F2F962] w-[max-content] flex items-center justify-center font-semibold capitalize text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20 w-[max-content"
                 >
                   Add{" "}
@@ -3482,7 +3544,7 @@ export default function KanbanBoard() {
                       ?.filter((item) =>
                         item?.name
                           ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase()),
+                          .includes(searchTerm.toLowerCase())
                       )
                       .map((item, index) => (
                         <tr
@@ -3492,7 +3554,7 @@ export default function KanbanBoard() {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/${parentCategory}/Site/${item.id}/${id}`,
+                              `/ProjectDetails/${parentCategory}/Site/${item.id}/${id}`
                             );
                           }}
                         >
@@ -3554,7 +3616,7 @@ export default function KanbanBoard() {
                       ?.filter((item) =>
                         item?.name
                           ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase()),
+                          .includes(searchTerm.toLowerCase())
                       )
                       .map((item, index) => (
                         <tr
@@ -3564,7 +3626,7 @@ export default function KanbanBoard() {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/${parentCategory}/Projects/${item.id}/${id}`,
+                              `/ProjectDetails/${parentCategory}/Projects/${item.id}/${id}`
                             );
                           }}
                         >
@@ -3628,7 +3690,7 @@ export default function KanbanBoard() {
                       ?.filter((item) =>
                         item?.name
                           ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase()),
+                          .includes(searchTerm.toLowerCase())
                       )
                       .map((item, index) => (
                         <tr
@@ -3638,7 +3700,7 @@ export default function KanbanBoard() {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/${parentCategory}/Zone/${item.id}/${id}`,
+                              `/ProjectDetails/${parentCategory}/Zone/${item.id}/${id}`
                             );
                           }}
                         >
@@ -3705,7 +3767,7 @@ export default function KanbanBoard() {
                       ?.filter((item) =>
                         item?.name
                           ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase()),
+                          .includes(searchTerm.toLowerCase())
                       )
                       .map((item, index) => (
                         <tr
@@ -3715,7 +3777,7 @@ export default function KanbanBoard() {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/${parentCategory}/Equipment/${item.id}/${id}`,
+                              `/ProjectDetails/${parentCategory}/Equipment/${item.id}/${id}`
                             );
                           }}
                         >
@@ -3916,8 +3978,8 @@ export default function KanbanBoard() {
                 {taskLoading
                   ? "Saving..."
                   : selectedTask
-                    ? "Save Subtasks"
-                    : "Create Task"}
+                  ? "Save Subtasks"
+                  : "Create Task"}
               </button>
             </div>
           </div>
@@ -4075,6 +4137,29 @@ export default function KanbanBoard() {
           </div>
         </div>
       </dialog>
+
+      {/* EntityModal - Unified component for creating Sites, Zones, Equipment */}
+      <EntityModal
+        isOpen={isEntityModalOpen}
+        onClose={() => setIsEntityModalOpen(false)}
+        entityType={entityModalType}
+        parentId={entityModalParentId}
+        projectCategory={parentCategory}
+        onSuccess={(entityType) => {
+          // Refresh the appropriate list after successful creation
+          if (entityType === "site" || entityModalType === "site") {
+            getSites();
+          } else if (entityType === "zone" || entityModalType === "zone") {
+            getZones();
+          } else if (
+            entityType === "equipment" ||
+            entityModalType === "equipment"
+          ) {
+            getEquipments();
+          }
+          setIsEntityModalOpen(false);
+        }}
+      />
     </div>
   );
 }
