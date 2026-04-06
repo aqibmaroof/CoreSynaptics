@@ -157,10 +157,10 @@ const formatCellValue = (value) => {
                   gate.status === "APPROVED" || gate.status === "PASSED"
                     ? "bg-green-500/20 text-green-400"
                     : gate.status === "PENDING"
-                    ? "bg-yellow-500/20 text-yellow-400"
-                    : gate.status === "REJECTED" || gate.status === "FAILED"
-                    ? "bg-red-500/20 text-red-400"
-                    : "bg-gray-500/20 text-gray-400"
+                      ? "bg-yellow-500/20 text-yellow-400"
+                      : gate.status === "REJECTED" || gate.status === "FAILED"
+                        ? "bg-red-500/20 text-red-400"
+                        : "bg-gray-500/20 text-gray-400"
                 }`}
               >
                 {gate.status}
@@ -202,10 +202,10 @@ const renderCellContent = (item, header, activeView) => {
                 gate.status === "APPROVED" || gate.status === "PASSED"
                   ? "bg-green-500/20 text-green-400"
                   : gate.status === "PENDING"
-                  ? "bg-yellow-500/20 text-yellow-400"
-                  : gate.status === "REJECTED" || gate.status === "FAILED"
-                  ? "bg-red-500/20 text-red-400"
-                  : "bg-gray-500/20 text-gray-400"
+                    ? "bg-yellow-500/20 text-yellow-400"
+                    : gate.status === "REJECTED" || gate.status === "FAILED"
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-gray-500/20 text-gray-400"
               }`}
             >
               {gate.status}
@@ -224,8 +224,8 @@ const renderCellContent = (item, header, activeView) => {
           value === "ACTIVE"
             ? "bg-green-500/20 text-green-400"
             : value === "INACTIVE"
-            ? "bg-red-500/20 text-red-400"
-            : "bg-yellow-500/20 text-yellow-400"
+              ? "bg-red-500/20 text-red-400"
+              : "bg-yellow-500/20 text-yellow-400"
         }`}
       >
         {value}
@@ -286,18 +286,18 @@ const renderCellContent = (item, header, activeView) => {
           value === "OPERATIONAL"
             ? "bg-green-500/20 text-green-400"
             : value === "PENDING" ||
-              value === "NOT_READY" ||
-              value === "PLANNING" ||
-              value === "MAINTENANCE"
-            ? "bg-yellow-500/20 text-yellow-400"
-            : value === "REJECTED" ||
-              value === "FAILED" ||
-              value === "CANCELLED" ||
-              value === "DECOMMISSIONED"
-            ? "bg-red-500/20 text-red-400"
-            : value === "IN_PROGRESS" || value === "INSTALLING"
-            ? "bg-blue-500/20 text-blue-400"
-            : "bg-gray-500/20 text-gray-400"
+                value === "NOT_READY" ||
+                value === "PLANNING" ||
+                value === "MAINTENANCE"
+              ? "bg-yellow-500/20 text-yellow-400"
+              : value === "REJECTED" ||
+                  value === "FAILED" ||
+                  value === "CANCELLED" ||
+                  value === "DECOMMISSIONED"
+                ? "bg-red-500/20 text-red-400"
+                : value === "IN_PROGRESS" || value === "INSTALLING"
+                  ? "bg-blue-500/20 text-blue-400"
+                  : "bg-gray-500/20 text-gray-400"
         }`}
       >
         {value?.replace(/_/g, " ")}
@@ -313,16 +313,16 @@ const renderCellContent = (item, header, activeView) => {
           value === "ORDERED"
             ? "bg-purple-500/20 text-purple-400"
             : value === "MANUFACTURING"
-            ? "bg-indigo-500/20 text-indigo-400"
-            : value === "FAT"
-            ? "bg-blue-500/20 text-blue-400"
-            : value === "SHIPPED"
-            ? "bg-cyan-500/20 text-cyan-400"
-            : value === "INSTALLED"
-            ? "bg-green-500/20 text-green-400"
-            : value === "COMMISSIONED"
-            ? "bg-emerald-500/20 text-emerald-400"
-            : "bg-gray-500/20 text-gray-400"
+              ? "bg-indigo-500/20 text-indigo-400"
+              : value === "FAT"
+                ? "bg-blue-500/20 text-blue-400"
+                : value === "SHIPPED"
+                  ? "bg-cyan-500/20 text-cyan-400"
+                  : value === "INSTALLED"
+                    ? "bg-green-500/20 text-green-400"
+                    : value === "COMMISSIONED"
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : "bg-gray-500/20 text-gray-400"
         }`}
       >
         {value?.replace(/_/g, " ")}
@@ -383,8 +383,8 @@ const renderCellContent = (item, header, activeView) => {
           value === "REQUIRED"
             ? "bg-red-500/20 text-red-400"
             : value === "NOT_REQUIRED"
-            ? "bg-gray-500/20 text-gray-400"
-            : "bg-yellow-500/20 text-yellow-400"
+              ? "bg-gray-500/20 text-gray-400"
+              : "bg-yellow-500/20 text-yellow-400"
         }`}
       >
         {value?.replace(/_/g, " ") || "-"}
@@ -552,7 +552,14 @@ export default function KanbanBoard() {
   const [tasksList, setTasksList] = useState([]);
   const [subtasksList, setSubtasksList] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null); // clicked task for subtask creation
-  const [taskForm, setTaskForm] = useState({ name: "", description: "" });
+  const [taskForm, setTaskForm] = useState({
+    name: "",
+    description: "",
+    priority: "Medium",
+    startDate: "",
+    dueDate: "",
+    category: "General",
+  });
   const [editingTask, setEditingTask] = useState(null); // task being edited
   const [editingSubtask, setEditingSubtask] = useState(null); // subtask being edited
   const [teams, setTeams] = useState([]);
@@ -560,15 +567,28 @@ export default function KanbanBoard() {
   const [editTaskForm, setEditTaskForm] = useState({
     name: "",
     description: "",
+    priority: "Medium",
+    startDate: "",
+    dueDate: "",
+    category: "General",
     status: "PENDING",
   });
   const [editSubtaskForm, setEditSubtaskForm] = useState({
     name: "",
     description: "",
+    priority: "Medium",
+    dueDate: "",
+    category: "General",
     status: "PENDING",
   });
   const [subtaskInputs, setSubtaskInputs] = useState([
-    { name: "", description: "" },
+    {
+      name: "",
+      description: "",
+      priority: "Medium",
+      dueDate: "",
+      category: "General",
+    },
   ]);
   const [taskLoading, setTaskLoading] = useState(false);
 
@@ -695,6 +715,10 @@ export default function KanbanBoard() {
       const payload = {
         name: taskForm.name,
         description: taskForm.description,
+        priority: taskForm.priority || "Medium",
+        startDate: taskForm.startDate || "",
+        dueDate: taskForm.dueDate || "",
+        category: taskForm.category || "General",
         ...(type === "Project" && { projectId: id }),
         ...(type === "Projects" && { subProjectId: id }),
         ...(type === "Site" && { siteId: id }),
@@ -704,8 +728,23 @@ export default function KanbanBoard() {
 
       await CreateTask(payload);
       setMessage({ type: "success", text: "Task created successfully! 🚀" });
-      setTaskForm({ name: "", description: "" });
-      setSubtaskInputs([{ name: "", description: "" }]);
+      setTaskForm({
+        name: "",
+        description: "",
+        priority: "Medium",
+        startDate: "",
+        dueDate: "",
+        category: "General",
+      });
+      setSubtaskInputs([
+        {
+          name: "",
+          description: "",
+          priority: "Medium",
+          dueDate: "",
+          category: "General",
+        },
+      ]);
       setSelectedTask(null);
       await fetchTasks();
       document.getElementById("my_modal_4").close();
@@ -741,13 +780,24 @@ export default function KanbanBoard() {
         await createSubTask(selectedTask.id, {
           name: subtask.name,
           description: subtask.description,
+          priority: subtask.priority || "Medium",
+          dueDate: subtask.dueDate || "",
+          category: subtask.category || "General",
         });
       }
       setMessage({
         type: "success",
         text: "Subtasks created successfully! 🚀",
       });
-      setSubtaskInputs([{ name: "", description: "" }]);
+      setSubtaskInputs([
+        {
+          name: "",
+          description: "",
+          priority: "Medium",
+          dueDate: "",
+          category: "General",
+        },
+      ]);
       await fetchSubtasks(selectedTask.id);
       document.getElementById("my_modal_4").close();
     } catch (error) {
@@ -826,7 +876,7 @@ export default function KanbanBoard() {
       await updateSubTaskByTaskId(
         editingSubtask.taskId,
         editingSubtask.id,
-        editSubtaskForm
+        editSubtaskForm,
       );
       setMessage({ type: "success", text: "Subtask updated successfully! 🚀" });
       setEditingSubtask(null);
@@ -1292,12 +1342,12 @@ export default function KanbanBoard() {
           deleteType === "Sites"
             ? "Site"
             : deleteType === "Projects"
-            ? "Sub Project"
-            : deleteType === "Zones"
-            ? "Zone"
-            : deleteType === "Assets"
-            ? "Asset"
-            : ""
+              ? "Sub Project"
+              : deleteType === "Zones"
+                ? "Zone"
+                : deleteType === "Assets"
+                  ? "Asset"
+                  : ""
         } Deleted Successfully !`,
       });
     } catch (error) {
@@ -1334,12 +1384,12 @@ export default function KanbanBoard() {
             {type === "Zone"
               ? "Update Zone"
               : type === "Equipment"
-              ? "Update Equipment"
-              : type === "Projects"
-              ? "Update Area"
-              : type === "Site"
-              ? "Update Site "
-              : "Update Project"}
+                ? "Update Equipment"
+                : type === "Projects"
+                  ? "Update Area"
+                  : type === "Site"
+                    ? "Update Site "
+                    : "Update Project"}
           </button>
         </div>
       </div>
@@ -1914,183 +1964,284 @@ export default function KanbanBoard() {
             </div>
             {view === "list" ? (
               <>
-                {/* To do */}
-                <div className="flex w-full bg-gradient-to-b from-[#00377e] from-5% via-[#11163b]/10 via-20% to-[#11163b]/10 to-10% border-3 border-white/[0.03] border-t-white/[0.09] font-gilroy py-6 px-3 mt-8 rounded-3xl card">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex flex-row items-center gap-2">
-                      <FaCircle className="text-[#4D81E7]" />
-                      <span className="text-xl font-semibold">Tasks</span>
-                      <span className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#4D81E7] text-white flex items-center justify-center text-xs">
+                {/* Task List Container */}
+                <div className="flex w-full bg-gradient-to-b from-gray-800/40 via-gray-900/40 to-gray-950/40 border border-gray-700/50 font-gilroy py-6 px-6 mt-8 rounded-xl card">
+                  <div className="flex items-center justify-between mb-5 w-full">
+                    <div className="flex flex-row items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-lg shadow-cyan-500/50" />
+                      <span
+                        className="text-lg font-bold text-white uppercase"
+                        style={{
+                          fontFamily: "Rajdhani, sans-serif",
+                          letterSpacing: "1px",
+                        }}
+                      >
+                        Tasks
+                      </span>
+                      <span
+                        className="h-6 w-6 rounded-lg font-semibold bg-gradient-to-r from-cyan-600 to-cyan-500 text-white flex items-center justify-center text-xs"
+                        style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                      >
                         {tasksList.length}
                       </span>
                     </div>
                   </div>
 
-                  {tasksList.length === 0 ? (
-                    <div className="text-center text-gray-400 py-8">
-                      No tasks yet. Click "Add new Task" to create one.
-                    </div>
-                  ) : (
-                    tasksList.map((task) => (
-                      <div
-                        key={task.id}
-                        className="mt-3 rounded-xl border border-white/10 hover:border-white/20 transition-all"
-                      >
-                        {/* Task Row */}
-                        <div
-                          className="flex items-center justify-between w-full p-3 cursor-pointer hover:bg-white/5 rounded-t-xl"
-                          onClick={() => {
-                            setSelectedTask(
-                              selectedTask?.id === task.id ? null : task
-                            );
-                            setSubtaskInputs([{ name: "", description: "" }]);
-                          }}
-                        >
-                          <div className="flex items-center gap-3 flex-1">
-                            <FaCircle className="text-[#4D81E7] text-[8px] shrink-0" />
-                            <span className="text-white text-sm font-medium">
-                              {task.name}
-                            </span>
-                            {task.description && (
-                              <span className="text-gray-500 text-xs hidden md:block">
-                                {task.description}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 ml-4">
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full shrink-0 ${
-                                task.status === "PENDING"
-                                  ? "bg-yellow-500/20 text-yellow-400"
-                                  : task.status === "IN_PROGRESS"
-                                  ? "bg-blue-500/20 text-blue-400"
-                                  : "bg-green-500/20 text-green-400"
-                              }`}
-                            >
-                              {task.status}
-                            </span>
-                            <span className="text-gray-500 text-xs shrink-0">
-                              {
-                                subtasksList.filter((s) => s.taskId === task.id)
-                                  .length
-                              }{" "}
-                              subtasks
-                            </span>
-                            {/* Edit Task */}
-                            <button
-                              className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingTask(task);
-                                setEditTaskForm({
-                                  name: task.name,
-                                  description: task.description || "",
-                                  status: task.status,
-                                });
-                                document
-                                  .getElementById("edit_task_modal")
-                                  .showModal();
-                              }}
-                            >
-                              <FaPencil className="text-xs" />
-                            </button>
-                            {/* Delete Task */}
-                            <button
-                              className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
-                              onClick={(e) => deleteTask(e, task.id)}
-                            >
-                              <FaTrash className="text-xs" />
-                            </button>
-                            {/* Add Subtask */}
-                            <button
-                              className="text-xs border border-white/10 hover:border-blue-400 text-gray-400 hover:text-blue-400 px-2 py-1 rounded-lg transition-colors shrink-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTask(task);
+                  <div className="w-full">
+                    {tasksList.length === 0 ? (
+                      <div className="text-center text-gray-400 py-12">
+                        <p className="text-sm">No tasks yet.</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Click "Add new Task" to create one.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {tasksList.map((task) => (
+                          <div
+                            key={task.id}
+                            className="rounded-lg border border-gray-700/50 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 transition-all overflow-hidden bg-gradient-to-r from-gray-800/40 to-gray-900/40"
+                          >
+                            {/* Task Row */}
+                            <div
+                              className="flex items-center justify-between w-full p-4 cursor-pointer hover:bg-gradient-to-r hover:from-cyan-600/10 hover:to-cyan-500/5 transition-all group border-b border-gray-700/50"
+                              onClick={() => {
+                                setSelectedTask(
+                                  selectedTask?.id === task.id ? null : task,
+                                );
                                 setSubtaskInputs([
                                   { name: "", description: "" },
                                 ]);
-                                document
-                                  .getElementById("my_modal_4")
-                                  .showModal();
                               }}
                             >
-                              + Subtask
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Subtasks for this task */}
-                        {subtasksList.filter((s) => s.taskId === task.id)
-                          .length > 0 && (
-                          <div className="border-t border-white/5 px-4 py-2">
-                            {subtasksList
-                              .filter((s) => s.taskId === task.id)
-                              .map((sub) => (
-                                <div
-                                  key={sub.id}
-                                  className="flex items-center justify-between py-1.5 pl-4 border-l border-white/10 ml-2"
-                                >
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <span className="text-gray-400 text-xs">
-                                      •
-                                    </span>
-                                    <span className="text-gray-300 text-xs">
-                                      {sub.name}
-                                    </span>
-                                    {sub.description && (
-                                      <span className="text-gray-600 text-xs hidden md:block">
-                                        {sub.description}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span
-                                      className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                        sub.status === "PENDING"
-                                          ? "bg-yellow-500/20 text-yellow-400"
-                                          : sub.status === "IN_PROGRESS"
-                                          ? "bg-blue-500/20 text-blue-400"
-                                          : "bg-green-500/20 text-green-400"
-                                      }`}
-                                    >
-                                      {sub.status}
-                                    </span>
-                                    {/* Edit Subtask */}
-                                    <button
-                                      className="p-1 text-gray-500 hover:text-blue-400 transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setEditingSubtask(sub);
-                                        setEditSubtaskForm({
-                                          name: sub.name,
-                                          description: sub.description || "",
-                                          status: sub.status,
-                                        });
-                                        document
-                                          .getElementById("edit_subtask_modal")
-                                          .showModal();
-                                      }}
-                                    >
-                                      <FaPencil className="text-[10px]" />
-                                    </button>
-                                    {/* Delete Subtask */}
-                                    <button
-                                      className="p-1 text-gray-500 hover:text-red-400 transition-colors"
-                                      onClick={(e) =>
-                                        deleteSubtask(e, sub.taskId, sub.id)
-                                      }
-                                    >
-                                      <FaTrash className="text-[10px]" />
-                                    </button>
-                                  </div>
+                              <div className="flex items-center gap-4 flex-1 min-w-0">
+                                {/* Task Status Indicator */}
+                                <div className="flex-shrink-0">
+                                  <div
+                                    className={`w-2 h-2 rounded-full transition-all ${
+                                      task.status === "PENDING"
+                                        ? "bg-yellow-400 shadow-lg shadow-yellow-400/50"
+                                        : task.status === "IN_PROGRESS"
+                                          ? "bg-cyan-400 shadow-lg shadow-cyan-400/50"
+                                          : "bg-green-400 shadow-lg shadow-green-400/50"
+                                    }`}
+                                  />
                                 </div>
-                              ))}
+                                {/* Task Info */}
+                                <div className="flex-1 min-w-0">
+                                  <h4
+                                    className="text-sm font-semibold text-white uppercase truncate"
+                                    style={{
+                                      fontFamily: "Rajdhani, sans-serif",
+                                      letterSpacing: "0.5px",
+                                    }}
+                                  >
+                                    {task.name}
+                                  </h4>
+                                  {task.description && (
+                                    <p className="text-xs text-gray-400 truncate mt-1">
+                                      {task.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Right Side Actions */}
+                              <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                                {/* Status Badge */}
+                                <span
+                                  className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
+                                    task.status === "PENDING"
+                                      ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                                      : task.status === "IN_PROGRESS"
+                                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                                        : "bg-green-500/20 text-green-300 border border-green-500/30"
+                                  }`}
+                                  style={{
+                                    fontFamily: "IBM Plex Mono, monospace",
+                                    fontSize: "9px",
+                                    letterSpacing: "0.5px",
+                                  }}
+                                >
+                                  {task.status}
+                                </span>
+
+                                {/* Subtask Count */}
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-800/50 border border-gray-700/50 group-hover:border-cyan-500/30 transition-all">
+                                  <span
+                                    className="text-xs font-medium text-gray-400"
+                                    style={{
+                                      fontFamily: "IBM Plex Mono, monospace",
+                                    }}
+                                  >
+                                    {
+                                      subtasksList.filter(
+                                        (s) => s.taskId === task.id,
+                                      ).length
+                                    }
+                                  </span>
+                                  <span className="text-gray-600 text-xs">
+                                    sub
+                                  </span>
+                                </div>
+
+                                {/* Edit Button */}
+                                <button
+                                  className="p-1.5 rounded-lg text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingTask(task);
+                                    setEditTaskForm({
+                                      name: task.name,
+                                      description: task.description || "",
+                                      status: task.status,
+                                    });
+                                    document
+                                      .getElementById("edit_task_modal")
+                                      .showModal();
+                                  }}
+                                  title="Edit Task"
+                                >
+                                  <FaPencil className="text-xs" />
+                                </button>
+
+                                {/* Delete Button */}
+                                <button
+                                  className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                  onClick={(e) => deleteTask(e, task.id)}
+                                  title="Delete Task"
+                                >
+                                  <FaTrash className="text-xs" />
+                                </button>
+
+                                {/* Add Subtask Button */}
+                                <button
+                                  className="text-xs font-medium px-2 py-1 rounded-lg border border-gray-600 text-gray-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTask(task);
+                                    setSubtaskInputs([
+                                      { name: "", description: "" },
+                                    ]);
+                                    document
+                                      .getElementById("my_modal_4")
+                                      .showModal();
+                                  }}
+                                  title="Add Subtask"
+                                >
+                                  + Sub
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Subtasks for this task */}
+                            {subtasksList.filter((s) => s.taskId === task.id)
+                              .length > 0 && (
+                              <div className="bg-gray-800/30 border-t border-gray-700/50">
+                                {subtasksList
+                                  .filter((s) => s.taskId === task.id)
+                                  .map((sub) => (
+                                    <div
+                                      key={sub.id}
+                                      className="flex items-center justify-between py-2.5 px-4 hover:bg-gray-700/30 border-b border-gray-700/30 last:border-b-0 group transition-all"
+                                    >
+                                      {/* Subtask Info */}
+                                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        {/* Nested Indicator */}
+                                        <div className="flex-shrink-0 flex items-center gap-1.5">
+                                          <div className="w-0.5 h-5 bg-cyan-500/30" />
+                                          <div
+                                            className={`w-1.5 h-1.5 rounded-full ${
+                                              sub.status === "PENDING"
+                                                ? "bg-yellow-400/60"
+                                                : sub.status === "IN_PROGRESS"
+                                                  ? "bg-cyan-400/60"
+                                                  : "bg-green-400/60"
+                                            }`}
+                                          />
+                                        </div>
+                                        {/* Subtask Title and Description */}
+                                        <div className="flex-1 min-w-0">
+                                          <p
+                                            className="text-xs font-medium text-gray-300 truncate"
+                                            style={{
+                                              fontFamily:
+                                                "IBM Plex Sans, sans-serif",
+                                            }}
+                                          >
+                                            {sub.name}
+                                          </p>
+                                          {sub.description && (
+                                            <p className="text-[10px] text-gray-500 truncate mt-0.5">
+                                              {sub.description}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Right Side Actions */}
+                                      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                                        {/* Subtask Status Badge */}
+                                        <span
+                                          className={`text-[10px] font-medium px-2 py-0.5 rounded-md whitespace-nowrap transition-all ${
+                                            sub.status === "PENDING"
+                                              ? "bg-yellow-500/15 text-yellow-300"
+                                              : sub.status === "IN_PROGRESS"
+                                                ? "bg-cyan-500/15 text-cyan-300"
+                                                : "bg-green-500/15 text-green-300"
+                                          }`}
+                                          style={{
+                                            fontFamily:
+                                              "IBM Plex Mono, monospace",
+                                            letterSpacing: "0.3px",
+                                          }}
+                                        >
+                                          {sub.status.slice(0, 3).toUpperCase()}
+                                        </span>
+
+                                        {/* Edit Subtask */}
+                                        <button
+                                          className="p-1 text-gray-600 hover:text-cyan-400 hover:bg-cyan-500/10 rounded transition-all opacity-0 group-hover:opacity-100"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingSubtask(sub);
+                                            setEditSubtaskForm({
+                                              name: sub.name,
+                                              description:
+                                                sub.description || "",
+                                              status: sub.status,
+                                            });
+                                            document
+                                              .getElementById(
+                                                "edit_subtask_modal",
+                                              )
+                                              .showModal();
+                                          }}
+                                          title="Edit Subtask"
+                                        >
+                                          <FaPencil className="text-[10px]" />
+                                        </button>
+
+                                        {/* Delete Subtask */}
+                                        <button
+                                          className="p-1 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded transition-all opacity-0 group-hover:opacity-100"
+                                          onClick={(e) =>
+                                            deleteSubtask(e, sub.taskId, sub.id)
+                                          }
+                                          title="Delete Subtask"
+                                        >
+                                          <FaTrash className="text-[10px]" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        ))}
                       </div>
-                    ))
-                  )}
+                    )}
+                  </div>
                 </div>
               </>
             ) : view === "kanban" ? (
@@ -3500,7 +3651,7 @@ export default function KanbanBoard() {
                     let entityType = "";
                     if (activeView === "Sites") entityType = "site";
                     else if (activeView === "Projects")
-                      entityType = "site"; // "Areas" map to Sites
+                      entityType = "subProjects"; // "Areas" map to Sites
                     else if (activeView === "Zones") entityType = "zone";
                     else if (activeView === "Assets") entityType = "equipment";
 
@@ -3544,7 +3695,7 @@ export default function KanbanBoard() {
                       ?.filter((item) =>
                         item?.name
                           ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase())
+                          .includes(searchTerm.toLowerCase()),
                       )
                       .map((item, index) => (
                         <tr
@@ -3554,7 +3705,7 @@ export default function KanbanBoard() {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/${parentCategory}/Site/${item.id}/${id}`
+                              `/ProjectDetails/${parentCategory}/Site/${item.id}/${id}`,
                             );
                           }}
                         >
@@ -3616,7 +3767,7 @@ export default function KanbanBoard() {
                       ?.filter((item) =>
                         item?.name
                           ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase())
+                          .includes(searchTerm.toLowerCase()),
                       )
                       .map((item, index) => (
                         <tr
@@ -3626,7 +3777,7 @@ export default function KanbanBoard() {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/${parentCategory}/Projects/${item.id}/${id}`
+                              `/ProjectDetails/${parentCategory}/Projects/${item.id}/${id}`,
                             );
                           }}
                         >
@@ -3690,7 +3841,7 @@ export default function KanbanBoard() {
                       ?.filter((item) =>
                         item?.name
                           ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase())
+                          .includes(searchTerm.toLowerCase()),
                       )
                       .map((item, index) => (
                         <tr
@@ -3700,7 +3851,7 @@ export default function KanbanBoard() {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/${parentCategory}/Zone/${item.id}/${id}`
+                              `/ProjectDetails/${parentCategory}/Zone/${item.id}/${id}`,
                             );
                           }}
                         >
@@ -3767,7 +3918,7 @@ export default function KanbanBoard() {
                       ?.filter((item) =>
                         item?.name
                           ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase())
+                          .includes(searchTerm.toLowerCase()),
                       )
                       .map((item, index) => (
                         <tr
@@ -3777,7 +3928,7 @@ export default function KanbanBoard() {
                             e.preventDefault();
                             e.stopPropagation();
                             router.push(
-                              `/ProjectDetails/${parentCategory}/Equipment/${item.id}/${id}`
+                              `/ProjectDetails/${parentCategory}/Equipment/${item.id}/${id}`,
                             );
                           }}
                         >
@@ -3816,117 +3967,489 @@ export default function KanbanBoard() {
         )}
       </div>
       <dialog id="my_modal_4" className="modal items-start justify-center p-10">
-        <div className="modal-box pt-0 px-0 w-[1000px] max-h-[90vh] border border-[#656A80] backdrop-blur-2xl bg-[#0a1128] scrollbar-hide overflow-y-auto">
-          <div className="modal-action flex items-center justify-between pt-4 px-4">
-            <h3 className="font-bold text-lg text-white">
-              {selectedTask ? `Task: ${selectedTask.name}` : "New Task"}
-            </h3>
+        <div
+          className="modal-box pt-0 px-0 w-[1000px] max-h-[90vh] border border-cyan-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 scrollbar-hide overflow-y-auto"
+          style={{ borderRadius: "12px" }}
+        >
+          {/* ─── MODAL HEADER ─── */}
+          <div className="flex items-center justify-between pt-6 px-6 pb-4 border-b border-gray-700/50">
+            <div>
+              <h3
+                className="font-bold text-xl text-white"
+                style={{
+                  fontFamily: "Rajdhani, sans-serif",
+                  letterSpacing: "1px",
+                }}
+              >
+                {selectedTask
+                  ? `SUBTASKS: ${selectedTask.name}`
+                  : "CREATE NEW TASK"}
+              </h3>
+              {selectedTask && (
+                <p
+                  className="text-xs text-gray-400 mt-1"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Add subtasks to organize your work
+                </p>
+              )}
+            </div>
             <form method="dialog" className="gap-2 flex">
-              {/* <button
-                type="button"
-                onClick={() => {
-                  setSelectedTask(null);
-                  setTaskForm({ name: "", description: "" });
-                  setSubtaskInputs([{ name: "", description: "" }]);
-                }}
-                className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]"
-              >
-                <img src="/images/maximize.svg" alt="Reset" />
-              </button> */}
               <button
-                className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#FB5874]"
+                className="size-10 rounded-lg hover:bg-red-500/20 flex items-center justify-center border border-red-500/30 hover:border-red-500 text-red-400 transition-all"
                 onClick={() => {
                   setSelectedTask(null);
                   setTaskForm({ name: "", description: "" });
                 }}
               >
-                <img src="/images/close.svg" alt="Close" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
               </button>
             </form>
           </div>
-          <hr className="w-full my-3 border-[#656A80]" />
 
-          {/* ── CREATE NEW TASK FORM (only when no task selected) ── */}
+          {/* ─── DIVIDER WITH ACCENT ─── */}
+          <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+
+          {/* ─── CREATE NEW TASK FORM ─── */}
           {!selectedTask && (
-            <div className="px-4 mt-4">
-              <h4 className="text-white font-semibold mb-3">Create New Task</h4>
-              <div className="mt-2">
-                <p className="text-gray-400 text-sm mb-1">Task Name *</p>
+            <div className="px-6 py-6 space-y-5">
+              {/* Info Box */}
+              <div
+                className="p-4 rounded-lg border"
+                style={{
+                  backgroundColor: "rgba(0, 200, 255, 0.08)",
+                  borderColor: "rgba(0, 200, 255, 0.3)",
+                }}
+              >
+                <p
+                  className="text-xs text-gray-300"
+                  style={{ fontFamily: "IBM Plex Sans, sans-serif" }}
+                >
+                  📝{" "}
+                  <strong style={{ color: "#00c8ff" }}>Task Creation:</strong>{" "}
+                  Create tasks to organize and track work. You can add subtasks
+                  after creating the main task.
+                </p>
+              </div>
+
+              {/* Task Name */}
+              <div>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Task Name *
+                </label>
                 <input
                   type="text"
-                  placeholder="Enter Task Name"
+                  placeholder="e.g. Complete project setup checklist"
                   value={taskForm.name}
                   onChange={(e) =>
                     setTaskForm({ ...taskForm, name: e.target.value })
                   }
-                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                  className="w-full bg-gray-800/50 text-white placeholder-gray-600 pl-4 pr-4 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all"
                 />
               </div>
-              <div className="mt-4">
-                <p className="text-gray-400 text-sm mb-1">Task Description</p>
+
+              {/* Description */}
+              <div>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Description
+                </label>
                 <textarea
-                  rows="2"
-                  placeholder="Enter Task Description"
+                  rows="3"
+                  placeholder="Add any details or notes..."
                   value={taskForm.description}
                   onChange={(e) =>
                     setTaskForm({ ...taskForm, description: e.target.value })
                   }
-                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                  className="w-full bg-gray-800/50 text-white placeholder-gray-600 pl-4 pr-4 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all resize-none"
                 />
+              </div>
+
+              {/* Priority & Dates Row */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* Priority */}
+                <div>
+                  <label
+                    className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                    style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                  >
+                    Priority
+                  </label>
+                  <select
+                    value={taskForm.priority}
+                    onChange={(e) =>
+                      setTaskForm({ ...taskForm, priority: e.target.value })
+                    }
+                    className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium" selected>
+                      Medium
+                    </option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+
+                {/* Start Date */}
+                <div>
+                  <label
+                    className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                    style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                  >
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={taskForm.startDate}
+                    onChange={(e) =>
+                      setTaskForm({ ...taskForm, startDate: e.target.value })
+                    }
+                    className="w-full bg-gray-800/50 text-white pl-3 pr-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all text-sm"
+                  />
+                </div>
+
+                {/* Due Date */}
+                <div>
+                  <label
+                    className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                    style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                  >
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={taskForm.dueDate}
+                    onChange={(e) =>
+                      setTaskForm({ ...taskForm, dueDate: e.target.value })
+                    }
+                    className="w-full bg-gray-800/50 text-white pl-3 pr-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Category
+                </label>
+                <select
+                  value={taskForm.category}
+                  onChange={(e) =>
+                    setTaskForm({ ...taskForm, category: e.target.value })
+                  }
+                  className="w-full bg-gradient-to-br from-gray-800/60 to-gray-900/60 text-gray-100 px-4 py-3 rounded-lg border border-cyan-500/40 hover:border-cyan-500/60 focus:border-cyan-500/80 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all cursor-pointer appearance-none font-medium text-sm"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300c8ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 12px center",
+                    paddingRight: "36px",
+                  }}
+                >
+                  <option
+                    value="General"
+                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  >
+                    General
+                  </option>
+                  <option
+                    value="Work"
+                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  >
+                    Work
+                  </option>
+                  <option
+                    value="Personal"
+                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  >
+                    Personal
+                  </option>
+                  <option
+                    value="Urgent"
+                    style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
+                  >
+                    Urgent
+                  </option>
+                  <option
+                    value="Planning"
+                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  >
+                    Planning
+                  </option>
+                  <option
+                    value="Review"
+                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  >
+                    Review
+                  </option>
+                  <option
+                    value="Implementation"
+                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  >
+                    Implementation
+                  </option>
+                  <option
+                    value="Testing"
+                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  >
+                    Testing
+                  </option>
+                  <option
+                    value="Documentation"
+                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  >
+                    Documentation
+                  </option>
+                  <option
+                    value="Support"
+                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  >
+                    Support
+                  </option>
+                </select>
               </div>
             </div>
           )}
 
-          {/* ── CREATE SUBTASKS FORM (only when task selected) ── */}
+          {/* ─── CREATE SUBTASKS FORM ─── */}
           {selectedTask && (
-            <div className="px-4 mt-4">
-              <h4 className="text-white font-semibold mb-3">
-                Add Subtasks to:{" "}
-                <span className="text-blue-400">{selectedTask.name}</span>
-              </h4>
-              {subtaskInputs.map((subtask, index) => (
-                <div
-                  key={index}
-                  className="mb-3 p-3 rounded-xl border border-white/10"
+            <div className="px-6 py-6 space-y-5">
+              {/* Info Box */}
+              <div
+                className="p-4 rounded-lg border"
+                style={{
+                  backgroundColor: "rgba(0, 212, 200, 0.08)",
+                  borderColor: "rgba(0, 212, 200, 0.3)",
+                }}
+              >
+                <p
+                  className="text-xs text-gray-300"
+                  style={{ fontFamily: "IBM Plex Sans, sans-serif" }}
                 >
-                  <p className="text-gray-400 text-sm mb-1">
-                    Subtask {index + 1} Name *
+                  <strong style={{ color: "#00d4c8" }}>Subtasks for:</strong>{" "}
+                  <span className="text-white font-medium">
+                    {selectedTask.name}
+                  </span>
+                </p>
+                {selectedTask.description && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {selectedTask.description}
                   </p>
-                  <input
-                    type="text"
-                    placeholder="Enter Subtask Name"
-                    value={subtask.name}
-                    onChange={(e) => {
-                      const updated = [...subtaskInputs];
-                      updated[index].name = e.target.value;
-                      setSubtaskInputs(updated);
-                    }}
-                    className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors mb-2"
-                  />
-                  <p className="text-gray-400 text-sm mb-1">Description</p>
-                  <input
-                    type="text"
-                    placeholder="Enter Subtask Description"
-                    value={subtask.description}
-                    onChange={(e) => {
-                      const updated = [...subtaskInputs];
-                      updated[index].description = e.target.value;
-                      setSubtaskInputs(updated);
-                    }}
-                    className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-                  />
-                </div>
-              ))}
+                )}
+              </div>
+
+              {/* Subtask List */}
+              <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
+                {subtaskInputs.map((subtask, index) => (
+                  <div
+                    key={index}
+                    className="p-4 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 bg-gray-800/30 transition-all space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <label
+                        className="text-xs font-bold text-cyan-400 uppercase tracking-wider"
+                        style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                      >
+                        Subtask {index + 1}
+                      </label>
+                      {subtaskInputs.length > 1 && (
+                        <button
+                          onClick={() => {
+                            setSubtaskInputs(
+                              subtaskInputs.filter((_, i) => i !== index),
+                            );
+                          }}
+                          className="text-xs text-red-400 hover:text-red-300 transition-colors font-medium"
+                        >
+                          ✕ Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="Subtask title"
+                      value={subtask.name}
+                      onChange={(e) => {
+                        const updated = [...subtaskInputs];
+                        updated[index].name = e.target.value;
+                        setSubtaskInputs(updated);
+                      }}
+                      className="w-full bg-gray-900/50 text-white placeholder-gray-600 pl-3 pr-3 py-2.5 rounded-md border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all text-sm"
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="Notes (optional)"
+                      value={subtask.description}
+                      onChange={(e) => {
+                        const updated = [...subtaskInputs];
+                        updated[index].description = e.target.value;
+                        setSubtaskInputs(updated);
+                      }}
+                      className="w-full bg-gray-900/50 text-white placeholder-gray-600 pl-3 pr-3 py-2.5 rounded-md border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all text-sm"
+                    />
+
+                    {/* Priority & Due Date Row */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={subtask.priority || "Medium"}
+                        onChange={(e) => {
+                          const updated = [...subtaskInputs];
+                          updated[index].priority = e.target.value;
+                          setSubtaskInputs(updated);
+                        }}
+                        className="bg-gray-900/50 text-white px-3 py-2 rounded-md border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-xs"
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                      </select>
+
+                      <input
+                        type="date"
+                        value={subtask.dueDate || ""}
+                        onChange={(e) => {
+                          const updated = [...subtaskInputs];
+                          updated[index].dueDate = e.target.value;
+                          setSubtaskInputs(updated);
+                        }}
+                        className="bg-gray-900/50 text-white pl-3 pr-3 py-2 rounded-md border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all text-xs"
+                      />
+                    </div>
+
+                    {/* Category */}
+                    <select
+                      value={subtask.category || "General"}
+                      onChange={(e) => {
+                        const updated = [...subtaskInputs];
+                        updated[index].category = e.target.value;
+                        setSubtaskInputs(updated);
+                      }}
+                      className="w-full bg-gradient-to-br from-gray-800/60 to-gray-900/60 text-gray-100 px-3 py-2 rounded-md border border-cyan-500/40 hover:border-cyan-500/60 focus:border-cyan-500/80 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all cursor-pointer appearance-none font-medium text-xs"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2300c8ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 8px center",
+                        paddingRight: "28px",
+                      }}
+                    >
+                      <option
+                        value="General"
+                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                      >
+                        General
+                      </option>
+                      <option
+                        value="Work"
+                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                      >
+                        Work
+                      </option>
+                      <option
+                        value="Personal"
+                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                      >
+                        Personal
+                      </option>
+                      <option
+                        value="Urgent"
+                        style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
+                      >
+                        Urgent
+                      </option>
+                      <option
+                        value="Planning"
+                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                      >
+                        Planning
+                      </option>
+                      <option
+                        value="Review"
+                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                      >
+                        Review
+                      </option>
+                      <option
+                        value="Implementation"
+                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                      >
+                        Implementation
+                      </option>
+                      <option
+                        value="Testing"
+                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                      >
+                        Testing
+                      </option>
+                      <option
+                        value="Documentation"
+                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                      >
+                        Documentation
+                      </option>
+                      <option
+                        value="Support"
+                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                      >
+                        Support
+                      </option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Another Button */}
               <button
                 onClick={() =>
                   setSubtaskInputs([
                     ...subtaskInputs,
-                    { name: "", description: "" },
+                    {
+                      name: "",
+                      description: "",
+                      priority: "Medium",
+                      dueDate: "",
+                      category: "General",
+                    },
                   ])
                 }
-                className="bg-gradient-to-r from-[#080C26] to-[#00E691] text-white p-2 px-4 mt-2 border border-1 border-white p-2 my-2 rounded-xl rounded-xl transition-all"
+                className="w-full py-2.5 px-4 rounded-lg border-2 border-dashed border-cyan-500/40 hover:border-cyan-500/60 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/5 transition-all font-medium text-sm"
               >
-                <div className="flex flex-row gap-2 items-center">
+                ＋ Add Another Subtask
+              </button>
+            </div>
+          )}
+
+          {/* ─── MODAL FOOTER ─── */}
+          <div className="border-t border-gray-700/50 p-6 flex items-center justify-between gap-3 bg-gray-950/50">
+            <div>
+              {selectedTask && (
+                <button
+                  onClick={() => {
+                    setSelectedTask(null);
+                    setSubtaskInputs([{ name: "", description: "" }]);
+                  }}
+                  className="text-sm text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1"
+                >
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -3937,49 +4460,34 @@ export default function KanbanBoard() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M12 4v16m8-8H4"
+                      d="M15 19l-7-7 7-7"
                     />
                   </svg>
-                  <span>Add Another Subtask</span>
-                </div>
-              </button>
+                  Back to Task
+                </button>
+              )}
             </div>
-          )}
-
-          <hr className="w-full mt-4 border-[#656A80]" />
-          <div className="flex items-center justify-between gap-2 mx-4 mt-4 mb-2">
-            {selectedTask && (
-              <button
-                onClick={() => {
-                  setSelectedTask(null);
-                  setSubtaskInputs([{ name: "", description: "" }]);
-                }}
-                className="text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                ← Back to Create Task
-              </button>
-            )}
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-3">
               <button
                 onClick={() => {
                   document.getElementById("my_modal_4").close();
                   setSelectedTask(null);
                   setTaskForm({ name: "", description: "" });
                 }}
-                className="btn backdrop-blur-md text-white p-3 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all"
+                className="px-6 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all font-medium text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={selectedTask ? createSubtask : createTask}
                 disabled={taskLoading}
-                className="btn bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white px-6 border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all disabled:opacity-50"
+                className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 disabled:from-gray-600 disabled:to-gray-500 text-white font-medium text-sm transition-all disabled:opacity-60"
               >
                 {taskLoading
                   ? "Saving..."
                   : selectedTask
-                  ? "Save Subtasks"
-                  : "Create Task"}
+                    ? "Save Subtasks"
+                    : "Create Task"}
               </button>
             </div>
           </div>
@@ -3991,32 +4499,88 @@ export default function KanbanBoard() {
         id="edit_task_modal"
         className="modal items-start justify-end p-4"
       >
-        <div className="modal-box pt-0 px-0 w-[600px] border border-[#656A80] backdrop-blur-2xl bg-[#0a1128]">
-          <div className="modal-action flex items-center justify-between pt-4 px-4">
-            <h3 className="font-bold text-lg text-white">Edit Task</h3>
+        <div className="modal-box pt-0 px-0 w-[600px] border border-cyan-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-lg">
+          {/* ─── HEADER ─── */}
+          <div className="flex items-center justify-between pt-6 px-6 pb-4 border-b border-gray-700/50">
+            <h3
+              className="font-bold text-lg text-white"
+              style={{
+                fontFamily: "Rajdhani, sans-serif",
+                letterSpacing: "1px",
+              }}
+            >
+              EDIT TASK
+            </h3>
             <form method="dialog">
-              <button className="size-9 rounded-xl flex items-center justify-center border border-white bg-[#FB5874]">
-                <img src="/images/close.svg" alt="Close" />
+              <button className="size-10 rounded-lg hover:bg-red-500/20 flex items-center justify-center border border-red-500/30 hover:border-red-500 text-red-400 transition-all">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
               </button>
             </form>
           </div>
-          <hr className="w-full my-3 border-[#656A80]" />
-          <div className="px-4 pb-4">
-            <div className="mt-2">
-              <p className="text-gray-400 text-sm mb-1">Task Name *</p>
+
+          {/* ─── DIVIDER ─── */}
+          <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+
+          {/* ─── FORM CONTENT ─── */}
+          <div className="px-6 py-6 space-y-5">
+            {/* Info Box */}
+            <div
+              className="p-4 rounded-lg border"
+              style={{
+                backgroundColor: "rgba(0, 200, 255, 0.08)",
+                borderColor: "rgba(0, 200, 255, 0.3)",
+              }}
+            >
+              <p
+                className="text-xs text-gray-300"
+                style={{ fontFamily: "IBM Plex Sans, sans-serif" }}
+              >
+                ✏️ <strong style={{ color: "#00c8ff" }}>Update Task:</strong>{" "}
+                Modify task details, description, and status.
+              </p>
+            </div>
+
+            {/* Task Name */}
+            <div>
+              <label
+                className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Task Name *
+              </label>
               <input
                 type="text"
                 value={editTaskForm.name}
                 onChange={(e) =>
                   setEditTaskForm({ ...editTaskForm, name: e.target.value })
                 }
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                placeholder="Task title"
+                className="w-full bg-gray-800/50 text-white placeholder-gray-600 pl-4 pr-4 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all"
               />
             </div>
-            <div className="mt-4">
-              <p className="text-gray-400 text-sm mb-1">Description</p>
+
+            {/* Description */}
+            <div>
+              <label
+                className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Description
+              </label>
               <textarea
-                rows="2"
+                rows="3"
                 value={editTaskForm.description}
                 onChange={(e) =>
                   setEditTaskForm({
@@ -4024,37 +4588,206 @@ export default function KanbanBoard() {
                     description: e.target.value,
                   })
                 }
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                placeholder="Add task details..."
+                className="w-full bg-gray-800/50 text-white placeholder-gray-600 pl-4 pr-4 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all resize-none"
               />
             </div>
-            <div className="mt-4">
-              <p className="text-gray-400 text-sm mb-1">Status</p>
+
+            {/* Priority & Dates Row */}
+            <div className="grid grid-cols-3 gap-3">
+              {/* Priority */}
+              <div>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Priority
+                </label>
+                <select
+                  value={editTaskForm.priority}
+                  onChange={(e) =>
+                    setEditTaskForm({
+                      ...editTaskForm,
+                      priority: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={editTaskForm.startDate}
+                  onChange={(e) =>
+                    setEditTaskForm({
+                      ...editTaskForm,
+                      startDate: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-800/50 text-white pl-3 pr-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all text-sm"
+                />
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  value={editTaskForm.dueDate}
+                  onChange={(e) =>
+                    setEditTaskForm({
+                      ...editTaskForm,
+                      dueDate: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-800/50 text-white pl-3 pr-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label
+                className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Category
+              </label>
+              <select
+                value={editTaskForm.category}
+                onChange={(e) =>
+                  setEditTaskForm({ ...editTaskForm, category: e.target.value })
+                }
+                className="w-full bg-gradient-to-br from-gray-800/60 to-gray-900/60 text-gray-100 px-4 py-3 rounded-lg border border-cyan-500/40 hover:border-cyan-500/60 focus:border-cyan-500/80 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all cursor-pointer appearance-none font-medium text-sm"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300c8ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 12px center",
+                  paddingRight: "36px",
+                }}
+              >
+                <option
+                  value="General"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  General
+                </option>
+                <option
+                  value="Work"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Work
+                </option>
+                <option
+                  value="Personal"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Personal
+                </option>
+                <option
+                  value="Urgent"
+                  style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
+                >
+                  Urgent
+                </option>
+                <option
+                  value="Planning"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Planning
+                </option>
+                <option
+                  value="Review"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Review
+                </option>
+                <option
+                  value="Implementation"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Implementation
+                </option>
+                <option
+                  value="Testing"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Testing
+                </option>
+                <option
+                  value="Documentation"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Documentation
+                </option>
+                <option
+                  value="Support"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Support
+                </option>
+              </select>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label
+                className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Status
+              </label>
               <select
                 value={editTaskForm.status}
                 onChange={(e) =>
                   setEditTaskForm({ ...editTaskForm, status: e.target.value })
                 }
-                className="w-full bg-[#12153d] text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none"
+                className="w-full bg-gray-800/50 text-white px-4 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer"
               >
-                <option value="PENDING">PENDING</option>
-                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                <option value="COMPLETED">COMPLETED</option>
+                <option value="PENDING" className="bg-gray-900 text-white">
+                  PENDING
+                </option>
+                <option value="IN_PROGRESS" className="bg-gray-900 text-white">
+                  IN_PROGRESS
+                </option>
+                <option value="COMPLETED" className="bg-gray-900 text-white">
+                  COMPLETED
+                </option>
               </select>
             </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <form method="dialog">
-                <button className="btn bg-transparent text-white border border-white/10 rounded-xl px-4">
-                  Cancel
-                </button>
-              </form>
-              <button
-                onClick={handleUpdateTask}
-                disabled={taskLoading}
-                className="btn bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white px-6 rounded-xl disabled:opacity-50"
-              >
-                {taskLoading ? "Saving..." : "Update Task"}
+          </div>
+
+          {/* ─── FOOTER ─── */}
+          <div className="border-t border-gray-700/50 p-6 flex gap-3 justify-end bg-gray-950/50">
+            <form method="dialog">
+              <button className="px-6 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all font-medium text-sm">
+                Cancel
               </button>
-            </div>
+            </form>
+            <button
+              onClick={handleUpdateTask}
+              disabled={taskLoading}
+              className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 disabled:from-gray-600 disabled:to-gray-500 text-white font-medium text-sm transition-all disabled:opacity-60"
+            >
+              {taskLoading ? "Saving..." : "Update Task"}
+            </button>
           </div>
         </div>
       </dialog>
@@ -4064,19 +4797,69 @@ export default function KanbanBoard() {
         id="edit_subtask_modal"
         className="modal items-start justify-end p-4"
       >
-        <div className="modal-box pt-0 px-0 w-[600px] border border-[#656A80] backdrop-blur-2xl bg-[#0a1128]">
-          <div className="modal-action flex items-center justify-between pt-4 px-4">
-            <h3 className="font-bold text-lg text-white">Edit Subtask</h3>
+        <div className="modal-box pt-0 px-0 w-[600px] border border-cyan-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-lg">
+          {/* Header */}
+          <div className="flex items-center justify-between pt-6 px-6 pb-4 border-b border-gray-700/50">
+            <div>
+              <h3
+                className="font-bold text-xl text-white uppercase"
+                style={{
+                  fontFamily: "Rajdhani, sans-serif",
+                  letterSpacing: "1px",
+                }}
+              >
+                EDIT SUBTASK
+              </h3>
+            </div>
             <form method="dialog">
-              <button className="size-9 rounded-xl flex items-center justify-center border border-white bg-[#FB5874]">
-                <img src="/images/close.svg" alt="Close" />
+              <button className="flex items-center justify-center size-8 rounded-lg border border-gray-600 hover:border-cyan-500/50 hover:bg-gray-800/50 transition-all text-gray-400 hover:text-cyan-400">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
               </button>
             </form>
           </div>
-          <hr className="w-full my-3 border-[#656A80]" />
-          <div className="px-4 pb-4">
-            <div className="mt-2">
-              <p className="text-gray-400 text-sm mb-1">Subtask Name *</p>
+
+          {/* Gradient Divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+
+          {/* Form Content */}
+          <div className="px-6 py-6 space-y-5">
+            {/* Info Box */}
+            <div
+              className="p-4 rounded-lg border"
+              style={{
+                backgroundColor: "rgba(0, 212, 200, 0.08)",
+                borderColor: "rgba(0, 212, 200, 0.3)",
+              }}
+            >
+              <p
+                className="text-xs text-gray-300"
+                style={{ fontFamily: "IBM Plex Sans, sans-serif" }}
+              >
+                ✏️ <strong style={{ color: "#00d4c8" }}>Update Subtask:</strong>{" "}
+                Modify subtask details, notes, and progress status.
+              </p>
+            </div>
+
+            {/* Subtask Name */}
+            <div>
+              <label
+                className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Subtask Name *
+              </label>
               <input
                 type="text"
                 value={editSubtaskForm.name}
@@ -4086,13 +4869,21 @@ export default function KanbanBoard() {
                     name: e.target.value,
                   })
                 }
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                placeholder="Subtask title"
+                className="w-full bg-gray-800/50 text-white placeholder-gray-600 pl-4 pr-4 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all"
               />
             </div>
-            <div className="mt-4">
-              <p className="text-gray-400 text-sm mb-1">Description</p>
+
+            {/* Description */}
+            <div>
+              <label
+                className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Notes
+              </label>
               <textarea
-                rows="2"
+                rows="3"
                 value={editSubtaskForm.description}
                 onChange={(e) =>
                   setEditSubtaskForm({
@@ -4100,11 +4891,154 @@ export default function KanbanBoard() {
                     description: e.target.value,
                   })
                 }
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+                placeholder="Add notes..."
+                className="w-full bg-gray-800/50 text-white placeholder-gray-600 pl-4 pr-4 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all resize-none"
               />
             </div>
-            <div className="mt-4">
-              <p className="text-gray-400 text-sm mb-1">Status</p>
+
+            {/* Priority & Due Date Row */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Priority */}
+              <div>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Priority
+                </label>
+                <select
+                  value={editSubtaskForm.priority}
+                  onChange={(e) =>
+                    setEditSubtaskForm({
+                      ...editSubtaskForm,
+                      priority: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  value={editSubtaskForm.dueDate}
+                  onChange={(e) =>
+                    setEditSubtaskForm({
+                      ...editSubtaskForm,
+                      dueDate: e.target.value,
+                    })
+                  }
+                  className="w-full bg-gray-800/50 text-white pl-3 pr-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label
+                className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Category
+              </label>
+              <select
+                value={editSubtaskForm.category}
+                onChange={(e) =>
+                  setEditSubtaskForm({
+                    ...editSubtaskForm,
+                    category: e.target.value,
+                  })
+                }
+                className="w-full bg-gradient-to-br from-gray-800/60 to-gray-900/60 text-gray-100 px-4 py-3 rounded-lg border border-cyan-500/40 hover:border-cyan-500/60 focus:border-cyan-500/80 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 transition-all cursor-pointer appearance-none font-medium text-sm"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300c8ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 12px center",
+                  paddingRight: "36px",
+                }}
+              >
+                <option
+                  value="General"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  General
+                </option>
+                <option
+                  value="Work"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Work
+                </option>
+                <option
+                  value="Personal"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Personal
+                </option>
+                <option
+                  value="Urgent"
+                  style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
+                >
+                  Urgent
+                </option>
+                <option
+                  value="Planning"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Planning
+                </option>
+                <option
+                  value="Review"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Review
+                </option>
+                <option
+                  value="Implementation"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Implementation
+                </option>
+                <option
+                  value="Testing"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Testing
+                </option>
+                <option
+                  value="Documentation"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Documentation
+                </option>
+                <option
+                  value="Support"
+                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                >
+                  Support
+                </option>
+              </select>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label
+                className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 block"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Status
+              </label>
               <select
                 value={editSubtaskForm.status}
                 onChange={(e) =>
@@ -4113,27 +5047,29 @@ export default function KanbanBoard() {
                     status: e.target.value,
                   })
                 }
-                className="w-full bg-[#12153d] text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none"
+                className="w-full bg-gray-800/50 text-white pl-4 pr-4 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer"
               >
                 <option value="PENDING">PENDING</option>
                 <option value="IN_PROGRESS">IN_PROGRESS</option>
                 <option value="COMPLETED">COMPLETED</option>
               </select>
             </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <form method="dialog">
-                <button className="btn bg-transparent text-white border border-white/10 rounded-xl px-4">
-                  Cancel
-                </button>
-              </form>
-              <button
-                onClick={handleUpdateSubtask}
-                disabled={taskLoading}
-                className="btn bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white px-6 rounded-xl disabled:opacity-50"
-              >
-                {taskLoading ? "Saving..." : "Update Subtask"}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-700/50">
+            <form method="dialog">
+              <button className="px-6 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all font-medium text-sm">
+                Cancel
               </button>
-            </div>
+            </form>
+            <button
+              onClick={handleUpdateSubtask}
+              disabled={taskLoading}
+              className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 disabled:from-gray-600 disabled:to-gray-500 text-white font-medium text-sm transition-all disabled:opacity-60"
+            >
+              {taskLoading ? "Saving..." : "Update Subtask"}
+            </button>
           </div>
         </div>
       </dialog>
@@ -4151,6 +5087,11 @@ export default function KanbanBoard() {
             getSites();
           } else if (entityType === "zone" || entityModalType === "zone") {
             getZones();
+          } else if (
+            entityType === "subProjects" ||
+            entityModalType === "subProjects"
+          ) {
+            getProjectList();
           } else if (
             entityType === "equipment" ||
             entityModalType === "equipment"

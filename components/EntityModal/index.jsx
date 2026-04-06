@@ -7,6 +7,7 @@ import { CreateZone } from "@/services/Zones";
 import { CreateEquipment } from "@/services/Equipment";
 import { GetFields } from "@/services/Types";
 import { getUser } from "@/services/instance/tokenService";
+import { useParams } from "next/navigation";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const CapitalizeText = (text) =>
@@ -42,6 +43,170 @@ const TIMEZONES = [
   { value: "NZST", label: "NZST (New Zealand Standard Time)" },
   { value: "NZDT", label: "NZDT (New Zealand Daylight Time)" },
 ];
+
+// Asset Categories and Sub-Categories Mapping
+const ASSET_CATEGORIES = {
+  POWER_DISTRIBUTION: {
+    label: "Power Distribution",
+    subcategories: [
+      "MV Switchgear",
+      "MV Transformer",
+      "MV Cable / Terminations",
+      "Network Protector",
+      "Fused Disconnect Switch",
+      "Main Switchboard (MSB)",
+      "Low Voltage Switchgear (LVSG)",
+      "Power Distribution Unit (PDU)",
+      "Remote Power Panel (RPP)",
+      "Panelboard",
+      "Motor Control Center (MCC)",
+      "Busway / Busbar",
+      "Automatic Transfer Switch (ATS)",
+      "Static Transfer Switch (STS)",
+      "Bypass Isolation Switch (BIS)",
+      "Manual Transfer Switch (MTS)",
+      "Dry-Type Transformer (LV)",
+      "K-Rated Transformer",
+      "Isolation Transformer",
+      "Step-Down Transformer",
+    ],
+  },
+  BACKUP_POWER: {
+    label: "Backup Power",
+    subcategories: [
+      "UPS Module",
+      "UPS Static Bypass",
+      "UPS Maintenance Bypass",
+      "UPS Battery Cabinet",
+      "UPS Battery String",
+      "Battery Monitoring System (BMS)",
+      "UPS Distribution Module",
+      "Diesel Generator Set",
+      "Natural Gas Generator",
+      "Generator Automatic Voltage Regulator (AVR)",
+      "Generator Engine Control Panel",
+      "Generator Paralleling Switchgear (KGPS)",
+      "Generator Circuit Breaker",
+      "Day Tank",
+      "Belly Tank",
+      "Fuel Transfer Pump",
+      "Fuel Storage Tank (above/below ground)",
+      "Fuel Polishing System",
+      "Exhaust / Silencer System",
+      "Generator Coolant / Radiator",
+    ],
+  },
+  COOLING_MECHANICAL: {
+    label: "Cooling & Mechanical",
+    subcategories: [
+      "CRAC Unit (Computer Room Air Conditioner)",
+      "CRAH Unit (Computer Room Air Handler)",
+      "In-Row Cooler",
+      "Overhead Cooler",
+      "Rear-Door Heat Exchanger",
+      "Chiller (air-cooled)",
+      "Chiller (water-cooled)",
+      "Cooling Tower",
+      "Dry Cooler / Fluid Cooler",
+      "Chilled Water Pump (primary)",
+      "Chilled Water Pump (secondary)",
+      "Condenser Water Pump",
+      "Plate Heat Exchanger",
+      "Buffer Tank / Thermal Storage",
+      "Expansion Tank",
+      "Chemical Treatment System",
+      "Variable Frequency Drive (VFD) — Pump",
+      "Chilled Water Piping & Valves",
+      "Chilled Water Distribution Unit (CWDU)",
+      "Computer Room Air Handler (CRAH)",
+      "Air Handler Unit (AHU)",
+      "Fan Coil Unit (FCU)",
+      "Economizer / Free Cooling Unit",
+      "Spot Cooler",
+      "Evaporative Cooler",
+      "Adiabatic System",
+    ],
+  },
+  BMS_CONTROLS: {
+    label: "BMS & Controls",
+    subcategories: [
+      "BMS Controller / DDC Panel",
+      "BMS Server / Workstation",
+      "BMS Network Gateway",
+      "BMS Field Device (sensor, actuator)",
+      "EPMS Server / Workstation",
+      "Power Meter (main)",
+      "Power Meter (branch)",
+      "EPMS Communication Gateway",
+      "Revenue Grade Meter",
+      "DCIM Server",
+      "DCIM Environmental Sensor",
+      "DCIM PDU Monitoring",
+      "DCIM Network Infrastructure",
+      "Clean Agent Suppression System (FM-200 / Novec 1230)",
+      "Gaseous Suppression Panel",
+      "Aspirating Smoke Detection (ASD / VESDA)",
+      "Addressable Fire Alarm Panel (FACP)",
+      "Smoke Detector",
+      "Heat Detector",
+      "Manual Pull Station",
+      "Notification Appliance (horn/strobe)",
+      "Pre-Action Sprinkler System",
+      "Deluge Valve",
+      "Access Control Panel",
+      "Card Reader",
+      "Door Contact / REX",
+      "CCTV Camera",
+      "NVR / DVR",
+      "Visitor Management System",
+    ],
+  },
+  NETWORK_COMMUNICATIONS: {
+    label: "Network & Communications",
+    subcategories: [
+      "Core Router",
+      "Aggregation Switch",
+      "Top-of-Rack (TOR) Switch",
+      "Out-of-Band (OOB) Management Switch",
+      "Network Patch Panel",
+      "Structured Cabling System",
+      "Optical Distribution Frame (ODF)",
+      "Fiber Patch Panel",
+      "Fiber Trunk Cable",
+      "MPO/MTP Fiber Cassette",
+      "Console Server",
+      "KVM Switch",
+      "Terminal Server",
+    ],
+  },
+  STRUCTURAL_CIVIL: {
+    label: "Structural & Civil",
+    subcategories: [
+      "Raised Access Floor Panel",
+      "Floor Support Pedestal",
+      "Ceiling Tile System",
+      "Hot Aisle Containment (HAC)",
+      "Cold Aisle Containment (CAC)",
+      "Chimney / Overhead Containment",
+      "Server Rack (open)",
+      "Server Cabinet (enclosed)",
+      "Rack PDU (vertical / horizontal)",
+      "Cage / Cage System",
+    ],
+  },
+  SAFETY_COMPLIANCE: {
+    label: "Safety & Compliance",
+    subcategories: [
+      "Lockout / Tagout (LOTO) Station",
+      "Arc Flash PPE Station",
+      "Safety Shower / Eyewash",
+      "Emergency Lighting",
+      "Exit Sign",
+      "Grounding / Bonding System",
+      "Lightning Protection System",
+    ],
+  },
+};
 
 // Phase configuration for project creation (max 4 fields per phase)
 const PROJECT_PHASES = [
@@ -90,6 +255,34 @@ const SITE_PHASES = [
     isDynamic: true,
   },
 ];
+// Phase configuration for zones (max 4 fields per phase)
+const SUB_PROJECT_PHASES = [
+  {
+    label: "Category & Type",
+    id: "category_type",
+    fields: ["selectedSubProjectType"],
+  },
+  {
+    label: "Basic Info",
+    id: "basic_info",
+    fields: ["name", "description"],
+  },
+  {
+    label: "Schedule",
+    id: "schedule",
+    fields: ["startDate", "endDate", "timezone"],
+  },
+  {
+    label: "Location & Details",
+    id: "location_details",
+    fields: ["address", "contractValue", "clientName"],
+  },
+  {
+    label: "Additional Info",
+    id: "additional_info",
+    isDynamic: true,
+  },
+];
 
 // Phase configuration for zones (max 4 fields per phase)
 const ZONE_PHASES = [
@@ -107,6 +300,11 @@ const ZONE_PHASES = [
 
 // Phase configuration for equipment (max 4 fields per phase)
 const EQUIPMENT_PHASES = [
+  {
+    label: "Category & Subcategory",
+    id: "category_subcategory",
+    fields: ["assetCategory", "assetSubcategory"],
+  },
   {
     label: "Asset Info",
     id: "asset_info",
@@ -307,6 +505,8 @@ export default function EntityModal({
   projectCategory: initialCategory,
   onSuccess,
 }) {
+  const params = useParams();
+  const { id, subId } = params;
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [currentPhase, setCurrentPhase] = useState(1);
@@ -325,9 +525,12 @@ export default function EntityModal({
   // Type selectors
   const [selectedRootType, setSelectedRootType] = useState("");
   const [selectedSubType, setSelectedSubType] = useState("");
+  const [selectedSubProjectType, setSelectedSubProjectType] = useState("");
   const [selectedSiteType, setSelectedSiteType] = useState("");
   const [selectedZoneType, setSelectedZoneType] = useState("");
   const [selectedAssetType, setSelectedAssetType] = useState("");
+  const [assetCategory, setAssetCategory] = useState("");
+  const [assetSubcategory, setAssetSubcategory] = useState("");
 
   // Base form states
   const [projectForm, setProjectForm] = useState({
@@ -422,19 +625,23 @@ export default function EntityModal({
     else if (entityType === "site") basePhasesConfig = SITE_PHASES;
     else if (entityType === "zone") basePhasesConfig = ZONE_PHASES;
     else if (entityType === "equipment") basePhasesConfig = EQUIPMENT_PHASES;
+    else if (entityType === "subProjects")
+      basePhasesConfig = SUB_PROJECT_PHASES;
 
     // Get dynamic fields based on entity type
     let allDynamicFields = [];
     if (entityType === "project") {
-      allDynamicFields = [...getRootTypeFields(), ...getSubTypeFields()];
+      allDynamicFields = [...getRootTypeFields()];
     } else if (entityType === "site") {
       allDynamicFields = getSiteTypeFields();
     } else if (entityType === "zone") {
       allDynamicFields = getZoneTypeFields();
     } else if (entityType === "equipment") {
       allDynamicFields = getAssetTypeFields();
+    } else if (entityType === "subProjects") {
+      allDynamicFields = [...getSubTypeFields()];
     }
-
+    console.log(basePhasesConfig, allDynamicFields);
     // If there are dynamic fields, split them into chunks of 4 and create additional phases
     if (allDynamicFields.length > 0) {
       const dynamicChunks = splitDynamicFields(allDynamicFields);
@@ -523,7 +730,6 @@ export default function EntityModal({
 
     fetchGroupedTypes();
   }, [isOpen, entityType, projectCategory]);
-        const user = JSON.parse(getUser());
 
   // Fetch types for non-project entities
   useEffect(() => {
@@ -534,6 +740,8 @@ export default function EntityModal({
       setSelectedSiteType("");
       setSelectedZoneType("");
       setSelectedAssetType("");
+      setAssetCategory("");
+      setAssetSubcategory("");
       setSiteMetadata({});
       setZoneMetadata({});
       setAssetMetadata({});
@@ -567,22 +775,31 @@ export default function EntityModal({
     setLoading(true);
 
     try {
-      if (entityType === "project") {
-        const payload = {
+      if (entityType === "project" || entityType === "subProjects") {
+        let payload = {
           name: projectForm.name,
           description: projectForm.description,
           startDate: projectForm.startDate,
           endDate: projectForm.endDate,
           timezone: projectForm.timezone,
           address: projectForm.address,
-          // contractValue: projectForm.contractValue,
-          // clientName: projectForm.clientName,
-          projectCategory,
-          type: activeRootType?.code,
-          metadata: rootMetadata,
         };
+        if (!selectedSubType) {
+          payload = {
+            ...payload,
+            metadata: { ...rootMetadata },
+            projectCategory: projectCategory,
+            type: activeRootType?.code,
+          };
+        }
         if (selectedSubType) {
-          payload.metadata = { ...subMetadata };
+          payload = {
+            ...payload,
+            parentProjectId: subId,
+            parentSiteId: id,
+            type: activeSubType?.code,
+            metadata: { ...subMetadata },
+          };
         }
         await CreateProjects(payload);
       } else if (entityType === "site") {
@@ -597,7 +814,7 @@ export default function EntityModal({
         await CreateSite(parentId, payload);
       } else if (entityType === "zone") {
         const payload = {
-          name: zoneForm.name,
+          name: zoneMetadata?.zone_name,
           type: activeZoneType?.code,
           metadata: zoneMetadata,
         };
@@ -608,12 +825,19 @@ export default function EntityModal({
           serialNumber: equipmentForm.serialNumber,
           status: equipmentForm.status,
           type: activeAssetType?.code,
-          metadata: assetMetadata,
+          metadata: {
+            ...assetMetadata,
+            // assetCategory,
+            // assetSubcategory,
+          },
         };
         await CreateEquipment(parentId, payload);
       }
 
-      setMessage({ type: "success", text: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} created successfully!` });
+      setMessage({
+        type: "success",
+        text: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} created successfully!`,
+      });
       setTimeout(() => {
         if (onSuccess) {
           onSuccess(entityType);
@@ -650,6 +874,8 @@ export default function EntityModal({
       serialNumber: "",
       status: "ORDERED",
     });
+    setAssetCategory("");
+    setAssetSubcategory("");
     setRootMetadata({});
     setSubMetadata({});
     setSiteMetadata({});
@@ -664,6 +890,7 @@ export default function EntityModal({
     if (entityType === "site") return "Add Site";
     if (entityType === "zone") return "Add Zone";
     if (entityType === "equipment") return "Add Asset";
+    if (entityType === "subProjects") return "Add Sub-Project";
     return "Create Entity";
   };
 
@@ -686,26 +913,37 @@ export default function EntityModal({
       if (currentPhase === 4)
         return projectForm.address && projectForm.timezone;
     }
+
+    if (entityType === "subProjects") {
+      if (currentPhase === 1) return selectedSubType;
+      if (currentPhase === 2)
+        return projectForm.name && projectForm.description;
+      if (currentPhase === 3)
+        return projectForm.startDate && projectForm.endDate;
+      if (currentPhase === 4)
+        return projectForm.address && projectForm.timezone;
+    }
     if (entityType === "site") {
       if (currentPhase === 1)
         return selectedSiteType && siteForm.name && siteForm.location;
       if (currentPhase === 2) return siteForm.status;
     }
     if (entityType === "zone") {
-      if (currentPhase === 1) return selectedZoneType && zoneForm.name;
+      if (currentPhase === 1) return selectedZoneType;
     }
     if (entityType === "equipment") {
-      if (currentPhase === 1)
+      if (currentPhase === 1) return assetCategory && assetSubcategory;
+      if (currentPhase === 2)
         return (
           selectedAssetType && equipmentForm.name && equipmentForm.serialNumber
         );
-      if (currentPhase === 2) return equipmentForm.status;
+      if (currentPhase === 3) return equipmentForm.status;
     }
     return true;
   };
 
   if (!isOpen) return null;
-
+  console.log(activeAssetType?.allowedStatuses);
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 rounded-xl border border-gray-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col">
@@ -748,29 +986,30 @@ export default function EntityModal({
           className="flex-1 overflow-y-auto p-6 space-y-4"
         >
           {/* ─── PROJECTS ─── */}
-          {entityType === "project" && (
+          {(entityType === "project" || entityType === "subProjects") && (
             <>
               {/* Phase 1: Category & Type (2 fields) */}
               {currentPhase === 1 && (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Project Category *
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={projectCategory}
-                        onChange={(e) => setProjectCategory(e.target.value)}
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 [&_option]:bg-gray-800 [&_option]:text-white"
-                      >
-                        <option value="">— Select Category —</option>
-                        {PROJECT_CATEGORIES.map((c) => (
-                          <option key={c.value} value={c.value}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                      <svg
+                  {!id && !subId && (
+                    <div>
+                      <label className="block text-sm font-semibold text-white mb-2">
+                        Project Category *
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={projectCategory}
+                          onChange={(e) => setProjectCategory(e.target.value)}
+                          className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 [&_option]:bg-gray-800 [&_option]:text-white"
+                        >
+                          <option value="">— Select Category —</option>
+                          {PROJECT_CATEGORIES.map((c) => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        {/* <svg
                         className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                         width="14"
                         height="14"
@@ -780,11 +1019,12 @@ export default function EntityModal({
                         strokeWidth="2.5"
                       >
                         <polyline points="6 9 12 15 18 9" />
-                      </svg>
+                      </svg> */}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {projectCategory && (
+                  {!id && !subId && (
                     <div>
                       <label className="block text-sm font-semibold text-white mb-2">
                         Project Type *
@@ -807,7 +1047,7 @@ export default function EntityModal({
                             </option>
                           ))}
                         </select>
-                        <svg
+                        {/* <svg
                           className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                           width="14"
                           height="14"
@@ -817,7 +1057,44 @@ export default function EntityModal({
                           strokeWidth="2.5"
                         >
                           <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                        </svg> */}
+                      </div>
+                    </div>
+                  )}
+                  {id && subId && (
+                    <div>
+                      <label className="block text-sm font-semibold text-white mb-2">
+                        Sub Project Type *
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={selectedSubType}
+                          onChange={(e) => setSelectedSubType(e.target.value)}
+                          disabled={loadingTypes}
+                          className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 [&_option]:bg-gray-800 [&_option]:text-white disabled:opacity-50"
+                        >
+                          <option value="">
+                            {loadingTypes
+                              ? "Loading types..."
+                              : "— Select Type —"}
+                          </option>
+                          {groupedTypes.subProjects.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.displayName || t.code}
+                            </option>
+                          ))}
+                        </select>
+                        {/* <svg
+                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg> */}
                       </div>
                     </div>
                   )}
@@ -835,7 +1112,10 @@ export default function EntityModal({
                       type="text"
                       value={projectForm.name}
                       onChange={(e) =>
-                        setProjectForm({ ...projectForm, name: e.target.value })
+                        setProjectForm({
+                          ...projectForm,
+                          name: e.target.value,
+                        })
                       }
                       className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                       placeholder="Enter project name"
@@ -1194,7 +1474,7 @@ export default function EntityModal({
                           </option>
                         ))}
                       </select>
-                      <svg
+                      {/* <svg
                         className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                         width="14"
                         height="14"
@@ -1204,11 +1484,11 @@ export default function EntityModal({
                         strokeWidth="2.5"
                       >
                         <polyline points="6 9 12 15 18 9" />
-                      </svg>
+                      </svg> */}
                     </div>
                   </div>
 
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-semibold text-white mb-2">
                       Zone Name *
                     </label>
@@ -1221,7 +1501,7 @@ export default function EntityModal({
                       className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                       placeholder="Enter zone name"
                     />
-                  </div>
+                  </div> */}
                 </div>
               )}
 
@@ -1263,8 +1543,90 @@ export default function EntityModal({
           {/* ─── EQUIPMENT ─── */}
           {entityType === "equipment" && (
             <>
-              {/* Phase 1: Asset Info (3 fields) */}
+              {/* Phase 1: Category & Subcategory */}
               {currentPhase === 1 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2">
+                      Asset Category *
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={assetCategory}
+                        onChange={(e) => {
+                          setAssetCategory(e.target.value);
+                          setAssetSubcategory("");
+                        }}
+                        className="w-full px-4 py-2 bg-gradient-to-br from-gray-800/60 to-gray-900/60 text-gray-100 border border-cyan-500/40 hover:border-cyan-500/60 focus:border-cyan-500/80 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 rounded-lg transition-all cursor-pointer appearance-none font-medium text-sm"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300c8ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "right 12px center",
+                          paddingRight: "36px",
+                        }}
+                      >
+                        <option value="">— Select Category —</option>
+                        {Object.entries(ASSET_CATEGORIES).map(([key, cat]) => (
+                          <option
+                            key={key}
+                            value={key}
+                            style={{
+                              backgroundColor: "#1f2937",
+                              color: "#f3f4f6",
+                            }}
+                          >
+                            {cat.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-white mb-2">
+                      Asset Subcategory *
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={assetSubcategory}
+                        onChange={(e) => setAssetSubcategory(e.target.value)}
+                        disabled={!assetCategory}
+                        className="w-full px-4 py-2 bg-gradient-to-br from-gray-800/60 to-gray-900/60 text-gray-100 border border-cyan-500/40 hover:border-cyan-500/60 focus:border-cyan-500/80 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 rounded-lg transition-all cursor-pointer appearance-none font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300c8ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "right 12px center",
+                          paddingRight: "36px",
+                        }}
+                      >
+                        <option value="">
+                          {!assetCategory
+                            ? "— Select Category First —"
+                            : "— Select Subcategory —"}
+                        </option>
+                        {assetCategory &&
+                          ASSET_CATEGORIES[assetCategory]?.subcategories.map(
+                            (subcat) => (
+                              <option
+                                key={subcat}
+                                value={subcat}
+                                style={{
+                                  backgroundColor: "#1f2937",
+                                  color: "#f3f4f6",
+                                }}
+                              >
+                                {subcat}
+                              </option>
+                            ),
+                          )}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Phase 2: Asset Info (3 fields) */}
+              {currentPhase === 2 && (
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-white mb-2">
@@ -1340,8 +1702,8 @@ export default function EntityModal({
                 </div>
               )}
 
-              {/* Phase 2: Status (1 field) */}
-              {currentPhase === 2 && (
+              {/* Phase 3: Status (1 field) */}
+              {currentPhase === 3 && (
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold text-white mb-2">
@@ -1358,14 +1720,14 @@ export default function EntityModal({
                         }
                         className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 [&_option]:bg-gray-800 [&_option]:text-white"
                       >
-                        <option value="ORDERED">Ordered</option>
-                        <option value="MANUFACTURING">Manufacturing</option>
-                        <option value="FAT">FAT</option>
-                        <option value="SHIPPED">Shipped</option>
-                        <option value="INSTALLED">Installed</option>
-                        <option value="COMMISSIONED">Commissioned</option>
+                        <option value="">- Select Status - </option>
+                        {activeAssetType?.allowedStatuses.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
                       </select>
-                      <svg
+                      {/* <svg
                         className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                         width="14"
                         height="14"
@@ -1375,7 +1737,7 @@ export default function EntityModal({
                         strokeWidth="2.5"
                       >
                         <polyline points="6 9 12 15 18 9" />
-                      </svg>
+                      </svg> */}
                     </div>
                   </div>
                 </div>

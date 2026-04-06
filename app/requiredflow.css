@@ -41,9 +41,9 @@
   --rf-teal: #00d4c8;
 
   /* Typography */
-  --rf-mono: 'IBM Plex Mono', 'Share Tech Mono', monospace;
-  --rf-sans: 'IBM Plex Sans', 'Inter', sans-serif;
-  --rf-display: 'Rajdhani', sans-serif;
+  --rf-mono: "IBM Plex Mono", "Share Tech Mono", monospace;
+  --rf-sans: "IBM Plex Sans", "Inter", sans-serif;
+  --rf-display: "Rajdhani", sans-serif;
 
   /* Layout dimensions */
   --rf-nav-h: 56px;
@@ -260,7 +260,7 @@
 }
 
 .rf-pill::before {
-  content: '';
+  content: "";
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -680,6 +680,468 @@
 }
 
 /* ────────────────────────────────────────────────────────────────────────────────
+   TASKS & SUBTASKS COMPONENT STYLING
+   ──────────────────────────────────────────────────────────────────────────────── */
+
+/* Task Container */
+.task-container {
+  background: linear-gradient(135deg, var(--rf-bg3) 0%, var(--rf-bg4) 100%);
+  border: 1px solid var(--rf-border2);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.task-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--rf-accent),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.task-container:hover {
+  border-color: var(--rf-accent2);
+  box-shadow: 0 4px 16px rgba(0, 200, 255, 0.12);
+}
+
+.task-container:hover::before {
+  opacity: 1;
+}
+
+/* Task Header */
+.task-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.task-title {
+  font-family: var(--rf-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--rf-txt);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  flex: 1;
+  word-break: break-word;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Task Badge - Priority */
+.task-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--rf-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+}
+
+.task-badge.priority-urgent {
+  background: rgba(255, 68, 85, 0.12);
+  color: #ff4455;
+  border-color: rgba(255, 68, 85, 0.3);
+}
+
+.task-badge.priority-urgent::before {
+  content: "⚡";
+  display: inline-block;
+}
+
+.task-badge.priority-high {
+  background: rgba(255, 140, 0, 0.12);
+  color: #ff8c00;
+  border-color: rgba(255, 140, 0, 0.3);
+}
+
+.task-badge.priority-high::before {
+  content: "▲";
+}
+
+.task-badge.priority-medium {
+  background: rgba(255, 204, 0, 0.12);
+  color: #ffcc00;
+  border-color: rgba(255, 204, 0, 0.3);
+}
+
+.task-badge.priority-medium::before {
+  content: "●";
+}
+
+.task-badge.priority-low {
+  background: rgba(0, 229, 160, 0.12);
+  color: #00e5a0;
+  border-color: rgba(0, 229, 160, 0.3);
+}
+
+.task-badge.priority-low::before {
+  content: "▼";
+}
+
+/* Task Status Badge */
+.task-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: var(--rf-mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  border: 1px solid;
+}
+
+.task-status-badge.status-pending {
+  background: rgba(255, 204, 0, 0.1);
+  color: #ffcc00;
+  border-color: rgba(255, 204, 0, 0.4);
+}
+
+.task-status-badge.status-in-progress {
+  background: rgba(0, 200, 255, 0.1);
+  color: #00c8ff;
+  border-color: rgba(0, 200, 255, 0.4);
+  animation: pulse-accent 2s ease-in-out infinite;
+}
+
+.task-status-badge.status-completed {
+  background: rgba(0, 229, 160, 0.1);
+  color: #00e5a0;
+  border-color: rgba(0, 229, 160, 0.4);
+}
+
+.task-status-badge.status-blocked {
+  background: rgba(255, 68, 85, 0.1);
+  color: #ff4455;
+  border-color: rgba(255, 68, 85, 0.4);
+}
+
+/* Task Body/Description */
+.task-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.task-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-field-label {
+  font-family: var(--rf-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--rf-txt3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.task-field-value {
+  font-family: var(--rf-sans);
+  font-size: 12px;
+  color: var(--rf-txt2);
+  word-break: break-word;
+}
+
+/* Task Progress Bar */
+.task-progress-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.task-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--rf-bg2);
+  border-radius: 3px;
+  border: 1px solid var(--rf-border);
+  overflow: hidden;
+  position: relative;
+}
+
+.task-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--rf-accent), var(--rf-teal));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(0, 200, 255, 0.6);
+}
+
+.task-progress-text {
+  font-family: var(--rf-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--rf-accent);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* Task Assignees */
+.task-assignees {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.task-assignee-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--rf-border3);
+  background-size: cover;
+  background-position: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.task-assignee-avatar:hover {
+  border-color: var(--rf-accent);
+  box-shadow: 0 0 8px rgba(0, 200, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.task-assignee-more {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--rf-bg3);
+  border: 2px solid var(--rf-border3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--rf-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--rf-txt3);
+}
+
+/* Task Footer Actions */
+.task-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--rf-border);
+  gap: 8px;
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--rf-border2);
+  background: transparent;
+  color: var(--rf-txt3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.task-action-btn:hover {
+  border-color: var(--rf-accent);
+  background: rgba(0, 200, 255, 0.08);
+  color: var(--rf-accent);
+}
+
+.task-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--rf-mono);
+  font-size: 10px;
+  color: var(--rf-txt3);
+}
+
+.task-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────────
+   SUBTASK STYLING
+   ──────────────────────────────────────────────────────────────────────────────── */
+
+.subtask-container {
+  background: var(--rf-bg2);
+  border: 1px solid var(--rf-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-left: 12px;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subtask-container:hover {
+  border-color: var(--rf-accent2);
+  background: rgba(0, 200, 255, 0.04);
+}
+
+.subtask-checkbox {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: 2px solid var(--rf-border3);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  accent-color: var(--rf-accent);
+}
+
+.subtask-checkbox:hover {
+  border-color: var(--rf-accent);
+  background: rgba(0, 200, 255, 0.08);
+}
+
+.subtask-checkbox:checked {
+  background: linear-gradient(135deg, var(--rf-accent), var(--rf-teal));
+  border-color: var(--rf-accent);
+}
+
+.subtask-checkbox:checked::after {
+  content: "✓";
+  color: var(--rf-bg);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.subtask-title {
+  font-family: var(--rf-sans);
+  font-size: 12px;
+  color: var(--rf-txt2);
+  flex: 1;
+  word-break: break-word;
+  transition: all 0.2s ease;
+}
+
+.subtask-checkbox:checked ~ .subtask-title {
+  color: var(--rf-txt3);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.subtask-assignee {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rf-border2);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.subtask-assignee:hover {
+  border-color: var(--rf-accent);
+  box-shadow: 0 0 6px rgba(0, 200, 255, 0.4);
+}
+
+.subtask-priority {
+  font-family: var(--rf-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.subtask-priority.high {
+  background: rgba(255, 68, 85, 0.15);
+  color: #ff4455;
+}
+
+.subtask-priority.medium {
+  background: rgba(255, 204, 0, 0.15);
+  color: #ffcc00;
+}
+
+.subtask-priority.low {
+  background: rgba(0, 229, 160, 0.15);
+  color: #00e5a0;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────────
+   TASK & SUBTASK ANIMATIONS
+   ──────────────────────────────────────────────────────────────────────────────── */
+
+@keyframes pulse-accent {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(0, 200, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(0, 200, 255, 0.8);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.subtask-container {
+  animation: slide-in 0.3s ease;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────────
    RESPONSIVE ADJUSTMENTS
    ──────────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -700,5 +1162,38 @@
   .rf-table th,
   .rf-table td {
     padding: 6px 8px;
+  }
+
+  .task-container {
+    padding: 12px;
+  }
+
+  .task-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .task-body {
+    grid-template-columns: 1fr;
+  }
+
+  .task-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .task-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .subtask-container {
+    margin-left: 0;
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+
+  .subtask-title {
+    font-size: 11px;
   }
 }
