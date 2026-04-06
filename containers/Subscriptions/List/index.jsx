@@ -30,7 +30,7 @@ const plans = [
 export default function PricingPlans() {
   const router = useRouter();
   const [subscriptions, setSubscriptions] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingId, setLoadingId] = useState(null);
 
   useEffect(() => {
     GetAllSubscriptions();
@@ -48,7 +48,7 @@ export default function PricingPlans() {
 
   const SelectSubscription = async (id) => {
     try {
-      setLoading(true);
+      setLoadingId(id);
       const payload = {
         subscriptionPlanId: id,
       };
@@ -60,7 +60,7 @@ export default function PricingPlans() {
       setTimeout(() => router.push("/"), 2000);
     } catch (error) {
       console.log("error selecting subscription : ", error);
-      setLoading(false);
+      setLoadingId(null);
     }
   };
 
@@ -276,31 +276,32 @@ export default function PricingPlans() {
               {/* Select Button */}
               <button
                 onClick={() => SelectSubscription(plan?.id)}
-                disabled={loading}
+                disabled={loadingId !== null}
                 className="w-full py-3 rounded font-bold text-sm uppercase tracking-wider transition-all"
                 style={{
                   fontFamily: "'Rajdhani', sans-serif",
-                  backgroundColor: loading ? "#0088aa" : "#00d4ff",
+                  backgroundColor:
+                    loadingId === plan?.id ? "#0088aa" : "#00d4ff",
                   color: "#020d16",
                   fontSize: "0.9rem",
                   letterSpacing: "0.2em",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  opacity: loading ? 0.6 : 1,
+                  cursor: loadingId !== null ? "not-allowed" : "pointer",
+                  opacity: loadingId === plan?.id ? 0.6 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  if (!loading) {
+                  if (loadingId === null) {
                     e.target.style.backgroundColor = "#10eaff";
                     e.target.style.boxShadow = "0 0 22px rgba(0,212,255,0.45)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!loading) {
+                  if (loadingId === null) {
                     e.target.style.backgroundColor = "#00d4ff";
                     e.target.style.boxShadow = "none";
                   }
                 }}
               >
-                {loading ? (
+                {loadingId === plan?.id ? (
                   <span
                     style={{
                       display: "flex",
