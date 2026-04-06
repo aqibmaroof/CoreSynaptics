@@ -44,18 +44,18 @@ const Layout = ({ children }) => {
   };
 
   return (
-    <div className="bg-[url('/images/background.png')] bg-cover bg-center bg-no-repeat flex flex-col min-h-screen">
+    <div className="rf-container bg-[url('/images/background.png')] bg-cover bg-center bg-no-repeat flex flex-col min-h-screen" style={{ background: 'var(--rf-bg)' }}>
       {/* Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-74 overflow-y-auto h-screen scrollbar-hide">
+        <aside className="w-74 overflow-y-auto h-screen scrollbar-hide" style={{ background: 'var(--rf-bg2)', borderRight: '1px solid var(--rf-border)' }}>
           <Sidebar />
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1  pb-8 overflow-y-auto h-screen scrollbar-hide">
+        <main className="flex-1 pb-8 overflow-y-auto h-screen scrollbar-hide" style={{ background: 'var(--rf-bg)' }}>
           <div className="sticky top-0 z-20 backdrop-blur px-5 pt-3">
-            <div className="sticky top-0 z-20 backdrop-blur flex items-center justify-between bg-[#060B26F0]/60 gap-2 w-full py-2 px-4 rounded-xl">
+            <div className="sticky top-0 z-20 backdrop-blur flex items-center justify-between gap-2 w-full py-2 px-4 rounded-xl" style={{ background: 'rgba(10, 14, 20, 0.97)', border: '1px solid var(--rf-border)', color: 'var(--rf-txt)' }}>
               <div className="bg-[transparent] px-2">
                 <div className="flex items-center gap-5 cursor-pointer">
                   {(pathname === `/Profile/Managers/${params?.id}` ||
@@ -63,10 +63,11 @@ const Layout = ({ children }) => {
                     pathname === "/ProjectDetails") && (
                     <FaArrowLeft
                       onClick={() => router.back()}
-                      className="text-2xl text-white"
+                      className="text-2xl"
+                      style={{ color: 'var(--rf-txt)' }}
                     />
                   )}
-                  <p className="text-2xl font-semibold text-white">
+                  <p className="text-2xl font-semibold" style={{ color: 'var(--rf-txt)' }}>
                     {pathname === `/Managers/List`
                       ? "Project Managers"
                       : pathname === `/Profile/Managers/${params?.id}`
@@ -98,22 +99,23 @@ const Layout = ({ children }) => {
 
               <div className="flex items-center gap-4 ml-auto mr-3">
                 <div className="relative">
-                  <FiSearch className="absolute text-xl text-white bg-transparent top-4 left-3" />
+                  <FiSearch className="absolute text-xl top-4 left-3" style={{ color: 'var(--rf-txt2)' }} />
                   <input
                     type="text"
                     name="search"
                     value={search}
                     onChange={handleChange}
                     placeholder="Type to search..."
-                    className="input w-[489px] bg-transparent backdrop-blur-[42px] border-3 border-[white]/[0.03] border-t-white/[0.09] rounded-2xl pl-9 pr-4 text-gray-300 placeholder:text-gray-400 focus:outline-none focus:border-white/[0.03] focus:border-t-white/[0.09] h-13"
+                    className="rf-form-input w-[489px] pl-9 pr-4 h-13 backdrop-blur-[42px]"
+                    style={{ background: 'rgba(21, 29, 46, 0.6)', borderColor: 'var(--rf-border2)' }}
                   />
                 </div>
-                <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]" />
-                <FaBell className="cursor-pointer text-white text-3xl" />
+                <span className="w-[6px] rounded-xl mx-5 h-[30px]" style={{ background: 'var(--rf-accent)' }} />
+                <FaBell className="cursor-pointer text-3xl" style={{ color: 'var(--rf-txt)' }} />
                 {/* <button onClick={toggleTheme} className="text-2xl">
                   {resolvedTheme === "dark" ? <FaSun /> : <FaMoon />}
                 </button> */}
-                <span className="w-[6px] rounded-xl mx-5 h-[30px] bg-[#62D1FE]" />
+                <span className="w-[6px] rounded-xl mx-5 h-[30px]" style={{ background: 'var(--rf-accent)' }} />
 
                 {/* --- User Dropdown Start --- */}
                 <div className="dropdown dropdown-end">
@@ -138,7 +140,8 @@ const Layout = ({ children }) => {
                   </label>
                   <ul
                     tabIndex={0}
-                    className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r from-[#093E7D] to-[#0075FF] border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-60 border border-white/10"
+                    className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content rounded-box w-60"
+                    style={{ background: 'var(--rf-bg2)', border: '1px solid var(--rf-border2)' }}
                   >
                     {/* User Info Header */}
                     <li className="flex flex-row items-center justify-start">
@@ -157,26 +160,27 @@ const Layout = ({ children }) => {
                         </div>
                       </div>
                       <div className="w-[max-content] flex flex-col justify-center items-start">
-                        <span className="text-left font-semibold text-[13px] text-white">
+                        <span className="text-left font-semibold text-[13px]" style={{ color: 'var(--rf-txt)' }}>
                           {user?.firstName} {user?.lastName}
                         </span>
-                        <span className="text-left opacity-60 text-[12px] capitalize text-white">
+                        <span className="text-left text-[12px] capitalize" style={{ color: 'var(--rf-txt2)' }}>
                           {user?.organizationName || ""}
                         </span>
-                        <span className="text-left opacity-60 text-[11px] capitalize text-white">
+                        <span className="text-left text-[11px] capitalize" style={{ color: 'var(--rf-txt3)' }}>
                           {user?.platformRole || user?.organizationType}
                         </span>
                       </div>
                     </li>
 
-                    <div className="divider my-0 divider-info opacity-20"></div>
+                    <div className="rf-divider my-0"></div>
 
                     <li>
                       <a
                         href="/UserProfile"
-                        className={`text-[16px] text-white gap-3 mt-2 ${
-                          pathname === "/UserProfile" ? "bg-gray-400/20" : ""
+                        className={`text-[16px] gap-3 mt-2 ${
+                          pathname === "/UserProfile" ? "bg-[rgba(0,200,255,0.1)]" : ""
                         }`}
+                        style={{ color: 'var(--rf-txt)' }}
                       >
                         <FiUser className="text-lg" /> My Profile
                       </a>
@@ -184,9 +188,10 @@ const Layout = ({ children }) => {
                     <li>
                       <a
                         href="/Settings"
-                        className={`text-[16px] text-white mb-3 gap-3 ${
-                          pathname === "/Settings" ? "bg-gray-400/20" : ""
+                        className={`text-[16px] mb-3 gap-3 ${
+                          pathname === "/Settings" ? "bg-[rgba(0,200,255,0.1)]" : ""
                         }`}
+                        style={{ color: 'var(--rf-txt)' }}
                       >
                         <FiSettings className="text-lg" /> Settings
                       </a>
@@ -213,10 +218,10 @@ const Layout = ({ children }) => {
                       </a>
                     </li> */}
 
-                    <div className="divider divider-info my-0 opacity-20"></div>
+                    <div className="rf-divider my-0"></div>
 
                     <li onClick={() => handleLogout()}>
-                      <a className="text-error text-[16px] gap-3">
+                      <a className="text-[16px] gap-3" style={{ color: 'var(--rf-red)' }}>
                         <FiPower className="text-lg" /> Log Out
                       </a>
                     </li>

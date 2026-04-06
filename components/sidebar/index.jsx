@@ -65,7 +65,7 @@ const Sidebar = () => {
   if (!mounted) return null;
 
   return (
-    <aside className="w-[280px] m-3 py-2 transition-colors bg-gradient-to-b from-[#060B26F0] to-[#1A1F3700] rounded rounded-t-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
+    <aside className="w-[280px] m-3 py-2 transition-colors bg-transparent rounded rounded-t-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
       {/* LOGOS */}
       <div className="sticky z-10 px-4 py-5">
         <img src={config?.brand} className="w-55 h-auto m-auto dark:hidden" />
