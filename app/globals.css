@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @plugin "daisyui";
+@import "./requiredflow.css";
 
 @tailwind base;
 @tailwind components;
@@ -49,6 +50,10 @@
        url('/Font/Gilroy-Heavy.ttf') format('truetype');
   font-display: swap;
 }
+
+/* RequiredFlow Design System Fonts */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
   --background: #10123b;
