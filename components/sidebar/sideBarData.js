@@ -126,6 +126,50 @@ export const sidebarItems = [
     ],
   },
 
+  // ─── Companies ─────────────────────────────────────────────────────
+  {
+    title: "Companies",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Company/List",
+    type: "link",
+    submenu: [],
+    roles: Object.values(ROLES), // All roles can access
+  },
+
+  // ─── Checklist ─────────────────────────────────────────────────────
+  {
+    title: "Checklists",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Checklist/List",
+    type: "link",
+    submenu: [],
+    roles: Object.values(ROLES), // All roles can access
+  },
+
+  // ─── RFIs (Requests For Information) ────────────────────────────────
+  {
+    title: "RFIs",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/RFI/List",
+    type: "link",
+    submenu: [],
+    roles: Object.values(ROLES), // All roles can access
+  },
+
+  // ─── RFIs (Requests For Information) ────────────────────────────────
+  {
+    title: "Meetings",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Meeting/List",
+    type: "link",
+    submenu: [],
+    roles: Object.values(ROLES), // All roles can access
+  },
+
   // ─── Teams ──────────────────────────────────────────────────────
   {
     title: "Teams",
@@ -553,19 +597,11 @@ export const sidebarItems = [
     title: "Documents",
     icon: config?.chart,
     iconActive: config?.home,
-    path: "/Documents",
+    path: "/Document/List",
     type: "link",
     submenu: [],
     // GC PM: Edit | OEM PM: Edit | FSE: View (site pack) | Superintendent: View (drawings)
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSE,
-      ROLES.SUPERADMIN,
-      ROLES.SUPERINTENDENT,
-    ],
+    roles: Object.values(ROLES), // All roles can access
   },
 
   // ─── Reports ───────────────────────────────────────────────────────
@@ -677,6 +713,6 @@ export function getMenuByRole(role) {
   // SUPERADMIN sees everything
 
   return sidebarItems.filter(
-    (item) => !item.roles || item.roles.includes(role)
+    (item) => !item.roles || item.roles.includes(role),
   );
 }
