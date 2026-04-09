@@ -35,7 +35,7 @@ const Sidebar = () => {
     setVisibleItems(items);
     setMounted(true);
 
-    getRolesList();
+    // getRolesList();
     if (accessToken) {
       getUserFromApi();
     }

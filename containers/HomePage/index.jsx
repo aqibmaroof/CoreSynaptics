@@ -36,7 +36,9 @@ const HomePage = () => {
       const userRole = parsedUser?.role?.toLowerCase() || "default";
 
       // Load all dashboard data based on role
-      setDashboardConfig(getDashboardConfig(userRole));
+      setTimeout(() => {
+        setDashboardConfig(getDashboardConfig(userRole));
+      }, 1000); // Simulate loading delay
       setChecklistData(getChecklistData(userRole));
       setPhaseDistData(getPhaseDistributionData(userRole));
       setTradeItemsData(getTradeItemsData(userRole));
@@ -61,8 +63,8 @@ const HomePage = () => {
 
   if (!dashboardConfig) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-lg">Loading dashboard...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center gap-2 justify- enter text-white text-lg">Loading dashboard...</div>
       </div>
     );
   }

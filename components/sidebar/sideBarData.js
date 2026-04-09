@@ -126,12 +126,28 @@ export const sidebarItems = [
     ],
   },
 
-  // ─── Companies ─────────────────────────────────────────────────────
+  // ─── CRM ───────────────────────────────────────────────────────────
   {
-    title: "Companies",
+    title: "CRM",
     icon: config?.chart,
     iconActive: config?.home,
-    path: "/Company/List",
+    path: "/CRM/Leads/List",
+    type: "link",
+    roles: Object.values(ROLES),
+    submenu: [
+      { title: "Leads", type: "link", path: "/CRM/Leads/List" },
+      { title: "Contacts", type: "link", path: "/CRM/Contacts/List" },
+      { title: "Companies", type: "link", path: "/Company/List" },
+      { title: "Deals", type: "link", path: "/CRM/Deals/List" },
+    ],
+  },
+
+  // ─── Phase Gates ─────────────────────────────────────────────────────
+  {
+    title: "Phase Gates",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/PhaseGates",
     type: "link",
     submenu: [],
     roles: Object.values(ROLES), // All roles can access
@@ -592,16 +608,18 @@ export const sidebarItems = [
     roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
   },
 
-  // ─── Documents ─────────────────────────────────────────────────────
+  // ─── Documentation ──────────────────────────────────────────────────
   {
-    title: "Documents",
+    title: "Documentation",
     icon: config?.chart,
     iconActive: config?.home,
     path: "/Document/List",
     type: "link",
-    submenu: [],
-    // GC PM: Edit | OEM PM: Edit | FSE: View (site pack) | Superintendent: View (drawings)
-    roles: Object.values(ROLES), // All roles can access
+    roles: Object.values(ROLES),
+    submenu: [
+      { title: "Documents", type: "link", path: "/Document/List" },
+      { title: "Submittals", type: "link", path: "/Submittals/List" },
+    ],
   },
 
   // ─── Reports ───────────────────────────────────────────────────────

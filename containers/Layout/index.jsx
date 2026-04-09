@@ -161,13 +161,13 @@ const Layout = ({ children }) => {
                       </div>
                       <div className="w-[max-content] flex flex-col justify-center items-start">
                         <span className="text-left font-semibold text-[13px]" style={{ color: 'var(--rf-txt)' }}>
-                          {user?.firstName} {user?.lastName}
+                          {user?.firstName?.replace(/_/g, " ")} {user?.lastName?.replace(/_/g, " ")}
                         </span>
                         <span className="text-left text-[12px] capitalize" style={{ color: 'var(--rf-txt2)' }}>
-                          {user?.organizationName || ""}
+                          {user?.organizationName?.replace(/_/g, " ") || ""}
                         </span>
                         <span className="text-left text-[11px] capitalize" style={{ color: 'var(--rf-txt3)' }}>
-                          {user?.platformRole || user?.organizationType}
+                          {user?.platformRole?.replace(/_/g, " ") || user?.activeRole?.name?.replace(/_/g, " ")}
                         </span>
                       </div>
                     </li>

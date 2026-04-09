@@ -40,7 +40,7 @@ export function CompanyDropdownForProjects({
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/companies");
+      const response = await fetch("/company");
       if (!response.ok) throw new Error("Failed to fetch companies");
       const data = await response.json();
       setCompanies(data);

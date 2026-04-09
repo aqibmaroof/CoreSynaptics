@@ -66,7 +66,7 @@ export default function PricingPlans() {
 
   return (
     <div
-      className="text-white min-h-screen flex flex-col items-center justify-center py-20 px-4"
+      className="text-white min-h-screen flex flex-col items-center justify-center py-5 px-4"
       style={{ backgroundColor: "#020d16" }}
     >
       {/* Background glow */}
@@ -82,7 +82,7 @@ export default function PricingPlans() {
       />
 
       {/* Header */}
-      <div className="text-center mb-16 relative z-10">
+      <div className="text-center mb-7 relative z-10">
         <h1
           className="text-5xl font-bold mb-3 tracking-wider"
           style={{
@@ -350,7 +350,7 @@ export default function PricingPlans() {
 
       {/* Footer Text */}
       <p
-        className="mt-16 text-center"
+        className="mt-7 text-center"
         style={{
           fontFamily: "'Share Tech Mono', monospace",
           color: "#4a7a92",
