@@ -74,14 +74,14 @@ export default function DealsList() {
     try {
       const res = await getContacts();
       setContacts(Array.isArray(res) ? res : res?.data || []);
-    } catch {}
+    } catch { }
   };
 
   const fetchUsers = async () => {
     try {
       const res = await getUsers();
       setUsers(Array.isArray(res) ? res : res?.data || []);
-    } catch {}
+    } catch { }
   };
 
   const resetForm = () => {
@@ -140,7 +140,7 @@ export default function DealsList() {
     try {
       await updateDeal(deal.id, { ...deal, stage: newStage });
       await fetchDeals();
-    } catch {}
+    } catch { }
   };
 
   const handleCreateTask = async () => {
@@ -284,7 +284,7 @@ export default function DealsList() {
 
   return (
     <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto">
         {/* Message Toast */}
         {message && (
           <div className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg border shadow-lg ${message.type === "success" ? "bg-green-900/80 border-green-500/30 text-green-300" : "bg-red-900/80 border-red-500/30 text-red-300"}`}>
@@ -311,7 +311,7 @@ export default function DealsList() {
                 List
               </button>
             </div>
-            <button onClick={openEdit}
+            <button onClick={openCreate}
               className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

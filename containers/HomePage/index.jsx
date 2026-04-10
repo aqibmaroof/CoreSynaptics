@@ -77,7 +77,7 @@ const HomePage = () => {
         <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-5 animate-blob animation-delay-2000" />
       </div>
 
-      <div className="px-8 py-10 max-w-7xl mx-auto relative z-10">
+      <div className="px-8 py-10 mx-auto relative z-10">
         {/* Welcome Section */}
         <div className="mb-10 pb-8 border-b border-gradient-to-r from-slate-700 via-slate-600 to-transparent">
           <div className="flex items-center justify-between">

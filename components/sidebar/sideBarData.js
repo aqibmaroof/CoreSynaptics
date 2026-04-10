@@ -164,6 +164,130 @@ export const sidebarItems = [
     roles: Object.values(ROLES), // All roles can access
   },
 
+  // ─── Inventory Management ──────────────────────────────────────────
+  {
+    title: "Inventory",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Inventory/Products/List",
+    type: "link",
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
+      ROLES.FSM,
+      ROLES.SUPERINTENDENT,
+      ROLES.FINANCE,
+      ROLES.SUPERADMIN,
+    ],
+    submenu: [
+      {
+        title: "Products & SKUs",
+        type: "link",
+        path: "/Inventory/Products/List",
+      },
+      {
+        title: "Stock Movements",
+        type: "link",
+        path: "/Inventory/Movements/List",
+      },
+      { title: "Warehouses", type: "link", path: "/Inventory/Warehouses/List" },
+    ],
+  },
+
+  // ─── Shipments & Logistics ─────────────────────────────────────────
+  {
+    title: "Shipments",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Shipments/List",
+    type: "link",
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
+      ROLES.FSM,
+      ROLES.SUPERINTENDENT,
+      ROLES.FINANCE,
+      ROLES.SUPERADMIN,
+    ],
+    submenu: [
+      { title: "All Shipments", type: "link", path: "/Shipments/List" },
+      { title: "Carriers", type: "link", path: "/Shipments/Carriers" },
+    ],
+  },
+
+  // ─── Asset Management ──────────────────────────────────────────────
+  {
+    title: "Assets",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Assets/List",
+    type: "link",
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
+      ROLES.FSM,
+      ROLES.FSE,
+      ROLES.SUPERINTENDENT,
+      ROLES.FINANCE,
+      ROLES.SUPERADMIN,
+    ],
+    submenu: [
+      { title: "All Assets", type: "link", path: "/Assets/List" },
+      { title: "Assignments", type: "link", path: "/Assets/Assignments" },
+    ],
+  },
+
+  // ─── Issues Management ─────────────────────────────────────────────
+  {
+    title: "Issues",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Issues/List",
+    type: "link",
+    submenu: [],
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
+      ROLES.FSM,
+      ROLES.FSE,
+      ROLES.SUPERINTENDENT,
+      ROLES.QA_QC,
+      ROLES.SAFETY,
+      ROLES.EXECUTIVE,
+      ROLES.SUPERADMIN,
+    ],
+  },
+
+  // ─── TARF (Site Access / Trade Access Request Form) ────────────────
+  {
+    title: "Site Access (TARF)",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/TARF/List",
+    type: "link",
+    submenu: [],
+    roles: [
+      ROLES.GC_PM,
+      ROLES.GC_ADMIN,
+      ROLES.OEM_PM,
+      ROLES.OEM_ADMIN,
+      ROLES.FSM,
+      ROLES.FSE,
+      ROLES.SUPERINTENDENT,
+      ROLES.SAFETY,
+      ROLES.QA_QC,
+      ROLES.SUPERADMIN,
+    ],
+  },
+
   // ─── RFIs (Requests For Information) ────────────────────────────────
   {
     title: "RFIs",
@@ -563,49 +687,36 @@ export const sidebarItems = [
 
   // ─── Finance ───────────────────────────────────────────────────────
   {
-    title: "AP (Vendors / Bills)",
+    title: "Finance",
     icon: config?.chart,
     iconActive: config?.home,
-    path: "/Finance/AP",
+    path: "/Finance/Dashboard",
     type: "link",
-    submenu: [],
-    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
+    roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+    submenu: [
+      { title: "Finance Dashboard",    type: "link", path: "/Finance/Dashboard" },
+      { title: "Contracts & Budget",   type: "link", path: "/Finance/Contracts" },
+      { title: "Vendor Quotes",        type: "link", path: "/Finance/VendorQuotes" },
+      { title: "Finance & Billing",    type: "link", path: "/Finance/Billing" },
+      { title: "Billing Chain",        type: "link", path: "/Finance/BillingChain" },
+      { title: "Procurement & Delays", type: "link", path: "/Finance/Procurement" },
+    ],
   },
+
+  // ─── Payroll ───────────────────────────────────────────────────────
   {
-    title: "AR (Customers / Invoices)",
+    title: "Payroll",
     icon: config?.chart,
     iconActive: config?.home,
-    path: "/Finance/AR",
+    path: "/Finance/Payroll/Dashboard",
     type: "link",
-    submenu: [],
-    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
-  },
-  {
-    title: "Payments",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Finance/Payments",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
-  },
-  {
-    title: "PO / SO",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Finance/POSO",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
-  },
-  {
-    title: "Budget vs Actual",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Finance/Budget",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
+    roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+    submenu: [
+      { title: "Dashboard",          type: "link", path: "/Finance/Payroll/Dashboard" },
+      { title: "Employees",          type: "link", path: "/Finance/Payroll/Employees" },
+      { title: "Timesheets",         type: "link", path: "/Finance/Payroll/Timesheets" },
+      { title: "Payroll Processing", type: "link", path: "/Finance/Payroll/PayrollProcessing" },
+    ],
   },
 
   // ─── Documentation ──────────────────────────────────────────────────

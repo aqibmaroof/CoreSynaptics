@@ -27,6 +27,8 @@ Page-level business logic. Each container (e.g., `containers/Projects/`, `contai
 
 Reusable UI: `sidebar/`, `EntityModal/`, `Cards/`, `Modals/`, `StatusDropDown/`, `RequiredFlow/`, etc.
 
+**RequiredFlow design system** (`components/RequiredFlow/`) is a custom in-house UI kit. Use `rf-*` CSS class prefixes (e.g., `rf-btn rf-btn-primary`, `rf-card`, `rf-badge-green`) defined via CSS variables in `globals.css`. Helper functions and class-name constants live in `Utils/requiredFlowUtils.ts`. Prefer these over raw Tailwind when building new UI that fits existing patterns.
+
 ### Services (`services/`)
 
 API layer. Each domain file (e.g., `services/auth.jsx`, `services/Projects/`, `services/Tasks/`) exports async functions that call `sendRequest()`.
@@ -37,14 +39,28 @@ API layer. Each domain file (e.g., `services/auth.jsx`, `services/Projects/`, `s
 
 Helpers: `DateFormater/`, `NumberFormatter/`, `CustomProgress/`, `companyDropdown/`, `requiredFlowUtils.ts`, and `dashboardConfig.js`.
 
+`dashboardConfig.js` exports static/mock data generators (`getDashboardConfig`, `getChecklistData`, etc.) keyed by role string — these are **not** live API calls.
+
 ### Config (`config/index.jsx`)
 
 Static asset paths (brand images, icons, illustrations).
 
+## Role-Based Access Control
+
+Roles are defined as constants in `components/sidebar/sideBarData.js` (`ROLES` object). The system has two tenant types:
+
+- **GC (General Contractor):** `gc_pm`, `gc_admin`, `superintendent`
+- **OEM:** `oem_pm`, `oem_admin`, `fsm` (Field Service Manager), `fse` (Field Service Engineer)
+- **Cross-tenant:** `qa_manager`, `safety_officer`, `finance`, `executive`, `SUPERADMIN`
+
+Each sidebar item has a `roles` array. `getMenuByRole(role)` filters visible items. Different roles land on different dashboards (`/`, `/OEM/Dashboard`, `/Dispatch/Dashboard`, `/Field/Dashboard`, etc.).
+
+Many routes in `app/` are placeholder stubs — the actual logic is in the corresponding `containers/` directory.
+
 ## Styling
 
 - Tailwind CSS 4 + DaisyUI 5 for components
-- CSS custom properties (`--rf-bg`, `--rf-txt`, `--rf-accent`, etc.) defined in `globals.css` for theming
+- **RequiredFlow design system**: `rf-*` CSS classes backed by CSS custom properties (`--rf-bg`, `--rf-txt`, `--rf-accent`, `--rf-green`, `--rf-red`, etc.) in `globals.css`
 - Some SCSS modules (e.g., `sidebar/style.module.scss`)
 - Bootstrap / react-bootstrap also present as a dependency
 - Default font: Gilroy

@@ -63,7 +63,7 @@ export default function CompanyList() {
 
   return (
     <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto">
         {/* Header Section */}
         <div className="mb-8 flex justify-between items-start">
           <div>
