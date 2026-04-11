@@ -8,6 +8,11 @@ import { CreateEquipment } from "@/services/Equipment";
 import { GetFields } from "@/services/Types";
 import { getUser } from "@/services/instance/tokenService";
 import { useParams } from "next/navigation";
+import { CompanyDropdownForProjects } from "@/Utils/companyDropdown"
+import { RFIDropdown } from "@/components/RfiDropDown"
+import { ChecklistDropdownForProjects } from "@/Utils/checklistDropdown"
+import { DocumentsDropdownForProjects } from "@/Utils/documentsDropdown"
+import { MeetingsDropdownForProjects } from "@/Utils/meetingsDropdown"
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const CapitalizeText = (text) =>
@@ -213,17 +218,17 @@ const PROJECT_PHASES = [
   {
     label: "Category & Type",
     id: "category_type",
-    fields: ["projectCategory", "selectedRootType"],
+    fields: ["projectCategory", "selectedRootType", "company", "rfi"],
   },
   {
     label: "Basic Info",
     id: "basic_info",
-    fields: ["name", "description"],
+    fields: ["name", "description", "checklist", "document"],
   },
   {
     label: "Schedule",
     id: "schedule",
-    fields: ["startDate", "endDate", "timezone"],
+    fields: ["startDate", "endDate", "meeting"],
   },
   {
     label: "Location & Details",
@@ -482,9 +487,8 @@ function PhaseIndicator({ currentPhase, totalPhases, phases }) {
         {phases.map((phase, idx) => (
           <div key={idx} className="flex-1">
             <div
-              className={`h-1.5 rounded-full transition-all ${
-                idx + 1 <= currentPhase ? "bg-blue-500" : "bg-gray-700"
-              }`}
+              className={`h-1.5 rounded-full transition-all ${idx + 1 <= currentPhase ? "bg-blue-500" : "bg-gray-700"
+                }`}
             />
             <div className="text-xs mt-1 text-gray-400 text-center truncate">
               {phase.label}
@@ -531,6 +535,11 @@ export default function EntityModal({
   const [selectedAssetType, setSelectedAssetType] = useState("");
   const [assetCategory, setAssetCategory] = useState("");
   const [assetSubcategory, setAssetSubcategory] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState("");
+  const [selectedRFIs, setSelectedRFIs] = useState([]);
+  const [selectedChecklist, setSelectedChecklist] = useState("");
+  const [selectedDocument, setSelectedDocument] = useState("");
+  const [selectedMeeting, setSelectedMeeting] = useState("");
 
   // Base form states
   const [projectForm, setProjectForm] = useState({
@@ -784,6 +793,21 @@ export default function EntityModal({
           timezone: projectForm.timezone,
           address: projectForm.address,
         };
+        if (selectedCompany) {
+          payload.companyId = selectedCompany;
+        }
+        if (selectedRFIs.length > 0) {
+          payload.rfiIds = selectedRFIs;
+        }
+        if (selectedChecklist) {
+          payload.checklistId = selectedChecklist;
+        }
+        if (selectedDocument) {
+          payload.documentId = selectedDocument;
+        }
+        if (selectedMeeting) {
+          payload.meetingId = selectedMeeting;
+        }
         if (!selectedSubType) {
           payload = {
             ...payload,
@@ -970,11 +994,10 @@ export default function EntityModal({
         {/* Message */}
         {message.text && (
           <div
-            className={`mx-6 mt-4 p-4 rounded-lg ${
-              message.type === "success"
+            className={`mx-6 mt-4 p-4 rounded-lg ${message.type === "success"
                 ? "bg-green-500/20 border border-green-500 text-green-400"
                 : "bg-red-500/20 border border-red-500 text-red-400"
-            }`}
+              }`}
           >
             {message.text}
           </div>
@@ -1047,19 +1070,25 @@ export default function EntityModal({
                             </option>
                           ))}
                         </select>
-                        {/* <svg
-                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                        >
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg> */}
                       </div>
                     </div>
+                  )}
+
+                  {!id && !subId && (
+                    <CompanyDropdownForProjects
+                      entityType="Project"
+                      selectedCompany={selectedCompany}
+                      onCompanyChange={setSelectedCompany}
+                      disabled={loading}
+                    />
+                  )}
+
+                  {!id && !subId && (
+                    <RFIDropdown
+                      projectId={null}
+                      selectedRFIs={selectedRFIs}
+                      onRFISelect={setSelectedRFIs}
+                    />
                   )}
                   {id && subId && (
                     <div>
@@ -1139,6 +1168,24 @@ export default function EntityModal({
                       rows="3"
                     />
                   </div>
+
+                  {!id && !subId && (
+                    <ChecklistDropdownForProjects
+                      entityType="Project"
+                      selectedChecklist={selectedChecklist}
+                      onChecklistChange={setSelectedChecklist}
+                      disabled={loading}
+                    />
+                  )}
+
+                  {!id && !subId && (
+                    <DocumentsDropdownForProjects
+                      entityType="Project"
+                      selectedDocument={selectedDocument}
+                      onDocumentChange={setSelectedDocument}
+                      disabled={loading}
+                    />
+                  )}
                 </div>
               )}
 
@@ -1178,6 +1225,15 @@ export default function EntityModal({
                       className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
                     />
                   </div>
+
+                  {!id && !subId && (
+                    <MeetingsDropdownForProjects
+                      entityType="Project"
+                      selectedMeeting={selectedMeeting}
+                      onMeetingChange={setSelectedMeeting}
+                      disabled={loading}
+                    />
+                  )}
                 </div>
               )}
 
@@ -1262,8 +1318,8 @@ export default function EntityModal({
                           : isSubField
                             ? subMetadata[field.name]
                             : siteMetadata[field.name] ||
-                              zoneMetadata[field.name] ||
-                              assetMetadata[field.name];
+                            zoneMetadata[field.name] ||
+                            assetMetadata[field.name];
 
                         const metaHandler = isRootField
                           ? handleRootMeta

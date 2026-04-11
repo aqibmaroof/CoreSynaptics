@@ -298,13 +298,16 @@ export default function KanbanBoard() {
                       <h3 className="text-white font-semibold text-sm">
                         {project.name}
                       </h3>
-                      <p className="text-gray-400 text-xs">
-                        {project.organization?.name} - {project?.projectType}
+                      <p className="text-gray-400 flex items-center text-xs">
+                       Org : {project.organization?.name}
+                      </p>
+                      <p className="text-gray-400 flex items-center text-xs">
+                        Type : {project?.projectType || project?.projectCategory}
                       </p>
                       <p className="flex items-center gap-1 flex-wrap text-gray-400 text-xs">
                         Assignee :
-                        {project.assignedUsers?.map((item) => (
-                          <p>
+                        {project.assignedUsers?.map((item, i) => (
+                          <p key={i} className="flex items-center gap-1 text-gray-400 text-xs">
                             {item?.firstName} {item?.lastName}
                           </p>
                         ))}
@@ -358,11 +361,10 @@ export default function KanbanBoard() {
           </div>
           {message.text && (
             <div
-              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${
-                message.type === "success"
+              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
                   ? "bg-green-900/30 text-green-400 border border-green-500/30"
                   : "bg-red-900/30 text-red-400 border border-red-500/30"
-              }`}
+                }`}
             >
               {message.text}
             </div>
@@ -416,11 +418,10 @@ export default function KanbanBoard() {
             {members.map((member) => (
               <div
                 key={member.id}
-                className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-1 md:p-3 mt-2 rounded-2xl ${
-                  member.isActive
+                className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-1 md:p-3 mt-2 rounded-2xl ${member.isActive
                     ? "bg-emerald-600/30 border border-emerald-500/50"
                     : "bg-gradient-to-r from-[#0d2963] via-[#0d2963] to-[#19213d]"
-                }`}
+                  }`}
               >
                 {/* Left Side - Avatar and Info */}
                 <div className="flex items-center gap-1 md:gap-3 ">
@@ -690,9 +691,8 @@ export default function KanbanBoard() {
                         key={index}
                         className={`avatar 
                               ${index !== 0 ? "-ml-2" : ""} 
-                              transition-transform duration-300 z-${
-                                task.assignee.length - index
-                              }`}
+                              transition-transform duration-300 z-${task.assignee.length - index
+                          }`}
                       >
                         <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
                           <img
@@ -873,11 +873,10 @@ export default function KanbanBoard() {
                 {members.slice(0, 1).map((member) => (
                   <div
                     key={member.id}
-                    className={`flex items-center h-8 justify-between w-34 font-geist border border-[#656A80]  rounded-2xl ${
-                      member.isActive
+                    className={`flex items-center h-8 justify-between w-34 font-geist border border-[#656A80]  rounded-2xl ${member.isActive
                         ? "bg-emerald-600/30 border border-emerald-500/50"
                         : "bg-[#575975]"
-                    }`}
+                      }`}
                   >
                     {/* Left Side - Avatar and Info */}
                     <div className="flex items-center gap-3 ">

@@ -1,7 +1,6 @@
 "use client";
 import { FaCircle, FaTrash } from "react-icons/fa";
 import { FaPencil } from "react-icons/fa6";
-import { FiMessageCircle, FiStar } from "react-icons/fi";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
@@ -153,15 +152,14 @@ const formatCellValue = (value) => {
                 {gate.gate?.replace(/_/g, " ")}:
               </span>
               <span
-                className={`px-2 py-0.5 rounded-full text-xs ${
-                  gate.status === "APPROVED" || gate.status === "PASSED"
-                    ? "bg-green-500/20 text-green-400"
-                    : gate.status === "PENDING"
-                      ? "bg-yellow-500/20 text-yellow-400"
-                      : gate.status === "REJECTED" || gate.status === "FAILED"
-                        ? "bg-red-500/20 text-red-400"
-                        : "bg-gray-500/20 text-gray-400"
-                }`}
+                className={`px-2 py-0.5 rounded-full text-xs ${gate.status === "APPROVED" || gate.status === "PASSED"
+                  ? "bg-green-500/20 text-green-400"
+                  : gate.status === "PENDING"
+                    ? "bg-yellow-500/20 text-yellow-400"
+                    : gate.status === "REJECTED" || gate.status === "FAILED"
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-gray-500/20 text-gray-400"
+                  }`}
               >
                 {gate.status}
               </span>
@@ -186,7 +184,6 @@ const formatCellValue = (value) => {
 // Helper function to render cell content based on key and value
 const renderCellContent = (item, header, activeView) => {
   const value = getCellValue(item, header);
-  console.log(header, value);
 
   // Handle readinessGates specially
   if (header === "readinessGates" && Array.isArray(item.readinessGates)) {
@@ -198,15 +195,14 @@ const renderCellContent = (item, header, activeView) => {
               {gate.gate?.replace(/_/g, " ")}:
             </span>
             <span
-              className={`px-2 py-0.5 rounded-full text-xs ${
-                gate.status === "APPROVED" || gate.status === "PASSED"
-                  ? "bg-green-500/20 text-green-400"
-                  : gate.status === "PENDING"
-                    ? "bg-yellow-500/20 text-yellow-400"
-                    : gate.status === "REJECTED" || gate.status === "FAILED"
-                      ? "bg-red-500/20 text-red-400"
-                      : "bg-gray-500/20 text-gray-400"
-              }`}
+              className={`px-2 py-0.5 rounded-full text-xs ${gate.status === "APPROVED" || gate.status === "PASSED"
+                ? "bg-green-500/20 text-green-400"
+                : gate.status === "PENDING"
+                  ? "bg-yellow-500/20 text-yellow-400"
+                  : gate.status === "REJECTED" || gate.status === "FAILED"
+                    ? "bg-red-500/20 text-red-400"
+                    : "bg-gray-500/20 text-gray-400"
+                }`}
             >
               {gate.status}
             </span>
@@ -220,13 +216,12 @@ const renderCellContent = (item, header, activeView) => {
   if (header === "organizationStatus") {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${
-          value === "ACTIVE"
-            ? "bg-green-500/20 text-green-400"
-            : value === "INACTIVE"
-              ? "bg-red-500/20 text-red-400"
-              : "bg-yellow-500/20 text-yellow-400"
-        }`}
+        className={`px-2 py-1 rounded-full text-xs ${value === "ACTIVE"
+          ? "bg-green-500/20 text-green-400"
+          : value === "INACTIVE"
+            ? "bg-red-500/20 text-red-400"
+            : "bg-yellow-500/20 text-yellow-400"
+          }`}
       >
         {value}
       </span>
@@ -278,27 +273,26 @@ const renderCellContent = (item, header, activeView) => {
   ) {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${
-          value === "ACTIVE" ||
+        className={`px-2 py-1 rounded-full text-xs ${value === "ACTIVE" ||
           value === "APPROVED" ||
           value === "READY" ||
           value === "COMPLETED" ||
           value === "OPERATIONAL"
-            ? "bg-green-500/20 text-green-400"
-            : value === "PENDING" ||
-                value === "NOT_READY" ||
-                value === "PLANNING" ||
-                value === "MAINTENANCE"
-              ? "bg-yellow-500/20 text-yellow-400"
-              : value === "REJECTED" ||
-                  value === "FAILED" ||
-                  value === "CANCELLED" ||
-                  value === "DECOMMISSIONED"
-                ? "bg-red-500/20 text-red-400"
-                : value === "IN_PROGRESS" || value === "INSTALLING"
-                  ? "bg-blue-500/20 text-blue-400"
-                  : "bg-gray-500/20 text-gray-400"
-        }`}
+          ? "bg-green-500/20 text-green-400"
+          : value === "PENDING" ||
+            value === "NOT_READY" ||
+            value === "PLANNING" ||
+            value === "MAINTENANCE"
+            ? "bg-yellow-500/20 text-yellow-400"
+            : value === "REJECTED" ||
+              value === "FAILED" ||
+              value === "CANCELLED" ||
+              value === "DECOMMISSIONED"
+              ? "bg-red-500/20 text-red-400"
+              : value === "IN_PROGRESS" || value === "INSTALLING"
+                ? "bg-blue-500/20 text-blue-400"
+                : "bg-gray-500/20 text-gray-400"
+          }`}
       >
         {value?.replace(/_/g, " ")}
       </span>
@@ -309,21 +303,20 @@ const renderCellContent = (item, header, activeView) => {
   if (header === "lifecyclePhase") {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${
-          value === "ORDERED"
-            ? "bg-purple-500/20 text-purple-400"
-            : value === "MANUFACTURING"
-              ? "bg-indigo-500/20 text-indigo-400"
-              : value === "FAT"
-                ? "bg-blue-500/20 text-blue-400"
-                : value === "SHIPPED"
-                  ? "bg-cyan-500/20 text-cyan-400"
-                  : value === "INSTALLED"
-                    ? "bg-green-500/20 text-green-400"
-                    : value === "COMMISSIONED"
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-gray-500/20 text-gray-400"
-        }`}
+        className={`px-2 py-1 rounded-full text-xs ${value === "ORDERED"
+          ? "bg-purple-500/20 text-purple-400"
+          : value === "MANUFACTURING"
+            ? "bg-indigo-500/20 text-indigo-400"
+            : value === "FAT"
+              ? "bg-blue-500/20 text-blue-400"
+              : value === "SHIPPED"
+                ? "bg-cyan-500/20 text-cyan-400"
+                : value === "INSTALLED"
+                  ? "bg-green-500/20 text-green-400"
+                  : value === "COMMISSIONED"
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "bg-gray-500/20 text-gray-400"
+          }`}
       >
         {value?.replace(/_/g, " ")}
       </span>
@@ -379,13 +372,12 @@ const renderCellContent = (item, header, activeView) => {
   if (header === "certificationReq") {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${
-          value === "REQUIRED"
-            ? "bg-red-500/20 text-red-400"
-            : value === "NOT_REQUIRED"
-              ? "bg-gray-500/20 text-gray-400"
-              : "bg-yellow-500/20 text-yellow-400"
-        }`}
+        className={`px-2 py-1 rounded-full text-xs ${value === "REQUIRED"
+          ? "bg-red-500/20 text-red-400"
+          : value === "NOT_REQUIRED"
+            ? "bg-gray-500/20 text-gray-400"
+            : "bg-yellow-500/20 text-yellow-400"
+          }`}
       >
         {value?.replace(/_/g, " ") || "-"}
       </span>
@@ -443,11 +435,10 @@ const renderCellContent = (item, header, activeView) => {
   ) {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${
-          value
-            ? "bg-green-500/20 text-green-400"
-            : "bg-gray-500/20 text-gray-400"
-        }`}
+        className={`px-2 py-1 rounded-full text-xs ${value
+          ? "bg-green-500/20 text-green-400"
+          : "bg-gray-500/20 text-gray-400"
+          }`}
       >
         {value ? "Yes" : "No"}
       </span>
@@ -555,10 +546,11 @@ export default function KanbanBoard() {
   const [taskForm, setTaskForm] = useState({
     name: "",
     description: "",
-    priority: "Medium",
+    priority: "MEDIUM",
     startDate: "",
     dueDate: "",
-    category: "General",
+    category: "GENERAL",
+    assignedTo: "",
   });
   const [editingTask, setEditingTask] = useState(null); // task being edited
   const [editingSubtask, setEditingSubtask] = useState(null); // subtask being edited
@@ -567,27 +559,30 @@ export default function KanbanBoard() {
   const [editTaskForm, setEditTaskForm] = useState({
     name: "",
     description: "",
-    priority: "Medium",
+    priority: "MEDIUM",
     startDate: "",
     dueDate: "",
-    category: "General",
+    category: "GENERAL",
     status: "PENDING",
+    assignedTo: "",
   });
   const [editSubtaskForm, setEditSubtaskForm] = useState({
     name: "",
     description: "",
-    priority: "Medium",
+    priority: "MEDIUM",
     dueDate: "",
-    category: "General",
+    category: "GENERAL",
     status: "PENDING",
+    assignedTo: "",
   });
   const [subtaskInputs, setSubtaskInputs] = useState([
     {
       name: "",
       description: "",
-      priority: "Medium",
+      priority: "MEDIUM",
       dueDate: "",
-      category: "General",
+      category: "GENERAL",
+      assignedTo: "",
     },
   ]);
   const [taskLoading, setTaskLoading] = useState(false);
@@ -695,7 +690,7 @@ export default function KanbanBoard() {
           try {
             const res = await getSubTasksByTaskId(task.id);
             allSubs.push(...(res || []));
-          } catch (_) {}
+          } catch (_) { }
         }
         setSubtasksList(allSubs);
       }
@@ -703,7 +698,7 @@ export default function KanbanBoard() {
       console.log("Error fetching subtasks:", error);
     }
   };
-
+  console.log(taskForm)
   const createTask = async () => {
     if (!taskForm.name) {
       setMessage({ type: "error", text: "Task name is required" });
@@ -719,6 +714,7 @@ export default function KanbanBoard() {
         startDate: taskForm.startDate || "",
         dueDate: taskForm.dueDate || "",
         category: taskForm.category || "General",
+        assignedTo: taskForm.assignedTo || "",
         ...(type === "Project" && { projectId: id }),
         ...(type === "Projects" && { subProjectId: id }),
         ...(type === "Site" && { siteId: id }),
@@ -731,18 +727,18 @@ export default function KanbanBoard() {
       setTaskForm({
         name: "",
         description: "",
-        priority: "Medium",
+        priority: "MEDIUM",
         startDate: "",
         dueDate: "",
-        category: "General",
+        category: "GENERAL",
       });
       setSubtaskInputs([
         {
           name: "",
           description: "",
-          priority: "Medium",
+          priority: "MEDIUM",
           dueDate: "",
-          category: "General",
+          category: "GENERAL",
         },
       ]);
       setSelectedTask(null);
@@ -780,9 +776,10 @@ export default function KanbanBoard() {
         await createSubTask(selectedTask.id, {
           name: subtask.name,
           description: subtask.description,
-          priority: subtask.priority || "Medium",
+          priority: subtask.priority || "MEDIUM",
           dueDate: subtask.dueDate || "",
-          category: subtask.category || "General",
+          category: subtask.category || "GENERAL",
+          assignedTo: subtask.assignedTo || "",
         });
       }
       setMessage({
@@ -793,9 +790,9 @@ export default function KanbanBoard() {
         {
           name: "",
           description: "",
-          priority: "Medium",
+          priority: "MEDIUM",
           dueDate: "",
-          category: "General",
+          category: "GENERAL",
         },
       ]);
       await fetchSubtasks(selectedTask.id);
@@ -1338,17 +1335,16 @@ export default function KanbanBoard() {
       }
       setMessage({
         type: "success",
-        text: `${
-          deleteType === "Sites"
-            ? "Site"
-            : deleteType === "Projects"
-              ? "Sub Project"
-              : deleteType === "Zones"
-                ? "Zone"
-                : deleteType === "Assets"
-                  ? "Asset"
-                  : ""
-        } Deleted Successfully !`,
+        text: `${deleteType === "Sites"
+          ? "Site"
+          : deleteType === "Projects"
+            ? "Sub Project"
+            : deleteType === "Zones"
+              ? "Zone"
+              : deleteType === "Assets"
+                ? "Asset"
+                : ""
+          } Deleted Successfully !`,
       });
     } catch (error) {
       setMessage({
@@ -1368,11 +1364,10 @@ export default function KanbanBoard() {
           {/* Status Messages */}
           {message.text && (
             <div
-              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${
-                message.type === "success"
-                  ? "bg-green-900/30 text-green-400 border border-green-500/30"
-                  : "bg-red-900/30 text-red-400 border border-red-500/30"
-              }`}
+              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
+                ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                : "bg-red-900/30 text-red-400 border border-red-500/30"
+                }`}
             >
               {message.text}
             </div>
@@ -1699,11 +1694,10 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
-                    activeView === "Sites"
-                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                      : "bg-transparent"
-                  }`}
+                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Sites"
+                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                    : "bg-transparent"
+                    }`}
                 >
                   Sites
                 </span>
@@ -1714,11 +1708,10 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
-                    activeView === "Projects"
-                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                      : "bg-transparent"
-                  }`}
+                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Projects"
+                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                    : "bg-transparent"
+                    }`}
                 >
                   Areas
                 </span>
@@ -1729,11 +1722,10 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
-                    activeView === "Zones"
-                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                      : "bg-transparent"
-                  }`}
+                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Zones"
+                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                    : "bg-transparent"
+                    }`}
                 >
                   Zones
                 </span>
@@ -1744,11 +1736,10 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
-                    activeView === "Assets"
-                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                      : "bg-transparent"
-                  }`}
+                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Assets"
+                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                    : "bg-transparent"
+                    }`}
                 >
                   Assets
                 </span>
@@ -1760,11 +1751,10 @@ export default function KanbanBoard() {
               className="font-[500] w-[max-content] text-white border-3 cursor-pointer border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
             >
               <span
-                className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
-                  activeView === "task"
-                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                    : "bg-transparent"
-                }`}
+                className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "task"
+                  ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                  : "bg-transparent"
+                  }`}
               >
                 <img src="/images/list.png" alt="Vector" className="h-3 w-3" />
                 Tasks
@@ -1802,7 +1792,7 @@ export default function KanbanBoard() {
                   className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
                 >
                   <span
-                    className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${view === "kanban" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
+                    className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${view === "kanban" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
                   >
                     <img
                       src="/images/kanban.png"
@@ -2018,13 +2008,12 @@ export default function KanbanBoard() {
                                 {/* Task Status Indicator */}
                                 <div className="flex-shrink-0">
                                   <div
-                                    className={`w-2 h-2 rounded-full transition-all ${
-                                      task.status === "PENDING"
-                                        ? "bg-yellow-400 shadow-lg shadow-yellow-400/50"
-                                        : task.status === "IN_PROGRESS"
-                                          ? "bg-cyan-400 shadow-lg shadow-cyan-400/50"
-                                          : "bg-green-400 shadow-lg shadow-green-400/50"
-                                    }`}
+                                    className={`w-2 h-2 rounded-full transition-all ${task.status === "PENDING"
+                                      ? "bg-yellow-400 shadow-lg shadow-yellow-400/50"
+                                      : task.status === "IN_PROGRESS"
+                                        ? "bg-cyan-400 shadow-lg shadow-cyan-400/50"
+                                        : "bg-green-400 shadow-lg shadow-green-400/50"
+                                      }`}
                                   />
                                 </div>
                                 {/* Task Info */}
@@ -2050,13 +2039,12 @@ export default function KanbanBoard() {
                               <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                                 {/* Status Badge */}
                                 <span
-                                  className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
-                                    task.status === "PENDING"
-                                      ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
-                                      : task.status === "IN_PROGRESS"
-                                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                                        : "bg-green-500/20 text-green-300 border border-green-500/30"
-                                  }`}
+                                  className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${task.status === "PENDING"
+                                    ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                                    : task.status === "IN_PROGRESS"
+                                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                                      : "bg-green-500/20 text-green-300 border border-green-500/30"
+                                    }`}
                                   style={{
                                     fontFamily: "IBM Plex Mono, monospace",
                                     fontSize: "9px",
@@ -2087,7 +2075,7 @@ export default function KanbanBoard() {
 
                                 {/* Edit Button */}
                                 <button
-                                  className="p-1.5 rounded-lg text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                  className="p-1.5 rounded-lg text-gray-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all "
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setEditingTask(task);
@@ -2107,7 +2095,7 @@ export default function KanbanBoard() {
 
                                 {/* Delete Button */}
                                 <button
-                                  className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                  className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all "
                                   onClick={(e) => deleteTask(e, task.id)}
                                   title="Delete Task"
                                 >
@@ -2116,7 +2104,7 @@ export default function KanbanBoard() {
 
                                 {/* Add Subtask Button */}
                                 <button
-                                  className="text-xs font-medium px-2 py-1 rounded-lg border border-gray-600 text-gray-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-all opacity-0 group-hover:opacity-100"
+                                  className="text-xs font-medium px-2 py-1 rounded-lg border border-gray-600 text-gray-400 hover:text-cyan-400 hover:border-cyan-500/50 hover:bg-cyan-500/10 transition-all"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedTask(task);
@@ -2137,106 +2125,104 @@ export default function KanbanBoard() {
                             {/* Subtasks for this task */}
                             {subtasksList.filter((s) => s.taskId === task.id)
                               .length > 0 && (
-                              <div className="bg-gray-800/30 border-t border-gray-700/50">
-                                {subtasksList
-                                  .filter((s) => s.taskId === task.id)
-                                  .map((sub) => (
-                                    <div
-                                      key={sub.id}
-                                      className="flex items-center justify-between py-2.5 px-4 hover:bg-gray-700/30 border-b border-gray-700/30 last:border-b-0 group transition-all"
-                                    >
-                                      {/* Subtask Info */}
-                                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        {/* Nested Indicator */}
-                                        <div className="flex-shrink-0 flex items-center gap-1.5">
-                                          <div className="w-0.5 h-5 bg-cyan-500/30" />
-                                          <div
-                                            className={`w-1.5 h-1.5 rounded-full ${
-                                              sub.status === "PENDING"
+                                <div className="bg-gray-800/30 border-t border-gray-700/50">
+                                  {subtasksList
+                                    .filter((s) => s.taskId === task.id)
+                                    .map((sub) => (
+                                      <div
+                                        key={sub.id}
+                                        className="flex items-center justify-between py-2.5 px-4 hover:bg-gray-700/30 border-b border-gray-700/30 last:border-b-0 group transition-all"
+                                      >
+                                        {/* Subtask Info */}
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                          {/* Nested Indicator */}
+                                          <div className="flex-shrink-0 flex items-center gap-1.5">
+                                            <div className="w-0.5 h-5 bg-cyan-500/30" />
+                                            <div
+                                              className={`w-1.5 h-1.5 rounded-full ${sub.status === "PENDING"
                                                 ? "bg-yellow-400/60"
                                                 : sub.status === "IN_PROGRESS"
                                                   ? "bg-cyan-400/60"
                                                   : "bg-green-400/60"
-                                            }`}
-                                          />
-                                        </div>
-                                        {/* Subtask Title and Description */}
-                                        <div className="flex-1 min-w-0">
-                                          <p
-                                            className="text-xs font-medium text-gray-300 truncate"
-                                            style={{
-                                              fontFamily:
-                                                "IBM Plex Sans, sans-serif",
-                                            }}
-                                          >
-                                            {sub.name}
-                                          </p>
-                                          {sub.description && (
-                                            <p className="text-[10px] text-gray-500 truncate mt-0.5">
-                                              {sub.description}
+                                                }`}
+                                            />
+                                          </div>
+                                          {/* Subtask Title and Description */}
+                                          <div className="flex-1 min-w-0">
+                                            <p
+                                              className="text-xs font-medium text-gray-300 truncate"
+                                              style={{
+                                                fontFamily:
+                                                  "IBM Plex Sans, sans-serif",
+                                              }}
+                                            >
+                                              {sub.name}
                                             </p>
-                                          )}
+                                            {sub.description && (
+                                              <p className="text-[10px] text-gray-500 truncate mt-0.5">
+                                                {sub.description}
+                                              </p>
+                                            )}
+                                          </div>
                                         </div>
-                                      </div>
 
-                                      {/* Right Side Actions */}
-                                      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                                        {/* Subtask Status Badge */}
-                                        <span
-                                          className={`text-[10px] font-medium px-2 py-0.5 rounded-md whitespace-nowrap transition-all ${
-                                            sub.status === "PENDING"
+                                        {/* Right Side Actions */}
+                                        <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                                          {/* Subtask Status Badge */}
+                                          <span
+                                            className={`text-[10px] font-medium px-2 py-0.5 rounded-md whitespace-nowrap transition-all ${sub.status === "PENDING"
                                               ? "bg-yellow-500/15 text-yellow-300"
                                               : sub.status === "IN_PROGRESS"
                                                 ? "bg-cyan-500/15 text-cyan-300"
                                                 : "bg-green-500/15 text-green-300"
-                                          }`}
-                                          style={{
-                                            fontFamily:
-                                              "IBM Plex Mono, monospace",
-                                            letterSpacing: "0.3px",
-                                          }}
-                                        >
-                                          {sub.status.slice(0, 3).toUpperCase()}
-                                        </span>
+                                              }`}
+                                            style={{
+                                              fontFamily:
+                                                "IBM Plex Mono, monospace",
+                                              letterSpacing: "0.3px",
+                                            }}
+                                          >
+                                            {sub.status.toUpperCase()}
+                                          </span>
 
-                                        {/* Edit Subtask */}
-                                        <button
-                                          className="p-1 text-gray-600 hover:text-cyan-400 hover:bg-cyan-500/10 rounded transition-all opacity-0 group-hover:opacity-100"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEditingSubtask(sub);
-                                            setEditSubtaskForm({
-                                              name: sub.name,
-                                              description:
-                                                sub.description || "",
-                                              status: sub.status,
-                                            });
-                                            document
-                                              .getElementById(
-                                                "edit_subtask_modal",
-                                              )
-                                              .showModal();
-                                          }}
-                                          title="Edit Subtask"
-                                        >
-                                          <FaPencil className="text-[10px]" />
-                                        </button>
+                                          {/* Edit Subtask */}
+                                          <button
+                                            className="p-1 text-gray-600 hover:text-cyan-400 hover:bg-cyan-500/10 rounded transition-all"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setEditingSubtask(sub);
+                                              setEditSubtaskForm({
+                                                name: sub.name,
+                                                description:
+                                                  sub.description || "",
+                                                status: sub.status,
+                                              });
+                                              document
+                                                .getElementById(
+                                                  "edit_subtask_modal",
+                                                )
+                                                .showModal();
+                                            }}
+                                            title="Edit Subtask"
+                                          >
+                                            <FaPencil className="text-[10px]" />
+                                          </button>
 
-                                        {/* Delete Subtask */}
-                                        <button
-                                          className="p-1 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded transition-all opacity-0 group-hover:opacity-100"
-                                          onClick={(e) =>
-                                            deleteSubtask(e, sub.taskId, sub.id)
-                                          }
-                                          title="Delete Subtask"
-                                        >
-                                          <FaTrash className="text-[10px]" />
-                                        </button>
+                                          {/* Delete Subtask */}
+                                          <button
+                                            className="p-1 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                                            onClick={(e) =>
+                                              deleteSubtask(e, sub.taskId, sub.id)
+                                            }
+                                            title="Delete Subtask"
+                                          >
+                                            <FaTrash className="text-[10px]" />
+                                          </button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
-                              </div>
-                            )}
+                                    ))}
+                                </div>
+                              )}
                           </div>
                         ))}
                       </div>
@@ -2315,9 +2301,8 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${
-                                  task.assignee.length - index
-                                }`}
+                                transition-transform duration-300 z-${task.assignee.length - index
+                                    }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2408,9 +2393,8 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${
-                                  task.assignee.length - index
-                                }`}
+                                transition-transform duration-300 z-${task.assignee.length - index
+                                    }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2504,9 +2488,8 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${
-                                  task.assignee.length - index
-                                }`}
+                                transition-transform duration-300 z-${task.assignee.length - index
+                                    }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2615,9 +2598,8 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${
-                                  task.assignee.length - index
-                                }`}
+                                transition-transform duration-300 z-${task.assignee.length - index
+                                    }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2707,9 +2689,8 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${
-                                  task.assignee.length - index
-                                }`}
+                                transition-transform duration-300 z-${task.assignee.length - index
+                                    }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2818,9 +2799,8 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${
-                                  task.assignee.length - index
-                                }`}
+                                transition-transform duration-300 z-${task.assignee.length - index
+                                    }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2910,9 +2890,8 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${
-                                  task.assignee.length - index
-                                }`}
+                                transition-transform duration-300 z-${task.assignee.length - index
+                                    }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -3002,9 +2981,8 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${
-                                  task.assignee.length - index
-                                }`}
+                                transition-transform duration-300 z-${task.assignee.length - index
+                                    }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -3111,9 +3089,8 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${
-                                  task.assignee.length - index
-                                }`}
+                                transition-transform duration-300 z-${task.assignee.length - index
+                                    }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -3582,9 +3559,8 @@ export default function KanbanBoard() {
                   </svg>
                   <input
                     type="text"
-                    placeholder={`Search ${
-                      activeView === "Projects" ? "Areas" : activeView
-                    }`}
+                    placeholder={`Search ${activeView === "Projects" ? "Areas" : activeView
+                      }`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full bg-[#0a1128] text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
@@ -4099,11 +4075,11 @@ export default function KanbanBoard() {
                     }
                     className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
                   >
-                    <option value="Low">Low</option>
-                    <option value="Medium" selected>
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">
                       Medium
                     </option>
-                    <option value="High">High</option>
+                    <option value="HIGH">High</option>
                   </select>
                 </div>
 
@@ -4166,66 +4142,128 @@ export default function KanbanBoard() {
                   }}
                 >
                   <option
-                    value="General"
+                    value="GENERAL"
                     style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                   >
                     General
                   </option>
                   <option
-                    value="Work"
+                    value="WORK"
                     style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                   >
                     Work
                   </option>
                   <option
-                    value="Personal"
+                    value="PERSONAL"
                     style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                   >
                     Personal
                   </option>
                   <option
-                    value="Urgent"
+                    value="URGENT"
                     style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
                   >
                     Urgent
                   </option>
                   <option
-                    value="Planning"
+                    value="PLANNING"
                     style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                   >
                     Planning
                   </option>
                   <option
-                    value="Review"
+                    value="REVIEW"
                     style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                   >
                     Review
                   </option>
                   <option
-                    value="Implementation"
+                    value="IMPLEMENTATION"
                     style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                   >
                     Implementation
                   </option>
                   <option
-                    value="Testing"
+                    value="TESTING"
                     style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                   >
                     Testing
                   </option>
                   <option
-                    value="Documentation"
+                    value="DOCUMENTATION"
                     style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                   >
                     Documentation
                   </option>
                   <option
-                    value="Support"
+                    value="SUPPORT"
                     style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                   >
                     Support
                   </option>
                 </select>
+              </div>
+
+              {/* Assign To */}
+              <div>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
+                  Assign To
+                </label>
+
+                <select
+                  value={taskForm?.assignedTo || ""}
+                  onChange={(e) => {
+                    const userId = e.target.value;
+
+                    setTaskForm({
+                      ...taskForm,
+                      assignedTo: userId || "",
+                    });
+                  }}
+                  className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
+                >
+                  <option value="">— Select User —</option>
+                  {users?.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Selected User */}
+                {taskForm?.assignedTo && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {(() => {
+                      const user = users?.find(
+                        (u) => u.id === taskForm.assignedTo
+                      );
+
+                      return (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-900/30 border border-cyan-700/30 rounded-full text-xs text-cyan-300">
+                          {user
+                            ? `${user.firstName} ${user.lastName}`
+                            : taskForm.assignedTo}
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTaskForm({
+                                ...taskForm,
+                                assignedTo: "",
+                              })
+                            }
+                            className="text-cyan-400 hover:text-cyan-200 ml-1"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -4320,9 +4358,9 @@ export default function KanbanBoard() {
                         }}
                         className="bg-gray-900/50 text-white px-3 py-2 rounded-md border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-xs"
                       >
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
                       </select>
 
                       <input
@@ -4354,70 +4392,140 @@ export default function KanbanBoard() {
                       }}
                     >
                       <option
-                        value="General"
+                        value="GENERAL"
                         style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                       >
                         General
                       </option>
                       <option
-                        value="Work"
+                        value="WORK"
                         style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                       >
                         Work
                       </option>
                       <option
-                        value="Personal"
+                        value="PERSONAL"
                         style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                       >
                         Personal
                       </option>
                       <option
-                        value="Urgent"
+                        value="URGENT"
                         style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
                       >
                         Urgent
                       </option>
                       <option
-                        value="Planning"
+                        value="PLANNING"
                         style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                       >
                         Planning
                       </option>
                       <option
-                        value="Review"
+                        value="REVIEW"
                         style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                       >
                         Review
                       </option>
                       <option
-                        value="Implementation"
+                        value="IMPLEMENTATION"
                         style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                       >
                         Implementation
                       </option>
                       <option
-                        value="Testing"
+                        value="TESTING"
                         style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                       >
                         Testing
                       </option>
                       <option
-                        value="Documentation"
+                        value="DOCUMENTATION"
                         style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                       >
                         Documentation
                       </option>
                       <option
-                        value="Support"
+                        value="SUPPORT"
                         style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                       >
                         Support
                       </option>
                     </select>
+                    {/* Assign To */}
+                    <div>
+                      <label
+                        className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                        style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                      >
+                        Assign To
+                      </label>
+
+                      <select
+                        value={subtask?.assignedTo || ""}
+                        onChange={(e) => {
+                          const userId = e.target.value;
+
+                          const updated = [...subtaskInputs];
+                          updated[index] = {
+                            ...subtask,
+                            assignedTo: userId || "",
+                          };
+
+                          setSubtaskInputs(updated);
+                        }}
+                        className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
+                      >
+                        <option value="">— Select User —</option>
+                        {users?.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.firstName} {user.lastName}
+                          </option>
+                        ))}
+                      </select>
+
+                      {/* Selected User Display */}
+                      {subtask?.assignedTo && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {(() => {
+                            const user = users?.find(
+                              (u) => u.id === subtask.assignedTo
+                            );
+
+                            return (
+                              <span
+                                key={subtask.assignedTo} // ✅ add key (important)
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-900/30 border border-cyan-700/30 rounded-full text-xs text-cyan-300"
+                              >
+                                {user
+                                  ? `${user.firstName} ${user.lastName}`
+                                  : subtask.assignedTo}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...subtaskInputs];
+                                    updated[index] = {
+                                      ...subtask,
+                                      assignedTo: "",
+                                    };
+                                    setSubtaskInputs(updated);
+                                  }}
+                                  className="text-cyan-400 hover:text-cyan-200 ml-1"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+
                 ))}
               </div>
-
               {/* Add Another Button */}
               <button
                 onClick={() =>
@@ -4429,6 +4537,7 @@ export default function KanbanBoard() {
                       priority: "Medium",
                       dueDate: "",
                       category: "General",
+                      assignedTo: '',
                     },
                   ])
                 }
@@ -4436,9 +4545,21 @@ export default function KanbanBoard() {
               >
                 ＋ Add Another Subtask
               </button>
+
+
             </div>
           )}
 
+          {message.text && (
+            <div
+              className={`mx-5 mb-5 px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
+                ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                : "bg-red-900/30 text-red-400 border border-red-500/30"
+                }`}
+            >
+              {message.text}
+            </div>
+          )}
           {/* ─── MODAL FOOTER ─── */}
           <div className="border-t border-gray-700/50 p-6 flex items-center justify-between gap-3 bg-gray-950/50">
             <div>
@@ -4467,7 +4588,9 @@ export default function KanbanBoard() {
                 </button>
               )}
             </div>
+
             <div className="flex gap-3">
+
               <button
                 onClick={() => {
                   document.getElementById("my_modal_4").close();
@@ -4492,14 +4615,14 @@ export default function KanbanBoard() {
             </div>
           </div>
         </div>
-      </dialog>
+      </dialog >
 
       {/* ── EDIT TASK MODAL ── */}
       <dialog
         id="edit_task_modal"
-        className="modal items-start justify-end p-4"
+        className="modal flex items-start justify-center p-10"
       >
-        <div className="modal-box pt-0 px-0 w-[600px] border border-cyan-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-lg">
+        <div className="modal-box pt-0 px-0 w-[1000px] max-h-[90vh]  border border-cyan-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-lg">
           {/* ─── HEADER ─── */}
           <div className="flex items-center justify-between pt-6 px-6 pb-4 border-b border-gray-700/50">
             <h3
@@ -4613,9 +4736,9 @@ export default function KanbanBoard() {
                   }
                   className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
                 >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
                 </select>
               </div>
 
@@ -4684,66 +4807,126 @@ export default function KanbanBoard() {
                 }}
               >
                 <option
-                  value="General"
+                  value="GENERAL"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   General
                 </option>
                 <option
-                  value="Work"
+                  value="WORK"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Work
                 </option>
                 <option
-                  value="Personal"
+                  value="PERSONAL"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Personal
                 </option>
                 <option
-                  value="Urgent"
+                  value="URGENT"
                   style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
                 >
                   Urgent
                 </option>
                 <option
-                  value="Planning"
+                  value="PLANNING"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Planning
                 </option>
                 <option
-                  value="Review"
+                  value="REVIEW"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Review
                 </option>
                 <option
-                  value="Implementation"
+                  value="IMPLEMENTATION"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Implementation
                 </option>
                 <option
-                  value="Testing"
+                  value="TESTING"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Testing
                 </option>
                 <option
-                  value="Documentation"
+                  value="DOCUMENTATION"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Documentation
                 </option>
                 <option
-                  value="Support"
+                  value="SUPPORT"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Support
                 </option>
               </select>
+            </div>
+
+            {/* Assign To */}
+            <div>
+              <label
+                className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Assign To
+              </label>
+
+              <select
+                value={editTaskForm?.assignedTo || ""}
+                onChange={(e) => {
+                  const userId = e.target.value;
+
+                  setEditTaskForm({
+                    ...editTaskForm,
+                    assignedTo: userId || "",
+                  });
+                }}
+                className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
+              >
+                <option value="">— Select User —</option>
+                {users?.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName}
+                  </option>
+                ))}
+              </select>
+
+              {/* Selected User */}
+              {editTaskForm?.assignedTo && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {(() => {
+                    const user = users?.find((u) => u.id === editTaskForm.assignedTo);
+
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-900/30 border border-cyan-700/30 rounded-full text-xs text-cyan-300">
+                        {user
+                          ? `${user.firstName} ${user.lastName}`
+                          : editTaskForm.assignedTo}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditTaskForm({
+                              ...editTaskForm,
+                              assignedTo: "",
+                            })
+                          }
+                          className="text-cyan-400 hover:text-cyan-200 ml-1"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             {/* Status */}
@@ -4774,8 +4957,20 @@ export default function KanbanBoard() {
             </div>
           </div>
 
+          {message.text && (
+            <div
+              className={`mx-5 mb-5 px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
+                ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                : "bg-red-900/30 text-red-400 border border-red-500/30"
+                }`}
+            >
+              {message.text}
+            </div>
+          )}
+
           {/* ─── FOOTER ─── */}
           <div className="border-t border-gray-700/50 p-6 flex gap-3 justify-end bg-gray-950/50">
+
             <form method="dialog">
               <button className="px-6 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all font-medium text-sm">
                 Cancel
@@ -4790,14 +4985,14 @@ export default function KanbanBoard() {
             </button>
           </div>
         </div>
-      </dialog>
+      </dialog >
 
       {/* ── EDIT SUBTASK MODAL ── */}
       <dialog
         id="edit_subtask_modal"
-        className="modal items-start justify-end p-4"
+        className="modal items-start justify-center p-4"
       >
-        <div className="modal-box pt-0 px-0 w-[600px] border border-cyan-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-lg">
+        <div className="modal-box pt-0 px-0 w-[1000px] max-h-[90vh] border border-cyan-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-lg">
           {/* Header */}
           <div className="flex items-center justify-between pt-6 px-6 pb-4 border-b border-gray-700/50">
             <div>
@@ -4916,9 +5111,9 @@ export default function KanbanBoard() {
                   }
                   className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
                 >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
                 </select>
               </div>
 
@@ -4969,66 +5164,128 @@ export default function KanbanBoard() {
                 }}
               >
                 <option
-                  value="General"
+                  value="GENERAL"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   General
                 </option>
                 <option
-                  value="Work"
+                  value="WORK"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Work
                 </option>
                 <option
-                  value="Personal"
+                  value="PERSONAL"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Personal
                 </option>
                 <option
-                  value="Urgent"
+                  value="URGENT"
                   style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
                 >
                   Urgent
                 </option>
                 <option
-                  value="Planning"
+                  value="PLANNING"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Planning
                 </option>
                 <option
-                  value="Review"
+                  value="REVIEW"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Review
                 </option>
                 <option
-                  value="Implementation"
+                  value="IMPLEMENTATION"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Implementation
                 </option>
                 <option
-                  value="Testing"
+                  value="TESTING"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Testing
                 </option>
                 <option
-                  value="Documentation"
+                  value="DOCUMENTATION"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Documentation
                 </option>
                 <option
-                  value="Support"
+                  value="SUPPORT"
                   style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
                 >
                   Support
                 </option>
               </select>
+            </div>
+
+            {/* Assign To */}
+            <div>
+              <label
+                className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
+                Assign To
+              </label>
+
+              <select
+                value={editSubtaskForm?.assignedTo || ""}
+                onChange={(e) => {
+                  const userId = e.target.value;
+
+                  setEditSubtaskForm({
+                    ...editSubtaskForm,
+                    assignedTo: userId || "",
+                  });
+                }}
+                className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
+              >
+                <option value="">— Select User —</option>
+                {users?.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName}
+                  </option>
+                ))}
+              </select>
+
+              {/* Selected User */}
+              {editSubtaskForm?.assignedTo && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {(() => {
+                    const user = users?.find(
+                      (u) => u.id === editSubtaskForm.assignedTo
+                    );
+
+                    return (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-900/30 border border-cyan-700/30 rounded-full text-xs text-cyan-300">
+                        {user
+                          ? `${user.firstName} ${user.lastName}`
+                          : editSubtaskForm.assignedTo}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditSubtaskForm({
+                              ...editSubtaskForm,
+                              assignedTo: "",
+                            })
+                          }
+                          className="text-cyan-400 hover:text-cyan-200 ml-1"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
 
             {/* Status */}
@@ -5056,8 +5313,20 @@ export default function KanbanBoard() {
             </div>
           </div>
 
+          {message.text && (
+            <div
+              className={`mx-5 mb-5 px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
+                ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                : "bg-red-900/30 text-red-400 border border-red-500/30"
+                }`}
+            >
+              {message.text}
+            </div>
+          )}
+
           {/* Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-700/50">
+
             <form method="dialog">
               <button className="px-6 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all font-medium text-sm">
                 Cancel
@@ -5072,12 +5341,13 @@ export default function KanbanBoard() {
             </button>
           </div>
         </div>
-      </dialog>
+      </dialog >
 
       {/* EntityModal - Unified component for creating Sites, Zones, Equipment */}
-      <EntityModal
+      < EntityModal
         isOpen={isEntityModalOpen}
-        onClose={() => setIsEntityModalOpen(false)}
+        onClose={() => setIsEntityModalOpen(false)
+        }
         entityType={entityModalType}
         parentId={entityModalParentId}
         projectCategory={parentCategory}
@@ -5101,6 +5371,6 @@ export default function KanbanBoard() {
           setIsEntityModalOpen(false);
         }}
       />
-    </div>
+    </div >
   );
 }
