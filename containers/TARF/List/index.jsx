@@ -24,17 +24,19 @@ const STATUS_COLORS = {
 
 function getTARFStatus(tarf) {
   const now = new Date();
-  const end = tarf.expected_end ? new Date(tarf.expected_end) : null;
+  const end = tarf.expectedEnd ? new Date(tarf.expectedEnd) : null;
   if (!tarf.approved) return tarf.rejected ? "Rejected" : "Pending";
-  if (end && end < now) return "Expired";
-  if (tarf.signed_in_at && tarf.signed_out_at) return "Signed Out";
-  if (tarf.signed_in_at && !tarf.signed_out_at) return "On Site";
+  if (tarf.isExpired || (end && end < now)) return "Expired";
+  if (tarf.isActiveSession) return "On Site";
+  if (tarf.signedInAt && tarf.signedOutAt) return "Signed Out";
+  if (tarf.signedInAt && !tarf.signedOutAt) return "On Site";
   return "Approved";
 }
 
 function isExpired(tarf) {
-  if (!tarf.expected_end) return false;
-  return new Date(tarf.expected_end) < new Date();
+  if (tarf.isExpired) return true;
+  if (!tarf.expectedEnd) return false;
+  return new Date(tarf.expectedEnd) < new Date();
 }
 
 export default function TARFList() {
@@ -118,9 +120,9 @@ export default function TARFList() {
       (activeTab === "Expired" && status === "Expired");
     const matchSearch =
       !searchTerm ||
-      (t.person_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (t.company_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (t.role_on_site || "").toLowerCase().includes(searchTerm.toLowerCase());
+      (t.personName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.companyName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (t.roleOnSite || "").toLowerCase().includes(searchTerm.toLowerCase());
     return matchTab && matchSearch;
   });
 
@@ -253,29 +255,29 @@ export default function TARFList() {
                       >
                         {/* Person */}
                         <td className="px-5 py-4">
-                          <p className="text-white text-sm font-medium">{tarf.person_name}</p>
-                          {tarf.approved_by_name && (
-                            <p className="text-gray-500 text-xs mt-0.5">Approved by {tarf.approved_by_name}</p>
+                          <p className="text-white text-sm font-medium">{tarf.personName}</p>
+                          {tarf.approvedAt && (
+                            <p className="text-gray-500 text-xs mt-0.5">Approved {new Date(tarf.approvedAt).toLocaleDateString()}</p>
                           )}
                         </td>
 
                         {/* Company */}
                         <td className="px-5 py-4 text-gray-400 text-sm whitespace-nowrap">
-                          {tarf.company_name || "—"}
+                          {tarf.companyName || "—"}
                         </td>
 
                         {/* Role */}
-                        <td className="px-5 py-4 text-gray-300 text-sm">{tarf.role_on_site || "—"}</td>
+                        <td className="px-5 py-4 text-gray-300 text-sm">{tarf.roleOnSite || "—"}</td>
 
                         {/* Access Window */}
                         <td className="px-5 py-4 text-sm whitespace-nowrap">
                           <span className={expired ? "text-red-400" : "text-gray-400"}>
-                            {tarf.expected_start
-                              ? new Date(tarf.expected_start).toLocaleDateString()
+                            {tarf.expectedStart
+                              ? new Date(tarf.expectedStart).toLocaleDateString()
                               : "—"}
                             {" → "}
-                            {tarf.expected_end
-                              ? new Date(tarf.expected_end).toLocaleDateString()
+                            {tarf.expectedEnd
+                              ? new Date(tarf.expectedEnd).toLocaleDateString()
                               : "—"}
                           </span>
                           {expired && (
@@ -285,7 +287,7 @@ export default function TARFList() {
 
                         {/* Safety Orientation */}
                         <td className="px-5 py-4">
-                          {tarf.safety_orientation_complete ? (
+                          {tarf.safetyOrientationComplete ? (
                             <span className="flex items-center gap-1 text-green-400 text-xs font-medium">
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -311,8 +313,8 @@ export default function TARFList() {
 
                         {/* Sign-in time */}
                         <td className="px-5 py-4 text-gray-500 text-xs whitespace-nowrap">
-                          {tarf.signed_in_at
-                            ? new Date(tarf.signed_in_at).toLocaleString()
+                          {tarf.signedInAt
+                            ? new Date(tarf.signedInAt).toLocaleString()
                             : "—"}
                         </td>
 
@@ -346,8 +348,8 @@ export default function TARFList() {
                             {status === "Approved" && (
                               <button
                                 onClick={() => handleSignIn(tarf.id)}
-                                disabled={!tarf.safety_orientation_complete || actionLoading}
-                                title={!tarf.safety_orientation_complete ? "Safety orientation must be complete before sign-in" : ""}
+                                disabled={!tarf.safetyOrientationComplete || actionLoading}
+                                title={!tarf.safetyOrientationComplete ? "Safety orientation must be complete before sign-in" : ""}
                                 className="text-cyan-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50 disabled:opacity-40 disabled:cursor-not-allowed"
                               >
                                 Sign In

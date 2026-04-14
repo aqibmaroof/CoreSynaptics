@@ -3,20 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createIssue } from "@/services/Issues";
+import { getProjects } from "@/services/Projects";
+import { getCompanies } from "@/services/Companies";
 import { getUsers } from "@/services/Users";
+import { getAssets } from "../../../services/AssetManagement";
 
-// Replace with real service calls when available
-const fetchProjects = async () => [];
 const fetchAssets = async () => [];
-const fetchCompanies = async () => [];
 
-const SEVERITIES = ["Low", "Medium", "High", "Critical"];
+const SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
 const SEVERITY_STYLES = {
-  Low: { ring: "border-gray-600", bg: "bg-gray-800/40", dot: "bg-gray-400", label: "text-gray-300" },
-  Medium: { ring: "border-yellow-600/50", bg: "bg-yellow-900/10", dot: "bg-yellow-400", label: "text-yellow-300" },
-  High: { ring: "border-orange-600/50", bg: "bg-orange-900/10", dot: "bg-orange-400", label: "text-orange-300" },
-  Critical: { ring: "border-red-600/50", bg: "bg-red-900/10", dot: "bg-red-400", label: "text-red-300" },
+  LOW:      { ring: "border-gray-600",       bg: "bg-gray-800/40",     dot: "bg-gray-400",   label: "text-gray-300" },
+  MEDIUM:   { ring: "border-yellow-600/50",  bg: "bg-yellow-900/10",   dot: "bg-yellow-400", label: "text-yellow-300" },
+  HIGH:     { ring: "border-orange-600/50",  bg: "bg-orange-900/10",   dot: "bg-orange-400", label: "text-orange-300" },
+  CRITICAL: { ring: "border-red-600/50",     bg: "bg-red-900/10",      dot: "bg-red-400",    label: "text-red-300" },
 };
 
 const INPUT_CLS =
@@ -31,34 +31,34 @@ const FieldLabel = ({ children, required }) => (
 export default function IssuesAdd() {
   const router = useRouter();
 
-  const [projects, setProjects] = useState([]);
-  const [assets, setAssets] = useState([]);
+  const [projects, setProjects]   = useState([]);
+  const [assets, setAssets]       = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [users, setUsers]         = useState([]);
 
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [errors, setErrors] = useState({});
+  const [loading, setLoading]   = useState(false);
+  const [message, setMessage]   = useState(null);
+  const [errors, setErrors]     = useState({});
 
   const [form, setForm] = useState({
-    title: "",
-    description: "",
-    severity: "Medium",
-    project_id: "",
-    asset_id: "",
-    assigned_to_company_id: "",
-    assigned_to_user_id: "",
+    title:               "",
+    description:         "",
+    severity:            "MEDIUM",
+    projectId:           "",
+    assetId:             "",
+    assignedToCompanyId: "",
+    assignedToUserId:    "",
   });
 
   useEffect(() => {
-    fetchProjects().then(setProjects);
-    fetchAssets().then(setAssets);
-    fetchCompanies().then(setCompanies);
+    getProjects().then((res) => setProjects(res?.projects || [])).catch(() => {});
+    getAssets().then((res) => setAssets(res?.data || [])).catch(() => {});
+    getCompanies().then((res) => setCompanies(Array.isArray(res) ? res : res?.data || [])).catch(() => {});
     getUsers()
       .then((res) => setUsers(Array.isArray(res) ? res : res?.data || []))
-      .catch(() => { });
+      .catch(() => {});
   }, []);
-
+console.log(users)
   useEffect(() => {
     if (!message) return;
     const t = setTimeout(() => setMessage(null), 4000);
@@ -75,8 +75,8 @@ export default function IssuesAdd() {
   const validate = () => {
     const e = {};
     if (!form.title.trim()) e.title = "Title is required";
-    if (!form.project_id && !form.asset_id)
-      e.project_id = "At least one of Project or Asset must be selected";
+    if (!form.projectId && !form.assetId)
+      e.projectId = "At least one of Project or Asset must be selected";
     if (!form.severity) e.severity = "Severity is required";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -89,11 +89,13 @@ export default function IssuesAdd() {
     setLoading(true);
     try {
       await createIssue({
-        ...form,
-        project_id: form.project_id || undefined,
-        asset_id: form.asset_id || undefined,
-        assigned_to_company_id: form.assigned_to_company_id || undefined,
-        assigned_to_user_id: form.assigned_to_user_id || undefined,
+        title:               form.title,
+        description:         form.description || undefined,
+        severity:            form.severity,
+        projectId:           form.projectId           || undefined,
+        assetId:             form.assetId             || undefined,
+        assignedToCompanyId: form.assignedToCompanyId || undefined,
+        assignedToUserId:    form.assignedToUserId    || undefined,
       });
       setMessage({ type: "success", text: "Issue raised successfully" });
       setTimeout(() => router.push("/Issues/List"), 1400);
@@ -106,10 +108,9 @@ export default function IssuesAdd() {
 
   return (
     <div className="min-h-screen p-6">
-      <div className=" mx-auto">
+      <div className="mx-auto">
 
         <div className="flex items-center justify-between">
-          {/* Back + Header */}
           <button onClick={() => router.back()}
             className="flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-5 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +118,6 @@ export default function IssuesAdd() {
             </svg>
             Back to Issues
           </button>
-          {/* Toast */}
           {message && (
             <div className={`z-50 px-4 py-3 rounded-lg border shadow-lg text-sm flex items-center gap-2 ${message.type === "success"
               ? "bg-green-900/80 border-green-500/30 text-green-300"
@@ -128,20 +128,18 @@ export default function IssuesAdd() {
           )}
         </div>
 
-
         <h1 className="text-4xl font-bold text-white mb-2">Raise an Issue</h1>
         <p className="text-gray-400 mb-8">Log a new issue against a project or asset for tracking and resolution</p>
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="space-y-6">
 
-            {/* ── Section: Core Details ─────────────────────────────── */}
+            {/* ── Core Details ── */}
             <section className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-6 space-y-5">
               <h2 className="text-sm font-bold text-gray-300 uppercase tracking-widest border-b border-gray-800 pb-3">
                 Issue Details
               </h2>
 
-              {/* Title */}
               <div>
                 <FieldLabel required>Title</FieldLabel>
                 <input
@@ -152,7 +150,6 @@ export default function IssuesAdd() {
                 {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title}</p>}
               </div>
 
-              {/* Description */}
               <div>
                 <FieldLabel>Description</FieldLabel>
                 <textarea
@@ -163,7 +160,6 @@ export default function IssuesAdd() {
                 />
               </div>
 
-              {/* Severity selector */}
               <div>
                 <FieldLabel required>Severity</FieldLabel>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-1">
@@ -179,7 +175,7 @@ export default function IssuesAdd() {
                           }`}
                       >
                         <span className={`w-2 h-2 rounded-full shrink-0 ${selected ? s.dot : "bg-gray-600"}`} />
-                        {sev}
+                        {sev[0] + sev.slice(1).toLowerCase()}
                       </button>
                     );
                   })}
@@ -188,7 +184,7 @@ export default function IssuesAdd() {
               </div>
             </section>
 
-            {/* ── Section: Link to Project / Asset ─────────────────── */}
+            {/* ── Link to Project / Asset ── */}
             <section className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-6 space-y-5">
               <div className="border-b border-gray-800 pb-3 flex items-start justify-between">
                 <h2 className="text-sm font-bold text-gray-300 uppercase tracking-widest">
@@ -200,8 +196,8 @@ export default function IssuesAdd() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <FieldLabel>Project</FieldLabel>
-                  <select value={form.project_id} onChange={set("project_id")}
-                    className={`${INPUT_CLS} ${errors.project_id ? "border-red-500" : ""}`}>
+                  <select value={form.projectId} onChange={set("projectId")}
+                    className={`${INPUT_CLS} ${errors.projectId ? "border-red-500" : ""}`}>
                     <option value="">Select project...</option>
                     {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
@@ -209,18 +205,18 @@ export default function IssuesAdd() {
 
                 <div>
                   <FieldLabel>Asset</FieldLabel>
-                  <select value={form.asset_id} onChange={set("asset_id")} className={INPUT_CLS}>
+                  <select value={form.assetId} onChange={set("assetId")} className={INPUT_CLS}>
                     <option value="">Select asset...</option>
                     {assets.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
                 </div>
               </div>
-              {errors.project_id && (
-                <p className="text-red-400 text-xs">{errors.project_id}</p>
+              {errors.projectId && (
+                <p className="text-red-400 text-xs">{errors.projectId}</p>
               )}
             </section>
 
-            {/* ── Section: Assignment ───────────────────────────────── */}
+            {/* ── Assignment ── */}
             <section className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-6 space-y-5">
               <h2 className="text-sm font-bold text-gray-300 uppercase tracking-widest border-b border-gray-800 pb-3">
                 Assignment <span className="text-gray-500 font-normal normal-case tracking-normal text-xs ml-1">(optional — can be set later)</span>
@@ -229,8 +225,7 @@ export default function IssuesAdd() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <FieldLabel>Assign to User</FieldLabel>
-                  <select value={form.assigned_to_user_id} onChange={set("assigned_to_user_id")}
-                    className={INPUT_CLS}>
+                  <select value={form.assignedToUserId} onChange={set("assignedToUserId")} className={INPUT_CLS}>
                     <option value="">No user assigned</option>
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
@@ -240,8 +235,7 @@ export default function IssuesAdd() {
 
                 <div>
                   <FieldLabel>Assign to Company</FieldLabel>
-                  <select value={form.assigned_to_company_id} onChange={set("assigned_to_company_id")}
-                    className={INPUT_CLS}>
+                  <select value={form.assignedToCompanyId} onChange={set("assignedToCompanyId")} className={INPUT_CLS}>
                     <option value="">No company assigned</option>
                     {companies.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
@@ -253,7 +247,6 @@ export default function IssuesAdd() {
 
           </div>
 
-          {/* ── Form footer ─────────────────────────────────────────── */}
           <div className="flex gap-4 mt-6 justify-end">
             <button type="button" onClick={() => router.back()}
               className="px-6 py-2.5 border border-gray-600 text-gray-300 hover:text-white rounded-lg text-sm transition-colors">
