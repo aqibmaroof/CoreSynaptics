@@ -25,11 +25,11 @@ const STATUS_ICONS = {
 
 const TRANSITIONS = {
   IN_STOCK:  ["ASSIGNED", "IN_REPAIR", "RETIRED"],
-  ASSIGNED:  ["IN_STOCK", "IN_REPAIR", "DAMAGED"],
+  ASSIGNED:  ["IN_STOCK", "IN_REPAIR", "DAMAGED", "LOST"],
   IN_REPAIR: ["IN_STOCK", "DAMAGED", "RETIRED"],
   DAMAGED:   ["IN_REPAIR", "RETIRED", "LOST"],
   RETIRED:   [],
-  LOST:      [],
+  LOST:      ["IN_STOCK"],
 };
 
 const Toast = ({ msg }) => msg ? (
@@ -102,7 +102,7 @@ export default function AssetsList() {
   const handleStatusChange = async () => {
     if (!statusModal) return;
     await withAction(
-      () => changeAssetStatus(statusModal.asset.id, { new_status: statusModal.nextStatus, reason: statusReason }),
+      () => changeAssetStatus(statusModal.asset.id, { status: statusModal.nextStatus, reason: statusReason }),
       `Asset status changed to ${statusModal.nextStatus}`
     );
     setStatusModal(null);
@@ -112,7 +112,7 @@ export default function AssetsList() {
   const handleAssign = async () => {
     if (!assignModal || !assignUserId) return;
     await withAction(
-      () => assignAsset(assignModal.id, { assigned_to_user_id: assignUserId, assigned_date: new Date().toISOString() }),
+      () => assignAsset(assignModal.id, { assignedToUserId: assignUserId }),
       "Asset assigned successfully"
     );
     setAssignModal(null);
@@ -130,18 +130,18 @@ export default function AssetsList() {
   };
 
   const isWarrantyExpiring = (asset) => {
-    if (!asset.warranty_expiry) return false;
-    const diff = (new Date(asset.warranty_expiry) - new Date()) / (1000 * 60 * 60 * 24);
+    if (!asset.warrantyExpiry) return false;
+    const diff = (new Date(asset.warrantyExpiry) - new Date()) / (1000 * 60 * 60 * 24);
     return diff >= 0 && diff <= 30;
   };
 
   const isWarrantyExpired = (asset) =>
-    asset.warranty_expiry && new Date(asset.warranty_expiry) < new Date();
+    asset.warrantyExpiry && new Date(asset.warrantyExpiry) < new Date();
 
   const filtered = assets.filter((a) => {
     const matchTab    = activeTab === "All" || a.status === activeTab;
     const matchSearch = !searchTerm ||
-      (a.asset_tag || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.assetTag || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (a.name || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchCat = !filterCat || a.category === filterCat;
     return matchTab && matchSearch && matchCat;
@@ -246,13 +246,13 @@ export default function AssetsList() {
                     const transitions   = TRANSITIONS[asset.status] || [];
                     const warExpiring   = isWarrantyExpiring(asset);
                     const warExpired    = isWarrantyExpired(asset);
-                    const assignedUser  = users.find((u) => u.id === asset.current_assigned_user_id);
+                    const assignedUser  = users.find((u) => u.id === asset.currentAssignedUserId);
 
                     return (
                       <tr key={asset.id}
                         className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors ${warExpired ? "bg-red-900/5" : ""}`}>
                         <td className="px-5 py-4">
-                          <p className="text-cyan-400 font-mono text-sm font-medium">{asset.asset_tag}</p>
+                          <p className="text-cyan-400 font-mono text-sm font-medium">{asset.assetTag}</p>
                         </td>
                         <td className="px-5 py-4">
                           <p className="text-white text-sm font-medium">{asset.name}</p>
@@ -268,11 +268,11 @@ export default function AssetsList() {
                         </td>
                         <td className="px-5 py-4 text-xs text-gray-400">{asset.location?.name || "—"}</td>
                         <td className="px-5 py-4 text-sm text-gray-400 font-mono">
-                          {asset.purchase_cost ? `$${Number(asset.purchase_cost).toLocaleString()}` : "—"}
+                          {asset.purchaseCost ? `$${Number(asset.purchaseCost).toLocaleString()}` : "—"}
                         </td>
                         <td className={`px-5 py-4 text-xs whitespace-nowrap ${warExpired ? "text-red-400" : warExpiring ? "text-yellow-400" : "text-gray-500"}`}>
-                          {asset.warranty_expiry
-                            ? new Date(asset.warranty_expiry).toLocaleDateString()
+                          {asset.warrantyExpiry
+                            ? new Date(asset.warrantyExpiry).toLocaleDateString()
                             : "—"}
                           {warExpired   && <span className="ml-1 text-[10px] text-red-500 uppercase font-bold">expired</span>}
                           {warExpiring  && !warExpired && <span className="ml-1 text-[10px] text-yellow-500 uppercase">expiring</span>}
@@ -319,7 +319,7 @@ export default function AssetsList() {
             <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-white font-bold text-lg mb-1">Change Asset Status</h3>
               <p className="text-gray-400 text-sm mb-5">
-                <span className="font-mono text-cyan-400">{statusModal.asset.asset_tag}</span>
+                <span className="font-mono text-cyan-400">{statusModal.asset.assetTag}</span>
                 {" → "}
                 <span className={`text-xs px-2 py-0.5 rounded-full border ml-1 ${STATUS_COLORS[statusModal.nextStatus]}`}>
                   {statusModal.nextStatus.replace(/_/g," ")}
@@ -347,7 +347,7 @@ export default function AssetsList() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
             <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-white font-bold text-lg mb-1">Assign Asset</h3>
-              <p className="text-gray-400 text-sm mb-5 font-mono">{assignModal.asset_tag} — {assignModal.name}</p>
+              <p className="text-gray-400 text-sm mb-5 font-mono">{assignModal.assetTag} — {assignModal.name}</p>
               <div>
                 <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">Assign To User <span className="text-red-400">*</span></label>
                 <select value={assignUserId} onChange={(e) => setAssignUserId(e.target.value)}
@@ -374,7 +374,7 @@ export default function AssetsList() {
               <div className="flex items-start justify-between mb-5">
                 <div>
                   <h3 className="text-white font-bold text-lg">Status History</h3>
-                  <p className="text-cyan-400 font-mono text-sm">{historyModal.asset_tag} — {historyModal.name}</p>
+                  <p className="text-cyan-400 font-mono text-sm">{historyModal.assetTag} — {historyModal.name}</p>
                 </div>
                 <button onClick={() => setHistoryModal(null)} className="text-gray-400 hover:text-white">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -393,22 +393,22 @@ export default function AssetsList() {
                   <div className="absolute left-3.5 top-0 bottom-0 w-px bg-gray-700" />
                   <div className="space-y-4">
                     {historyEvents.map((ev, i) => {
-                      const changer = users.find((u) => u.id === ev.changed_by);
+                      const changer = users.find((u) => u.id === ev.changedBy);
                       return (
                         <div key={ev.id || i} className="relative pl-8">
-                          <div className={`absolute left-0 w-7 h-7 rounded-full flex items-center justify-center text-xs ${STATUS_COLORS[ev.new_status] || "bg-gray-800 border border-gray-700"}`}>
-                            {STATUS_ICONS[ev.new_status] || "•"}
+                          <div className={`absolute left-0 w-7 h-7 rounded-full flex items-center justify-center text-xs ${STATUS_COLORS[ev.newStatus] || "bg-gray-800 border border-gray-700"}`}>
+                            {STATUS_ICONS[ev.newStatus] || "•"}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              {ev.previous_status && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${STATUS_COLORS[ev.previous_status]}`}>
-                                  {ev.previous_status.replace(/_/g," ")}
+                              {ev.previousStatus && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${STATUS_COLORS[ev.previousStatus]}`}>
+                                  {ev.previousStatus.replace(/_/g," ")}
                                 </span>
                               )}
                               <span className="text-gray-500 text-xs">→</span>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded border ${STATUS_COLORS[ev.new_status]}`}>
-                                {ev.new_status?.replace(/_/g," ")}
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded border ${STATUS_COLORS[ev.newStatus]}`}>
+                                {ev.newStatus?.replace(/_/g," ")}
                               </span>
                             </div>
                             {ev.reason && <p className="text-gray-400 text-xs mt-1">{ev.reason}</p>}

@@ -21,11 +21,11 @@ export const deleteAsset = async (id) =>
 
 /**
  * Change asset status — writes to asset_status_history automatically.
- * payload: { new_status, reason, notes }
+ * payload: { status, reason? }
  * Allowed: IN_STOCK | ASSIGNED | IN_REPAIR | DAMAGED | RETIRED | LOST
  */
 export const changeAssetStatus = async (id, payload) =>
-  sendRequest({ url: `/assets/${id}/status`, method: "POST", data: payload });
+  sendRequest({ url: `/assets/${id}/status`, method: "PATCH", data: payload });
 
 /** Get complete status history for an asset */
 export const getAssetHistory = async (id) =>
@@ -46,16 +46,8 @@ export const assignAsset = async (assetId, payload) =>
 
 /**
  * Return an asset.
- * Sets assignment status → RETURNED, asset status → IN_STOCK.
- * payload: { return_date, condition_notes }
+ * Sets asset status → IN_STOCK.
+ * payload: { notes? }
  */
-export const returnAsset = async (assetId, assignmentId, payload = {}) =>
-  sendRequest({ url: `/assets/${assetId}/assignments/${assignmentId}/return`, method: "POST", data: payload });
-
-/** List all currently active assignments (not returned) */
-export const getActiveAssignments = async () =>
-  sendRequest({ url: `/assets/assignments/active`, method: "GET" });
-
-/** Assets expiring warranty within N days */
-export const getWarrantyExpiringAssets = async (days = 30) =>
-  sendRequest({ url: `/assets/alerts/warranty-expiring?days=${days}`, method: "GET" });
+export const returnAsset = async (assetId, payload = {}) =>
+  sendRequest({ url: `/assets/${assetId}/return`, method: "POST", data: payload });

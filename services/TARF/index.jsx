@@ -51,8 +51,13 @@ export const getActiveSitePersonnel = async (projectId) => {
   return sendRequest({ url: `/tarf/active?project_id=${projectId}`, method: "GET" });
 };
 
-/** List expired access entries (expected_end < today) */
+/** List expired access entries (expectedEnd < today) */
 export const getExpiredAccess = async (params = {}) => {
   const query = new URLSearchParams(params).toString();
   return sendRequest({ url: `/tarf/expired${query ? `?${query}` : ""}`, method: "GET" });
+};
+
+/** Get sign-in / sign-out history for a TARF entry */
+export const getSignLogs = async (id) => {
+  return sendRequest({ url: `/tarf/${id}/sign-logs`, method: "GET" });
 };
