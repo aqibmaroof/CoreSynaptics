@@ -1,84 +1,61 @@
 import React from "react";
 
-const MetricsCard = ({ icon, title, value, subtitle, color = "blue" }) => {
-  const colorConfig = {
-    blue: {
-      gradient: "from-blue-600 to-cyan-600",
-      bg: "bg-blue-900/20",
-      border: "border-blue-500/30 hover:border-blue-400/60",
-      text: "text-cyan-400",
-      glow: "hover:shadow-blue-500/20",
-    },
-    green: {
-      gradient: "from-emerald-600 to-green-600",
-      bg: "bg-green-900/20",
-      border: "border-green-500/30 hover:border-green-400/60",
-      text: "text-green-400",
-      glow: "hover:shadow-green-500/20",
-    },
-    red: {
-      gradient: "from-red-600 to-pink-600",
-      bg: "bg-red-900/20",
-      border: "border-red-500/30 hover:border-red-400/60",
-      text: "text-red-400",
-      glow: "hover:shadow-red-500/20",
-    },
-    yellow: {
-      gradient: "from-amber-600 to-orange-600",
-      bg: "bg-amber-900/20",
-      border: "border-amber-500/30 hover:border-amber-400/60",
-      text: "text-amber-400",
-      glow: "hover:shadow-amber-500/20",
-    },
-  };
+const colorMap = {
+  blue:   { value: "#4fc3f7", accent: "#0288d1", track: "rgba(79,195,247,0.12)" },
+  green:  { value: "#4ade80", accent: "#16a34a", track: "rgba(74,222,128,0.12)" },
+  red:    { value: "#f87171", accent: "#dc2626", track: "rgba(248,113,113,0.12)" },
+  yellow: { value: "#fbbf24", accent: "#d97706", track: "rgba(251,191,36,0.12)"  },
+};
 
-  const config = colorConfig[color] || colorConfig.blue;
+const MetricsCard = ({ title, value, subtitle, color = "blue" }) => {
+  const c = colorMap[color] || colorMap.blue;
 
   return (
     <div
-      className={`relative group overflow-hidden rounded-xl p-6 transition-all duration-300 backdrop-blur 
-        border ${config.border} ${config.bg} ${config.glow} hover:shadow-lg cursor-pointer
-        transform hover:scale-105 hover:-translate-y-1`}
+      className="relative group rounded-xl p-5 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:-translate-y-0.5"
+      style={{
+        background: "var(--home-card-bg)",
+        border: "1px solid var(--home-card-border)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.12)",
+      }}
     >
-      {/* Animated gradient background */}
+      {/* Top accent bar on hover */}
       <div
-        className={`absolute inset-0 bg-gradient-to-br ${config.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}
+        className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        style={{ background: `linear-gradient(to right, ${c.value}, ${c.accent})` }}
       />
 
-      {/* Top accent line */}
+      {/* Title */}
+      <p
+        className="text-[10px] font-bold uppercase tracking-widest mb-3"
+        style={{ color: "var(--rf-txt3)" }}
+      >
+        {title}
+      </p>
+
+      {/* Value */}
       <div
-        className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
-      />
-
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Title */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-gray-400 text-xs font-bold uppercase tracking-widest">
-            {title}
-          </div>
-          {icon && <span className="text-xl">{icon}</span>}
-        </div>
-
-        {/* Value */}
-        <div className="mb-3">
-          <div className={`text-4xl font-black ${config.text} leading-none`}>
-            {value}
-          </div>
-        </div>
-
-        {/* Subtitle with accent */}
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-1 h-4 rounded-full bg-gradient-to-b ${config.gradient}`}
-          />
-          <div className="text-gray-400 text-xs font-medium">{subtitle}</div>
-        </div>
+        className="text-4xl font-black leading-none mb-3"
+        style={{ color: c.value }}
+      >
+        {value}
       </div>
 
-      {/* Corner decoration */}
+      {/* Subtitle */}
+      <div className="flex items-center gap-2">
+        <div
+          className="w-1 h-3.5 rounded-full"
+          style={{ background: `linear-gradient(to bottom, ${c.value}, ${c.accent})` }}
+        />
+        <span className="text-xs" style={{ color: "var(--rf-txt2)" }}>
+          {subtitle}
+        </span>
+      </div>
+
+      {/* Background tint on hover */}
       <div
-        className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${config.gradient} opacity-0 group-hover:opacity-5 rounded-full blur-xl transition-all duration-300`}
+        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+        style={{ background: c.track }}
       />
     </div>
   );

@@ -3,83 +3,83 @@ import React from "react";
 const TradeItemsCard = ({ data }) => {
   const maxCount = Math.max(...data.trades.map((t) => t.count), 1);
   const totalItems = data.trades.reduce((sum, t) => sum + t.count, 0);
+  const busiest = data.trades.reduce((m, t) => (t.count > m.count ? t : m), data.trades[0]);
 
   return (
-    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-7 border border-slate-700/50 backdrop-blur hover:border-slate-600 transition-all shadow-xl">
+    <div
+      className="rounded-xl p-6 transition-all hover:scale-[1.01]"
+      style={{
+        background: "var(--home-card-bg)",
+        border: "1px solid var(--home-card-border)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.10)",
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-white text-lg font-bold flex items-center gap-2">
-          <span className="text-xl">🏗️</span>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: "var(--rf-txt)" }}>
+          <span className="text-base">🏗️</span>
           {data.title}
         </h3>
-        <div className="text-xs font-bold bg-gradient-to-r from-orange-600 to-red-600 px-3 py-1 rounded-full text-white">
+        <span
+          className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide"
+          style={{ background: "var(--home-card-el)", color: "#f97316" }}
+        >
           {data.trades.length} Trades
-        </div>
+        </span>
       </div>
 
-      {/* Trade items */}
-      <div className="space-y-5">
+      {/* Trade rows */}
+      <div className="space-y-4">
         {data.trades.map((trade, index) => {
-          const percentage = (trade.count / maxCount) * 100;
+          const pct = (trade.count / maxCount) * 100;
+          const tradePct = totalItems > 0 ? Math.round((trade.count / totalItems) * 100) : 0;
           return (
-            <div key={index} className="group relative">
-              {/* Header with name and count */}
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-gray-200 text-sm font-semibold group-hover:text-orange-300 transition-colors">
+            <div key={index} className="group">
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-xs font-semibold truncate max-w-[60%]" style={{ color: "var(--rf-txt)" }}>
                   {trade.name}
                 </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-black bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-sm font-black" style={{ color: "#f97316" }}>
                     {trade.count}
                   </span>
-                  <span className="text-xs text-gray-400">
-                    ({Math.round((trade.count / totalItems) * 100)}%)
+                  <span className="text-[10px]" style={{ color: "var(--rf-txt3)" }}>
+                    ({tradePct}%)
                   </span>
                 </div>
               </div>
-
-              {/* Advanced progress bar */}
-              <div className="relative h-3 bg-slate-700/50 rounded-full overflow-hidden shadow-inner group-hover:shadow-orange-500/20 transition-shadow">
-                {/* Background gradient */}
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-700 to-slate-600 rounded-full" />
-
-                {/* Progress fill with animation */}
+              <div
+                className="h-2 rounded-full overflow-hidden"
+                style={{ background: "var(--home-progress-track)" }}
+              >
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 shadow-lg group-hover:shadow-orange-500/50 transition-all duration-500 relative overflow-hidden"
+                  className="h-full rounded-full transition-all duration-500"
                   style={{
-                    width: `${percentage}%`,
-                    animation:
-                      percentage > 0 ? "slideIn 0.6s ease-out" : "none",
+                    width: `${pct}%`,
+                    background: "linear-gradient(to right, #f97316, #ef4444)",
                   }}
-                >
-                  {/* Shimmer effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 animate-pulse" />
-                </div>
+                />
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Stats footer */}
-      <div className="mt-8 pt-6 border-t border-slate-700/50">
-        <div className="grid grid-cols-2 gap-4 text-center text-xs">
-          <div>
-            <div className="text-gray-400">Total Items</div>
-            <div className="text-xl font-bold text-orange-400 mt-1">
-              {totalItems}
-            </div>
+      {/* Footer */}
+      <div
+        className="mt-6 pt-4 grid grid-cols-2 gap-4 text-center text-xs"
+        style={{ borderTop: "1px solid var(--home-card-border)" }}
+      >
+        <div>
+          <div style={{ color: "var(--rf-txt3)" }}>Total Items</div>
+          <div className="text-xl font-black mt-0.5" style={{ color: "#f97316" }}>
+            {totalItems}
           </div>
-          <div>
-            <div className="text-gray-400">Busiest Trade</div>
-            <div className="text-orange-300 mt-1 truncate text-xs font-semibold">
-              {
-                data.trades.reduce(
-                  (max, t) => (t.count > max.count ? t : max),
-                  data.trades[0],
-                )?.name
-              }
-            </div>
+        </div>
+        <div>
+          <div style={{ color: "var(--rf-txt3)" }}>Busiest Trade</div>
+          <div className="font-semibold mt-0.5 text-[11px] truncate" style={{ color: "#fb923c" }}>
+            {busiest?.name}
           </div>
         </div>
       </div>

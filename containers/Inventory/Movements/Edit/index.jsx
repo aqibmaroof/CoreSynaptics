@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { getStockMovements, getWarehouses } from "@/services/Inventory";
 import sendRequest from "@/services/instance/sendRequest";
 
-/** Patch only the mutable fields on a movement (notes, reference_type, reference_id, project_id) */
+/** Only notes and reference fields are mutable after a movement is recorded. */
 const updateStockMovement = (id, payload) =>
-  sendRequest({ url: `/inventory/movements/${id}`, method: "PATCH", data: payload });
+  sendRequest({ url: `/inventory/stock/movements/${id}`, method: "PATCH", data: payload });
 
 const MOVEMENT_TYPE_META = {
   IN:         { icon: "↓", label: "Stock In",   color: "border-green-500/50 bg-green-900/20 text-green-300" },
@@ -18,16 +18,14 @@ const MOVEMENT_TYPE_META = {
 };
 
 const REFERENCE_TYPES = [
-  "Purchase Order", "Sales Order", "Shipment", "Project Issue",
-  "Stock Count", "Return Note", "Manual Entry", "Other",
+  "PURCHASE_ORDER", "SALES_ORDER", "SHIPMENT", "PROJECT_ISSUE",
+  "STOCK_COUNT", "RETURN_NOTE", "MANUAL_ENTRY", "OTHER",
 ];
 
 const INPUT = "w-full px-4 py-2.5 bg-gray-800/60 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors";
 const INPUT_READONLY = "w-full px-4 py-2.5 bg-gray-800/30 border border-gray-700/50 rounded-lg text-gray-400 text-sm cursor-not-allowed select-none";
-const FL = ({ children, required }) => (
-  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-    {children}{required && <span className="text-red-400 ml-1">*</span>}
-  </label>
+const FL = ({ children }) => (
+  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">{children}</label>
 );
 
 export default function MovementsEdit({ editId }) {
@@ -41,10 +39,9 @@ export default function MovementsEdit({ editId }) {
   const [msg, setMsg]               = useState(null);
 
   const [form, setForm] = useState({
-    reference_type: "Purchase Order",
-    reference_id:   "",
-    project_id:     "",
-    notes:          "",
+    referenceType: "",
+    referenceId:   "",
+    notes:         "",
   });
 
   useEffect(() => {
@@ -54,19 +51,16 @@ export default function MovementsEdit({ editId }) {
   useEffect(() => {
     if (!editId) return;
     setFetching(true);
-    // getStockMovements with a filter to find the specific record
-    // If a getStockMovementById endpoint isn't available, we fall back to listing and filtering
-    getStockMovements({ id: editId })
+    getStockMovements({ page: 1, limit: 200 })
       .then((res) => {
         const list = Array.isArray(res) ? res : res?.data || [];
-        const d = list.find((m) => String(m.id) === String(editId)) ?? list[0];
+        const d = list.find((m) => String(m.id) === String(editId));
         if (!d) throw new Error("Not found");
         setRecord(d);
         setForm({
-          reference_type: d.reference_type ?? "Purchase Order",
-          reference_id:   d.reference_id   ?? "",
-          project_id:     d.project_id      ?? "",
-          notes:          d.notes           ?? "",
+          referenceType: d.referenceType ?? "",
+          referenceId:   d.referenceId   ?? "",
+          notes:         d.notes         ?? "",
         });
       })
       .catch(() => setFetchError("Failed to load movement record."))
@@ -86,10 +80,9 @@ export default function MovementsEdit({ editId }) {
     setLoading(true);
     try {
       await updateStockMovement(editId, {
-        reference_type: form.reference_type || undefined,
-        reference_id:   form.reference_id   || undefined,
-        project_id:     form.project_id     || undefined,
-        notes:          form.notes          || undefined,
+        referenceType: form.referenceType || undefined,
+        referenceId:   form.referenceId   || undefined,
+        notes:         form.notes         || undefined,
       });
       setMsg({ type: "success", text: "Movement notes updated" });
       setTimeout(() => router.push("/Inventory/Movements/List"), 1500);
@@ -98,7 +91,7 @@ export default function MovementsEdit({ editId }) {
     } finally { setLoading(false); }
   };
 
-  const whName = (id) => warehouses.find((w) => String(w.id) === String(id))?.name ?? id ?? "—";
+  const whName = (id) => warehouses.find((w) => w.id === id)?.name ?? id ?? "—";
 
   if (fetching) {
     return (
@@ -125,7 +118,9 @@ export default function MovementsEdit({ editId }) {
     );
   }
 
-  const meta = record ? (MOVEMENT_TYPE_META[record.movement_type] ?? { icon: "·", label: record.movement_type, color: "border-gray-600 bg-gray-800/40 text-gray-300" }) : null;
+  const meta = record
+    ? (MOVEMENT_TYPE_META[record.type] ?? { icon: "·", label: record.type, color: "border-gray-600 bg-gray-800/40 text-gray-300" })
+    : null;
 
   return (
     <div className="min-h-screen p-6">
@@ -136,7 +131,8 @@ export default function MovementsEdit({ editId }) {
           }`}>{msg.text}</div>
         )}
 
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-5 transition-colors">
+        <button onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-5 transition-colors">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -163,16 +159,18 @@ export default function MovementsEdit({ editId }) {
                 <p className="text-gray-500 text-xs uppercase tracking-wider mb-0.5">Quantity</p>
                 <p className="text-white font-bold">{record.quantity}</p>
               </div>
-              {record.from_warehouse_id && (
+              {record.warehouseId && (
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-0.5">From</p>
-                  <p className="text-white">{whName(record.from_warehouse_id)}</p>
+                  <p className="text-gray-500 text-xs uppercase tracking-wider mb-0.5">
+                    {record.type === "TRANSFER" ? "From" : "Warehouse"}
+                  </p>
+                  <p className="text-white">{whName(record.warehouseId)}</p>
                 </div>
               )}
-              {record.to_warehouse_id && (
+              {record.toWarehouseId && (
                 <div>
                   <p className="text-gray-500 text-xs uppercase tracking-wider mb-0.5">To</p>
-                  <p className="text-white">{whName(record.to_warehouse_id)}</p>
+                  <p className="text-white">{whName(record.toWarehouseId)}</p>
                 </div>
               )}
             </div>
@@ -181,10 +179,11 @@ export default function MovementsEdit({ editId }) {
 
         <div className="bg-yellow-900/10 border border-yellow-600/20 rounded-xl p-4 mb-6 flex gap-3">
           <svg className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="text-yellow-300/80 text-sm">
-            Movement type, quantity, product, and warehouse assignments are locked after recording to preserve inventory accuracy.
+            Movement type, quantity, SKU, and warehouse assignments are locked after recording.
             To correct a mistake, record an offsetting movement.
           </p>
         </div>
@@ -194,49 +193,41 @@ export default function MovementsEdit({ editId }) {
           {/* Read-only product/SKU display */}
           {record && (
             <div className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-6 space-y-4">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800 pb-3">Product Details (locked)</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800 pb-3">
+                Movement Details (locked)
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <FL>Product</FL>
-                  <div className={INPUT_READONLY}>{record.product?.name ?? record.product_id ?? "—"}</div>
+                  <FL>SKU ID</FL>
+                  <div className={`${INPUT_READONLY} font-mono`}>{record.skuId ?? "—"}</div>
                 </div>
                 <div>
-                  <FL>SKU</FL>
-                  <div className={INPUT_READONLY}>{record.sku?.sku_code ?? record.sku_id ?? "—"}</div>
+                  <FL>Quantity</FL>
+                  <div className={`${INPUT_READONLY} font-mono`}>{record.quantity}</div>
                 </div>
-              </div>
-              <div className="md:w-1/3">
-                <FL>Quantity</FL>
-                <div className={`${INPUT_READONLY} font-mono`}>{record.quantity}</div>
               </div>
             </div>
           )}
 
           {/* Editable fields */}
           <div className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-6 space-y-5">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800 pb-3">Reference & Context</p>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800 pb-3">
+              Reference & Notes
+            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <FL>Reference Type</FL>
-                <select value={form.reference_type} onChange={set("reference_type")} className={INPUT}>
-                  {REFERENCE_TYPES.map((r) => <option key={r}>{r}</option>)}
+                <select value={form.referenceType} onChange={set("referenceType")} className={INPUT}>
+                  <option value="">None</option>
+                  {REFERENCE_TYPES.map((r) => <option key={r} value={r}>{r.replace(/_/g, " ")}</option>)}
                 </select>
               </div>
               <div>
                 <FL>Reference Number</FL>
-                <input type="text" value={form.reference_id} onChange={set("reference_id")}
-                  placeholder="e.g. PO-2026-0042"
-                  className={`${INPUT} font-mono`} />
+                <input type="text" value={form.referenceId} onChange={set("referenceId")}
+                  placeholder="e.g. PO-2026-0042" className={`${INPUT} font-mono`} />
               </div>
-            </div>
-
-            <div>
-              <FL>Project ID (optional)</FL>
-              <input type="text" value={form.project_id} onChange={set("project_id")}
-                placeholder="Link this movement to a project (UUID or code)"
-                className={INPUT} />
-              <p className="text-gray-600 text-xs mt-1">Used for cost tracking and project-level stock reporting</p>
             </div>
 
             <div>

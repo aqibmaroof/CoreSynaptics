@@ -1,83 +1,79 @@
 import React from "react";
 
-const ChecklistStatusCard = ({ data }) => {
-  const statusConfig = {
-    finished: {
-      color: "emerald",
-      icon: "✓",
-      gradient: "from-emerald-400 to-green-600",
-    },
-    in_progress: {
-      color: "amber",
-      icon: "◐",
-      gradient: "from-amber-400 to-orange-500",
-    },
-    pending: {
-      color: "orange",
-      icon: "◉",
-      gradient: "from-orange-400 to-red-500",
-    },
-  };
+const typeColors = {
+  finished:    { bar: "linear-gradient(to right,#4ade80,#16a34a)", dot: "#4ade80", text: "#4ade80" },
+  in_progress: { bar: "linear-gradient(to right,#fbbf24,#f59e0b)", dot: "#fbbf24", text: "#fbbf24" },
+  pending:     { bar: "linear-gradient(to right,#f87171,#ef4444)", dot: "#f87171", text: "#f87171" },
+};
 
+const ChecklistStatusCard = ({ data }) => {
   return (
-    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-7 border border-slate-700/50 backdrop-blur hover:border-slate-600 transition-all shadow-xl">
+    <div
+      className="rounded-xl p-6 transition-all hover:scale-[1.01]"
+      style={{
+        background: "var(--home-card-bg)",
+        border: "1px solid var(--home-card-border)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.10)",
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-white text-lg font-bold flex items-center gap-2">
-          <span className="text-xl">📋</span>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: "var(--rf-txt)" }}>
+          <span className="text-base">📋</span>
           {data.title}
         </h3>
-        <div className="text-xs font-bold bg-slate-700/50 px-3 py-1 rounded-full text-gray-300">
+        <span
+          className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide"
+          style={{ background: "var(--home-card-el)", color: "var(--rf-accent)" }}
+        >
           Live
-        </div>
+        </span>
       </div>
 
       {/* Status items */}
-      <div className="space-y-5">
+      <div className="space-y-4">
         {data.statuses.map((status, index) => {
-          const config = statusConfig[status.type];
+          const c = typeColors[status.type] || typeColors.pending;
           return (
             <div key={index} className="group">
-              {/* Header with label and count */}
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-3">
-                  {/* Animated indicator */}
-                  <div
-                    className={`w-3 h-3 rounded-full bg-gradient-to-r ${config.gradient} shadow-lg group-hover:scale-125 transition-transform`}
+              <div className="flex justify-between items-center mb-1.5">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ background: c.dot }}
                   />
-                  <span className="text-gray-200 text-sm font-semibold group-hover:text-white transition-colors">
+                  <span className="text-xs font-semibold" style={{ color: "var(--rf-txt)" }}>
                     {status.label}
                   </span>
                 </div>
-                <span
-                  className={`text-lg font-black bg-gradient-to-r ${config.gradient} bg-clip-text text-transparent`}
-                >
+                <span className="text-sm font-black" style={{ color: c.text }}>
                   {status.count}
                 </span>
               </div>
-
-              {/* Enhanced progress bar */}
-              <div className="relative h-3 bg-gradient-to-r from-slate-700 to-slate-600 rounded-full overflow-hidden shadow-inner">
-                {/* Animated progress fill */}
+              {/* Track */}
+              <div
+                className="h-2 rounded-full overflow-hidden"
+                style={{ background: "var(--home-progress-track)" }}
+              >
                 <div
-                  className={`h-full rounded-full bg-gradient-to-r ${config.gradient} shadow-lg transition-all duration-500 relative overflow-hidden group-hover:shadow-${config.color}-500/50`}
-                  style={{ width: `${status.percentage}%` }}
-                >
-                  {/* Shimmer effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 animate-pulse" />
-                </div>
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${status.percentage}%`, background: c.bar }}
+                />
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Footer stats */}
-      <div className="mt-8 pt-6 border-t border-slate-700/50 flex gap-4 text-xs text-gray-400">
-        <div>Total items tracked</div>
-        <div className="ml-auto font-semibold text-cyan-400">
-          {data.statuses.reduce((sum, s) => sum + s.count, 0)}
-        </div>
+      {/* Footer */}
+      <div
+        className="mt-6 pt-4 flex items-center justify-between text-xs"
+        style={{ borderTop: "1px solid var(--home-card-border)", color: "var(--rf-txt3)" }}
+      >
+        <span>Total items tracked</span>
+        <span className="font-bold" style={{ color: "var(--rf-accent)" }}>
+          {data.statuses.reduce((s, x) => s + x.count, 0)}
+        </span>
       </div>
     </div>
   );
