@@ -4,53 +4,71 @@ const PhaseDistributionCard = ({ data }) => {
   const maxCount = Math.max(...data.phases.map((p) => p.count || 0), 1);
 
   return (
-    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-7 border border-slate-700/50 backdrop-blur hover:border-slate-600 transition-all shadow-xl">
+    <div
+      className="rounded-xl p-6 transition-all hover:scale-[1.01]"
+      style={{
+        background: "var(--home-card-bg)",
+        border: "1px solid var(--home-card-border)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.10)",
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h3 className="text-white text-lg font-bold flex items-center gap-2">
-          <span className="text-xl">📊</span>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: "var(--rf-txt)" }}>
+          <span className="text-base">📊</span>
           {data.title}
         </h3>
-        <div className="text-xs font-bold bg-gradient-to-r from-cyan-600 to-blue-600 px-3 py-1 rounded-full text-white">
+        <span
+          className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide"
+          style={{ background: "var(--home-card-el)", color: "var(--rf-accent)" }}
+        >
           {data.phases.length} Phases
-        </div>
+        </span>
       </div>
 
-      {/* Phase items */}
-      <div className="space-y-5">
+      {/* Phase rows */}
+      <div className="space-y-4">
         {data.phases.map((phase, index) => {
-          const percentage = (phase.count / maxCount) * 100;
+          const pct = (phase.count / maxCount) * 100;
           const isActive = phase.count > 0;
           return (
             <div key={index} className="group">
-              {/* Label and count */}
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-gray-200 text-sm font-semibold group-hover:text-cyan-300 transition-colors">
+              <div className="flex justify-between items-center mb-1.5">
+                <span
+                  className="text-xs font-semibold truncate max-w-[60%]"
+                  style={{ color: isActive ? "var(--rf-txt)" : "var(--rf-txt3)" }}
+                >
                   {phase.name}
                 </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-black bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span
+                    className="text-sm font-black"
+                    style={{ color: "var(--rf-accent)" }}
+                  >
                     {phase.count}
                   </span>
                   {isActive && (
-                    <span className="text-xs font-bold text-cyan-400 bg-cyan-900/30 px-2 py-1 rounded">
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase"
+                      style={{ background: "var(--home-card-el)", color: "var(--rf-accent)" }}
+                    >
                       ACTIVE
                     </span>
                   )}
                 </div>
               </div>
-
-              {/* Animated bar */}
-              <div className="relative h-2.5 bg-slate-700/50 rounded-full overflow-hidden shadow-inner">
+              <div
+                className="h-2 rounded-full overflow-hidden"
+                style={{ background: "var(--home-progress-track)" }}
+              >
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 shadow-lg group-hover:shadow-cyan-500/50 transition-all duration-500"
+                  className="h-full rounded-full transition-all duration-500"
                   style={{
-                    width: `${percentage}%`,
-                    animation: isActive ? "slideIn 0.6s ease-out" : "none",
+                    width: `${pct}%`,
+                    background: "linear-gradient(to right, var(--rf-accent), var(--home-gradient-to))",
+                    opacity: isActive ? 1 : 0.3,
                   }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white via-transparent to-transparent opacity-0 group-hover:opacity-30 animate-pulse" />
-                </div>
+                />
               </div>
             </div>
           );
@@ -58,13 +76,14 @@ const PhaseDistributionCard = ({ data }) => {
       </div>
 
       {/* Footer */}
-      <div className="mt-8 pt-6 border-t border-slate-700/50 text-center">
-        <div className="text-xs text-gray-400">
-          Total assets across phases:{" "}
-          <span className="font-bold text-cyan-400">
-            {data.phases.reduce((sum, p) => sum + p.count, 0)}
-          </span>
-        </div>
+      <div
+        className="mt-6 pt-4 text-center text-xs"
+        style={{ borderTop: "1px solid var(--home-card-border)", color: "var(--rf-txt3)" }}
+      >
+        Total assets:{" "}
+        <span className="font-bold" style={{ color: "var(--rf-accent)" }}>
+          {data.phases.reduce((s, p) => s + p.count, 0)}
+        </span>
       </div>
     </div>
   );

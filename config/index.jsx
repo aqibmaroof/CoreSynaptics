@@ -1,5 +1,6 @@
 const config = {
   brand: "/images/brand.jpg",
+  darkBrand: "/images/dark.svg",
   home: "/images/Home.png",
   chart: "/images/chart.png",
   brand_dark: "/images/brand_dark.jpg",

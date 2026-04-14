@@ -38,6 +38,12 @@ const STEP_ICONS = {
   FAILED:           "❌",
 };
 
+const fmtAddress = (addr) => {
+  if (!addr) return "—";
+  if (typeof addr === "string") return addr;
+  return [addr.city, addr.country].filter(Boolean).join(", ") || addr.line1 || "—";
+};
+
 const Toast = ({ msg }) =>
   msg ? (
     <div className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg border shadow-xl text-sm flex items-center gap-2 ${
@@ -48,18 +54,18 @@ const Toast = ({ msg }) =>
 export default function ShipmentsList() {
   const router = useRouter();
 
-  const [shipments, setShipments]       = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState("");
-  const [msg, setMsg]                   = useState(null);
-  const [activeTab, setActiveTab]       = useState("All");
-  const [searchTerm, setSearch]         = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
+  const [shipments, setShipments]           = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [error, setError]                   = useState("");
+  const [msg, setMsg]                       = useState(null);
+  const [activeTab, setActiveTab]           = useState("All");
+  const [searchTerm, setSearch]             = useState("");
+  const [actionLoading, setActionLoading]   = useState(false);
 
   // Timeline modal
-  const [trackingModal, setTrackingModal]   = useState(null);  // shipment
-  const [trackingEvents, setTrackingEvents] = useState([]);
-  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingModal, setTrackingModal]       = useState(null);
+  const [trackingEvents, setTrackingEvents]     = useState([]);
+  const [trackingLoading, setTrackingLoading]   = useState(false);
 
   // Status update modal
   const [statusModal, setStatusModal] = useState(null); // { shipment, nextStatus }
@@ -98,9 +104,9 @@ export default function ShipmentsList() {
     setActionLoading(true);
     try {
       await updateShipmentStatus(statusModal.shipment.id, {
-        status: statusModal.nextStatus,
+        status:   statusModal.nextStatus,
         location: statusLoc,
-        notes: statusNote,
+        notes:    statusNote,
       });
       setMsg({ type: "success", text: `Status updated to ${statusModal.nextStatus}` });
       setStatusModal(null);
@@ -115,23 +121,23 @@ export default function ShipmentsList() {
   const filtered = shipments.filter((s) => {
     const matchTab    = activeTab === "All" || s.status === activeTab;
     const matchSearch = !searchTerm ||
-      (s.shipment_number || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (s.carrier?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (s.destination_address || "").toLowerCase().includes(searchTerm.toLowerCase());
+      (s.shipmentNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.trackingNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fmtAddress(s.destinationAddress).toLowerCase().includes(searchTerm.toLowerCase());
     return matchTab && matchSearch;
   });
 
   const stats = {
-    total:       shipments.length,
-    inTransit:   shipments.filter((s) => ["PICKED_UP","IN_TRANSIT","OUT_FOR_DELIVERY"].includes(s.status)).length,
-    delivered:   shipments.filter((s) => s.status === "DELIVERED").length,
-    failed:      shipments.filter((s) => s.status === "FAILED").length,
-    returned:    shipments.filter((s) => s.status === "RETURNED").length,
+    total:     shipments.length,
+    inTransit: shipments.filter((s) => ["PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(s.status)).length,
+    delivered: shipments.filter((s) => s.status === "DELIVERED").length,
+    failed:    shipments.filter((s) => s.status === "FAILED").length,
+    returned:  shipments.filter((s) => s.status === "RETURNED").length,
   };
 
   const isOverdue = (s) => {
-    if (!s.estimated_delivery_date || s.status === "DELIVERED") return false;
-    return new Date(s.estimated_delivery_date) < new Date();
+    if (!s.estimatedDeliveryDate || s.status === "DELIVERED") return false;
+    return new Date(s.estimatedDeliveryDate) < new Date();
   };
 
   return (
@@ -182,7 +188,7 @@ export default function ShipmentsList() {
               </button>
             ))}
           </div>
-          <input type="text" placeholder="Search by shipment #, carrier, destination..."
+          <input type="text" placeholder="Search by shipment #, tracking #, destination..."
             value={searchTerm} onChange={(e) => setSearch(e.target.value)}
             className="flex-1 min-w-[200px] max-w-sm px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-cyan-500" />
         </div>
@@ -199,7 +205,7 @@ export default function ShipmentsList() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-800">
-                    {["Shipment #", "Origin", "Destination", "Carrier", "Status", "ETA", "Delivered", "Items", "Actions"].map((h) => (
+                    {["Shipment #", "Direction", "Destination", "Carrier", "Status", "ETA", "Delivered", "Items", "Actions"].map((h) => (
                       <th key={h} className="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -211,11 +217,21 @@ export default function ShipmentsList() {
                     return (
                       <tr key={ship.id} className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors ${overdue ? "bg-red-900/5" : ""}`}>
                         <td className="px-5 py-4">
-                          <p className="text-cyan-400 font-mono text-sm font-medium">{ship.shipment_number}</p>
-                          {ship.order_id && <p className="text-gray-600 text-xs mt-0.5">Order: {ship.order_id}</p>}
+                          <p className="text-cyan-400 font-mono text-sm font-medium">{ship.shipmentNumber}</p>
+                          {ship.trackingNumber && (
+                            <p className="text-gray-600 text-xs mt-0.5 font-mono">{ship.trackingNumber}</p>
+                          )}
                         </td>
-                        <td className="px-5 py-4 text-gray-400 text-sm">{ship.origin_warehouse?.name || "—"}</td>
-                        <td className="px-5 py-4 text-gray-400 text-xs max-w-[140px] truncate">{ship.destination_address || "—"}</td>
+                        <td className="px-5 py-4">
+                          <span className={`text-[10px] px-2 py-0.5 rounded border font-medium ${
+                            ship.direction === "OUTBOUND" ? "bg-cyan-900/30 text-cyan-300 border-cyan-700/30" :
+                            ship.direction === "INBOUND"  ? "bg-green-900/30 text-green-300 border-green-700/30" :
+                                                            "bg-purple-900/30 text-purple-300 border-purple-700/30"
+                          }`}>{ship.direction}</span>
+                        </td>
+                        <td className="px-5 py-4 text-gray-400 text-xs max-w-[140px] truncate">
+                          {fmtAddress(ship.destinationAddress)}
+                        </td>
                         <td className="px-5 py-4 text-gray-400 text-sm">{ship.carrier?.name || "—"}</td>
                         <td className="px-5 py-4 whitespace-nowrap">
                           <span className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_COLORS[ship.status]}`}>
@@ -223,17 +239,19 @@ export default function ShipmentsList() {
                           </span>
                         </td>
                         <td className={`px-5 py-4 text-sm whitespace-nowrap ${overdue ? "text-red-400 font-medium" : "text-gray-400"}`}>
-                          {ship.estimated_delivery_date
-                            ? new Date(ship.estimated_delivery_date).toLocaleDateString()
+                          {ship.estimatedDeliveryDate
+                            ? new Date(ship.estimatedDeliveryDate).toLocaleDateString()
                             : "—"}
                           {overdue && <span className="ml-1 text-[10px] text-red-500 uppercase font-bold">overdue</span>}
                         </td>
                         <td className="px-5 py-4 text-gray-500 text-sm">
-                          {ship.actual_delivery_date
-                            ? new Date(ship.actual_delivery_date).toLocaleDateString()
+                          {ship.actualDeliveryDate
+                            ? new Date(ship.actualDeliveryDate).toLocaleDateString()
                             : "—"}
                         </td>
-                        <td className="px-5 py-4 text-gray-400 text-sm font-mono">{ship.item_count ?? "—"}</td>
+                        <td className="px-5 py-4 text-gray-400 text-sm font-mono">
+                          {ship.items?.length ?? "—"}
+                        </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-1 flex-wrap min-w-[160px]">
                             <button onClick={() => openTracking(ship)}
@@ -243,9 +261,9 @@ export default function ShipmentsList() {
                                 onClick={() => setStatusModal({ shipment: ship, nextStatus: next })}
                                 className={`text-[11px] px-2 py-0.5 rounded bg-gray-800/50 ${
                                   next === "DELIVERED" ? "text-green-400" :
-                                  next === "FAILED" ? "text-red-400" :
-                                  next === "RETURNED" ? "text-purple-400" :
-                                  "text-yellow-400"
+                                  next === "FAILED"    ? "text-red-400" :
+                                  next === "RETURNED"  ? "text-purple-400" :
+                                                         "text-yellow-400"
                                 }`}>
                                 → {next.replace(/_/g, " ")}
                               </button>
@@ -273,10 +291,9 @@ export default function ShipmentsList() {
               <div className="flex items-start justify-between mb-5">
                 <div>
                   <h3 className="text-white font-bold text-lg">Shipment Timeline</h3>
-                  <p className="text-cyan-400 font-mono text-sm">{trackingModal.shipment_number}</p>
+                  <p className="text-cyan-400 font-mono text-sm">{trackingModal.shipmentNumber}</p>
                 </div>
-                <button onClick={() => setTrackingModal(null)}
-                  className="text-gray-400 hover:text-white">
+                <button onClick={() => setTrackingModal(null)} className="text-gray-400 hover:text-white">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -285,7 +302,7 @@ export default function ShipmentsList() {
 
               {/* Lifecycle bar */}
               <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-2">
-                {["CREATED","PICKED_UP","IN_TRANSIT","OUT_FOR_DELIVERY","DELIVERED"].map((step, i, arr) => {
+                {["CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"].map((step, i, arr) => {
                   const reached = STATUSES.indexOf(trackingModal.status) >= STATUSES.indexOf(step);
                   return (
                     <div key={step} className="flex items-center gap-1 shrink-0">
@@ -324,7 +341,7 @@ export default function ShipmentsList() {
                           {ev.location && <p className="text-gray-400 text-xs mt-0.5">{ev.location}</p>}
                           {ev.notes && <p className="text-gray-500 text-xs mt-1 italic">{ev.notes}</p>}
                           <p className="text-gray-600 text-xs mt-1">
-                            {ev.timestamp ? new Date(ev.timestamp).toLocaleString() : ""}
+                            {ev.occurredAt ? new Date(ev.occurredAt).toLocaleString() : ""}
                           </p>
                         </div>
                       </div>
@@ -342,7 +359,7 @@ export default function ShipmentsList() {
             <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
               <h3 className="text-white font-bold text-lg mb-1">Update Shipment Status</h3>
               <p className="text-gray-400 text-sm mb-5">
-                <span className="text-cyan-400 font-mono">{statusModal.shipment.shipment_number}</span>
+                <span className="text-cyan-400 font-mono">{statusModal.shipment.shipmentNumber}</span>
                 {" → "}
                 <span className={`text-xs px-2 py-0.5 rounded-full border ml-1 ${STATUS_COLORS[statusModal.nextStatus]}`}>
                   {statusModal.nextStatus.replace(/_/g, " ")}
