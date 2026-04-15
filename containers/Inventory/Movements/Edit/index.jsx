@@ -2,12 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getStockMovements, getWarehouses } from "@/services/Inventory";
-import sendRequest from "@/services/instance/sendRequest";
-
-/** Only notes and reference fields are mutable after a movement is recorded. */
-const updateStockMovement = (id, payload) =>
-  sendRequest({ url: `/inventory/stock/movements/${id}`, method: "PATCH", data: payload });
+import { getStockMovements, getWarehouses, updateStockMovement } from "@/services/Inventory";
 
 const MOVEMENT_TYPE_META = {
   IN:         { icon: "↓", label: "Stock In",   color: "border-green-500/50 bg-green-900/20 text-green-300" },

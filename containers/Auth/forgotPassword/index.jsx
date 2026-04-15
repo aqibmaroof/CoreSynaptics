@@ -27,7 +27,6 @@ const LoginPage = () => {
 
     try {
       const response = await ForgotPassword(formData);
-      console.log(response);
       if (response) {
         setMessage({
           type: "success",

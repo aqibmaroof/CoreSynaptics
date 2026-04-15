@@ -3,47 +3,44 @@
 import { useState, useEffect } from "react";
 import SubmittalForm from "@/components/SubmittalsForm";
 import { createSubmittal } from "@/services/Submittals";
+import { getCompanies } from "@/services/Companies";
+import { getUsers } from "@/services/Users";
+import { useRouter } from "next/navigation";
 
-// Mock APIs (replace with real)
-const fetchProjects = async () => [
-  { id: "1", name: "Project Alpha" },
-  { id: "2", name: "Project Beta" },
-];
-
-const fetchCompanies = async () => [
-  { id: "1", name: "ABC Construction" },
-  { id: "2", name: "XYZ Engineers" },
-];
-
-const fetchUsers = async () => [
-  { id: "1", name: "John Doe" },
-  { id: "2", name: "Sarah Khan" },
-];
+function toArray(data) {
+  return Array.isArray(data)
+    ? data
+    : (data?.data ?? data?.companies ?? data?.users ?? []);
+}
 
 export default function CreateSubmittalContainer() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
-
-  const [projects, setProjects] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    fetchProjects().then(setProjects);
-    fetchCompanies().then(setCompanies);
-    fetchUsers().then(setUsers);
+    getCompanies()
+      .then((d) => setCompanies(toArray(d)))
+      .catch(() => {});
+    getUsers()
+      .then((d) => setUsers(toArray(d)))
+      .catch(() => {});
   }, []);
 
   const handleSubmit = async (data) => {
     try {
       setLoading(true);
       setMessage(null);
-
       await createSubmittal(data);
-
-      setMessage("Submittal created successfully ✅");
+      setMessage({ type: "success", text: "Submittal created successfully" });
+      router.back();
     } catch (err) {
-      setMessage(err.message || "Error creating submittal ❌");
+      setMessage({
+        type: "error",
+        text: err?.message || "Error creating submittal",
+      });
     } finally {
       setLoading(false);
     }
@@ -51,22 +48,28 @@ export default function CreateSubmittalContainer() {
 
   return (
     <div className="mx-auto p-6">
-      <h1 className="text-2xl text-gray-100 font-semibold mb-2">Create Submittal</h1>
+      <h1 className="text-2xl text-gray-100 font-semibold mb-2">
+        Create Submittal
+      </h1>
       <p className="text-gray-300 mb-6">
         Fill all required fields to initiate workflow
       </p>
 
       {message && (
-        <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
-          {message}
+        <div
+          className={`mb-4 p-3 rounded-lg text-sm border ${
+            message.type === "success"
+              ? "bg-green-900/20 border-green-500/30 text-green-300"
+              : "bg-red-900/20 border-red-500/30 text-red-300"
+          }`}
+        >
+          {message.text}
         </div>
       )}
-
 
       <SubmittalForm
         onSubmit={handleSubmit}
         loading={loading}
-        projects={projects}
         companies={companies}
         users={users}
       />

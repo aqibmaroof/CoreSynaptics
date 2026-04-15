@@ -70,7 +70,6 @@ export default function LeadsList() {
     try {
       setLoading(true);
       const res = await getLeads();
-      console.log(res);
       setLeads(res?.data || []);
     } catch (err) {
       setError("Failed to load leads");

@@ -753,7 +753,7 @@ export default function CreateProject() {
       ? "GC — General Contractor"
       : "OEM — Equipment Manufacturer";
   const hasFilters = Boolean(projectCategory && orgType);
-  console.log(rootMetadata);
+
   // ── createProject ─────────────────────────────────────────────────────────
   const createProject = async (e) => {
     e.preventDefault();
@@ -836,7 +836,6 @@ export default function CreateProject() {
       setMessage({ type: "error", text: `Error: ${err?.message}` });
     }
   };
-  console.log(zoneMetadata);
   // ── createZone ────────────────────────────────────────────────────────────
   const createZone = async (e) => {
     e.preventDefault();

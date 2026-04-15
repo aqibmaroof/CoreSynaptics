@@ -58,7 +58,7 @@ export default function IssuesAdd() {
       .then((res) => setUsers(Array.isArray(res) ? res : res?.data || []))
       .catch(() => {});
   }, []);
-console.log(users)
+
   useEffect(() => {
     if (!message) return;
     const t = setTimeout(() => setMessage(null), 4000);

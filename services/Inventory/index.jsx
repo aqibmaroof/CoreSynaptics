@@ -4,7 +4,10 @@ import sendRequest from "../instance/sendRequest";
 
 export const getProducts = async (params = {}) => {
   const q = new URLSearchParams(params).toString();
-  return sendRequest({ url: `/inventory/products${q ? `?${q}` : ""}`, method: "GET" });
+  return sendRequest({
+    url: `/inventory/products${q ? `?${q}` : ""}`,
+    method: "GET",
+  });
 };
 
 export const getProductById = async (id) =>
@@ -14,7 +17,11 @@ export const createProduct = async (payload) =>
   sendRequest({ url: `/inventory/products`, method: "POST", data: payload });
 
 export const updateProduct = async (id, payload) =>
-  sendRequest({ url: `/inventory/products/${id}`, method: "PATCH", data: payload });
+  sendRequest({
+    url: `/inventory/products/${id}`,
+    method: "PATCH",
+    data: payload,
+  });
 
 export const deleteProduct = async (id) =>
   sendRequest({ url: `/inventory/products/${id}`, method: "DELETE" });
@@ -23,12 +30,18 @@ export const deleteProduct = async (id) =>
 
 export const getSKUs = async (params = {}) => {
   const q = new URLSearchParams(params).toString();
-  return sendRequest({ url: `/inventory/skus${q ? `?${q}` : ""}`, method: "GET" });
+  return sendRequest({
+    url: `/inventory/skus${q ? `?${q}` : ""}`,
+    method: "GET",
+  });
 };
 
 /** Returns all SKUs for one product. */
 export const getSKUsByProduct = async (productId) =>
-  sendRequest({ url: `/inventory/skus/by-product/${productId}`, method: "GET" });
+  sendRequest({
+    url: `/inventory/skus/by-product/${productId}`,
+    method: "GET",
+  });
 
 export const getSKUById = async (id) =>
   sendRequest({ url: `/inventory/skus/${id}`, method: "GET" });
@@ -47,7 +60,10 @@ export const deleteSKU = async (id) =>
 
 export const getWarehouses = async (params = {}) => {
   const q = new URLSearchParams(params).toString();
-  return sendRequest({ url: `/inventory/warehouses${q ? `?${q}` : ""}`, method: "GET" });
+  return sendRequest({
+    url: `/inventory/warehouses${q ? `?${q}` : ""}`,
+    method: "GET",
+  });
 };
 
 export const getWarehouseById = async (id) =>
@@ -58,7 +74,11 @@ export const createWarehouse = async (payload) =>
 
 /** Note: warehouse `code` is immutable after creation. */
 export const updateWarehouse = async (id, payload) =>
-  sendRequest({ url: `/inventory/warehouses/${id}`, method: "PATCH", data: payload });
+  sendRequest({
+    url: `/inventory/warehouses/${id}`,
+    method: "PATCH",
+    data: payload,
+  });
 
 export const deleteWarehouse = async (id) =>
   sendRequest({ url: `/inventory/warehouses/${id}`, method: "DELETE" });
@@ -67,7 +87,10 @@ export const deleteWarehouse = async (id) =>
 
 export const getSuppliers = async (params = {}) => {
   const q = new URLSearchParams(params).toString();
-  return sendRequest({ url: `/inventory/suppliers${q ? `?${q}` : ""}`, method: "GET" });
+  return sendRequest({
+    url: `/inventory/suppliers${q ? `?${q}` : ""}`,
+    method: "GET",
+  });
 };
 
 export const getSupplierById = async (id) =>
@@ -77,7 +100,11 @@ export const createSupplier = async (payload) =>
   sendRequest({ url: `/inventory/suppliers`, method: "POST", data: payload });
 
 export const updateSupplier = async (id, payload) =>
-  sendRequest({ url: `/inventory/suppliers/${id}`, method: "PATCH", data: payload });
+  sendRequest({
+    url: `/inventory/suppliers/${id}`,
+    method: "PATCH",
+    data: payload,
+  });
 
 export const deleteSupplier = async (id) =>
   sendRequest({ url: `/inventory/suppliers/${id}`, method: "DELETE" });
@@ -90,13 +117,20 @@ export const getStockBySKU = async (skuId) =>
 
 /** Returns stock levels for all SKUs in one warehouse. */
 export const getStockByWarehouse = async (warehouseId) =>
-  sendRequest({ url: `/inventory/stock/by-warehouse/${warehouseId}`, method: "GET" });
+  sendRequest({
+    url: `/inventory/stock/by-warehouse/${warehouseId}`,
+    method: "GET",
+  });
 
 // ─── Stock Movements ─────────────────────────────────────────────────────────
 
 export const getStockMovements = async (params = {}) => {
   const q = new URLSearchParams(params).toString();
-  return sendRequest({ url: `/inventory/stock/movements${q ? `?${q}` : ""}`, method: "GET" });
+  const data = await sendRequest({
+    url: `/inventory/stock/movements${q ? `?${q}` : ""}`,
+    method: "GET",
+  });
+  return data;
 };
 
 /**
@@ -114,11 +148,31 @@ export const getStockMovements = async (params = {}) => {
  *   ADJUSTMENT → warehouseId + adjustmentDelta
  */
 export const recordStockMovement = async (payload) =>
-  sendRequest({ url: `/inventory/stock/movements`, method: "POST", data: payload });
+  sendRequest({
+    url: `/inventory/stock/movements`,
+    method: "POST",
+    data: payload,
+  });
 
 /**
  * Transfer stock between warehouses atomically.
  * payload: { skuId, fromWarehouseId, toWarehouseId, quantity, notes? }
  */
 export const transferStock = async (payload) =>
-  sendRequest({ url: `/inventory/stock/movements/transfer`, method: "POST", data: payload });
+  sendRequest({
+    url: `/inventory/stock/movements/transfer`,
+    method: "POST",
+    data: payload,
+  });
+
+/**
+ * Update mutable fields on a recorded movement.
+ * Only referenceType, referenceId, and notes can be changed after recording.
+ * payload: { referenceType?, referenceId?, notes? }
+ */
+export const updateStockMovement = async (id, payload) =>
+  sendRequest({
+    url: `/inventory/stock/movements/${id}`,
+    method: "PATCH",
+    data: payload,
+  });

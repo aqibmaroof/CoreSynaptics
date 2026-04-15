@@ -62,7 +62,6 @@ export default function ContactsList() {
     try {
       setLoading(true);
       const res = await getContacts();
-      console.log(res)
       setContacts(Array.isArray(res) ? res : res?.data || []);
     } catch {
       setError("Failed to load contacts");

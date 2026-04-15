@@ -3,98 +3,92 @@
 import { useState, useEffect } from "react";
 import SubmittalEditForm from "@/components/EditSubmittalsForm";
 import { updateSubmittal, getSubmittalById } from "@/services/Submittals";
+import { getProjects } from "@/services/Projects";
+import { getCompanies } from "@/services/Companies";
+import { getUsers } from "@/services/Users";
 import { useParams } from "next/navigation";
 
-// Mock APIs (replace with real)
-const fetchProjects = async () => [
-    { id: "1", name: "Project Alpha" },
-    { id: "2", name: "Project Beta" },
-];
-
-const fetchCompanies = async () => [
-    { id: "1", name: "ABC Construction" },
-    { id: "2", name: "XYZ Engineers" },
-];
-
-const fetchUsers = async () => [
-    { id: "1", name: "John Doe" },
-    { id: "2", name: "Sarah Khan" },
-];
-
+function toArray(data) {
+  return Array.isArray(data)
+    ? data
+    : (data?.data ?? data?.projects ?? data?.users ?? data?.companies ?? []);
+}
 
 export default function EditSubmittalContainer() {
-    const params = useParams()
-    const submittalId = params.id;
-    const [loading, setLoading] = useState(false);
-    const [initialData, setInitialData] = useState(null);
-    const [message, setMessage] = useState("");
+  const params = useParams();
+  const submittalId = params.id;
 
-    const [projects, setProjects] = useState([]);
-    const [companies, setCompanies] = useState([]);
-    const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [initialData, setInitialData] = useState(null);
+  const [message, setMessage] = useState(null);
 
-    useEffect(() => {
-        fetchProjects().then(setProjects);
-        fetchCompanies().then(setCompanies);
-        fetchUsers().then(setUsers);
-    }, []);
+  const [projects, setProjects] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [users, setUsers] = useState([]);
 
-    useEffect(() => {
-        const loadData = async () => {
-            if (!submittalId) return;
+  // Load dropdown data and submittal in parallel
+  useEffect(() => {
+    getProjects()
+      .then((d) => setProjects(toArray(d)))
+      .catch(() => {});
+    getCompanies()
+      .then((d) => setCompanies(toArray(d)))
+      .catch(() => {});
+    getUsers()
+      .then((d) => setUsers(toArray(d)))
+      .catch(() => {});
+  }, []);
 
-            try {
-                const data = await getSubmittalById(submittalId);
-                setInitialData(data);
-            } catch (err) {
-                setMessage("Failed to load submittal ❌");
-            }
-        };
+  useEffect(() => {
+    if (!submittalId) return;
+    getSubmittalById(submittalId)
+      .then((data) => setInitialData(data))
+      .catch(() =>
+        setMessage({ type: "error", text: "Failed to load submittal" }),
+      );
+  }, [submittalId]);
 
-        loadData();
-    }, [submittalId]);
+  const handleUpdate = async (data) => {
+    try {
+      setLoading(true);
+      setMessage(null);
+      await updateSubmittal(submittalId, data);
+      setMessage({ type: "success", text: "Submittal updated successfully" });
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err?.message || "Failed to update submittal",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleUpdate = async (data) => {
-        try {
-            setLoading(true);
-            setMessage("");
+  return (
+    <div className="mx-auto p-6">
+      <h1 className="text-2xl font-semibold mb-2 text-white">Edit Submittal</h1>
+      <p className="text-gray-300 mb-6">Update fields to update records</p>
 
-            await updateSubmittal(submittalId, data);
-
-            setMessage("Submittal updated successfully ✅");
-        } catch (err) {
-            setMessage("Failed to update submittal ❌");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // if (!initialData) {
-    //     return <div className="p-6 text-gray-200">Loading submittal...</div>;
-    // }
-
-    return (
-        <div className="mx-auto p-6">
-            <h1 className="text-2xl font-semibold mb-4 text-white">
-                Edit Submittal
-            </h1>
-<p className="text-gray-300 mb-6">
-        Update fields to update records
-      </p>
-            {/* {message && (
-                <div className="mb-4 p-3 bg-gray-800 text-gray-200 rounded-lg border border-gray-700">
-                    {message}
-                </div>
-            )} */}
-
-            <SubmittalEditForm
-                data={initialData}
-                onSubmit={handleUpdate}
-                loading={loading}
-                projects={projects}
-                companies={companies}
-                users={users}
-            />
+      {message && (
+        <div
+          className={`mb-4 p-3 rounded-lg text-sm border ${
+            message.type === "success"
+              ? "bg-green-900/20 border-green-500/30 text-green-300"
+              : "bg-red-900/20 border-red-500/30 text-red-300"
+          }`}
+        >
+          {message.text}
         </div>
-    );
+      )}
+
+      <SubmittalEditForm
+        data={initialData}
+        onSubmit={handleUpdate}
+        loading={loading}
+        projects={projects}
+        companies={companies}
+        users={users}
+      />
+    </div>
+  );
 }

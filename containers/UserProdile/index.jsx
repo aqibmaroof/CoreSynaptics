@@ -45,7 +45,6 @@ export default function ProfilePage() {
   };
 
   const handleSave = () => {
-    console.log("Saving changes...", formData);
     // Add your save logic here
   };
 

@@ -46,7 +46,6 @@ export default function RegisterPage() {
 
     try {
       const response = await RegisterService(formData);
-      console.log(response);
       if (response) {
         setMessage({
           type: "success",

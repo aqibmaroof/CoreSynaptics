@@ -55,7 +55,7 @@ export default function MovementsList() {
     setLoading(true);
     try {
       const [mv, pr, wh] = await Promise.all([
-        getStockMovements({ fromDate: dateFrom, toDate: dateTo }),
+        getStockMovements(),
         getProducts(),
         getWarehouses(),
       ]);

@@ -69,7 +69,6 @@ export default function AssetEdit() {
     setFetching(true);
     getAssetById(editId)
       .then((res) => {
-        console.log(res);
         const d = res?.data ?? res;
         setAssetStatus(d.status);
         setAssetTag(d.assetTag ?? "");
