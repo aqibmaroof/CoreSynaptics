@@ -46,8 +46,20 @@ import {
   deleteSubTaskByTaskId,
 } from "@/services/SubTasks";
 import { getTeams } from "@/services/Teams";
+import {
+  seedPhaseGates,
+  getProjectPhaseState,
+  getPhaseGates,
+  evaluatePhaseReadiness,
+  advancePhase,
+  markConditionMet,
+  waiveCondition,
+  getAdvancementHistory,
+} from "@/services/PhaseGates";
 import MultiSelectDropdown from "@/components/MultiSelectDropDown";
 import EntityModal from "@/components/EntityModal";
+
+const PHASES = ["NONE", "L1", "L2", "L3", "L4", "L5", "IST"];
 
 // Helper function to get all unique keys from an array of objects
 const getTableHeaders = (data) => {
@@ -152,14 +164,15 @@ const formatCellValue = (value) => {
                 {gate.gate?.replace(/_/g, " ")}:
               </span>
               <span
-                className={`px-2 py-0.5 rounded-full text-xs ${gate.status === "APPROVED" || gate.status === "PASSED"
-                  ? "bg-green-500/20 text-green-400"
-                  : gate.status === "PENDING"
-                    ? "bg-yellow-500/20 text-yellow-400"
-                    : gate.status === "REJECTED" || gate.status === "FAILED"
-                      ? "bg-red-500/20 text-red-400"
-                      : "bg-gray-500/20 text-gray-400"
-                  }`}
+                className={`px-2 py-0.5 rounded-full text-xs ${
+                  gate.status === "APPROVED" || gate.status === "PASSED"
+                    ? "bg-green-500/20 text-green-400"
+                    : gate.status === "PENDING"
+                      ? "bg-yellow-500/20 text-yellow-400"
+                      : gate.status === "REJECTED" || gate.status === "FAILED"
+                        ? "bg-red-500/20 text-red-400"
+                        : "bg-gray-500/20 text-gray-400"
+                }`}
               >
                 {gate.status}
               </span>
@@ -195,14 +208,15 @@ const renderCellContent = (item, header, activeView) => {
               {gate.gate?.replace(/_/g, " ")}:
             </span>
             <span
-              className={`px-2 py-0.5 rounded-full text-xs ${gate.status === "APPROVED" || gate.status === "PASSED"
-                ? "bg-green-500/20 text-green-400"
-                : gate.status === "PENDING"
-                  ? "bg-yellow-500/20 text-yellow-400"
-                  : gate.status === "REJECTED" || gate.status === "FAILED"
-                    ? "bg-red-500/20 text-red-400"
-                    : "bg-gray-500/20 text-gray-400"
-                }`}
+              className={`px-2 py-0.5 rounded-full text-xs ${
+                gate.status === "APPROVED" || gate.status === "PASSED"
+                  ? "bg-green-500/20 text-green-400"
+                  : gate.status === "PENDING"
+                    ? "bg-yellow-500/20 text-yellow-400"
+                    : gate.status === "REJECTED" || gate.status === "FAILED"
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-gray-500/20 text-gray-400"
+              }`}
             >
               {gate.status}
             </span>
@@ -216,12 +230,13 @@ const renderCellContent = (item, header, activeView) => {
   if (header === "organizationStatus") {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${value === "ACTIVE"
-          ? "bg-green-500/20 text-green-400"
-          : value === "INACTIVE"
-            ? "bg-red-500/20 text-red-400"
-            : "bg-yellow-500/20 text-yellow-400"
-          }`}
+        className={`px-2 py-1 rounded-full text-xs ${
+          value === "ACTIVE"
+            ? "bg-green-500/20 text-green-400"
+            : value === "INACTIVE"
+              ? "bg-red-500/20 text-red-400"
+              : "bg-yellow-500/20 text-yellow-400"
+        }`}
       >
         {value}
       </span>
@@ -273,26 +288,27 @@ const renderCellContent = (item, header, activeView) => {
   ) {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${value === "ACTIVE" ||
+        className={`px-2 py-1 rounded-full text-xs ${
+          value === "ACTIVE" ||
           value === "APPROVED" ||
           value === "READY" ||
           value === "COMPLETED" ||
           value === "OPERATIONAL"
-          ? "bg-green-500/20 text-green-400"
-          : value === "PENDING" ||
-            value === "NOT_READY" ||
-            value === "PLANNING" ||
-            value === "MAINTENANCE"
-            ? "bg-yellow-500/20 text-yellow-400"
-            : value === "REJECTED" ||
-              value === "FAILED" ||
-              value === "CANCELLED" ||
-              value === "DECOMMISSIONED"
-              ? "bg-red-500/20 text-red-400"
-              : value === "IN_PROGRESS" || value === "INSTALLING"
-                ? "bg-blue-500/20 text-blue-400"
-                : "bg-gray-500/20 text-gray-400"
-          }`}
+            ? "bg-green-500/20 text-green-400"
+            : value === "PENDING" ||
+                value === "NOT_READY" ||
+                value === "PLANNING" ||
+                value === "MAINTENANCE"
+              ? "bg-yellow-500/20 text-yellow-400"
+              : value === "REJECTED" ||
+                  value === "FAILED" ||
+                  value === "CANCELLED" ||
+                  value === "DECOMMISSIONED"
+                ? "bg-red-500/20 text-red-400"
+                : value === "IN_PROGRESS" || value === "INSTALLING"
+                  ? "bg-blue-500/20 text-blue-400"
+                  : "bg-gray-500/20 text-gray-400"
+        }`}
       >
         {value?.replace(/_/g, " ")}
       </span>
@@ -303,20 +319,21 @@ const renderCellContent = (item, header, activeView) => {
   if (header === "lifecyclePhase") {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${value === "ORDERED"
-          ? "bg-purple-500/20 text-purple-400"
-          : value === "MANUFACTURING"
-            ? "bg-indigo-500/20 text-indigo-400"
-            : value === "FAT"
-              ? "bg-blue-500/20 text-blue-400"
-              : value === "SHIPPED"
-                ? "bg-cyan-500/20 text-cyan-400"
-                : value === "INSTALLED"
-                  ? "bg-green-500/20 text-green-400"
-                  : value === "COMMISSIONED"
-                    ? "bg-emerald-500/20 text-emerald-400"
-                    : "bg-gray-500/20 text-gray-400"
-          }`}
+        className={`px-2 py-1 rounded-full text-xs ${
+          value === "ORDERED"
+            ? "bg-purple-500/20 text-purple-400"
+            : value === "MANUFACTURING"
+              ? "bg-indigo-500/20 text-indigo-400"
+              : value === "FAT"
+                ? "bg-blue-500/20 text-blue-400"
+                : value === "SHIPPED"
+                  ? "bg-cyan-500/20 text-cyan-400"
+                  : value === "INSTALLED"
+                    ? "bg-green-500/20 text-green-400"
+                    : value === "COMMISSIONED"
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : "bg-gray-500/20 text-gray-400"
+        }`}
       >
         {value?.replace(/_/g, " ")}
       </span>
@@ -372,12 +389,13 @@ const renderCellContent = (item, header, activeView) => {
   if (header === "certificationReq") {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${value === "REQUIRED"
-          ? "bg-red-500/20 text-red-400"
-          : value === "NOT_REQUIRED"
-            ? "bg-gray-500/20 text-gray-400"
-            : "bg-yellow-500/20 text-yellow-400"
-          }`}
+        className={`px-2 py-1 rounded-full text-xs ${
+          value === "REQUIRED"
+            ? "bg-red-500/20 text-red-400"
+            : value === "NOT_REQUIRED"
+              ? "bg-gray-500/20 text-gray-400"
+              : "bg-yellow-500/20 text-yellow-400"
+        }`}
       >
         {value?.replace(/_/g, " ") || "-"}
       </span>
@@ -435,10 +453,11 @@ const renderCellContent = (item, header, activeView) => {
   ) {
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs ${value
-          ? "bg-green-500/20 text-green-400"
-          : "bg-gray-500/20 text-gray-400"
-          }`}
+        className={`px-2 py-1 rounded-full text-xs ${
+          value
+            ? "bg-green-500/20 text-green-400"
+            : "bg-gray-500/20 text-gray-400"
+        }`}
       >
         {value ? "Yes" : "No"}
       </span>
@@ -592,6 +611,18 @@ export default function KanbanBoard() {
   const [entityModalType, setEntityModalType] = useState(""); // "site", "zone", "equipment"
   const [entityModalParentId, setEntityModalParentId] = useState(null);
 
+  // Phase Gates state
+  const [phaseState, setPhaseState] = useState(null);
+  const [phaseConditions, setPhaseConditions] = useState([]);
+  const [phaseReadiness, setPhaseReadiness] = useState(null);
+  const [phaseHistory, setPhaseHistory] = useState([]);
+  const [phaseLoading, setPhaseLoading] = useState(false);
+  const [phaseSeeded, setPhaseSeeded] = useState(true); // assume seeded until proven otherwise
+  const [advanceNotes, setAdvanceNotes] = useState("");
+  const [conditionAction, setConditionAction] = useState(null); // { type, conditionId, evidenceUrl, evidenceNote, reason }
+  const [showHistory, setShowHistory] = useState(false);
+  const [conditionsFilter, setConditionsFilter] = useState("all"); // "all" | transition key like "L1_L2"
+
   const [form, setForm] = useState({
     // Project fields
     name: "",
@@ -652,7 +683,102 @@ export default function KanbanBoard() {
       fetchSubtasks();
     }
     GetAllTeams();
+    if (type === "Project" && id) {
+      fetchPhaseData();
+    }
   }, [id, tasksList.length]);
+
+  const fetchPhaseData = async () => {
+    setPhaseLoading(true);
+    try {
+      const [state, conditions, readiness, history] = await Promise.allSettled([
+        getProjectPhaseState(id),
+        getPhaseGates(id),
+        evaluatePhaseReadiness(id),
+        getAdvancementHistory(id),
+      ]);
+      if (state.status === "fulfilled") {
+        setPhaseState(state.value);
+        setPhaseSeeded(true);
+      } else {
+        setPhaseSeeded(false);
+      }
+      if (conditions.status === "fulfilled") setPhaseConditions(conditions.value || []);
+      if (readiness.status === "fulfilled") setPhaseReadiness(readiness.value);
+      if (history.status === "fulfilled") setPhaseHistory(history.value || []);
+    } catch (err) {
+      setPhaseSeeded(false);
+    } finally {
+      setPhaseLoading(false);
+    }
+  };
+
+  const handleSeedPhaseGates = async () => {
+    setPhaseLoading(true);
+    try {
+      await seedPhaseGates(id);
+      setMessage({ type: "success", text: "Phase gates seeded successfully!" });
+      await fetchPhaseData();
+    } catch (err) {
+      setMessage({ type: "error", text: `Error seeding phase gates: ${err?.message}` });
+    } finally {
+      setPhaseLoading(false);
+    }
+  };
+
+  const handleAdvancePhase = async () => {
+    setPhaseLoading(true);
+    try {
+      await advancePhase(id, { notes: advanceNotes });
+      setMessage({ type: "success", text: `Phase advanced to ${phaseState?.nextPhase}!` });
+      setAdvanceNotes("");
+      document.getElementById("advance_phase_modal").close();
+      await fetchPhaseData();
+    } catch (err) {
+      setMessage({ type: "error", text: `Error advancing phase: ${err?.message}` });
+    } finally {
+      setPhaseLoading(false);
+    }
+  };
+
+  const handleMarkMet = async () => {
+    if (!conditionAction) return;
+    setPhaseLoading(true);
+    try {
+      await markConditionMet(conditionAction.conditionId, {
+        evidenceUrl: conditionAction.evidenceUrl || undefined,
+        evidenceNote: conditionAction.evidenceNote || undefined,
+      });
+      setMessage({ type: "success", text: "Condition marked as met!" });
+      setConditionAction(null);
+      document.getElementById("condition_action_modal").close();
+      await fetchPhaseData();
+    } catch (err) {
+      setMessage({ type: "error", text: `Error marking condition: ${err?.message}` });
+    } finally {
+      setPhaseLoading(false);
+    }
+  };
+
+  const handleWaiveCondition = async () => {
+    if (!conditionAction) return;
+    if (!conditionAction.reason || conditionAction.reason.length < 20) {
+      setMessage({ type: "error", text: "Waive reason must be at least 20 characters." });
+      return;
+    }
+    setPhaseLoading(true);
+    try {
+      await waiveCondition(conditionAction.conditionId, { reason: conditionAction.reason });
+      setMessage({ type: "success", text: "Condition waived!" });
+      setConditionAction(null);
+      document.getElementById("condition_action_modal").close();
+      await fetchPhaseData();
+    } catch (err) {
+      setMessage({ type: "error", text: `Error waiving condition: ${err?.message}` });
+    } finally {
+      setPhaseLoading(false);
+    }
+  };
 
   // Separate effect: fetch subtasks once tasksList is populated
 
@@ -690,7 +816,7 @@ export default function KanbanBoard() {
           try {
             const res = await getSubTasksByTaskId(task.id);
             allSubs.push(...(res || []));
-          } catch (_) { }
+          } catch (_) {}
         }
         setSubtasksList(allSubs);
       }
@@ -698,7 +824,7 @@ export default function KanbanBoard() {
       console.log("Error fetching subtasks:", error);
     }
   };
-  console.log(taskForm)
+
   const createTask = async () => {
     if (!taskForm.name) {
       setMessage({ type: "error", text: "Task name is required" });
@@ -1335,16 +1461,17 @@ export default function KanbanBoard() {
       }
       setMessage({
         type: "success",
-        text: `${deleteType === "Sites"
-          ? "Site"
-          : deleteType === "Projects"
-            ? "Sub Project"
-            : deleteType === "Zones"
-              ? "Zone"
-              : deleteType === "Assets"
-                ? "Asset"
-                : ""
-          } Deleted Successfully !`,
+        text: `${
+          deleteType === "Sites"
+            ? "Site"
+            : deleteType === "Projects"
+              ? "Sub Project"
+              : deleteType === "Zones"
+                ? "Zone"
+                : deleteType === "Assets"
+                  ? "Asset"
+                  : ""
+        } Deleted Successfully !`,
       });
     } catch (error) {
       setMessage({
@@ -1364,10 +1491,11 @@ export default function KanbanBoard() {
           {/* Status Messages */}
           {message.text && (
             <div
-              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
-                ? "bg-green-900/30 text-green-400 border border-green-500/30"
-                : "bg-red-900/30 text-red-400 border border-red-500/30"
-                }`}
+              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${
+                message.type === "success"
+                  ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                  : "bg-red-900/30 text-red-400 border border-red-500/30"
+              }`}
             >
               {message.text}
             </div>
@@ -1694,10 +1822,11 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Sites"
-                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                    : "bg-transparent"
-                    }`}
+                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                    activeView === "Sites"
+                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                      : "bg-transparent"
+                  }`}
                 >
                   Sites
                 </span>
@@ -1708,10 +1837,11 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Projects"
-                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                    : "bg-transparent"
-                    }`}
+                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                    activeView === "Projects"
+                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                      : "bg-transparent"
+                  }`}
                 >
                   Areas
                 </span>
@@ -1722,10 +1852,11 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Zones"
-                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                    : "bg-transparent"
-                    }`}
+                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                    activeView === "Zones"
+                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                      : "bg-transparent"
+                  }`}
                 >
                   Zones
                 </span>
@@ -1736,10 +1867,11 @@ export default function KanbanBoard() {
                 className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
               >
                 <span
-                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Assets"
-                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                    : "bg-transparent"
-                    }`}
+                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                    activeView === "Assets"
+                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                      : "bg-transparent"
+                  }`}
                 >
                   Assets
                 </span>
@@ -1751,17 +1883,34 @@ export default function KanbanBoard() {
               className="font-[500] w-[max-content] text-white border-3 cursor-pointer border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
             >
               <span
-                className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "task"
-                  ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
-                  : "bg-transparent"
-                  }`}
+                className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${
+                  activeView === "task"
+                    ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                    : "bg-transparent"
+                }`}
               >
                 <img src="/images/list.png" alt="Vector" className="h-3 w-3" />
                 Tasks
               </span>
             </button>
 
-            {/* calendar view button */}
+            {/* Phase Gates tab — only for top-level Projects */}
+            {type === "Project" && (
+              <button
+                onClick={() => setActiveView("phaseGates")}
+                className="font-[500] w-[max-content] text-white border-3 cursor-pointer border-white/[0.04] border-t-white/[0.1] rounded-3xl transition-all"
+              >
+                <span
+                  className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl gap-2 ${
+                    activeView === "phaseGates"
+                      ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]"
+                      : "bg-transparent"
+                  }`}
+                >
+                  Phase Gates
+                </span>
+              </button>
+            )}
           </div>
         )}
         {activeView === "task" ? (
@@ -2008,12 +2157,13 @@ export default function KanbanBoard() {
                                 {/* Task Status Indicator */}
                                 <div className="flex-shrink-0">
                                   <div
-                                    className={`w-2 h-2 rounded-full transition-all ${task.status === "PENDING"
-                                      ? "bg-yellow-400 shadow-lg shadow-yellow-400/50"
-                                      : task.status === "IN_PROGRESS"
-                                        ? "bg-cyan-400 shadow-lg shadow-cyan-400/50"
-                                        : "bg-green-400 shadow-lg shadow-green-400/50"
-                                      }`}
+                                    className={`w-2 h-2 rounded-full transition-all ${
+                                      task.status === "PENDING"
+                                        ? "bg-yellow-400 shadow-lg shadow-yellow-400/50"
+                                        : task.status === "IN_PROGRESS"
+                                          ? "bg-cyan-400 shadow-lg shadow-cyan-400/50"
+                                          : "bg-green-400 shadow-lg shadow-green-400/50"
+                                    }`}
                                   />
                                 </div>
                                 {/* Task Info */}
@@ -2039,12 +2189,13 @@ export default function KanbanBoard() {
                               <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                                 {/* Status Badge */}
                                 <span
-                                  className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${task.status === "PENDING"
-                                    ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
-                                    : task.status === "IN_PROGRESS"
-                                      ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                                      : "bg-green-500/20 text-green-300 border border-green-500/30"
-                                    }`}
+                                  className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
+                                    task.status === "PENDING"
+                                      ? "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                                      : task.status === "IN_PROGRESS"
+                                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                                        : "bg-green-500/20 text-green-300 border border-green-500/30"
+                                  }`}
                                   style={{
                                     fontFamily: "IBM Plex Mono, monospace",
                                     fontSize: "9px",
@@ -2125,104 +2276,106 @@ export default function KanbanBoard() {
                             {/* Subtasks for this task */}
                             {subtasksList.filter((s) => s.taskId === task.id)
                               .length > 0 && (
-                                <div className="bg-gray-800/30 border-t border-gray-700/50">
-                                  {subtasksList
-                                    .filter((s) => s.taskId === task.id)
-                                    .map((sub) => (
-                                      <div
-                                        key={sub.id}
-                                        className="flex items-center justify-between py-2.5 px-4 hover:bg-gray-700/30 border-b border-gray-700/30 last:border-b-0 group transition-all"
-                                      >
-                                        {/* Subtask Info */}
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                          {/* Nested Indicator */}
-                                          <div className="flex-shrink-0 flex items-center gap-1.5">
-                                            <div className="w-0.5 h-5 bg-cyan-500/30" />
-                                            <div
-                                              className={`w-1.5 h-1.5 rounded-full ${sub.status === "PENDING"
+                              <div className="bg-gray-800/30 border-t border-gray-700/50">
+                                {subtasksList
+                                  .filter((s) => s.taskId === task.id)
+                                  .map((sub) => (
+                                    <div
+                                      key={sub.id}
+                                      className="flex items-center justify-between py-2.5 px-4 hover:bg-gray-700/30 border-b border-gray-700/30 last:border-b-0 group transition-all"
+                                    >
+                                      {/* Subtask Info */}
+                                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        {/* Nested Indicator */}
+                                        <div className="flex-shrink-0 flex items-center gap-1.5">
+                                          <div className="w-0.5 h-5 bg-cyan-500/30" />
+                                          <div
+                                            className={`w-1.5 h-1.5 rounded-full ${
+                                              sub.status === "PENDING"
                                                 ? "bg-yellow-400/60"
                                                 : sub.status === "IN_PROGRESS"
                                                   ? "bg-cyan-400/60"
                                                   : "bg-green-400/60"
-                                                }`}
-                                            />
-                                          </div>
-                                          {/* Subtask Title and Description */}
-                                          <div className="flex-1 min-w-0">
-                                            <p
-                                              className="text-xs font-medium text-gray-300 truncate"
-                                              style={{
-                                                fontFamily:
-                                                  "IBM Plex Sans, sans-serif",
-                                              }}
-                                            >
-                                              {sub.name}
-                                            </p>
-                                            {sub.description && (
-                                              <p className="text-[10px] text-gray-500 truncate mt-0.5">
-                                                {sub.description}
-                                              </p>
-                                            )}
-                                          </div>
+                                            }`}
+                                          />
                                         </div>
+                                        {/* Subtask Title and Description */}
+                                        <div className="flex-1 min-w-0">
+                                          <p
+                                            className="text-xs font-medium text-gray-300 truncate"
+                                            style={{
+                                              fontFamily:
+                                                "IBM Plex Sans, sans-serif",
+                                            }}
+                                          >
+                                            {sub.name}
+                                          </p>
+                                          {sub.description && (
+                                            <p className="text-[10px] text-gray-500 truncate mt-0.5">
+                                              {sub.description}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
 
-                                        {/* Right Side Actions */}
-                                        <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-                                          {/* Subtask Status Badge */}
-                                          <span
-                                            className={`text-[10px] font-medium px-2 py-0.5 rounded-md whitespace-nowrap transition-all ${sub.status === "PENDING"
+                                      {/* Right Side Actions */}
+                                      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                                        {/* Subtask Status Badge */}
+                                        <span
+                                          className={`text-[10px] font-medium px-2 py-0.5 rounded-md whitespace-nowrap transition-all ${
+                                            sub.status === "PENDING"
                                               ? "bg-yellow-500/15 text-yellow-300"
                                               : sub.status === "IN_PROGRESS"
                                                 ? "bg-cyan-500/15 text-cyan-300"
                                                 : "bg-green-500/15 text-green-300"
-                                              }`}
-                                            style={{
-                                              fontFamily:
-                                                "IBM Plex Mono, monospace",
-                                              letterSpacing: "0.3px",
-                                            }}
-                                          >
-                                            {sub.status.toUpperCase()}
-                                          </span>
+                                          }`}
+                                          style={{
+                                            fontFamily:
+                                              "IBM Plex Mono, monospace",
+                                            letterSpacing: "0.3px",
+                                          }}
+                                        >
+                                          {sub.status.toUpperCase()}
+                                        </span>
 
-                                          {/* Edit Subtask */}
-                                          <button
-                                            className="p-1 text-gray-600 hover:text-cyan-400 hover:bg-cyan-500/10 rounded transition-all"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setEditingSubtask(sub);
-                                              setEditSubtaskForm({
-                                                name: sub.name,
-                                                description:
-                                                  sub.description || "",
-                                                status: sub.status,
-                                              });
-                                              document
-                                                .getElementById(
-                                                  "edit_subtask_modal",
-                                                )
-                                                .showModal();
-                                            }}
-                                            title="Edit Subtask"
-                                          >
-                                            <FaPencil className="text-[10px]" />
-                                          </button>
+                                        {/* Edit Subtask */}
+                                        <button
+                                          className="p-1 text-gray-600 hover:text-cyan-400 hover:bg-cyan-500/10 rounded transition-all"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingSubtask(sub);
+                                            setEditSubtaskForm({
+                                              name: sub.name,
+                                              description:
+                                                sub.description || "",
+                                              status: sub.status,
+                                            });
+                                            document
+                                              .getElementById(
+                                                "edit_subtask_modal",
+                                              )
+                                              .showModal();
+                                          }}
+                                          title="Edit Subtask"
+                                        >
+                                          <FaPencil className="text-[10px]" />
+                                        </button>
 
-                                          {/* Delete Subtask */}
-                                          <button
-                                            className="p-1 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
-                                            onClick={(e) =>
-                                              deleteSubtask(e, sub.taskId, sub.id)
-                                            }
-                                            title="Delete Subtask"
-                                          >
-                                            <FaTrash className="text-[10px]" />
-                                          </button>
-                                        </div>
+                                        {/* Delete Subtask */}
+                                        <button
+                                          className="p-1 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                                          onClick={(e) =>
+                                            deleteSubtask(e, sub.taskId, sub.id)
+                                          }
+                                          title="Delete Subtask"
+                                        >
+                                          <FaTrash className="text-[10px]" />
+                                        </button>
                                       </div>
-                                    ))}
-                                </div>
-                              )}
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -2301,8 +2454,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index
-                                    }`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2393,8 +2547,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index
-                                    }`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2488,8 +2643,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index
-                                    }`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2598,8 +2754,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index
-                                    }`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2689,8 +2846,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index
-                                    }`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2799,8 +2957,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index
-                                    }`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2890,8 +3049,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index
-                                    }`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -2981,8 +3141,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index
-                                    }`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -3089,8 +3250,9 @@ export default function KanbanBoard() {
                                   key={index}
                                   className={`avatar 
                                 ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index
-                                    }`}
+                                transition-transform duration-300 z-${
+                                  task.assignee.length - index
+                                }`}
                                 >
                                   <div className="w-[40px] h-[40px] rounded-full ">
                                     <img
@@ -3511,6 +3673,309 @@ export default function KanbanBoard() {
               </>
             )}
           </>
+        ) : activeView === "phaseGates" ? (
+          <>
+            {/* ── PHASE GATES VIEW ── */}
+            <div className="w-full">
+              {phaseLoading && (
+                <div className="text-center text-gray-400 py-12 text-sm">Loading phase gate data...</div>
+              )}
+
+              {!phaseLoading && !phaseSeeded && (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <p className="text-gray-400 text-sm">Phase gates have not been initialized for this project.</p>
+                  <button
+                    onClick={handleSeedPhaseGates}
+                    className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-6 rounded-xl border border-white/20 transition-all cursor-pointer text-sm font-medium"
+                  >
+                    Initialize Phase Gates
+                  </button>
+                </div>
+              )}
+
+              {!phaseLoading && phaseSeeded && phaseState && (
+                <>
+                  {/* Phase Stepper */}
+                  <div className="mb-6 px-2">
+                    <div className="flex items-center gap-0">
+                      {PHASES.map((phase, idx) => {
+                        const currentIdx = PHASES.indexOf(phaseState.currentPhase);
+                        const isDone = idx < currentIdx;
+                        const isCurrent = idx === currentIdx;
+                        const isNext = idx === currentIdx + 1;
+                        return (
+                          <div key={phase} className="flex items-center flex-1 last:flex-none">
+                            <div className={`flex flex-col items-center gap-1 ${isNext ? "opacity-100" : ""}`}>
+                              <div
+                                className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                                  isDone
+                                    ? "bg-green-500/20 border-green-500 text-green-400"
+                                    : isCurrent
+                                      ? "bg-blue-500/30 border-blue-400 text-blue-300 shadow-lg shadow-blue-500/30"
+                                      : isNext
+                                        ? "bg-transparent border-blue-500/50 text-blue-400/70"
+                                        : "bg-transparent border-gray-700 text-gray-600"
+                                }`}
+                              >
+                                {isDone ? "✓" : phase}
+                              </div>
+                              <span className={`text-[10px] whitespace-nowrap ${isCurrent ? "text-blue-300 font-semibold" : isDone ? "text-green-400" : "text-gray-600"}`}>
+                                {isCurrent ? "Current" : isDone ? "Done" : isNext ? "Next" : ""}
+                              </span>
+                            </div>
+                            {idx < PHASES.length - 1 && (
+                              <div className={`flex-1 h-0.5 mx-1 mb-4 ${idx < currentIdx ? "bg-green-500/50" : idx === currentIdx ? "bg-blue-500/30" : "bg-gray-700"}`} />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Status Cards Row */}
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    {/* Current Phase Card */}
+                    <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 border border-blue-500/20 rounded-xl p-4">
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Current Phase</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold text-blue-300">{phaseState.currentPhase}</span>
+                        {phaseState.isAtTerminalPhase && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">Terminal</span>
+                        )}
+                      </div>
+                      {phaseState.lastAdvancedAt && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Advanced: {new Date(phaseState.lastAdvancedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Readiness Card */}
+                    <div className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl p-4 border ${phaseReadiness?.canAdvance ? "border-green-500/30" : "border-yellow-500/20"}`}>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Readiness</p>
+                      {phaseState.isAtTerminalPhase ? (
+                        <span className="text-sm text-green-400 font-medium">Project at IST — commissioning complete</span>
+                      ) : phaseReadiness ? (
+                        <>
+                          <div className={`text-sm font-semibold mb-2 ${phaseReadiness.canAdvance ? "text-green-400" : "text-yellow-400"}`}>
+                            {phaseReadiness.canAdvance ? "Ready to Advance" : "Not Yet Ready"}
+                          </div>
+                          {!phaseReadiness.canAdvance && phaseReadiness.blockingUnmet?.length > 0 && (
+                            <p className="text-xs text-red-400">{phaseReadiness.blockingUnmet.length} blocking condition{phaseReadiness.blockingUnmet.length !== 1 ? "s" : ""} unmet</p>
+                          )}
+                          {phaseReadiness.advisoryUnmet?.length > 0 && (
+                            <p className="text-xs text-yellow-500/70">{phaseReadiness.advisoryUnmet.length} advisory condition{phaseReadiness.advisoryUnmet.length !== 1 ? "s" : ""} pending</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-xs text-gray-500">—</p>
+                      )}
+                    </div>
+
+                    {/* Actions Card */}
+                    <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 border border-gray-700/50 rounded-xl p-4 flex flex-col gap-2">
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Actions</p>
+                      {!phaseState.isAtTerminalPhase && (
+                        <button
+                          disabled={!phaseReadiness?.canAdvance || phaseLoading}
+                          onClick={() => document.getElementById("advance_phase_modal").showModal()}
+                          className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-700 disabled:to-gray-600 text-white disabled:text-gray-500 transition-all cursor-pointer disabled:cursor-not-allowed"
+                        >
+                          Advance to {phaseState.nextPhase}
+                        </button>
+                      )}
+                      <button
+                        onClick={handleSeedPhaseGates}
+                        disabled={phaseLoading}
+                        className="w-full py-2 px-3 rounded-lg text-xs font-medium border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all"
+                      >
+                        Re-seed Conditions
+                      </button>
+                      <button
+                        onClick={() => fetchPhaseData()}
+                        disabled={phaseLoading}
+                        className="w-full py-2 px-3 rounded-lg text-xs font-medium border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Conditions Section */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-white font-semibold text-base uppercase tracking-wider" style={{ fontFamily: "Rajdhani, sans-serif", letterSpacing: "1px" }}>
+                        Gate Conditions
+                        <span className="ml-2 text-xs font-normal text-gray-400 normal-case tracking-normal">({phaseConditions.length})</span>
+                      </h2>
+
+                      {/* Transition Filter */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setConditionsFilter("all")}
+                          className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${conditionsFilter === "all" ? "bg-blue-500/20 border-blue-500/50 text-blue-300" : "border-gray-700 text-gray-400 hover:text-white"}`}
+                        >
+                          All
+                        </button>
+                        {["NONE_L1", "L1_L2", "L2_L3", "L3_L4", "L4_L5", "L5_IST"].map((key) => {
+                          const [from, to] = key.split("_");
+                          const hasConditions = phaseConditions.some((c) => c.fromPhase === from && c.toPhase === to);
+                          if (!hasConditions) return null;
+                          return (
+                            <button
+                              key={key}
+                              onClick={() => setConditionsFilter(key)}
+                              className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${conditionsFilter === key ? "bg-blue-500/20 border-blue-500/50 text-blue-300" : "border-gray-700 text-gray-400 hover:text-white"}`}
+                            >
+                              {from}→{to}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-xl border border-gray-700/50">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-[#080C26] text-gray-400">
+                            <th className="py-3 px-4 text-left font-medium text-xs">Transition</th>
+                            <th className="py-3 px-4 text-left font-medium text-xs">Description</th>
+                            <th className="py-3 px-4 text-center font-medium text-xs">Type</th>
+                            <th className="py-3 px-4 text-center font-medium text-xs">Status</th>
+                            <th className="py-3 px-4 text-center font-medium text-xs">Blocking</th>
+                            <th className="py-3 px-4 text-center font-medium text-xs">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {phaseConditions
+                            .filter((c) => {
+                              if (conditionsFilter === "all") return true;
+                              const [from, to] = conditionsFilter.split("_");
+                              return c.fromPhase === from && c.toPhase === to;
+                            })
+                            .map((condition) => (
+                              <tr key={condition.id} className="border-t border-gray-700/40 hover:bg-white/5 transition-colors">
+                                <td className="py-3 px-4 text-xs text-gray-400 whitespace-nowrap">
+                                  {condition.fromPhase} → {condition.toPhase}
+                                </td>
+                                <td className="py-3 px-4 text-xs text-gray-300 max-w-xs">
+                                  <div className="truncate" title={condition.description}>{condition.description}</div>
+                                  {condition.conditionKey && (
+                                    <div className="text-[10px] text-gray-600 font-mono mt-0.5">{condition.conditionKey}</div>
+                                  )}
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                    {condition.conditionType}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                                    condition.status === "MET"
+                                      ? "bg-green-500/20 text-green-400 border-green-500/30"
+                                      : condition.status === "WAIVED"
+                                        ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                        : condition.status === "BLOCKED"
+                                          ? "bg-red-500/20 text-red-400 border-red-500/30"
+                                          : "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
+                                  }`}>
+                                    {condition.status}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${condition.isBlocking ? "bg-red-500/15 text-red-400" : "bg-gray-500/15 text-gray-400"}`}>
+                                    {condition.isBlocking ? "Yes" : "No"}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  {condition.status === "PENDING" || condition.status === "BLOCKED" ? (
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button
+                                        onClick={() => {
+                                          setConditionAction({ type: "markMet", conditionId: condition.id, evidenceUrl: "", evidenceNote: "" });
+                                          document.getElementById("condition_action_modal").showModal();
+                                        }}
+                                        className="text-[10px] px-2.5 py-1 rounded-lg bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25 transition-all whitespace-nowrap"
+                                      >
+                                        Mark Met
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setConditionAction({ type: "waive", conditionId: condition.id, reason: "" });
+                                          document.getElementById("condition_action_modal").showModal();
+                                        }}
+                                        className="text-[10px] px-2.5 py-1 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 transition-all"
+                                      >
+                                        Waive
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-600 text-[10px]">
+                                      {condition.status === "MET" ? `Met ${condition.metAt ? new Date(condition.metAt).toLocaleDateString() : ""}` : `Waived`}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          {phaseConditions.filter((c) => conditionsFilter === "all" || (() => { const [f, t] = conditionsFilter.split("_"); return c.fromPhase === f && c.toPhase === t; })()).length === 0 && (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-gray-500 text-xs">No conditions found.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Advancement History */}
+                  <div>
+                    <button
+                      onClick={() => setShowHistory((v) => !v)}
+                      className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-3"
+                    >
+                      <svg className={`w-4 h-4 transition-transform ${showHistory ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      Advancement History ({phaseHistory.length})
+                    </button>
+
+                    {showHistory && (
+                      <div className="overflow-x-auto rounded-xl border border-gray-700/50">
+                        {phaseHistory.length === 0 ? (
+                          <p className="text-center text-gray-500 text-xs py-6">No phase advancements recorded yet.</p>
+                        ) : (
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="bg-[#080C26] text-gray-400">
+                                <th className="py-3 px-4 text-left text-xs font-medium">From</th>
+                                <th className="py-3 px-4 text-left text-xs font-medium">To</th>
+                                <th className="py-3 px-4 text-left text-xs font-medium">Advanced At</th>
+                                <th className="py-3 px-4 text-left text-xs font-medium">Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {phaseHistory.map((log) => (
+                                <tr key={log.id} className="border-t border-gray-700/40 hover:bg-white/5 transition-colors">
+                                  <td className="py-3 px-4 text-xs text-gray-300">{log.fromPhase}</td>
+                                  <td className="py-3 px-4 text-xs">
+                                    <span className="text-blue-300 font-semibold">{log.toPhase}</span>
+                                  </td>
+                                  <td className="py-3 px-4 text-xs text-gray-400">{log.advancedAt ? new Date(log.advancedAt).toLocaleString() : "—"}</td>
+                                  <td className="py-3 px-4 text-xs text-gray-400 max-w-xs">
+                                    <div className="truncate" title={log.notes}>{log.notes || "—"}</div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </>
         ) : (
           <>
             {/* Header */}
@@ -3559,8 +4024,9 @@ export default function KanbanBoard() {
                   </svg>
                   <input
                     type="text"
-                    placeholder={`Search ${activeView === "Projects" ? "Areas" : activeView
-                      }`}
+                    placeholder={`Search ${
+                      activeView === "Projects" ? "Areas" : activeView
+                    }`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full bg-[#0a1128] text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
@@ -4076,9 +4542,7 @@ export default function KanbanBoard() {
                     className="w-full bg-gray-800/50 text-white px-3 py-3 rounded-lg border border-gray-700/50 hover:border-cyan-500/30 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
                   >
                     <option value="LOW">Low</option>
-                    <option value="MEDIUM">
-                      Medium
-                    </option>
+                    <option value="MEDIUM">Medium</option>
                     <option value="HIGH">High</option>
                   </select>
                 </div>
@@ -4238,7 +4702,7 @@ export default function KanbanBoard() {
                   <div className="flex flex-wrap gap-2 mt-2">
                     {(() => {
                       const user = users?.find(
-                        (u) => u.id === taskForm.assignedTo
+                        (u) => u.id === taskForm.assignedTo,
                       );
 
                       return (
@@ -4489,7 +4953,7 @@ export default function KanbanBoard() {
                         <div className="flex flex-wrap gap-2 mt-2">
                           {(() => {
                             const user = users?.find(
-                              (u) => u.id === subtask.assignedTo
+                              (u) => u.id === subtask.assignedTo,
                             );
 
                             return (
@@ -4522,8 +4986,6 @@ export default function KanbanBoard() {
                       )}
                     </div>
                   </div>
-
-
                 ))}
               </div>
               {/* Add Another Button */}
@@ -4537,7 +4999,7 @@ export default function KanbanBoard() {
                       priority: "Medium",
                       dueDate: "",
                       category: "General",
-                      assignedTo: '',
+                      assignedTo: "",
                     },
                   ])
                 }
@@ -4545,17 +5007,16 @@ export default function KanbanBoard() {
               >
                 ＋ Add Another Subtask
               </button>
-
-
             </div>
           )}
 
           {message.text && (
             <div
-              className={`mx-5 mb-5 px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
-                ? "bg-green-900/30 text-green-400 border border-green-500/30"
-                : "bg-red-900/30 text-red-400 border border-red-500/30"
-                }`}
+              className={`mx-5 mb-5 px-3 py-2 rounded-lg text-sm animate-fade-in ${
+                message.type === "success"
+                  ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                  : "bg-red-900/30 text-red-400 border border-red-500/30"
+              }`}
             >
               {message.text}
             </div>
@@ -4590,7 +5051,6 @@ export default function KanbanBoard() {
             </div>
 
             <div className="flex gap-3">
-
               <button
                 onClick={() => {
                   document.getElementById("my_modal_4").close();
@@ -4615,7 +5075,7 @@ export default function KanbanBoard() {
             </div>
           </div>
         </div>
-      </dialog >
+      </dialog>
 
       {/* ── EDIT TASK MODAL ── */}
       <dialog
@@ -4902,7 +5362,9 @@ export default function KanbanBoard() {
               {editTaskForm?.assignedTo && (
                 <div className="flex flex-wrap gap-2 mt-2">
                   {(() => {
-                    const user = users?.find((u) => u.id === editTaskForm.assignedTo);
+                    const user = users?.find(
+                      (u) => u.id === editTaskForm.assignedTo,
+                    );
 
                     return (
                       <span className="inline-flex items-center gap-1 px-2 py-1 bg-cyan-900/30 border border-cyan-700/30 rounded-full text-xs text-cyan-300">
@@ -4959,10 +5421,11 @@ export default function KanbanBoard() {
 
           {message.text && (
             <div
-              className={`mx-5 mb-5 px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
-                ? "bg-green-900/30 text-green-400 border border-green-500/30"
-                : "bg-red-900/30 text-red-400 border border-red-500/30"
-                }`}
+              className={`mx-5 mb-5 px-3 py-2 rounded-lg text-sm animate-fade-in ${
+                message.type === "success"
+                  ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                  : "bg-red-900/30 text-red-400 border border-red-500/30"
+              }`}
             >
               {message.text}
             </div>
@@ -4970,7 +5433,6 @@ export default function KanbanBoard() {
 
           {/* ─── FOOTER ─── */}
           <div className="border-t border-gray-700/50 p-6 flex gap-3 justify-end bg-gray-950/50">
-
             <form method="dialog">
               <button className="px-6 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all font-medium text-sm">
                 Cancel
@@ -4985,7 +5447,7 @@ export default function KanbanBoard() {
             </button>
           </div>
         </div>
-      </dialog >
+      </dialog>
 
       {/* ── EDIT SUBTASK MODAL ── */}
       <dialog
@@ -5260,7 +5722,7 @@ export default function KanbanBoard() {
                 <div className="flex flex-wrap gap-2 mt-2">
                   {(() => {
                     const user = users?.find(
-                      (u) => u.id === editSubtaskForm.assignedTo
+                      (u) => u.id === editSubtaskForm.assignedTo,
                     );
 
                     return (
@@ -5315,10 +5777,11 @@ export default function KanbanBoard() {
 
           {message.text && (
             <div
-              className={`mx-5 mb-5 px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
-                ? "bg-green-900/30 text-green-400 border border-green-500/30"
-                : "bg-red-900/30 text-red-400 border border-red-500/30"
-                }`}
+              className={`mx-5 mb-5 px-3 py-2 rounded-lg text-sm animate-fade-in ${
+                message.type === "success"
+                  ? "bg-green-900/30 text-green-400 border border-green-500/30"
+                  : "bg-red-900/30 text-red-400 border border-red-500/30"
+              }`}
             >
               {message.text}
             </div>
@@ -5326,7 +5789,6 @@ export default function KanbanBoard() {
 
           {/* Footer */}
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-700/50">
-
             <form method="dialog">
               <button className="px-6 py-2.5 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all font-medium text-sm">
                 Cancel
@@ -5341,13 +5803,164 @@ export default function KanbanBoard() {
             </button>
           </div>
         </div>
-      </dialog >
+      </dialog>
+
+      {/* ── ADVANCE PHASE MODAL ── */}
+      <dialog id="advance_phase_modal" className="modal items-start justify-center p-10">
+        <div className="modal-box pt-0 px-0 w-[540px] border border-blue-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-xl">
+          <div className="flex items-center justify-between pt-6 px-6 pb-4 border-b border-gray-700/50">
+            <div>
+              <h3 className="font-bold text-lg text-white" style={{ fontFamily: "Rajdhani, sans-serif", letterSpacing: "1px" }}>
+                ADVANCE PHASE
+              </h3>
+              {phaseState && (
+                <p className="text-xs text-gray-400 mt-1">
+                  {phaseState.currentPhase} → <span className="text-blue-300 font-semibold">{phaseState.nextPhase}</span>
+                </p>
+              )}
+            </div>
+            <form method="dialog">
+              <button className="size-9 rounded-lg hover:bg-red-500/20 flex items-center justify-center border border-red-500/30 hover:border-red-500 text-red-400 transition-all">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </form>
+          </div>
+          <div className="h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+          <div className="px-6 py-6 space-y-4">
+            <div className="p-3 rounded-lg border border-blue-500/20 bg-blue-500/5">
+              <p className="text-xs text-gray-300">All blocking conditions are satisfied. This action is irreversible and will be recorded in the audit log.</p>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "IBM Plex Mono, monospace" }}>
+                Notes (optional)
+              </label>
+              <textarea
+                rows="3"
+                placeholder="Describe the conditions or context for this advancement..."
+                value={advanceNotes}
+                onChange={(e) => setAdvanceNotes(e.target.value)}
+                className="w-full bg-gray-800/50 text-white placeholder-gray-600 pl-4 pr-4 py-3 rounded-lg border border-gray-700/50 hover:border-blue-500/30 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/20 transition-all resize-none text-sm"
+              />
+            </div>
+          </div>
+          <div className="border-t border-gray-700/50 p-6 flex gap-3 justify-end bg-gray-950/50">
+            <form method="dialog">
+              <button className="px-5 py-2 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all font-medium text-sm">
+                Cancel
+              </button>
+            </form>
+            <button
+              onClick={handleAdvancePhase}
+              disabled={phaseLoading}
+              className="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-600 disabled:to-gray-500 text-white font-medium text-sm transition-all disabled:opacity-60"
+            >
+              {phaseLoading ? "Advancing..." : `Advance to ${phaseState?.nextPhase}`}
+            </button>
+          </div>
+        </div>
+      </dialog>
+
+      {/* ── CONDITION ACTION MODAL (Mark Met / Waive) ── */}
+      <dialog id="condition_action_modal" className="modal items-start justify-center p-10">
+        <div className="modal-box pt-0 px-0 w-[540px] border border-cyan-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-xl">
+          <div className="flex items-center justify-between pt-6 px-6 pb-4 border-b border-gray-700/50">
+            <h3 className="font-bold text-lg text-white" style={{ fontFamily: "Rajdhani, sans-serif", letterSpacing: "1px" }}>
+              {conditionAction?.type === "markMet" ? "MARK CONDITION AS MET" : "WAIVE CONDITION"}
+            </h3>
+            <form method="dialog">
+              <button
+                onClick={() => setConditionAction(null)}
+                className="size-9 rounded-lg hover:bg-red-500/20 flex items-center justify-center border border-red-500/30 hover:border-red-500 text-red-400 transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </form>
+          </div>
+          <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent" />
+
+          {conditionAction?.type === "markMet" && (
+            <div className="px-6 py-6 space-y-4">
+              <div className="p-3 rounded-lg border border-green-500/20 bg-green-500/5">
+                <p className="text-xs text-gray-300">Mark this condition as completed. Provide evidence to support the record.</p>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "IBM Plex Mono, monospace" }}>
+                  Evidence URL (optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={conditionAction?.evidenceUrl || ""}
+                  onChange={(e) => setConditionAction({ ...conditionAction, evidenceUrl: e.target.value })}
+                  className="w-full bg-gray-800/50 text-white placeholder-gray-600 px-4 py-2.5 rounded-lg border border-gray-700/50 hover:border-green-500/30 focus:border-green-500/50 focus:outline-none transition-all text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "IBM Plex Mono, monospace" }}>
+                  Evidence Note (optional)
+                </label>
+                <textarea
+                  rows="2"
+                  placeholder="Describe how this was verified..."
+                  value={conditionAction?.evidenceNote || ""}
+                  onChange={(e) => setConditionAction({ ...conditionAction, evidenceNote: e.target.value })}
+                  className="w-full bg-gray-800/50 text-white placeholder-gray-600 px-4 py-2.5 rounded-lg border border-gray-700/50 hover:border-green-500/30 focus:border-green-500/50 focus:outline-none transition-all resize-none text-sm"
+                />
+              </div>
+            </div>
+          )}
+
+          {conditionAction?.type === "waive" && (
+            <div className="px-6 py-6 space-y-4">
+              <div className="p-3 rounded-lg border border-yellow-500/20 bg-yellow-500/5">
+                <p className="text-xs text-gray-300">Waiving this condition marks it as bypassed with a recorded justification. Minimum 20 characters required.</p>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "IBM Plex Mono, monospace" }}>
+                  Reason <span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  rows="4"
+                  placeholder="Provide a justification for waiving this condition..."
+                  value={conditionAction?.reason || ""}
+                  onChange={(e) => setConditionAction({ ...conditionAction, reason: e.target.value })}
+                  className="w-full bg-gray-800/50 text-white placeholder-gray-600 px-4 py-2.5 rounded-lg border border-gray-700/50 hover:border-yellow-500/30 focus:border-yellow-500/50 focus:outline-none transition-all resize-none text-sm"
+                />
+                <p className={`text-[10px] mt-1 ${(conditionAction?.reason?.length || 0) >= 20 ? "text-green-400" : "text-gray-500"}`}>
+                  {conditionAction?.reason?.length || 0}/20 min characters
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-gray-700/50 p-6 flex gap-3 justify-end bg-gray-950/50">
+            <form method="dialog">
+              <button
+                onClick={() => setConditionAction(null)}
+                className="px-5 py-2 rounded-lg border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 transition-all font-medium text-sm"
+              >
+                Cancel
+              </button>
+            </form>
+            <button
+              onClick={conditionAction?.type === "markMet" ? handleMarkMet : handleWaiveCondition}
+              disabled={phaseLoading || (conditionAction?.type === "waive" && (conditionAction?.reason?.length || 0) < 20)}
+              className={`px-5 py-2 rounded-lg disabled:from-gray-600 disabled:to-gray-500 text-white font-medium text-sm transition-all disabled:opacity-60 bg-gradient-to-r ${conditionAction?.type === "markMet" ? "from-green-600 to-green-500 hover:from-green-500 hover:to-green-400" : "from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400"}`}
+            >
+              {phaseLoading ? "Saving..." : conditionAction?.type === "markMet" ? "Mark as Met" : "Waive Condition"}
+            </button>
+          </div>
+        </div>
+      </dialog>
 
       {/* EntityModal - Unified component for creating Sites, Zones, Equipment */}
-      < EntityModal
+      <EntityModal
         isOpen={isEntityModalOpen}
-        onClose={() => setIsEntityModalOpen(false)
-        }
+        onClose={() => setIsEntityModalOpen(false)}
         entityType={entityModalType}
         parentId={entityModalParentId}
         projectCategory={parentCategory}
@@ -5371,6 +5984,6 @@ export default function KanbanBoard() {
           setIsEntityModalOpen(false);
         }}
       />
-    </div >
+    </div>
   );
 }

@@ -36,7 +36,6 @@ const LoginPage = () => {
         newPassword: formData?.newPassword,
       };
       const response = await ResetPassword(payload);
-      console.log(response);
       if (response) {
         setMessage({ type: "success", text: "Password reset successful! 🚀" });
         router.push("/Auth/Login");

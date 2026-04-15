@@ -14,7 +14,6 @@ const LoginPage = () => {
 
     try {
       const response = await LoginService(formData);
-      console.log(response);
       if (response) {
         setMessage({ type: "success", text: "Login successful! 🚀" });
 

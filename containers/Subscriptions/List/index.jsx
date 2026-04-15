@@ -39,7 +39,6 @@ export default function PricingPlans() {
   const GetAllSubscriptions = async () => {
     try {
       const res = await getSubscriptions();
-      console.log(res?.data);
       setSubscriptions(res.data);
     } catch (error) {
       console.error("error Fetching subscritpions", error.message);
@@ -59,7 +58,6 @@ export default function PricingPlans() {
       setOrganization({ organization: organizationResponse });
       setTimeout(() => router.push("/"), 2000);
     } catch (error) {
-      console.log("error selecting subscription : ", error);
       setLoadingId(null);
     }
   };

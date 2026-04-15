@@ -650,7 +650,7 @@ export default function EntityModal({
     } else if (entityType === "subProjects") {
       allDynamicFields = [...getSubTypeFields()];
     }
-    console.log(basePhasesConfig, allDynamicFields);
+
     // If there are dynamic fields, split them into chunks of 4 and create additional phases
     if (allDynamicFields.length > 0) {
       const dynamicChunks = splitDynamicFields(allDynamicFields);
@@ -967,7 +967,7 @@ export default function EntityModal({
   };
 
   if (!isOpen) return null;
-  console.log(activeAssetType?.allowedStatuses);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 rounded-xl border border-gray-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col">

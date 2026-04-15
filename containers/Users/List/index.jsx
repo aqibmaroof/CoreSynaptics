@@ -22,7 +22,6 @@ export default function PricingPlans() {
   const GetAllUsers = async () => {
     try {
       const res = await getUsers();
-      console.log(res);
       setUsers(res);
     } catch (error) {
       console.error("error Fetching data", error.message);

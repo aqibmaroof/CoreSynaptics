@@ -50,7 +50,6 @@ export default function KanbanBoard() {
         type: "error",
         text: `Error Deleting projects : ${error?.message}`,
       });
-      console.log("error Deleting projects : ", error);
     }
   };
 

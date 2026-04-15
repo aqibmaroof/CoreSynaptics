@@ -164,7 +164,7 @@ export default function ProductsList() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <button onClick={() => router.push(`/Inventory/Products/Edit/${p.id}`)}
                             className="text-cyan-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50">Edit</button>
-                          <button onClick={() => router.push(`/Inventory/Products/${p.id}/SKUs`)}
+                          <button onClick={() => router.push(`/Inventory/Products/${p.id}`)}
                             className="text-purple-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50">SKUs</button>
                           <button onClick={() => setDeleteConfirm(p.id)}
                             className="text-red-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50">Delete</button>

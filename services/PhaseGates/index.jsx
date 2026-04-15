@@ -1,138 +1,91 @@
 import sendRequest from "../instance/sendRequest";
 
-// ─── Phase Gate Conditions ──────────────────────────────────────────────────
+// ─── Seed & Initialize ────────────────────────────────────────────────────────
 
-/** Get all phase gate conditions for a project */
-export const getPhaseGates = async (projectId) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/phase-gates`,
-      method: "GET",
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+/** Seed/initialize all phase gate conditions for a project (safe to call multiple times) */
+export const seedPhaseGates = async (projectId) =>
+  sendRequest({
+    url: `/phase-gates/${projectId}/seed`,
+    method: "POST",
+  });
 
-/** Get conditions for a specific transition */
-export const getTransitionConditions = async (projectId, transition) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/phase-gates?transition=${transition}`,
-      method: "GET",
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+// ─── Phase State ──────────────────────────────────────────────────────────────
 
-/** Create a new phase gate condition */
-export const createPhaseCondition = async (projectId, payload) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/phase-gates`,
-      method: "POST",
-      data: payload,
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+/** Get current project phase state (currentPhase, nextPhase, isAtTerminalPhase, etc.) */
+export const getProjectPhaseState = async (projectId) =>
+  sendRequest({
+    url: `/phase-gates/project-phases/${projectId}`,
+    method: "GET",
+  });
 
-/** Update a condition's status (mark met/unmet, add evidence, notes) */
-export const updateConditionStatus = async (projectId, conditionId, payload) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/phase-gates/${conditionId}`,
-      method: "PATCH",
-      data: payload,
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+// ─── Phase Gate Conditions ────────────────────────────────────────────────────
 
-/** Delete a custom (non-required) phase gate condition */
-export const deletePhaseCondition = async (projectId, conditionId) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/phase-gates/${conditionId}`,
-      method: "DELETE",
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+/** List all phase gate conditions for a project */
+export const getPhaseGates = async (projectId) =>
+  sendRequest({
+    url: `/phase-gates/${projectId}`,
+    method: "GET",
+  });
 
-// ─── Phase Status & Advancement ─────────────────────────────────────────────
+// ─── Readiness Evaluation ─────────────────────────────────────────────────────
 
-/** Get current phase status for a project */
-export const getProjectPhaseStatus = async (projectId) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/phase-status`,
-      method: "GET",
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+/** Evaluate readiness to advance to the next phase */
+export const evaluatePhaseReadiness = async (projectId) =>
+  sendRequest({
+    url: `/phase-gates/${projectId}/readiness`,
+    method: "GET",
+  });
 
-/** Evaluate readiness to advance to next phase */
-export const evaluatePhaseReadiness = async (projectId) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/phase-readiness`,
-      method: "GET",
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+// ─── Phase Advancement ────────────────────────────────────────────────────────
 
-/** Advance project to the next phase (will fail if blocking conditions unmet) */
-export const advancePhase = async (projectId, payload = {}) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/advance-phase`,
-      method: "POST",
-      data: payload,
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+/** Advance project to the next phase (fails if blocking conditions unmet) */
+export const advancePhase = async (projectId, payload = {}) =>
+  sendRequest({
+    url: `/phase-gates/${projectId}/advance`,
+    method: "POST",
+    data: payload,
+  });
 
-/** Get phase advancement history/audit log */
-export const getAdvancementLog = async (projectId) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/phase-log`,
-      method: "GET",
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+// ─── Condition Actions ────────────────────────────────────────────────────────
 
-/** Seed/initialize all phase gate conditions for a new project */
-export const initializePhaseGates = async (projectId) => {
-  try {
-    const data = await sendRequest({
-      url: `/projects/${projectId}/phase-gates/initialize`,
-      method: "POST",
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+/**
+ * Mark a phase gate condition as met.
+ * payload: { evidenceUrl?, evidenceNote? }
+ */
+export const markConditionMet = async (conditionId, payload = {}) =>
+  sendRequest({
+    url: `/phase-gates/conditions/${conditionId}/mark-met`,
+    method: "PUT",
+    data: payload,
+  });
+
+/**
+ * Waive a phase gate condition with a recorded justification.
+ * payload: { reason } — minimum 20 characters
+ */
+export const waiveCondition = async (conditionId, payload) =>
+  sendRequest({
+    url: `/phase-gates/conditions/${conditionId}/waive`,
+    method: "PUT",
+    data: payload,
+  });
+
+/**
+ * Link a condition to an existing entity in the system.
+ * payload: { linkedEntityId, linkedEntityType: 'Checklist'|'Document'|'Task'|'Rfi' }
+ */
+export const linkCondition = async (conditionId, payload) =>
+  sendRequest({
+    url: `/phase-gates/conditions/${conditionId}/link`,
+    method: "PATCH",
+    data: payload,
+  });
+
+// ─── Advancement History ──────────────────────────────────────────────────────
+
+/** Get all recorded phase advancements (audit log) */
+export const getAdvancementHistory = async (projectId) =>
+  sendRequest({
+    url: `/phase-gates/${projectId}/history`,
+    method: "GET",
+  });

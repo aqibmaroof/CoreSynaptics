@@ -55,7 +55,6 @@ export default function AddSubscription() {
   const getSubscriptioDetails = async () => {
     try {
       const res = await GetSubscriptionById(id);
-      console.log(res);
       setForm({
         name: res.name,
         displayName: res.displayName,
@@ -143,22 +142,18 @@ export default function AddSubscription() {
     try {
       setLoading(true);
       if (id) {
-        console.log("id");
         await UpdateSubscription(id, payload);
       } else {
-        console.log("no id");
         await CreateSubscription(payload);
       }
       router.back();
     } catch (err) {
-      console.log(err);
       setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
 
-  console.log("form : ", form);
   // ── Color accent helpers ───────────────────────────────────
   const accentText = "text-orange-400";
 

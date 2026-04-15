@@ -143,15 +143,15 @@ export const sidebarItems = [
   },
 
   // ─── Phase Gates ─────────────────────────────────────────────────────
-  {
-    title: "Phase Gates",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/PhaseGates",
-    type: "link",
-    submenu: [],
-    roles: Object.values(ROLES), // All roles can access
-  },
+  // {
+  //   title: "Phase Gates",
+  //   icon: config?.chart,
+  //   iconActive: config?.home,
+  //   path: "/PhaseGates",
+  //   type: "link",
+  //   submenu: [],
+  //   roles: Object.values(ROLES), // All roles can access
+  // },
 
   // ─── Checklist ─────────────────────────────────────────────────────
   {
@@ -193,6 +193,7 @@ export const sidebarItems = [
         path: "/Inventory/Movements/List",
       },
       { title: "Warehouses", type: "link", path: "/Inventory/Warehouses/List" },
+      { title: "Suppliers", type: "link", path: "/Inventory/Suppliers/List" },
     ],
   },
 
