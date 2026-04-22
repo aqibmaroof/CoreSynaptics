@@ -541,7 +541,7 @@ export default function EntityModal({
   const [selectedChecklist, setSelectedChecklist] = useState("");
   const [selectedDocument, setSelectedDocument] = useState("");
   const [selectedMeeting, setSelectedMeeting] = useState("");
-  console.log(selectedRFIs);
+
   // Base form states
   const [projectForm, setProjectForm] = useState({
     name: "",

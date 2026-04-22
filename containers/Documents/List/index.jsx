@@ -107,7 +107,6 @@ export default function DocumentList() {
     setError("");
     try {
       const res = await getDocuments(params);
-      console.log(res);
       setDocuments(Array.isArray(res) ? res : res?.data || []);
     } catch (err) {
       setError(err?.message || "Failed to load documents.");
