@@ -629,14 +629,14 @@ const STORAGE_KEY = "cxcontrol_register_v2";
 // ── Style constants ────────────────────────────────────────────────────────────
 
 const C = {
-  bg: "#020d16",
-  card: "rgba(0,30,50,0.55)",
-  border: "rgba(0,180,220,0.18)",
-  selBg: "rgba(0,200,255,0.07)",
-  sel: "#00c8ff",
-  text: "#c8d8f0",
-  muted: "#4a6080",
-  accent: "#00c8ff",
+  bg: "var(--rf-bg)",
+  card: "var(--rf-bg2)",
+  border: "var(--rf-border2)",
+  selBg: "var(--rf-bg3)",
+  sel: "var(--rf-accent)",
+  text: "var(--rf-txt)",
+  muted: "var(--rf-txt2)",
+  accent: "var(--rf-accent)",
   mono: "'IBM Plex Mono', monospace",
   sans: "'IBM Plex Sans', sans-serif",
 };
@@ -645,9 +645,9 @@ const iBase = {
   width: "100%",
   padding: "10px 14px",
   borderRadius: "6px",
-  border: `1px solid ${C.border}`,
-  backgroundColor: "rgba(0,30,50,0.7)",
-  color: "#c8eaf5",
+  border: "1px solid var(--rf-border2)",
+  backgroundColor: "var(--rf-bg2)",
+  color: "var(--rf-txt)",
   fontFamily: C.mono,
   fontSize: "0.8rem",
   letterSpacing: "0.04em",
@@ -658,7 +658,7 @@ const lStyle = {
   display: "block",
   fontFamily: C.mono,
   fontSize: "0.58rem",
-  color: "#5a9ab5",
+  color: "var(--rf-txt2)",
   textTransform: "uppercase",
   letterSpacing: "0.2em",
   marginBottom: "6px",
@@ -755,7 +755,7 @@ function Card({ label, desc, tech, selected, onClick }) {
         <div
           style={{
             fontSize: "0.58rem",
-            color: selected ? C.accent : "#3a5070",
+            color: selected ? C.accent : "var(--rf-txt2)",
             fontFamily: C.mono,
             marginTop: 4,
             paddingTop: 3,
@@ -790,7 +790,7 @@ function Toggle({ on, onToggle, label, sub }) {
           width: 38,
           height: 20,
           borderRadius: 10,
-          background: on ? C.accent : "rgba(0,80,100,0.6)",
+          background: on ? C.accent : "var(--rf-bg4)",
           position: "relative",
           cursor: "pointer",
           flexShrink: 0,
@@ -845,7 +845,7 @@ function Callout({ color = "cyan", title, children }) {
       bg: "rgba(0,200,255,0.07)",
       bdr: "rgba(0,200,255,0.2)",
       t: "#00c8ff",
-      b: "#7ab8d4",
+      b: "var(--rf-txt2)",
     },
     amber: {
       bg: "rgba(255,180,0,0.07)",
@@ -875,7 +875,7 @@ function Callout({ color = "cyan", title, children }) {
     bg: "rgba(0,200,255,0.07)",
     bdr: "rgba(0,200,255,0.2)",
     t: "#00c8ff",
-    b: "#7ab8d4",
+    b: "var(--rf-txt2)",
   };
   return (
     <div
@@ -1254,7 +1254,7 @@ function StepCompany({ w, u, showPwd, setShowPwd }) {
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                color: "#5a9ab5",
+                color: "var(--rf-txt2)",
                 padding: 0,
               }}
             >
@@ -1616,7 +1616,7 @@ function StepPartners({ w, u }) {
                   background:
                     w.mode === m.id
                       ? "rgba(0,200,255,0.1)"
-                      : "rgba(0,30,50,0.8)",
+                      : "var(--rf-bg3)",
                   color: w.mode === m.id ? C.accent : C.muted,
                   fontFamily: C.mono,
                 }}
@@ -2570,7 +2570,7 @@ function StepIntegrate({ w, u }) {
                     fontFamily: C.mono,
                     fontSize: "0.65rem",
                     fontWeight: 600,
-                    color: sel ? C.accent : "#5a9ab5",
+                    color: sel ? C.accent : "var(--rf-txt2)",
                   }}
                 >
                   +${i.p}/mo
@@ -2677,7 +2677,7 @@ function StepIntegrate({ w, u }) {
                     style={{
                       fontFamily: C.mono,
                       fontSize: "0.65rem",
-                      color: sel ? C.accent : "#5a9ab5",
+                      color: sel ? C.accent : "var(--rf-txt2)",
                       fontWeight: 600,
                     }}
                   >
@@ -2866,7 +2866,7 @@ function StepBrand({ w, u, sessionId }) {
               style={{
                 height: 3,
                 borderRadius: 2,
-                background: "rgba(0,80,100,0.3)",
+                background: "var(--rf-bg4)",
                 overflow: "hidden",
               }}
             >
@@ -2915,7 +2915,7 @@ function StepBrand({ w, u, sessionId }) {
           }
           style={{
             padding: 22,
-            border: `2px dashed ${w.logoUploaded ? C.accent : uploadStep !== "idle" ? "rgba(0,200,255,0.4)" : C.border}`,
+            border: `2px dashed ${w.logoUploaded ? C.accent : uploadStep !== "idle" ? "var(--rf-accent2)" : C.border}`,
             borderRadius: 10,
             textAlign: "center",
             background: w.logoUploaded
@@ -2960,7 +2960,7 @@ function StepBrand({ w, u, sessionId }) {
                     height: 38,
                     borderRadius: 8,
                     objectFit: "contain",
-                    background: "rgba(0,30,50,0.6)",
+                    background: "var(--rf-bg3)",
                   }}
                 />
               ) : (
@@ -3657,7 +3657,7 @@ function LeftPanel() {
   return (
     <section
       className="hidden lg:flex flex-col items-center justify-center relative w-1/2 overflow-hidden p-10"
-      style={{ backgroundColor: "#020d16" }}
+      style={{ backgroundColor: "var(--rf-bg)" }}
     >
       <div
         className="absolute inset-0 pointer-events-none opacity-5"
@@ -3671,68 +3671,115 @@ function LeftPanel() {
       <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-cyan-700" />
       <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-cyan-700" />
       <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-cyan-700" />
-      <div className="w-24 h-24 mb-6 relative z-10">
-        <svg viewBox="0 0 110 110" fill="none">
-          <circle
-            cx="55"
-            cy="55"
-            r="32"
-            fill="rgba(0,180,255,0.10)"
-            style={{
-              animation: "pulse 2s ease-in-out infinite",
-              filter: "blur(12px)",
-            }}
-          />
-          <g
-            style={{
-              animation: "spin 8s linear infinite",
-              transformOrigin: "50% 50%",
-            }}
-          >
-            <circle
-              cx="55"
-              cy="55"
-              r="50"
-              stroke="rgba(0,180,220,0.18)"
-              strokeWidth="1"
-              strokeDasharray="4 6"
-            />
-          </g>
-          <g
-            style={{
-              animation: "spin-reverse 5s linear infinite",
-              transformOrigin: "50% 50%",
-            }}
-          >
-            <circle
-              cx="55"
-              cy="55"
-              r="40"
-              stroke="rgba(0,212,255,0.28)"
-              strokeWidth="1.2"
-              strokeDasharray="10 4"
-            />
-          </g>
-          <path
-            d="M 55 18 A 37 37 0 1 1 20 55"
-            stroke="#00d4ff"
-            strokeWidth="3.5"
-            strokeLinecap="round"
+     <div className="w-28 h-28 mb-7 relative z-10">
+          <svg
+            viewBox="0 0 110 110"
             fill="none"
-          />
-          <circle cx="20" cy="55" r="4" fill="#00d4ff" />
-          <circle
-            cx="55"
-            cy="55"
-            r="10"
-            fill="rgba(0,60,90,0.7)"
-            stroke="#00d4ff"
-            strokeWidth="1.5"
-          />
-          <circle cx="55" cy="55" r="4" fill="#00d4ff" />
-        </svg>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes spin-reverse{to{transform:rotate(-360deg)}}@keyframes pulse{0%,100%{opacity:0.5;filter:blur(12px)}50%{opacity:1;filter:blur(18px)}}`}</style>
-      </div>
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Glow backdrop */}
+            <circle
+              cx="55"
+              cy="55"
+              r="32"
+              fill="rgba(0,180,255,0.10)"
+              style={{
+                animation: "pulse 2s ease-in-out infinite",
+                filter: "blur(12px)",
+              }}
+            />
+
+            {/* Outer dashed ring */}
+            <g
+              style={{
+                animation: "spin 8s linear infinite",
+                transformOrigin: "50% 50%",
+              }}
+            >
+              <circle
+                cx="55"
+                cy="55"
+                r="50"
+                stroke="rgba(0,180,220,0.18)"
+                strokeWidth="1"
+                strokeDasharray="4 6"
+              />
+            </g>
+
+            {/* Mid ring with gaps */}
+            <g
+              style={{
+                animation: "spin-reverse 5s linear infinite",
+                transformOrigin: "50% 50%",
+              }}
+            >
+              <circle
+                cx="55"
+                cy="55"
+                r="40"
+                stroke="rgba(0,212,255,0.28)"
+                strokeWidth="1.2"
+                strokeDasharray="10 4"
+              />
+            </g>
+
+            {/* Solid arcs (the "C" shape) */}
+            <path
+              d="M 55 18 A 37 37 0 1 1 20 55"
+              stroke="#00d4ff"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Inner arc */}
+            <path
+              d="M 55 30 A 25 25 0 1 1 30 55"
+              stroke="#0090bb"
+              strokeWidth="2"
+              strokeLinecap="round"
+              fill="none"
+            />
+
+            {/* Dot on arc end */}
+            <circle cx="20" cy="55" r="4" fill="#00d4ff" />
+            <circle cx="30" cy="55" r="2.5" fill="#00aadd" />
+
+            {/* Small accent tick */}
+            <line
+              x1="55"
+              y1="14"
+              x2="55"
+              y2="22"
+              stroke="#00d4ff"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+
+            {/* Inner filled ring */}
+            <circle
+              cx="55"
+              cy="55"
+              r="10"
+              fill="rgba(0,60,90,0.7)"
+              stroke="#00d4ff"
+              strokeWidth="1.5"
+            />
+            <circle cx="55" cy="55" r="4" fill="#00d4ff" />
+          </svg>
+
+          <style>{`
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+            @keyframes spin-reverse {
+              to { transform: rotate(-360deg); }
+            }
+            @keyframes pulse {
+              0%, 100% { opacity: 0.5; filter: blur(12px); }
+              50% { opacity: 1; filter: blur(18px); }
+            }
+          `}</style>
+        </div>
       <div className="text-center mb-7 relative z-10">
         <div
           className="text-3xl font-bold mb-1"
@@ -3795,7 +3842,7 @@ function LeftPanel() {
                   fontFamily: "'IBM Plex Sans', sans-serif",
                   fontSize: "0.72rem",
                   fontWeight: 500,
-                  color: "#c8d8f0",
+                  color: "var(--rf-txt)",
                 }}
               >
                 {t}
@@ -3804,7 +3851,7 @@ function LeftPanel() {
                 style={{
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: "0.56rem",
-                  color: "#4a6080",
+                  color: "var(--rf-txt2)",
                 }}
               >
                 {d}
@@ -4286,7 +4333,7 @@ export default function RegisterPage() {
 
       <section
         className="flex-1 flex flex-col relative overflow-y-auto"
-        style={{ backgroundColor: "var(--rf-bg, #020d16)" }}
+        style={{ backgroundColor: "var(--rf-bg)" }}
       >
         <div className="relative z-10 flex flex-col flex-1 px-8 py-7 max-w-2xl mx-auto w-full">
           {/* Step nav */}
@@ -4332,7 +4379,7 @@ export default function RegisterPage() {
                         ? C.accent
                         : i < step
                           ? "#00e5a0"
-                          : "rgba(0,80,100,0.4)",
+                          : "var(--rf-bg4)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -4355,7 +4402,7 @@ export default function RegisterPage() {
                         fontFamily: C.mono,
                         fontSize: "0.52rem",
                         fontWeight: 600,
-                        color: i === step ? "#020d16" : C.muted,
+                        color: i === step ? "var(--rf-bg)" : C.muted,
                       }}
                     >
                       {i + 1}
@@ -4393,7 +4440,7 @@ export default function RegisterPage() {
                       ? "#00e5a0"
                       : i === step
                         ? C.accent
-                        : "rgba(0,80,100,0.3)",
+                        : "var(--rf-bg4)",
                   transition: "background 0.2s",
                 }}
               />
@@ -4419,7 +4466,7 @@ export default function RegisterPage() {
                 fontFamily: "'Rajdhani', sans-serif",
                 fontSize: "1.7rem",
                 fontWeight: 700,
-                color: "#c8d8f0",
+                color: "var(--rf-txt)",
                 letterSpacing: "0.04em",
                 margin: 0,
                 lineHeight: 1.1,
@@ -4553,7 +4600,7 @@ export default function RegisterPage() {
                 borderRadius: 6,
                 border: `1px solid ${C.border}`,
                 background: "transparent",
-                color: step === 0 ? C.muted : "#7ab8d4",
+                color: step === 0 ? C.muted : "var(--rf-txt2)",
                 fontFamily: C.mono,
                 fontSize: "0.7rem",
                 cursor: step === 0 || stepLoading ? "not-allowed" : "pointer",
@@ -4582,8 +4629,8 @@ export default function RegisterPage() {
                   background:
                     canAdvance() && !stepLoading
                       ? C.accent
-                      : "rgba(0,80,100,0.4)",
-                  color: canAdvance() && !stepLoading ? "#020d16" : C.muted,
+                      : "var(--rf-bg4)",
+                  color: canAdvance() && !stepLoading ? "var(--rf-bg)" : C.muted,
                   fontFamily: C.mono,
                   fontSize: "0.7rem",
                   fontWeight: 600,
@@ -4632,8 +4679,8 @@ export default function RegisterPage() {
                   padding: "8px 18px",
                   borderRadius: 6,
                   border: "none",
-                  background: loading ? "rgba(0,80,100,0.4)" : C.accent,
-                  color: loading ? C.muted : "#020d16",
+                  background: loading ? "var(--rf-bg4)" : C.accent,
+                  color: loading ? C.muted : "var(--rf-bg)",
                   fontFamily: C.mono,
                   fontSize: "0.7rem",
                   fontWeight: 600,
