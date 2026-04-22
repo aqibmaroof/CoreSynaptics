@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getLeads, createLead, updateLead, deleteLead } from "@/services/Leads";
-import { getUsers } from "@/services/Users";
 import { getCompanies } from "@/services/Companies";
 import { createContact } from "@/services/Contacts";
 import CompanySelect from "@/components/CRM/CompanySelect";
@@ -35,7 +34,7 @@ const EMPTY_FORM = {
   phone: "",
   companyId: "",
   source: "",
-  status: "",
+  status: "IN_DISCUSSION",
   notes: "",
 };
 
@@ -99,7 +98,7 @@ export default function LeadsList() {
       phone: lead.phone || "",
       companyId: lead.companyId || "",
       source: lead.source || "",
-      status: lead.status || "In Discussion",
+      status: lead.status || "IN_DISCUSSION",
       notes: lead.notes || "",
     });
     setEditingLead(lead);
@@ -174,76 +173,89 @@ export default function LeadsList() {
 
   const renderKanban = () => (
     <div className="grid grid-cols-2 gap-4">
-      {KANBAN_COLUMNS.map((status) => {
-        const colLeads = filteredLeads.filter(
-          (l) => (l.status || "In Discussion") === status,
-        );
-        return (
-          <div
-            key={status}
-            className="bg-gray-900/60 rounded-xl border border-gray-800 p-4"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                {status}
-              </h3>
-              <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full">
-                {colLeads.length}
-              </span>
-            </div>
-            <div className="space-y-3">
-              {colLeads.map((lead) => {
-                const company = companies.find((c) => c.id === lead.companyId);
-                const isConverted = lead.status === "Converted";
-                return (
-                  <div
-                    key={lead.id}
-                    className="bg-gray-800/80 rounded-lg p-3 border border-gray-700/50"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <button
-                        onClick={() => router.push(`/CRM/Leads/Detail/${lead.id}`)}
-                        className="text-white font-medium text-sm hover:text-cyan-400 text-left"
-                      >
-                        {lead.name}
-                      </button>
-                      {isConverted && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 flex-shrink-0">
-                          Converted
-                        </span>
+      {filteredLeads?.length > 0 ? (
+        KANBAN_COLUMNS.map((status) => {
+          const colLeads = filteredLeads.filter(
+            (l) => (l.status || "IN_DISCUSSION") === status?.value,
+          );
+
+          return (
+            <div
+              key={status}
+              className="bg-gray-900/60 rounded-xl border border-gray-800 p-4"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  {status?.value}
+                </h3>
+                <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full">
+                  {colLeads.length}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {colLeads.map((lead) => {
+                  const company = companies.find(
+                    (c) => c.id === lead.companyId,
+                  );
+                  const isConverted = lead.status === "Converted";
+                  return (
+                    <div
+                      key={lead.id}
+                      className="bg-gray-800/80 rounded-lg p-3 border border-gray-700/50"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <button
+                          onClick={() =>
+                            router.push(`/CRM/Leads/Detail/${lead.id}`)
+                          }
+                          className="text-white font-medium text-sm hover:text-cyan-400 text-left"
+                        >
+                          {lead.name}
+                        </button>
+                        {isConverted && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 flex-shrink-0">
+                            Converted
+                          </span>
+                        )}
+                      </div>
+                      {lead.email && (
+                        <p className="text-gray-400 text-xs mt-1">
+                          {lead.email}
+                        </p>
                       )}
+                      {company && (
+                        <p className="text-cyan-400 text-xs mt-1">
+                          {company.name}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-end mt-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTimelineEntity({ id: lead.id, name: lead.name });
+                          }}
+                          className="text-xs text-purple-400 hover:text-purple-300"
+                        >
+                          Timeline
+                        </button>
+                      </div>
                     </div>
-                    {lead.email && (
-                      <p className="text-gray-400 text-xs mt-1">{lead.email}</p>
-                    )}
-                    {company && (
-                      <p className="text-cyan-400 text-xs mt-1">
-                        {company.name}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-end mt-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTimelineEntity({ id: lead.id, name: lead.name });
-                        }}
-                        className="text-xs text-purple-400 hover:text-purple-300"
-                      >
-                        Timeline
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-              {colLeads.length === 0 && (
-                <p className="text-center text-gray-600 text-xs py-4">
-                  No leads
-                </p>
-              )}
+                  );
+                })}
+                {colLeads.length === 0 && (
+                  <p className="text-center text-gray-600 text-xs py-4">
+                    No leads
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })
+      ) : (
+        <p className="col-span-2 my-10 text-center text-gray-400 text-lg py-4">
+          No leads found
+        </p>
+      )}
     </div>
   );
 
@@ -283,7 +295,9 @@ export default function LeadsList() {
                 >
                   <td className="px-6 py-4">
                     <button
-                      onClick={() => router.push(`/CRM/Leads/Detail/${lead.id}`)}
+                      onClick={() =>
+                        router.push(`/CRM/Leads/Detail/${lead.id}`)
+                      }
                       className="text-white font-medium text-sm hover:text-cyan-400 text-left"
                     >
                       {lead.name}

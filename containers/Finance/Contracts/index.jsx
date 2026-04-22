@@ -60,7 +60,6 @@ export default function ContractsBudget() {
     setLoading(true);
     try {
       const res = await getContracts();
-      console.log(res);
       setContracts(res || []);
     } catch (e) {
       console.error(e);
