@@ -64,7 +64,7 @@ const LoginPage = () => {
       <div className="bg-[url('/images/login-illustration.png')] bg-cover bg-center bg-no-repeat w-full flex items-center justify-center"></div>
 
       {/* Right Side: Form */}
-      <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat flex flex-col justify-center w-full p-8 md:p-16 lg:p-12 xl:p-20">
+      <div className="flex flex-col justify-center w-full p-8 md:p-16 lg:p-12 xl:p-20" style={{ backgroundColor: "var(--rf-bg)" }}>
         <div className="flex items-center gap-2 mb-5">
           <img
             src={config?.brand}
@@ -80,10 +80,10 @@ const LoginPage = () => {
         
         <div className="mb-10 mt-18">
           <h3 className="text-[#00E691] text-xl font-sora tracking-widest">C O M I N G  S O O N</h3>
-          <h2 className="text-7xl font-bold text-white mt-4">
+          <h2 className="text-7xl font-bold mt-4" style={{ color: "var(--rf-txt)" }}>
             Data Center
           </h2>
-          <p className="text-6xl text-gray-300">
+          <p className="text-6xl" style={{ color: "var(--rf-txt2)" }}>
             one window solution
           </p>
         </div>
@@ -97,7 +97,7 @@ const LoginPage = () => {
             <input
               type="email"
               placeholder="Email"
-              className="flex-1 bg-transparent text-white placeholder-white px-2 py-4 w-42 md:w-80 text-lg outline-none "
+              className="flex-1 bg-transparent px-2 py-4 w-42 md:w-80 text-lg outline-none" style={{ color: "var(--rf-txt)", caretColor: "var(--rf-txt)" }}
               required
             />
 
@@ -110,7 +110,7 @@ const LoginPage = () => {
             </button>
           </div>
         </form>
-            <h2 className="text-lg font-sora mt-4 ml-2">Subscribe for early bird information</h2>
+            <h2 className="text-lg font-sora mt-4 ml-2" style={{ color: "var(--rf-txt2)" }}>Subscribe for early bird information</h2>
           </div>
         </form>
         <div className="mt-12">

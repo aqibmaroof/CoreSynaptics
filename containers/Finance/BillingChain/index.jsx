@@ -1,287 +1,294 @@
 "use client";
 import { useState, useEffect } from "react";
-import { getAllBillingChains, getBillingChain, updateChainStageStatus } from "@/services/Finance/BillingChain";
+import { getPayments, createPayment } from "@/services/Finance/BillingChain";
 import { formatCurrency } from "@/Utils/payrollCalculations";
 
-const STAGES = ["Project", "Task", "Vendor", "Invoice", "Payment"];
+const PAYMENT_METHODS = ["CASH", "BANK", "ONLINE", "CHEQUE", "WIRE", "OTHER"];
 
-const STAGE_STATUS_OPTIONS = {
-  Project: ["Active", "On Hold", "Completed"],
-  Task: ["Pending", "In Progress", "Completed"],
-  Vendor: ["Quote Requested", "Quote Received", "Approved"],
-  Invoice: ["Draft", "Sent", "Pending", "Paid", "Overdue"],
-  Payment: ["Pending", "Partial", "Complete"],
+const STATUS_BADGE = {
+  PENDING: "badge-warning",
+  SUCCESS: "badge-success",
+  FAILED: "badge-error",
 };
 
-const STAGE_BADGE = {
-  // Green
-  Completed: "badge-success",
-  Paid: "badge-success",
-  Complete: "badge-success",
-  Approved: "badge-success",
-  // Blue
-  Active: "badge-info",
-  "In Progress": "badge-info",
-  Sent: "badge-info",
-  "Quote Received": "badge-info",
-  // Yellow
-  Pending: "badge-warning",
-  Partial: "badge-warning",
-  "Quote Requested": "badge-warning",
-  // Red
-  "On Hold": "badge-error",
-  Overdue: "badge-error",
-  // Ghost
-  Draft: "badge-ghost",
-  "Task Pending": "badge-ghost",
+const METHOD_LABEL = {
+  CASH: "Cash",
+  BANK: "Bank Transfer",
+  ONLINE: "Online",
+  CHEQUE: "Cheque",
+  WIRE: "Wire",
+  OTHER: "Other",
 };
 
-const STAGE_EMOJI = {
-  Project: "🏗️",
-  Task: "✅",
-  Vendor: "🏭",
-  Invoice: "🧾",
-  Payment: "💳",
+const EMPTY_FORM = {
+  invoiceId: "",
+  amount: "",
+  paidAt: "",
+  method: "BANK",
+  reference: "",
+  status: "SUCCESS",
+  notes: "",
 };
 
-export default function BillingChain() {
-  const [chains, setChains] = useState([]);
+export default function Payments() {
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [invoiceSearch, setInvoiceSearch] = useState("");
+  const [paidAfter, setPaidAfter] = useState("");
+  const [paidBefore, setPaidBefore] = useState("");
 
-  // Detail view
-  const [detailChain, setDetailChain] = useState(null);
-  const [detailData, setDetailData] = useState(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
-  // Stage update
-  const [updatingStage, setUpdatingStage] = useState(null);
+  useEffect(() => { fetchPayments(); }, []);
 
-  useEffect(() => { fetchChains(); }, []);
-
-  async function fetchChains() {
+  async function fetchPayments() {
     setLoading(true);
     try {
-      const res = await getAllBillingChains();
-      setChains(res?.data?.items || res?.data || []);
+      const params = {};
+      if (statusFilter !== "All") params.status = statusFilter;
+      if (paidAfter) params.paidAfter = new Date(paidAfter).toISOString();
+      if (paidBefore) params.paidBefore = new Date(paidBefore).toISOString();
+      const res = await getPayments(params);
+      setPayments(res?.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }
 
-  async function openDetail(chain) {
-    setDetailChain(chain);
-    setLoadingDetail(true);
-    try {
-      const res = await getBillingChain(chain.project_id || chain.id);
-      setDetailData(res?.data || null);
-    } catch (e) { setDetailData(null); }
-    finally { setLoadingDetail(false); }
-  }
+  // Re-fetch when filters change
+  useEffect(() => { fetchPayments(); }, [statusFilter, paidAfter, paidBefore]);
 
-  async function handleStageUpdate(chainId, stage, status) {
-    setUpdatingStage(stage);
+  const handleCreate = async () => {
+    setSaving(true);
     try {
-      await updateChainStageStatus(chainId, stage.toLowerCase(), { status });
-      // Refresh detail
-      const res = await getBillingChain(detailChain.project_id || detailChain.id);
-      setDetailData(res?.data || null);
+      const payload = {
+        invoiceId: form.invoiceId,
+        amount: parseFloat(form.amount),
+        paidAt: new Date(form.paidAt).toISOString(),
+        method: form.method,
+        status: form.status,
+      };
+      if (form.reference) payload.reference = form.reference;
+      if (form.notes) payload.notes = form.notes;
+      await createPayment(payload);
+      setShowModal(false);
+      setForm(EMPTY_FORM);
+      fetchPayments();
     } catch (e) { console.error(e); }
-    finally { setUpdatingStage(null); }
-  }
+    finally { setSaving(false); }
+  };
 
-  // Derive chain health color from stage statuses
-  function chainHealth(chain) {
-    if (chain.has_overdue) return "border-error";
-    if (chain.payment_status === "Complete") return "border-success";
-    if (chain.payment_status === "Partial") return "border-warning";
-    return "border-info";
-  }
-
-  const filtered = chains.filter((c) =>
-    !search || c.project_name?.toLowerCase().includes(search.toLowerCase())
+  const filtered = payments.filter((p) =>
+    !invoiceSearch || p.invoiceId?.toLowerCase().includes(invoiceSearch.toLowerCase())
   );
+
+  const summary = {
+    total: payments.length,
+    success: payments.filter((p) => p.status === "SUCCESS").length,
+    pending: payments.filter((p) => p.status === "PENDING").length,
+    failed: payments.filter((p) => p.status === "FAILED").length,
+    totalCollected: payments
+      .filter((p) => p.status === "SUCCESS")
+      .reduce((s, p) => s + (p.amount || 0), 0),
+  };
+
+  const isFormValid =
+    form.invoiceId && form.amount && parseFloat(form.amount) > 0 && form.paidAt && form.method;
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-100">Billing Chain</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Full lifecycle: Project → Task → Vendor → Invoice → Payment
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-100">Payments</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            Record and track payments against invoices
+          </p>
+        </div>
+        <button className="btn btn-sm btn-info" onClick={() => { setForm(EMPTY_FORM); setShowModal(true); }}>
+          + Record Payment
+        </button>
       </div>
 
-      {/* Search */}
-      <input type="text" placeholder="Search by project name..."
-        className="input input-sm input-bordered bg-slate-700 text-gray-100 w-64"
-        value={search} onChange={(e) => setSearch(e.target.value)} />
+      {/* Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: "Total Payments", value: summary.total, color: "text-info" },
+          { label: "Successful", value: summary.success, color: "text-success" },
+          { label: "Pending", value: summary.pending, color: "text-warning" },
+          { label: "Failed", value: summary.failed, color: "text-error" },
+          { label: "Total Collected", value: formatCurrency(summary.totalCollected), color: "text-primary" },
+        ].map((s) => (
+          <div key={s.label} className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-xl p-4 text-center shadow-sm">
+            <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+            <p className="text-xs text-gray-400 mt-1">{s.label}</p>
+          </div>
+        ))}
+      </div>
 
-      {/* Chain Cards */}
-      {loading ? (
-        <div className="p-10 text-center text-gray-400">Loading billing chains...</div>
-      ) : filtered.length === 0 ? (
-        <div className="p-10 text-center text-gray-500">
-          <p className="text-4xl mb-3">🔗</p>
-          <p>No billing chains found.</p>
-          <p className="text-xs mt-2">Chains are auto-created when a project has tasks with vendor billing.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filtered.map((chain) => (
-            <div key={chain.id}
-              className={`bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-xl shadow-sm border-l-4 ${chainHealth(chain)} overflow-hidden`}>
-              {/* Chain Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-                <div>
-                  <p className="font-semibold text-gray-100">{chain.project_name || "Unnamed Project"}</p>
-                  <p className="text-xs text-gray-400">{chain.task_count} task(s) · {chain.vendor_count} vendor(s)</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">Total Billed</p>
-                    <p className="font-bold text-gray-100">{formatCurrency(chain.total_billed || 0)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">Paid</p>
-                    <p className="font-bold text-success">{formatCurrency(chain.total_paid || 0)}</p>
-                  </div>
-                  <button className="btn btn-xs btn-info" onClick={() => openDetail(chain)}>
-                    View Chain
-                  </button>
-                </div>
-              </div>
-
-              {/* Stage Pipeline Row */}
-              <div className="flex items-center gap-0 overflow-x-auto px-5 py-4">
-                {STAGES.map((stage, idx) => {
-                  const stageData = chain.stages?.[stage.toLowerCase()] || {};
-                  const status = stageData.status || "—";
-                  return (
-                    <div key={stage} className="flex items-center flex-shrink-0">
-                      <div className="text-center w-28">
-                        <div className="text-lg mb-1">{STAGE_EMOJI[stage]}</div>
-                        <p className="text-xs text-gray-400 font-medium mb-1">{stage}</p>
-                        <span className={`badge badge-xs ${STAGE_BADGE[status] || "badge-ghost"}`}>
-                          {status}
-                        </span>
-                      </div>
-                      {idx < STAGES.length - 1 && (
-                        <div className="w-8 flex items-center justify-center text-gray-600 text-lg flex-shrink-0">
-                          →
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 p-4 rounded-xl">
+        <input type="text" placeholder="Filter by Invoice ID..."
+          className="input input-sm input-bordered bg-slate-700 text-gray-100 w-56"
+          value={invoiceSearch} onChange={(e) => setInvoiceSearch(e.target.value)} />
+        <div className="flex gap-2 flex-wrap">
+          {["All", "PENDING", "SUCCESS", "FAILED"].map((s) => (
+            <button key={s}
+              className={`btn btn-sm ${statusFilter === s ? "btn-info" : "btn-ghost text-gray-100"}`}
+              onClick={() => setStatusFilter(s)}>{s}</button>
           ))}
         </div>
-      )}
+        <div className="flex items-center gap-2 ml-auto">
+          <span className="text-xs text-gray-400">From</span>
+          <input type="date" className="input input-sm input-bordered bg-slate-700 text-gray-100"
+            value={paidAfter} onChange={(e) => setPaidAfter(e.target.value)} />
+          <span className="text-xs text-gray-400">To</span>
+          <input type="date" className="input input-sm input-bordered bg-slate-700 text-gray-100"
+            value={paidBefore} onChange={(e) => setPaidBefore(e.target.value)} />
+          {(paidAfter || paidBefore) && (
+            <button className="btn btn-xs btn-ghost text-gray-400"
+              onClick={() => { setPaidAfter(""); setPaidBefore(""); }}>Clear</button>
+          )}
+        </div>
+      </div>
 
-      {/* Detail Modal */}
-      {detailChain && (
+      {/* Table */}
+      <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-xl shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="p-10 text-center text-gray-400">Loading payments...</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-10 text-center text-gray-500">
+            <p className="text-4xl mb-3">💳</p>
+            <p>No payments found.</p>
+            <button className="btn btn-sm btn-info mt-4"
+              onClick={() => { setForm(EMPTY_FORM); setShowModal(true); }}>
+              Record First Payment
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table table-sm w-full">
+              <thead>
+                <tr className="text-gray-400 text-xs">
+                  <th>Invoice ID</th>
+                  <th>Amount</th>
+                  <th>Paid At</th>
+                  <th>Method</th>
+                  <th>Reference</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-700">
+                    <td>
+                      <div className="text-gray-100 text-sm font-mono">{p.invoiceId || "—"}</div>
+                    </td>
+                    <td>
+                      <span className="text-gray-100 font-medium">{formatCurrency(p.amount)}</span>
+                    </td>
+                    <td className="text-gray-400 text-xs">
+                      {p.paidAt ? new Date(p.paidAt).toLocaleString() : "—"}
+                    </td>
+                    <td>
+                      <span className="text-gray-300 text-sm">{METHOD_LABEL[p.method] || p.method || "—"}</span>
+                    </td>
+                    <td>
+                      <span className="text-gray-400 text-xs font-mono">{p.reference || "—"}</span>
+                    </td>
+                    <td>
+                      <span className={`badge badge-sm ${STATUS_BADGE[p.status] || "badge-ghost"}`}>
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="text-gray-400 text-xs max-w-40 truncate" title={p.notes}>
+                      {p.notes || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Record Payment Modal */}
+      {showModal && (
         <div className="modal modal-open">
-          <div className="modal-box bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 max-w-3xl">
-            <h3 className="font-bold text-lg text-gray-100 mb-1">
-              {detailChain.project_name} — Billing Chain
-            </h3>
-            <p className="text-xs text-gray-400 mb-5">Full lifecycle status tracking</p>
-
-            {loadingDetail ? (
-              <div className="p-6 text-center text-gray-400">Loading chain details...</div>
-            ) : !detailData ? (
-              <div className="p-6 text-center text-gray-500">No chain data available.</div>
-            ) : (
-              <div className="space-y-4">
-                {STAGES.map((stage) => {
-                  const stageData = detailData.stages?.[stage.toLowerCase()] || {};
-                  const items = stageData.items || [];
-                  const status = stageData.status || "Pending";
-                  const statusOptions = STAGE_STATUS_OPTIONS[stage] || [];
-                  const isUpdating = updatingStage === stage;
-
-                  return (
-                    <div key={stage} className="bg-slate-700 rounded-xl overflow-hidden">
-                      {/* Stage header */}
-                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-600">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{STAGE_EMOJI[stage]}</span>
-                          <span className="font-semibold text-gray-100">{stage}</span>
-                          <span className={`badge badge-sm ${STAGE_BADGE[status] || "badge-ghost"}`}>
-                            {status}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <select
-                            className="select select-xs select-bordered bg-slate-600 text-gray-100"
-                            value={status}
-                            disabled={isUpdating}
-                            onChange={(e) =>
-                              handleStageUpdate(detailChain.id, stage, e.target.value)
-                            }
-                          >
-                            {statusOptions.map((s) => <option key={s}>{s}</option>)}
-                          </select>
-                          {isUpdating && (
-                            <span className="loading loading-spinner loading-xs text-info" />
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Stage items */}
-                      {items.length === 0 ? (
-                        <p className="text-gray-500 text-sm px-4 py-3">No items at this stage.</p>
-                      ) : (
-                        <div className="divide-y divide-slate-600">
-                          {items.map((item, i) => (
-                            <div key={i} className="flex items-center justify-between px-4 py-2">
-                              <div>
-                                <p className="text-gray-100 text-sm">{item.name || item.title || item.invoice_number || "—"}</p>
-                                {item.assigned_to && (
-                                  <p className="text-xs text-gray-400">Assigned: {item.assigned_to}</p>
-                                )}
-                              </div>
-                              <div className="text-right">
-                                {item.amount != null && (
-                                  <p className="text-gray-100 text-sm font-medium">{formatCurrency(item.amount)}</p>
-                                )}
-                                {item.status && (
-                                  <span className={`badge badge-xs ${STAGE_BADGE[item.status] || "badge-ghost"}`}>
-                                    {item.status}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Totals */}
-                <div className="grid grid-cols-3 gap-3 pt-2">
-                  {[
-                    { label: "Total Billed", value: detailData.total_billed, color: "text-info" },
-                    { label: "Total Paid", value: detailData.total_paid, color: "text-success" },
-                    { label: "Outstanding", value: (detailData.total_billed || 0) - (detailData.total_paid || 0), color: "text-warning" },
-                  ].map((s) => (
-                    <div key={s.label} className="bg-slate-700 rounded-lg p-3 text-center">
-                      <p className="text-xs text-gray-400">{s.label}</p>
-                      <p className={`font-bold ${s.color}`}>{formatCurrency(s.value)}</p>
-                    </div>
-                  ))}
+          <div className="modal-box bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 max-w-lg">
+            <h3 className="font-bold text-lg text-gray-100 mb-4">Record Payment</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="label text-xs text-gray-400">Invoice ID *</label>
+                <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100 font-mono"
+                  placeholder="UUID of invoice"
+                  value={form.invoiceId} onChange={(e) => setForm({ ...form, invoiceId: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label text-xs text-gray-400">Amount ($) *</label>
+                  <input type="number" min="0.01" step="0.01"
+                    className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
+                    value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+                </div>
+                <div>
+                  <label className="label text-xs text-gray-400">Paid At *</label>
+                  <input type="datetime-local"
+                    className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
+                    value={form.paidAt} onChange={(e) => setForm({ ...form, paidAt: e.target.value })} />
                 </div>
               </div>
-            )}
-
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label text-xs text-gray-400">Method *</label>
+                  <select className="select select-sm select-bordered w-full bg-slate-700 text-gray-100"
+                    value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>{METHOD_LABEL[m]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label text-xs text-gray-400">Status</label>
+                  <select className="select select-sm select-bordered w-full bg-slate-700 text-gray-100"
+                    value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                    <option value="SUCCESS">SUCCESS</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="FAILED">FAILED</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label text-xs text-gray-400">Reference</label>
+                <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100 font-mono"
+                  placeholder="Transaction ID, cheque no., wire ref..."
+                  value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} />
+              </div>
+              <div>
+                <label className="label text-xs text-gray-400">Notes</label>
+                <textarea className="textarea textarea-bordered w-full bg-slate-700 text-gray-100 text-sm" rows={2}
+                  value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+              </div>
+              {form.status === "SUCCESS" && (
+                <div className="bg-slate-700 rounded-lg px-3 py-2 text-xs text-success">
+                  This payment will be immediately applied to the invoice balance.
+                  {form.amount && ` Amount: ${formatCurrency(parseFloat(form.amount) || 0)}`}
+                </div>
+              )}
+            </div>
             <div className="modal-action">
               <button className="btn btn-ghost btn-sm text-gray-100"
-                onClick={() => { setDetailChain(null); setDetailData(null); }}>Close</button>
+                onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn btn-info btn-sm" onClick={handleCreate}
+                disabled={saving || !isFormValid}>
+                {saving ? "Recording..." : "Record Payment"}
+              </button>
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => { setDetailChain(null); setDetailData(null); }} />
+          <div className="modal-backdrop" onClick={() => setShowModal(false)} />
         </div>
       )}
     </div>

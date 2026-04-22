@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getDocuments } from "@/services/Documents";
 
 export function DocumentsDropdownForProjects({
   entityType,
@@ -21,10 +22,8 @@ export function DocumentsDropdownForProjects({
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/documents");
-      if (!response.ok) throw new Error("Failed to fetch documents");
-      const data = await response.json();
-      setDocuments(data);
+      const response = await getDocuments();
+      setDocuments(Array.isArray(response) ? response : response?.data || []);
       setError("");
     } catch (err) {
       setError(err.message || "Failed to load documents");

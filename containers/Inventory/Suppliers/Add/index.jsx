@@ -51,18 +51,20 @@ export default function SuppliersAdd({ editId }) {
       .then((res) => {
         const d = res?.data ?? res;
         setForm({
-          name:         d.name         || "",
-          code:         d.code         || "",
-          contactName:  d.contactName  || "",
-          email:        d.email        || "",
-          phone:        d.phone        || "",
-          address:      d.address      || "",
-          city:         d.city         || "",
-          country:      d.country      || "",
-          notes:        d.notes        || "",
+          name: d.name || "",
+          code: d.code || "",
+          contactName: d.contactName || "",
+          email: d.email || "",
+          phone: d.phone || "",
+          address: d.address || "",
+          city: d.city || "",
+          country: d.country || "",
+          notes: d.notes || "",
         });
       })
-      .catch(() => setFetchError("Failed to load supplier. It may have been deleted."))
+      .catch(() =>
+        setFetchError("Failed to load supplier. It may have been deleted."),
+      )
       .finally(() => setFetching(false));
   }, [editId]);
 
@@ -92,15 +94,15 @@ export default function SuppliersAdd({ editId }) {
     setLoading(true);
     try {
       const payload = {
-        name:         form.name.trim(),
-        code:         form.code.trim()         || undefined,
-        contactName:  form.contactName.trim()  || undefined,
-        email:        form.email.trim()        || undefined,
-        phone:        form.phone.trim()        || undefined,
-        address:      form.address.trim()      || undefined,
-        city:         form.city.trim()         || undefined,
-        country:      form.country.trim()      || undefined,
-        notes:        form.notes.trim()        || undefined,
+        name: form.name.trim(),
+        code: form.code.trim() || undefined,
+        contactName: form.contactName.trim() || undefined,
+        email: form.email.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        address: form.address.trim() || undefined,
+        city: form.city.trim() || undefined,
+        country: form.country.trim() || undefined,
+        notes: form.notes.trim() || undefined,
       };
       if (isEdit) {
         await updateSupplier(editId, payload);
@@ -113,7 +115,10 @@ export default function SuppliersAdd({ editId }) {
     } catch (err) {
       setMsg({
         type: "error",
-        text: err?.response?.data?.message || err?.message || "Failed to save supplier",
+        text:
+          err?.response?.data?.message ||
+          err?.message ||
+          "Failed to save supplier",
       });
     } finally {
       setLoading(false);
@@ -148,11 +153,13 @@ export default function SuppliersAdd({ editId }) {
     <div className="min-h-screen p-6">
       <div className="mx-auto">
         {msg && (
-          <div className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg border shadow-lg text-sm ${
-            msg.type === "success"
-              ? "bg-green-900/80 border-green-500/30 text-green-300"
-              : "bg-red-900/80 border-red-500/30 text-red-300"
-          }`}>
+          <div
+            className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg border shadow-lg text-sm ${
+              msg.type === "success"
+                ? "bg-green-900/80 border-green-500/30 text-green-300"
+                : "bg-red-900/80 border-red-500/30 text-red-300"
+            }`}
+          >
             {msg.text}
           </div>
         )}
@@ -161,8 +168,18 @@ export default function SuppliersAdd({ editId }) {
           onClick={() => router.back()}
           className="flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-5 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back to Suppliers
         </button>
@@ -177,7 +194,6 @@ export default function SuppliersAdd({ editId }) {
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
-
           {/* Identity */}
           <div className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-6 space-y-5">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800 pb-3">
@@ -206,7 +222,9 @@ export default function SuppliersAdd({ editId }) {
                   placeholder="e.g. SUP-001"
                   className={`${INPUT} font-mono`}
                 />
-                <p className="text-gray-600 text-xs mt-1">Optional short code for quick reference</p>
+                <p className="text-gray-600 text-xs mt-1">
+                  Optional short code for quick reference
+                </p>
               </div>
             </div>
 
@@ -309,7 +327,9 @@ export default function SuppliersAdd({ editId }) {
           {/* Preview */}
           {form.name && (
             <div className="bg-gray-900/50 rounded-xl border border-cyan-500/20 p-5">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Preview</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                Preview
+              </p>
               <div className="flex items-start gap-4">
                 <span className="text-4xl">🏢</span>
                 <div>
@@ -360,14 +380,33 @@ export default function SuppliersAdd({ editId }) {
               className="px-8 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2 transition-all"
             >
               {loading && (
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <svg
+                  className="w-4 h-4 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
               )}
               {loading
-                ? isEdit ? "Updating..." : "Creating..."
-                : isEdit ? "Update Supplier" : "Create Supplier"}
+                ? isEdit
+                  ? "Updating..."
+                  : "Creating..."
+                : isEdit
+                  ? "Update Supplier"
+                  : "Create Supplier"}
             </button>
           </div>
         </form>

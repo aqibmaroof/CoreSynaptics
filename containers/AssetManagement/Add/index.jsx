@@ -14,6 +14,14 @@ const CATEGORIES = [
   "Other",
 ];
 
+// Only these categories carry a meaningful warranty period
+const WARRANTY_CATEGORIES = new Set([
+  "IT Equipment",
+  "Vehicle",
+  "Machinery",
+  "Safety Equipment",
+]);
+
 const INPUT =
   "w-full px-4 py-2.5 bg-gray-800/60 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors";
 const FL = ({ children, required, hint }) => (
@@ -49,8 +57,18 @@ export default function AssetAdd() {
     return () => clearTimeout(t);
   }, [msg]);
 
+  const showWarranty = WARRANTY_CATEGORIES.has(form.category);
+
   const set = (k) => (e) => {
-    setForm((p) => ({ ...p, [k]: e.target.value }));
+    const value = e.target.value;
+    setForm((p) => ({
+      ...p,
+      [k]: value,
+      // Clear warranty expiry when switching to a category that doesn't support it
+      ...(k === "category" && !WARRANTY_CATEGORIES.has(value)
+        ? { warrantyExpiry: "" }
+        : {}),
+    }));
     if (errors[k]) setErrors((p) => ({ ...p, [k]: "" }));
   };
 
@@ -84,7 +102,7 @@ export default function AssetAdd() {
         currentValue: form.currentValue
           ? parseFloat(form.currentValue)
           : undefined,
-        warrantyExpiry: form.warrantyExpiry || undefined,
+        warrantyExpiry: showWarranty && form.warrantyExpiry ? form.warrantyExpiry : undefined,
         notes: form.notes || undefined,
       });
       setMsg({
@@ -256,18 +274,20 @@ export default function AssetAdd() {
               </div>
             </div>
 
-            <div>
-              <FL>Warranty Expiry</FL>
-              <input
-                type="date"
-                value={form.warrantyExpiry}
-                onChange={set("warrantyExpiry")}
-                className={INPUT}
-              />
-              <p className="text-gray-600 text-xs mt-1">
-                Assets expiring within 30 days are flagged with a warning
-              </p>
-            </div>
+            {showWarranty && (
+              <div>
+                <FL>Warranty Expiry</FL>
+                <input
+                  type="date"
+                  value={form.warrantyExpiry}
+                  onChange={set("warrantyExpiry")}
+                  className={INPUT}
+                />
+                <p className="text-gray-600 text-xs mt-1">
+                  Assets expiring within 30 days are flagged with a warning
+                </p>
+              </div>
+            )}
           </section>
 
           {/* ── Notes ───────────────────────────────────────────── */}

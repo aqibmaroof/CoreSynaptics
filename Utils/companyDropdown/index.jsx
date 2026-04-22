@@ -1,22 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
+import { getCompanies } from "@/services/Companies";
 /**
  * INSTRUCTIONS FOR INTEGRATION:
- * 
+ *
  * This is a PARTIAL code snippet showing ONLY the Company dropdown addition
  * to your existing Entity Modal. Follow these steps:
- * 
+ *
  * 1. In your existing Entity Modal component, find the section where you render
  *    entity type selection
- * 
+ *
  * 2. After the entity type selection, add this code block:
- * 
+ *
  * 3. The dropdown will ONLY show when entity type is "Project"
- * 
+ *
  * 4. Do NOT remove or disturb any existing entity modal code
- * 
+ *
  * 5. The company selection is UI-only in this version (see handleChange function)
  */
 
@@ -40,10 +40,9 @@ export function CompanyDropdownForProjects({
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/company");
-      if (!response.ok) throw new Error("Failed to fetch companies");
-      const data = await response.json();
-      setCompanies(data);
+      const response = await getCompanies();
+      if (!response) throw new Error("Failed to fetch companies");
+      setCompanies(response);
       setError("");
     } catch (err) {
       setError(err.message || "Failed to load companies");
@@ -85,21 +84,21 @@ export function CompanyDropdownForProjects({
 
 /**
  * USAGE IN YOUR ENTITY MODAL:
- * 
+ *
  * In your existing Entity Modal component, add this import:
  *   import { CompanyDropdownForProjects } from "@/components/CompanyDropdownForProjects";
- * 
+ *
  * Then in your form JSX, after your entity type selection, add:
- * 
+ *
  *   <CompanyDropdownForProjects
  *     entityType={selectedEntityType}
  *     selectedCompany={selectedCompany}
  *     onCompanyChange={setSelectedCompany}
  *     disabled={isLoading}
  *   />
- * 
+ *
  * And in your component state, add:
  *   const [selectedCompany, setSelectedCompany] = useState("");
- * 
+ *
  * That's it! The dropdown will automatically appear only for Project entity type
  */

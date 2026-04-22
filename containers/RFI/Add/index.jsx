@@ -8,6 +8,7 @@ import { GetSites } from "@/services/Sites";
 import { GetZones } from "@/services/Zones";
 import { GetEquipments } from "@/services/Equipment";
 import { getCompanies } from "@/services/Companies";
+import CompanySelect from "@/components/CRM/CompanySelect";
 
 const PRIORITIES = [
   { value: "LOW",      label: "Low" },
@@ -317,13 +318,12 @@ export default function RFIAdd() {
               <h3 className="text-lg font-semibold text-white">Assignment</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
-                    Assign to Company <span className="text-gray-500 font-normal">(optional)</span>
-                  </label>
-                  <AppSelect
-                    name="assignedToCompanyId" value={formData.assignedToCompanyId} onChange={handleChange}
-                    options={companies.map((c) => ({ value: c.id, label: c.name }))}
-                    placeholder="— Select Company —"
+                  <CompanySelect
+                    value={formData.assignedToCompanyId}
+                    onChange={(id) => setFormData((prev) => ({ ...prev, assignedToCompanyId: id }))}
+                    companies={companies}
+                    onCreated={(company) => setCompanies((prev) => [...prev, company])}
+                    label="Assign to Company"
                   />
                 </div>
                 <div>

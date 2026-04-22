@@ -8,6 +8,7 @@ import { GetSites } from "@/services/Sites";
 import { GetZones } from "@/services/Zones";
 import { GetEquipments } from "@/services/Equipment";
 import { getCompanies } from "@/services/Companies";
+import CompanySelect from "@/components/CRM/CompanySelect";
 
 const PRIORITIES = [
   { value: "LOW",      label: "Low" },
@@ -434,13 +435,24 @@ export default function RFIEdit() {
               <h3 className="text-lg font-semibold text-white">Assignment</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">Assign to Company</label>
-                  <AppSelect
-                    name="assignedToCompanyId" value={formData.assignedToCompanyId} onChange={handleChange}
-                    options={companies.map((c) => ({ value: c.id, label: c.name }))}
-                    placeholder="— Select Company —"
-                    disabled={isClosed}
-                  />
+                  {isClosed ? (
+                    <div>
+                      <label className="block text-sm font-semibold text-white mb-2">Assign to Company</label>
+                      <select disabled value={formData.assignedToCompanyId}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white opacity-50 cursor-not-allowed">
+                        <option value="">— No Company —</option>
+                        {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  ) : (
+                    <CompanySelect
+                      value={formData.assignedToCompanyId}
+                      onChange={(id) => setFormData((prev) => ({ ...prev, assignedToCompanyId: id }))}
+                      companies={companies}
+                      onCreated={(company) => setCompanies((prev) => [...prev, company])}
+                      label="Assign to Company"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-white mb-2">Due Date</label>

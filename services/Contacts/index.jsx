@@ -2,7 +2,10 @@ import sendRequest from "../instance/sendRequest";
 
 export const getContacts = async (params = {}) => {
   const query = new URLSearchParams(params).toString();
-  return sendRequest({ url: `/contacts${query ? `?${query}` : ""}`, method: "GET" });
+  return sendRequest({
+    url: `/contacts${query ? `?${query}` : ""}`,
+    method: "GET",
+  });
 };
 
 export const getContactById = async (id) =>

@@ -4,54 +4,34 @@ import {
   getProcurementItems,
   createProcurementItem,
   updateProcurementItem,
-  deleteProcurementItem,
-  logVendorDelay,
-  getProcurementDelays,
-  resolveProcurementDelay,
+  orderProcurementItem,
+  markProcurementDelayed,
+  markProcurementDelivered,
 } from "@/services/Finance/Procurement";
 import { formatCurrency } from "@/Utils/payrollCalculations";
 
-const PROC_STATUSES = ["Planned", "Ordered", "In Transit", "Received", "Delayed", "Cancelled"];
 const STATUS_BADGE = {
-  Planned: "badge-ghost",
-  Ordered: "badge-info",
-  "In Transit": "badge-warning",
-  Received: "badge-success",
-  Delayed: "badge-error",
-  Cancelled: "badge-neutral",
-};
-
-const IMPACT_LEVELS = ["Low", "Medium", "High", "Critical"];
-const IMPACT_COLOR = {
-  Low: "badge-success",
-  Medium: "badge-warning",
-  High: "badge-error",
-  Critical: "badge-error",
+  PLANNED: "badge-ghost",
+  ORDERED: "badge-info",
+  DELAYED: "badge-error",
+  DELIVERED: "badge-success",
 };
 
 const EMPTY_FORM = {
-  material_name: "",
-  vendor_id: "",
-  vendor_name: "",
-  project_id: "",
-  task_id: "",
+  name: "",
+  vendorId: "",
+  vendorName: "",
+  projectId: "",
+  taskId: "",
+  vendorQuoteId: "",
   quantity: "",
-  unit: "units",
-  unit_cost: "",
-  expected_delivery: "",
-  status: "Planned",
+  unit: "",
+  unitCost: "",
+  expectedDelivery: "",
   notes: "",
 };
 
-const EMPTY_DELAY = {
-  reason: "",
-  original_delivery: "",
-  revised_delivery: "",
-  impact_level: "Medium",
-  impact_description: "",
-};
-
-export default function ProcurementDelays() {
+export default function Procurement() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("All");
@@ -62,14 +42,13 @@ export default function ProcurementDelays() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
-  // Delay modal
+  // Delay reason modal
   const [delayTarget, setDelayTarget] = useState(null);
-  const [delays, setDelays] = useState([]);
-  const [delayForm, setDelayForm] = useState(EMPTY_DELAY);
-  const [loggingDelay, setLoggingDelay] = useState(false);
+  const [delayReason, setDelayReason] = useState("");
+  const [delaying, setDelaying] = useState(false);
 
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  // Generic action loading tracker (order / deliver)
+  const [actioningId, setActioningId] = useState(null);
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -77,33 +56,25 @@ export default function ProcurementDelays() {
     setLoading(true);
     try {
       const res = await getProcurementItems();
-      setItems(res?.data?.items || res?.data || []);
+      setItems(res?.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }
-
-  async function openDelays(item) {
-    setDelayTarget(item);
-    try {
-      const res = await getProcurementDelays(item.id);
-      setDelays(res?.data || []);
-    } catch (e) { setDelays([]); }
   }
 
   const openAdd = () => { setEditing(null); setForm(EMPTY_FORM); setShowModal(true); };
   const openEdit = (item) => {
     setEditing(item);
     setForm({
-      material_name: item.material_name || "",
-      vendor_id: item.vendor_id || "",
-      vendor_name: item.vendor_name || "",
-      project_id: item.project_id || "",
-      task_id: item.task_id || "",
+      name: item.name || "",
+      vendorId: item.vendorId || "",
+      vendorName: item.vendorName || "",
+      projectId: item.projectId || "",
+      taskId: item.taskId || "",
+      vendorQuoteId: item.vendorQuoteId || "",
       quantity: item.quantity || "",
-      unit: item.unit || "units",
-      unit_cost: item.unit_cost || "",
-      expected_delivery: item.expected_delivery?.slice(0, 10) || "",
-      status: item.status || "Planned",
+      unit: item.unit || "",
+      unitCost: item.unitCost || "",
+      expectedDelivery: item.expectedDelivery?.slice(0, 10) || "",
       notes: item.notes || "",
     });
     setShowModal(true);
@@ -115,8 +86,15 @@ export default function ProcurementDelays() {
       const payload = {
         ...form,
         quantity: parseFloat(form.quantity) || 0,
-        unit_cost: parseFloat(form.unit_cost) || 0,
+        unitCost: parseFloat(form.unitCost) || 0,
+        expectedDelivery: form.expectedDelivery
+          ? new Date(form.expectedDelivery).toISOString()
+          : undefined,
       };
+      if (!payload.taskId) delete payload.taskId;
+      if (!payload.vendorQuoteId) delete payload.vendorQuoteId;
+      if (!payload.unit) delete payload.unit;
+      if (!payload.expectedDelivery) delete payload.expectedDelivery;
       if (editing) await updateProcurementItem(editing.id, payload);
       else await createProcurementItem(payload);
       setShowModal(false);
@@ -125,55 +103,53 @@ export default function ProcurementDelays() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async () => {
-    setDeleting(true);
+  const handleOrder = async (id) => {
+    setActioningId(id);
     try {
-      await deleteProcurementItem(deleteTarget.id);
-      setDeleteTarget(null);
+      await orderProcurementItem(id);
       fetchItems();
     } catch (e) { console.error(e); }
-    finally { setDeleting(false); }
+    finally { setActioningId(null); }
   };
 
-  const handleLogDelay = async () => {
-    setLoggingDelay(true);
+  const handleDeliver = async (id) => {
+    setActioningId(id);
     try {
-      await logVendorDelay(delayTarget.id, delayForm);
-      const res = await getProcurementDelays(delayTarget.id);
-      setDelays(res?.data || []);
-      setDelayForm(EMPTY_DELAY);
+      await markProcurementDelivered(id);
       fetchItems();
     } catch (e) { console.error(e); }
-    finally { setLoggingDelay(false); }
+    finally { setActioningId(null); }
   };
 
-  const handleResolveDelay = async (delayId) => {
+  const handleDelay = async () => {
+    setDelaying(true);
     try {
-      await resolveProcurementDelay(delayTarget.id, delayId, { resolved: true });
-      setDelays((prev) => prev.map((d) => d.id === delayId ? { ...d, resolved: true } : d));
+      await markProcurementDelayed(delayTarget.id, { delayReason });
+      setDelayTarget(null);
+      setDelayReason("");
+      fetchItems();
     } catch (e) { console.error(e); }
+    finally { setDelaying(false); }
   };
 
   const filtered = items.filter((item) => {
     const ms = !search ||
-      item.material_name?.toLowerCase().includes(search.toLowerCase()) ||
-      item.vendor_name?.toLowerCase().includes(search.toLowerCase());
+      item.name?.toLowerCase().includes(search.toLowerCase()) ||
+      item.vendorName?.toLowerCase().includes(search.toLowerCase());
     const mf = statusFilter === "All" || item.status === statusFilter;
     return ms && mf;
   });
 
   const isOverdue = (item) =>
-    item.status !== "Received" && item.expected_delivery &&
-    new Date(item.expected_delivery) < new Date();
-
-  const totalValue = (item) => (item.quantity || 0) * (item.unit_cost || 0);
+    item.status !== "DELIVERED" && item.expectedDelivery &&
+    new Date(item.expectedDelivery) < new Date();
 
   const summary = {
     total: items.length,
-    delayed: items.filter((i) => i.status === "Delayed" || isOverdue(i)).length,
-    inTransit: items.filter((i) => i.status === "In Transit").length,
-    received: items.filter((i) => i.status === "Received").length,
-    totalSpend: items.reduce((s, i) => s + totalValue(i), 0),
+    delayed: items.filter((i) => i.status === "DELAYED").length,
+    ordered: items.filter((i) => i.status === "ORDERED").length,
+    delivered: items.filter((i) => i.status === "DELIVERED").length,
+    totalSpend: items.reduce((s, i) => s + (i.totalCost || 0), 0),
   };
 
   return (
@@ -181,9 +157,9 @@ export default function ProcurementDelays() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Procurement & Delays</h1>
+          <h1 className="text-2xl font-bold text-gray-100">Procurement</h1>
           <p className="text-sm text-gray-400 mt-0.5">
-            Material procurement tracking, vendor delays, and project timeline impact
+            Material and service procurement tracking across projects
           </p>
         </div>
         <button className="btn btn-sm btn-info" onClick={openAdd}>+ Add Procurement</button>
@@ -194,8 +170,8 @@ export default function ProcurementDelays() {
         {[
           { label: "Total Items", value: summary.total, color: "text-info" },
           { label: "Delayed", value: summary.delayed, color: "text-error" },
-          { label: "In Transit", value: summary.inTransit, color: "text-warning" },
-          { label: "Received", value: summary.received, color: "text-success" },
+          { label: "Ordered", value: summary.ordered, color: "text-warning" },
+          { label: "Delivered", value: summary.delivered, color: "text-success" },
           { label: "Total Value", value: formatCurrency(summary.totalSpend), color: "text-primary" },
         ].map((s) => (
           <div key={s.label} className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-xl p-4 text-center shadow-sm">
@@ -207,11 +183,11 @@ export default function ProcurementDelays() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 p-4 rounded-xl">
-        <input type="text" placeholder="Search materials or vendors..."
+        <input type="text" placeholder="Search items or vendors..."
           className="input input-sm input-bordered bg-slate-700 text-gray-100 w-64"
           value={search} onChange={(e) => setSearch(e.target.value)} />
         <div className="flex gap-2 flex-wrap">
-          {["All", ...PROC_STATUSES].map((s) => (
+          {["All", "PLANNED", "ORDERED", "DELAYED", "DELIVERED"].map((s) => (
             <button key={s}
               className={`btn btn-sm ${statusFilter === s ? "btn-info" : "btn-ghost text-gray-100"}`}
               onClick={() => setStatusFilter(s)}>{s}</button>
@@ -234,12 +210,12 @@ export default function ProcurementDelays() {
             <table className="table table-sm w-full">
               <thead>
                 <tr className="text-gray-400 text-xs">
-                  <th>Material</th>
+                  <th>Item</th>
                   <th>Vendor</th>
                   <th>Project / Task</th>
                   <th>Qty</th>
                   <th>Unit Cost</th>
-                  <th>Total Value</th>
+                  <th>Total Cost</th>
                   <th>Expected Delivery</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -248,26 +224,29 @@ export default function ProcurementDelays() {
               <tbody>
                 {filtered.map((item) => {
                   const overdue = isOverdue(item);
+                  const busy = actioningId === item.id;
                   return (
                     <tr key={item.id} className={`hover:bg-slate-700 ${overdue ? "border-l-2 border-error" : ""}`}>
                       <td>
-                        <div className="text-gray-100 font-medium">{item.material_name}</div>
-                        {item.delay_count > 0 && (
-                          <span className="badge badge-error badge-xs">{item.delay_count} delay(s)</span>
+                        <div className="text-gray-100 font-medium">{item.name}</div>
+                        {item.delayReason && (
+                          <div className="text-xs text-error mt-0.5 truncate max-w-40" title={item.delayReason}>
+                            {item.delayReason}
+                          </div>
                         )}
                       </td>
-                      <td className="text-gray-300 text-sm">{item.vendor_name || "—"}</td>
+                      <td className="text-gray-300 text-sm">{item.vendorName || "—"}</td>
                       <td>
-                        <div className="text-gray-300 text-xs">{item.project_name || item.project_id || "—"}</div>
-                        {item.task_id && <div className="text-gray-500 text-xs">Task: {item.task_id}</div>}
+                        <div className="text-gray-300 text-xs">{item.projectId || "—"}</div>
+                        {item.taskId && <div className="text-gray-500 text-xs">Task: {item.taskId}</div>}
                       </td>
-                      <td className="text-gray-100">{item.quantity} {item.unit}</td>
-                      <td className="text-gray-100">{formatCurrency(item.unit_cost)}</td>
-                      <td className="text-gray-100 font-medium">{formatCurrency(totalValue(item))}</td>
+                      <td className="text-gray-100">{item.quantity} {item.unit || ""}</td>
+                      <td className="text-gray-100">{formatCurrency(item.unitCost)}</td>
+                      <td className="text-gray-100 font-medium">{formatCurrency(item.totalCost)}</td>
                       <td>
                         <span className={`text-xs ${overdue ? "text-error font-medium" : "text-gray-400"}`}>
-                          {item.expected_delivery
-                            ? new Date(item.expected_delivery).toLocaleDateString()
+                          {item.expectedDelivery
+                            ? new Date(item.expectedDelivery).toLocaleDateString()
                             : "—"}
                           {overdue && <span className="badge badge-error badge-xs ml-1">Late</span>}
                         </span>
@@ -278,15 +257,29 @@ export default function ProcurementDelays() {
                         </span>
                       </td>
                       <td>
-                        <div className="flex gap-1">
-                          <button className="btn btn-xs btn-ghost text-error"
-                            onClick={() => openDelays(item)}>
-                            {item.delay_count > 0 ? `Delays (${item.delay_count})` : "Log Delay"}
-                          </button>
-                          <button className="btn btn-xs btn-ghost text-gray-100"
-                            onClick={() => openEdit(item)}>Edit</button>
-                          <button className="btn btn-xs btn-ghost text-error"
-                            onClick={() => setDeleteTarget(item)}>Del</button>
+                        <div className="flex gap-1 flex-wrap">
+                          {(item.status === "PLANNED" || item.status === "DELAYED") && (
+                            <button className="btn btn-xs btn-info" disabled={busy}
+                              onClick={() => handleOrder(item.id)}>
+                              {busy ? "..." : item.status === "DELAYED" ? "Re-order" : "Order"}
+                            </button>
+                          )}
+                          {item.status === "ORDERED" && (
+                            <button className="btn btn-xs btn-warning" disabled={busy}
+                              onClick={() => { setDelayTarget(item); setDelayReason(""); }}>
+                              Delay
+                            </button>
+                          )}
+                          {(item.status === "ORDERED" || item.status === "DELAYED") && (
+                            <button className="btn btn-xs btn-success" disabled={busy}
+                              onClick={() => handleDeliver(item.id)}>
+                              {busy ? "..." : "Deliver"}
+                            </button>
+                          )}
+                          {item.status !== "DELIVERED" && (
+                            <button className="btn btn-xs btn-ghost text-gray-100"
+                              onClick={() => openEdit(item)}>Edit</button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -298,93 +291,27 @@ export default function ProcurementDelays() {
         )}
       </div>
 
-      {/* Delay Modal */}
+      {/* Mark Delayed Modal */}
       {delayTarget && (
         <div className="modal modal-open">
-          <div className="modal-box bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 max-w-lg">
-            <h3 className="font-bold text-lg text-gray-100 mb-1">
-              Vendor Delays — {delayTarget.material_name}
-            </h3>
-            <p className="text-xs text-gray-400 mb-4">
-              {delayTarget.vendor_name} · {delayTarget.project_name || delayTarget.project_id}
+          <div className="modal-box bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 max-w-sm">
+            <h3 className="font-bold text-gray-100">Mark as Delayed</h3>
+            <p className="text-sm text-gray-400 mt-2 mb-3">
+              {delayTarget.name} — {delayTarget.vendorName}
             </p>
-
-            {/* Existing delays */}
-            <div className="max-h-48 overflow-y-auto space-y-2 mb-4">
-              {delays.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-2">No delays logged.</p>
-              ) : delays.map((d) => (
-                <div key={d.id} className={`bg-slate-700 rounded-lg px-3 py-2 ${d.resolved ? "opacity-50" : ""}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`badge badge-xs ${IMPACT_COLOR[d.impact_level]}`}>{d.impact_level}</span>
-                        {d.resolved && <span className="badge badge-xs badge-success">Resolved</span>}
-                      </div>
-                      <p className="text-gray-100 text-sm">{d.reason}</p>
-                      {d.impact_description && (
-                        <p className="text-xs text-gray-400 mt-1">{d.impact_description}</p>
-                      )}
-                      <div className="flex gap-3 mt-1 text-xs text-gray-500">
-                        <span>Original: {d.original_delivery ? new Date(d.original_delivery).toLocaleDateString() : "—"}</span>
-                        <span>Revised: {d.revised_delivery ? new Date(d.revised_delivery).toLocaleDateString() : "—"}</span>
-                      </div>
-                    </div>
-                    {!d.resolved && (
-                      <button className="btn btn-xs btn-success ml-2 flex-shrink-0"
-                        onClick={() => handleResolveDelay(d.id)}>Resolve</button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Log delay form */}
-            <div className="border-t border-slate-700 pt-4 space-y-2">
-              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">Log New Delay</p>
-              <textarea placeholder="Reason for delay..." rows={2}
-                className="textarea textarea-bordered w-full bg-slate-700 text-gray-100 text-sm"
-                value={delayForm.reason}
-                onChange={(e) => setDelayForm({ ...delayForm, reason: e.target.value })} />
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="label text-xs text-gray-400">Original Delivery</label>
-                  <input type="date" className="input input-xs input-bordered w-full bg-slate-700 text-gray-100"
-                    value={delayForm.original_delivery}
-                    onChange={(e) => setDelayForm({ ...delayForm, original_delivery: e.target.value })} />
-                </div>
-                <div>
-                  <label className="label text-xs text-gray-400">Revised Delivery</label>
-                  <input type="date" className="input input-xs input-bordered w-full bg-slate-700 text-gray-100"
-                    value={delayForm.revised_delivery}
-                    onChange={(e) => setDelayForm({ ...delayForm, revised_delivery: e.target.value })} />
-                </div>
-              </div>
-              <div>
-                <label className="label text-xs text-gray-400">Impact Level</label>
-                <select className="select select-xs select-bordered w-full bg-slate-700 text-gray-100"
-                  value={delayForm.impact_level}
-                  onChange={(e) => setDelayForm({ ...delayForm, impact_level: e.target.value })}>
-                  {IMPACT_LEVELS.map((l) => <option key={l}>{l}</option>)}
-                </select>
-              </div>
-              <textarea placeholder="Impact on project timeline (optional)..." rows={2}
-                className="textarea textarea-bordered w-full bg-slate-700 text-gray-100 text-sm"
-                value={delayForm.impact_description}
-                onChange={(e) => setDelayForm({ ...delayForm, impact_description: e.target.value })} />
-              <button className="btn btn-xs btn-error w-full"
-                onClick={handleLogDelay}
-                disabled={loggingDelay || !delayForm.reason}>
-                {loggingDelay ? "Logging..." : "Log Delay"}
-              </button>
-            </div>
-
+            <textarea className="textarea textarea-bordered w-full bg-slate-700 text-gray-100 text-sm" rows={3}
+              placeholder="Reason for delay (required)..."
+              value={delayReason} onChange={(e) => setDelayReason(e.target.value)} />
             <div className="modal-action">
               <button className="btn btn-ghost btn-sm text-gray-100"
-                onClick={() => setDelayTarget(null)}>Done</button>
+                onClick={() => { setDelayTarget(null); setDelayReason(""); }}>Cancel</button>
+              <button className="btn btn-error btn-sm" onClick={handleDelay}
+                disabled={delaying || !delayReason.trim()}>
+                {delaying ? "Processing..." : "Confirm Delay"}
+              </button>
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setDelayTarget(null)} />
+          <div className="modal-backdrop" onClick={() => { setDelayTarget(null); setDelayReason(""); }} />
         </div>
       )}
 
@@ -397,81 +324,79 @@ export default function ProcurementDelays() {
             </h3>
             <div className="space-y-3">
               <div>
-                <label className="label text-xs text-gray-400">Material / Item Name</label>
+                <label className="label text-xs text-gray-400">Item / Service Name *</label>
                 <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                  value={form.material_name}
-                  onChange={(e) => setForm({ ...form, material_name: e.target.value })} />
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label text-xs text-gray-400">Vendor Name</label>
+                  <label className="label text-xs text-gray-400">Vendor Name *</label>
                   <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.vendor_name}
-                    onChange={(e) => setForm({ ...form, vendor_name: e.target.value })} />
+                    value={form.vendorName}
+                    onChange={(e) => setForm({ ...form, vendorName: e.target.value })} />
                 </div>
                 <div>
-                  <label className="label text-xs text-gray-400">Vendor ID (optional)</label>
+                  <label className="label text-xs text-gray-400">Vendor ID *</label>
                   <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.vendor_id}
-                    onChange={(e) => setForm({ ...form, vendor_id: e.target.value })} />
+                    value={form.vendorId}
+                    onChange={(e) => setForm({ ...form, vendorId: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label text-xs text-gray-400">Project ID</label>
+                  <label className="label text-xs text-gray-400">Project ID *</label>
                   <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.project_id}
-                    onChange={(e) => setForm({ ...form, project_id: e.target.value })} />
+                    value={form.projectId}
+                    onChange={(e) => setForm({ ...form, projectId: e.target.value })} />
                 </div>
                 <div>
                   <label className="label text-xs text-gray-400">Task ID (optional)</label>
                   <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.task_id}
-                    onChange={(e) => setForm({ ...form, task_id: e.target.value })} />
+                    value={form.taskId}
+                    onChange={(e) => setForm({ ...form, taskId: e.target.value })} />
                 </div>
+              </div>
+              <div>
+                <label className="label text-xs text-gray-400">Vendor Quote ID (optional)</label>
+                <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
+                  value={form.vendorQuoteId}
+                  onChange={(e) => setForm({ ...form, vendorQuoteId: e.target.value })} />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="label text-xs text-gray-400">Quantity</label>
-                  <input type="number" min="0" className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
+                  <label className="label text-xs text-gray-400">Quantity *</label>
+                  <input type="number" min="0.01" step="any"
+                    className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
                     value={form.quantity}
                     onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
                 </div>
                 <div>
                   <label className="label text-xs text-gray-400">Unit</label>
                   <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    placeholder="units, kg, m..."
+                    placeholder="pcs, kg, m..."
                     value={form.unit}
                     onChange={(e) => setForm({ ...form, unit: e.target.value })} />
                 </div>
                 <div>
-                  <label className="label text-xs text-gray-400">Unit Cost ($)</label>
-                  <input type="number" min="0" step="0.01" className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.unit_cost}
-                    onChange={(e) => setForm({ ...form, unit_cost: e.target.value })} />
+                  <label className="label text-xs text-gray-400">Unit Cost ($) *</label>
+                  <input type="number" min="0.01" step="0.01"
+                    className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
+                    value={form.unitCost}
+                    onChange={(e) => setForm({ ...form, unitCost: e.target.value })} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label text-xs text-gray-400">Expected Delivery</label>
-                  <input type="date" className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.expected_delivery}
-                    onChange={(e) => setForm({ ...form, expected_delivery: e.target.value })} />
-                </div>
-                <div>
-                  <label className="label text-xs text-gray-400">Status</label>
-                  <select className="select select-sm select-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                    {PROC_STATUSES.map((s) => <option key={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-              {form.quantity && form.unit_cost && (
+              {form.quantity && form.unitCost && (
                 <div className="bg-slate-700 rounded-lg px-3 py-2 text-sm text-gray-100">
-                  Total Value: <strong>{formatCurrency(parseFloat(form.quantity) * parseFloat(form.unit_cost))}</strong>
+                  Total Cost: <strong>{formatCurrency(parseFloat(form.quantity) * parseFloat(form.unitCost))}</strong>
                 </div>
               )}
+              <div>
+                <label className="label text-xs text-gray-400">Expected Delivery</label>
+                <input type="date" className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
+                  value={form.expectedDelivery}
+                  onChange={(e) => setForm({ ...form, expectedDelivery: e.target.value })} />
+              </div>
               <div>
                 <label className="label text-xs text-gray-400">Notes</label>
                 <textarea className="textarea textarea-bordered w-full bg-slate-700 text-gray-100 text-sm" rows={2}
@@ -481,31 +406,12 @@ export default function ProcurementDelays() {
             <div className="modal-action">
               <button className="btn btn-ghost btn-sm text-gray-100" onClick={() => setShowModal(false)}>Cancel</button>
               <button className="btn btn-info btn-sm" onClick={handleSave}
-                disabled={saving || !form.material_name}>
+                disabled={saving || !form.name || !form.vendorId || !form.vendorName || !form.projectId || !form.quantity || !form.unitCost}>
                 {saving ? "Saving..." : editing ? "Update" : "Create"}
               </button>
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => setShowModal(false)} />
-        </div>
-      )}
-
-      {/* Delete Confirm */}
-      {deleteTarget && (
-        <div className="modal modal-open">
-          <div className="modal-box bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 max-w-sm">
-            <h3 className="font-bold text-gray-100">Delete Procurement Item?</h3>
-            <p className="text-sm text-gray-400 mt-2">
-              Delete <strong className="text-gray-100">{deleteTarget.material_name}</strong>?
-            </p>
-            <div className="modal-action">
-              <button className="btn btn-ghost btn-sm text-gray-100" onClick={() => setDeleteTarget(null)}>Cancel</button>
-              <button className="btn btn-error btn-sm" onClick={handleDelete} disabled={deleting}>
-                {deleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setDeleteTarget(null)} />
         </div>
       )}
     </div>

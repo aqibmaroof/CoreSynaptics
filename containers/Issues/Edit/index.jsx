@@ -6,7 +6,6 @@ import { getIssueById, updateIssue } from "@/services/Issues";
 import { getProjects } from "@/services/Projects";
 import { getCompanies } from "@/services/Companies";
 import { getUsers } from "@/services/Users";
-
 const fetchAssets = async () => [];
 
 const SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];

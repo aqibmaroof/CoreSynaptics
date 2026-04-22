@@ -43,6 +43,7 @@ export default function ProductEdit() {
     category: "",
     brand: "",
     unit: "pcs",
+    quantity: "",
   });
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function ProductEdit() {
           category: d.category ?? "",
           brand: d.brand ?? "",
           unit: d.unit ?? "pcs",
+          quantity: d.quantity ?? "",
         });
       })
       .catch(() =>
@@ -95,6 +97,7 @@ export default function ProductEdit() {
         category: form.category || undefined,
         brand: form.brand || undefined,
         unit: form.unit,
+        quantity: form.quantity,
       });
       setMsg({ type: "success", text: "Product updated successfully" });
       setTimeout(() => router.push("/Inventory/Products/List"), 1500);
@@ -205,6 +208,20 @@ export default function ProductEdit() {
               />
               {errors.name && (
                 <p className="text-red-400 text-xs mt-1">{errors.name}</p>
+              )}
+            </div>
+
+            <div>
+              <FL required>Product Quantity</FL>
+              <input
+                type="text"
+                value={form.quantity}
+                onChange={set("quantity")}
+                placeholder="e.g. 10"
+                className={`${INPUT} ${errors.quantity ? "border-red-500" : ""}`}
+              />
+              {errors.quantity && (
+                <p className="text-red-400 text-xs mt-1">{errors.quantity}</p>
               )}
             </div>
 

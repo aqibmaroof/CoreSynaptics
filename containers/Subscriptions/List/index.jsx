@@ -65,7 +65,7 @@ export default function PricingPlans() {
   return (
     <div
       className="text-white min-h-screen flex flex-col items-center justify-center py-5 px-4"
-      style={{ backgroundColor: "#020d16" }}
+      style={{ backgroundColor: "var(--rf-bg)" }}
     >
       {/* Background glow */}
       <div

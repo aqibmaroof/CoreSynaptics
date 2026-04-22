@@ -1,16 +1,77 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { getDeals, createDeal, updateDeal, deleteDeal } from "@/services/Deals";
-import { getContacts } from "@/services/Contacts";
-import { getUsers } from "@/services/Users";
-import { CreateTask } from "@/services/Tasks";
-import { getCompanies } from "@/services/Companies";
+import { getContactsByCompany, getContacts } from "@/services/Contacts";
+import { getCompanies, getCompanyById } from "@/services/Companies";
+import CompanySelect from "@/components/CRM/CompanySelect";
+import ActivityTimeline from "@/components/CRM/ActivityTimeline";
+
+const STAGES = [
+  { label: "Qualified", value: "QUALIFIED" },
+  { label: "Needs Analysis", value: "NEEDS_ANALYSIS" },
+  { label: "Proposal/Quote", value: "PROPOSAL_QUOTE" },
+  { label: "Negotiation", value: "NEGOTIATION" },
+  { label: "Closed Won", value: "CLOSED_WON" },
+  { label: "Closed Lost", value: "CLOSED_LOST" },
+];
+
+const STAGE_COLORS = {
+  QUALIFIED: {
+    dot: "bg-blue-400",
+    col: "border-blue-600/40",
+    badge: "bg-blue-500/20 text-blue-300",
+  },
+  NEEDS_ANALYSIS: {
+    dot: "bg-orange-400",
+    col: "border-orange-600/40",
+    badge: "bg-orange-500/20 text-orange-300",
+  },
+  PROPOSAL_QUOTE: {
+    dot: "bg-yellow-400",
+    col: "border-yellow-600/40",
+    badge: "bg-yellow-500/20 text-yellow-300",
+  },
+  NEGOTIATION: {
+    dot: "bg-cyan-400",
+    col: "border-cyan-600/40",
+    badge: "bg-cyan-500/20 text-cyan-300",
+  },
+  CLOSED_WON: {
+    dot: "bg-green-400",
+    col: "border-green-600/40",
+    badge: "bg-green-500/20 text-green-300",
+  },
+  CLOSED_LOST: {
+    dot: "bg-red-400",
+    col: "border-red-600/40",
+    badge: "bg-red-500/20 text-red-300",
+  },
+};
+
+const EMPTY_FORM = {
+  name: "",
+  companyId: "",
+  contactId: "",
+  value: "",
+  stage: "QUALIFIED",
+  expectedCloseDate: "",
+};
+
+const formatCurrency = (val) => {
+  if (!val) return "$0";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(val);
+};
 
 export default function DealsList() {
+  const router = useRouter();
   const [deals, setDeals] = useState([]);
   const [contacts, setContacts] = useState([]);
-  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,33 +82,78 @@ export default function DealsList() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [companies, setCompanies] = useState([]);
+  const [timelineEntity, setTimelineEntity] = useState(null); // { id, name }
 
-  // Task modal
-  const [showTaskModal, setShowTaskModal] = useState(false);
-  const [taskDealId, setTaskDealId] = useState(null);
-  const [taskForm, setTaskForm] = useState({
-    name: "",
-    description: "",
-    priority: "Medium",
-    dueDate: "",
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
 
-  const [form, setForm] = useState({
-    name: "",
-    companyId: "",
-    contactId: "",
-    value: "",
-    expectedCloseDate: "",
-  });
+  // Drag state
+  const dragIdRef = useRef(null);
+  // Cache full lists so we can restore them when selections are cleared
+  const allContactsRef = useRef([]);
+  const allCompaniesRef = useRef([]);
 
+  // Mount: load deals, all companies, and all contacts in parallel
   useEffect(() => {
     fetchDeals();
-    fetchContacts();
-    fetchUsers();
     getCompanies()
-      .then((res) => setCompanies(Array.isArray(res) ? res : res?.data || []))
+      .then((res) => {
+        const list = Array.isArray(res) ? res : res?.data || [];
+        allCompaniesRef.current = list;
+        setCompanies(list);
+      })
+      .catch(() => {});
+    getContacts()
+      .then((res) => {
+        const list = Array.isArray(res) ? res : res?.data || [];
+        allContactsRef.current = list;
+        setContacts(list);
+      })
       .catch(() => {});
   }, []);
+
+  // Company selected → filter contacts to that company; restore all when cleared
+  useEffect(() => {
+    if (!form.companyId) {
+      setContacts(allContactsRef.current);
+      return;
+    }
+    getContactsByCompany(form.companyId)
+      .then((res) => {
+        const list = Array.isArray(res) ? res : res?.data || [];
+        setContacts(list);
+        // Clear contact selection if it doesn't belong to this company
+        setForm((prev) => {
+          const selectedId = prev.contactId?.id || prev.contactId;
+          if (selectedId && !list.find((c) => c.id === selectedId)) {
+            return { ...prev, contactId: "" };
+          }
+          return prev;
+        });
+      })
+      .catch(() => {});
+  }, [form.companyId]);
+
+  // Contact selected → fetch its company, show it in company dropdown and auto-set companyId
+  // Contact cleared → restore all companies
+  useEffect(() => {
+    const contactObj = form.contactId;
+    if (!contactObj) {
+      // Contact cleared — restore all companies (unless company was manually chosen)
+      setCompanies(allCompaniesRef.current);
+      return;
+    }
+    const companyId = contactObj?.companyId;
+    if (!companyId) return;
+    getCompanyById(companyId)
+      .then((res) => {
+        const company = res?.data ?? res;
+        if (!company) return;
+        // Show only the contact's company in the dropdown and auto-select it
+        setCompanies([company]);
+        setForm((prev) => ({ ...prev, companyId: company.id }));
+      })
+      .catch(() => {});
+  }, [form.contactId]);
 
   useEffect(() => {
     if (message) {
@@ -67,43 +173,24 @@ export default function DealsList() {
       setLoading(false);
     }
   };
-
-  const fetchContacts = async () => {
-    try {
-      const res = await getContacts();
-      setContacts(Array.isArray(res) ? res : res?.data || []);
-    } catch {}
-  };
-
-  const fetchUsers = async () => {
-    try {
-      const res = await getUsers();
-      setUsers(Array.isArray(res) ? res : res?.data || []);
-    } catch {}
-  };
-
   const resetForm = () => {
-    setForm({
-      name: "",
-      companyId: "",
-      contactId: "",
-      value: "",
-      expectedCloseDate: "",
-    });
+    setForm(EMPTY_FORM);
     setEditingDeal(null);
   };
-
   const openCreate = () => {
     resetForm();
     setShowModal(true);
   };
-
   const openEdit = (deal) => {
+    // Resolve full contact object from cached list if possible
+    const contactObj =
+      allContactsRef.current.find((c) => c.id === deal.contactId) || "";
     setForm({
       name: deal.name || "",
       companyId: deal.companyId || "",
-      contactId: deal.contactId || "",
+      contactId: contactObj,
       value: deal.value || "",
+      stage: deal.stage || "QUALIFIED",
       expectedCloseDate: deal.expectedCloseDate?.split("T")[0] || "",
     });
     setEditingDeal(deal);
@@ -117,7 +204,15 @@ export default function DealsList() {
     }
     setSaving(true);
     try {
-      const payload = { ...form, value: form.value ? Number(form.value) : 0 };
+      const payload = {
+        ...form,
+        // contactId in form is the full object; API needs just the UUID
+        contactId:
+          form.contactId?.id ||
+          (typeof form.contactId === "string" ? form.contactId : undefined) ||
+          undefined,
+        value: form.value ? Number(form.value) : 0,
+      };
       if (editingDeal) {
         await updateDeal(editingDeal.id, payload);
         setMessage({ type: "success", text: "Deal updated successfully" });
@@ -149,90 +244,132 @@ export default function DealsList() {
     }
   };
 
-  const handleCreateTask = async () => {
-    if (!taskForm.name) return;
+  // ─── Drag & Drop handlers ───────────────────────────────────────
+  const handleDragStart = (dealId) => {
+    dragIdRef.current = dealId;
+  };
+
+  const handleDrop = async (targetStage) => {
+    const id = dragIdRef.current;
+    if (!id) return;
+    const deal = deals.find((d) => d.id === id);
+    if (!deal || deal.stage === targetStage) return;
+    // Optimistic update
+    setDeals((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, stage: targetStage } : d)),
+    );
     try {
-      await CreateTask({ ...taskForm, dealId: taskDealId });
-      setShowTaskModal(false);
-      setTaskForm({
-        name: "",
-        description: "",
-        priority: "Medium",
-        dueDate: "",
-      });
-      setMessage({ type: "success", text: "Task created for deal" });
+      await updateDeal(id, { stage: targetStage });
     } catch {
-      setMessage({ type: "error", text: "Failed to create task" });
+      await fetchDeals(); // revert on failure
     }
+    dragIdRef.current = null;
   };
 
-  const formatCurrency = (val) => {
-    if (!val) return "$0";
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(val);
-  };
+  const filteredDeals = deals.filter((deal) =>
+    (deal.name || "").toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
-  const filteredDeals = deals.filter((deal) => {
-    const matchesSearch = (deal.name || "")
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
+  const totalPipeline = deals.reduce(
+    (sum, d) => sum + (Number(d.value) || 0),
+    0,
+  );
 
   // ─── KANBAN VIEW ────────────────────────────────────────────────
   const renderKanban = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {filteredDeals.map((deal) => {
-        const contact = contacts.find((c) => c.id === deal.contactId);
-        const company = companies.find((c) => c.id === deal.companyId);
+    <div className="flex gap-4 overflow-x-auto pb-4">
+      {STAGES.map((stage) => {
+        const col = STAGE_COLORS[stage.value];
+        const colDeals = filteredDeals.filter(
+          (d) => (d.stage || "PROSPECT") === stage.value,
+        );
+        const stageTotal = colDeals.reduce(
+          (s, d) => s + (Number(d.value) || 0),
+          0,
+        );
         return (
           <div
-            key={deal.id}
-            className="bg-gray-800/80 rounded-lg p-4 border border-gray-700/50 hover:border-cyan-500/30 transition-all cursor-pointer"
-            onClick={() => openEdit(deal)}
+            key={stage.value}
+            className={`flex-shrink-0 w-64 bg-gray-900/60 rounded-xl border ${col.col} p-3`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => handleDrop(stage)}
           >
-            <div className="flex items-start justify-between mb-3">
-              <h4 className="text-white font-medium text-base">{deal.name}</h4>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${col.dot}`} />
+                <h3 className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+                  {stage.label}
+                </h3>
+                <span className="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded-full">
+                  {colDeals.length}
+                </span>
+              </div>
+              <span className="text-xs text-gray-500">
+                {formatCurrency(stageTotal)}
+              </span>
             </div>
-            <p className="text-cyan-400 font-bold text-xl mb-2">
-              {formatCurrency(deal.value)}
-            </p>
-            {contact && (
-              <p className="text-gray-400 text-sm mb-1">
-                {contact.firstName} {contact.lastName}
-              </p>
-            )}
-            {company && (
-              <p className="text-purple-400 text-sm mb-1">{company.name}</p>
-            )}
-            {deal.expectedCloseDate && (
-              <p className="text-gray-500 text-xs mt-2">
-                Expected Close: {deal.expectedCloseDate.split("T")[0]}
-              </p>
-            )}
-            <div className="flex items-center justify-end mt-3">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setTaskDealId(deal.id);
-                  setShowTaskModal(true);
-                }}
-                className="text-xs text-cyan-400 hover:text-cyan-300"
-              >
-                + Task
-              </button>
+            <div className="space-y-2 min-h-[80px]">
+              {colDeals.map((deal) => {
+                const contact = allContactsRef.current.find(
+                  (c) => c.id === deal.contactId,
+                );
+                const company = allCompaniesRef.current.find(
+                  (c) => c.id === deal.companyId,
+                );
+                return (
+                  <div
+                    key={deal.id}
+                    draggable
+                    onDragStart={() => handleDragStart(deal.id)}
+                    className="bg-gray-800/80 rounded-lg p-3 border border-gray-700/50 cursor-grab active:cursor-grabbing hover:border-cyan-500/30 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <button
+                        onClick={() => router.push(`/CRM/Deals/Detail/${deal.id}`)}
+                        className="text-white text-sm font-medium hover:text-cyan-400 text-left leading-tight"
+                      >
+                        {deal.name}
+                      </button>
+                    </div>
+                    <p className="text-cyan-400 font-bold text-base mt-1">
+                      {formatCurrency(deal.value)}
+                    </p>
+                    {contact && (
+                      <p className="text-gray-400 text-xs mt-1">
+                        {contact.firstName} {contact.lastName}
+                      </p>
+                    )}
+                    {company && (
+                      <p className="text-purple-400 text-xs">{company.name}</p>
+                    )}
+                    {deal.expectedCloseDate && (
+                      <p className="text-gray-600 text-xs mt-1">
+                        Close: {deal.expectedCloseDate.split("T")[0]}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-end mt-2 pt-2 border-t border-gray-700/50">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTimelineEntity({ id: deal.id, name: deal.name });
+                        }}
+                        className="text-xs text-purple-400 hover:text-purple-300"
+                      >
+                        Timeline
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {colDeals.length === 0 && (
+                <div className="text-center text-gray-700 text-xs py-6 border border-dashed border-gray-800 rounded-lg">
+                  Drop here
+                </div>
+              )}
             </div>
           </div>
         );
       })}
-      {filteredDeals.length === 0 && (
-        <div className="col-span-full text-center text-gray-500 py-12">
-          No deals found
-        </div>
-      )}
     </div>
   );
 
@@ -246,6 +383,7 @@ export default function DealsList() {
               {[
                 "Deal Name",
                 "Value",
+                "Stage",
                 "Contact",
                 "Company",
                 "Expected Close",
@@ -262,18 +400,35 @@ export default function DealsList() {
           </thead>
           <tbody>
             {filteredDeals.map((deal) => {
-              const contact = contacts.find((c) => c.id === deal.contactId);
-              const company = companies.find((c) => c.id === deal.companyId);
+              const contact = allContactsRef.current.find(
+                (c) => c.id === deal.contactId,
+              );
+              const company = allCompaniesRef.current.find(
+                (c) => c.id === deal.companyId,
+              );
+              const stage = deal.stage || "Prospect";
               return (
                 <tr
                   key={deal.id}
                   className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
                 >
-                  <td className="px-6 py-4 text-white font-medium text-sm">
-                    {deal.name}
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => router.push(`/CRM/Deals/Detail/${deal.id}`)}
+                      className="text-white font-medium text-sm hover:text-cyan-400"
+                    >
+                      {deal.name}
+                    </button>
                   </td>
                   <td className="px-6 py-4 text-cyan-400 font-bold text-sm">
                     {formatCurrency(deal.value)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${STAGE_COLORS[stage]?.badge || "bg-gray-700 text-gray-300"}`}
+                    >
+                      {STAGES.find((s) => s.value === stage)?.label || stage.replace(/_/g, " ")}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-gray-400 text-sm">
                     {contact ? `${contact.firstName} ${contact.lastName}` : "—"}
@@ -293,13 +448,12 @@ export default function DealsList() {
                         Edit
                       </button>
                       <button
-                        onClick={() => {
-                          setTaskDealId(deal.id);
-                          setShowTaskModal(true);
-                        }}
-                        className="text-green-400 hover:text-green-300 text-xs"
+                        onClick={() =>
+                          setTimelineEntity({ id: deal.id, name: deal.name })
+                        }
+                        className="text-purple-400 hover:text-purple-300 text-xs"
                       >
-                        + Task
+                        Timeline
                       </button>
                       <button
                         onClick={() => setDeleteConfirm(deal.id)}
@@ -314,7 +468,7 @@ export default function DealsList() {
             })}
             {filteredDeals.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center text-gray-500 py-12">
+                <td colSpan={7} className="text-center text-gray-500 py-12">
                   No deals found
                 </td>
               </tr>
@@ -325,37 +479,28 @@ export default function DealsList() {
     </div>
   );
 
-  // Pipeline total
-  const totalPipeline = deals.reduce(
-    (sum, d) => sum + (Number(d.value) || 0),
-    0
-  );
-
   return (
     <div className="min-h-screen p-6">
       <div className="mx-auto">
-      
-
         {/* Header */}
         <div className="mb-8 flex justify-between items-start">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">Deals</h1>
             <p className="text-gray-400">
-              Total Pipeline Value:{" "}
+              Total Pipeline:{" "}
               <span className="text-cyan-400 font-bold">
                 {formatCurrency(totalPipeline)}
               </span>
             </p>
           </div>
           <div className="flex items-center gap-3">
-              {/* Message Toast */}
-        {message && (
-          <div
-            className={`z-50 px-4 py-3 rounded-lg border shadow-lg ${message.type === "success" ? "bg-green-900/80 border-green-500/30 text-green-300" : "bg-red-900/80 border-red-500/30 text-red-300"}`}
-          >
-            {message.text}
-          </div>
-        )}
+            {message && (
+              <div
+                className={`z-50 px-4 py-3 rounded-lg border shadow-lg ${message.type === "success" ? "bg-green-900/80 border-green-500/30 text-green-300" : "bg-red-900/80 border-red-500/30 text-red-300"}`}
+              >
+                {message.text}
+              </div>
+            )}
             <div className="flex bg-gray-800 rounded-lg p-1">
               <button
                 onClick={() => setViewMode("list")}
@@ -448,7 +593,7 @@ export default function DealsList() {
         {/* Create/Edit Deal Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-lg w-full">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-white font-bold text-lg mb-6">
                 {editingDeal ? "Edit Deal" : "Create Deal"}
               </h3>
@@ -465,29 +610,60 @@ export default function DealsList() {
                     placeholder="Deal name"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">
-                    Value ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={form.value}
-                    onChange={(e) =>
-                      setForm({ ...form, value: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500"
-                    placeholder="0"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">
+                      Value ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={form.value}
+                      onChange={(e) =>
+                        setForm({ ...form, value: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">
+                      Stage
+                    </label>
+                    <select
+                      value={form.stage}
+                      onChange={(e) =>
+                        setForm({ ...form, stage: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 cursor-pointer"
+                    >
+                      {STAGES.map((s, i) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+                <CompanySelect
+                  value={form.companyId}
+                  onChange={(id) => setForm({ ...form, companyId: id })}
+                  companies={companies}
+                  onCreated={(company) =>
+                    setCompanies((prev) => [...prev, company])
+                  }
+                  label="Assign to Company"
+                />
                 <div>
                   <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">
                     Contact
                   </label>
                   <select
-                    value={form.contactId}
-                    onChange={(e) =>
-                      setForm({ ...form, contactId: e.target.value })
-                    }
+                    value={form.contactId?.id || ""}
+                    onChange={(e) => {
+                      const contact =
+                        contacts.find((c) => c.id === e.target.value) || "";
+                      setForm({ ...form, contactId: contact });
+                    }}
                     className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 cursor-pointer"
                   >
                     <option value="">Select contact</option>
@@ -510,25 +686,6 @@ export default function DealsList() {
                     }
                     className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">
-                    Assign to Company
-                  </label>
-                  <select
-                    value={form.companyId}
-                    onChange={(e) =>
-                      setForm({ ...form, companyId: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500"
-                  >
-                    <option value="">— Select Company —</option>
-                    {companies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.name}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
               <div className="flex gap-3 justify-end mt-6">
@@ -553,85 +710,32 @@ export default function DealsList() {
           </div>
         )}
 
-        {/* Task Modal */}
-        {showTaskModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-white font-bold text-lg mb-4">
-                Create Task for Deal
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">
-                    Task Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={taskForm.name}
-                    onChange={(e) =>
-                      setTaskForm({ ...taskForm, name: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">
-                    Description
-                  </label>
-                  <textarea
-                    value={taskForm.description}
-                    onChange={(e) =>
-                      setTaskForm({ ...taskForm, description: e.target.value })
-                    }
-                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 resize-none"
-                    rows={2}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">
-                      Priority
-                    </label>
-                    <select
-                      value={taskForm.priority}
-                      onChange={(e) =>
-                        setTaskForm({ ...taskForm, priority: e.target.value })
-                      }
-                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 cursor-pointer"
-                    >
-                      <option value="Low">Low</option>
-                      <option value="Medium">Medium</option>
-                      <option value="High">High</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 mb-1 uppercase">
-                      Due Date
-                    </label>
-                    <input
-                      type="date"
-                      value={taskForm.dueDate}
-                      onChange={(e) =>
-                        setTaskForm({ ...taskForm, dueDate: e.target.value })
-                      }
-                      className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500"
-                    />
-                  </div>
-                </div>
+        {/* Timeline Modal */}
+        {timelineEntity && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            onClick={() => setTimelineEntity(null)}
+          >
+            <div
+              className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700 shrink-0">
+                <h3 className="text-white font-bold">
+                  Timeline — {timelineEntity.name}
+                </h3>
+                <button
+                  onClick={() => setTimelineEntity(null)}
+                  className="text-gray-400 hover:text-white text-lg leading-none"
+                >
+                  ✕
+                </button>
               </div>
-              <div className="flex gap-3 justify-end mt-6">
-                <button
-                  onClick={() => setShowTaskModal(false)}
-                  className="px-5 py-2.5 border border-gray-600 text-gray-300 rounded-lg text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateTask}
-                  className="px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white rounded-lg text-sm font-medium"
-                >
-                  Create Task
-                </button>
+              <div className="p-5 overflow-y-auto">
+                <ActivityTimeline
+                  entityType="deal"
+                  entityId={timelineEntity.id}
+                />
               </div>
             </div>
           </div>

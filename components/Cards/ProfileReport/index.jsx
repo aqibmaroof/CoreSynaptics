@@ -1,7 +1,16 @@
 import DynamicChart from "@/components/common/Charts/DynamicChart";
 import NumberFormatter from "../../../Utils/NumberFormatter";
 
+const isLight = () =>
+  typeof document !== "undefined" &&
+  document.documentElement.getAttribute("data-theme") === "light";
+
 export default function SalesCards() {
+  const light = isLight();
+  const labelColor = light ? "#3a5070" : "#94a3b8";
+  const axisColor  = light ? "#6b84a0" : "#c3c8cfff";
+  const gridColor  = light ? "#c5d2ea" : "#6b6f75ff";
+  const tooltipTheme = light ? "light" : "dark";
   const categories = ["Not Started", "In Progress", "L2", "Completed", "None"];
   const counts = [2, 2, 1, 1, 13];
   const total = counts.reduce((sum, val) => sum + val, 0);
@@ -71,7 +80,7 @@ export default function SalesCards() {
       categories: categories,
       labels: {
         style: {
-          colors: "#94a3b8",
+          colors: labelColor,
           fontSize: "12px",
         },
       },
@@ -91,13 +100,13 @@ export default function SalesCards() {
           return val + "%";
         },
         style: {
-          colors: "#c3c8cfff",
+          colors: axisColor,
           fontSize: "12px",
         },
       },
     },
     grid: {
-      borderColor: "#6b6f75ff",
+      borderColor: gridColor,
       strokeDashArray: 0,
       xaxis: {
         lines: {
@@ -112,7 +121,7 @@ export default function SalesCards() {
     },
     tooltip: {
       enabled: true,
-      theme: "dark",
+      theme: tooltipTheme,
       y: {
         formatter: function (val, opts) {
           const index = opts.dataPointIndex;

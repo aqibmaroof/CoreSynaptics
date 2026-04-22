@@ -2,7 +2,17 @@
 import CardWrapper from "@/components/CardWrapper";
 import DynamicChart from "@/components/common/Charts/DynamicChart";
 
+const isLight = () =>
+  typeof document !== "undefined" &&
+  document.documentElement.getAttribute("data-theme") === "light";
+
 export default function WarehouseAnalysis() {
+  const light = isLight();
+  const labelColor  = light ? "#3a5070" : "#94a3b8";
+  const axisColor   = light ? "#6b84a0" : "#64748b";
+  const gridColor   = light ? "#c5d2ea" : "#1e293b";
+  const tooltipTheme = light ? "light" : "dark";
+
   const ChartOptions = {
     series: [
       {
@@ -89,7 +99,7 @@ export default function WarehouseAnalysis() {
       ],
       labels: {
         style: {
-          colors: "#94a3b8",
+          colors: labelColor,
           fontSize: "12px",
           fontWeight: 500,
         },
@@ -110,14 +120,14 @@ export default function WarehouseAnalysis() {
           return val.toFixed(0);
         },
         style: {
-          colors: "#64748b",
+          colors: axisColor,
           fontSize: "12px",
           fontWeight: 500,
         },
       },
     },
     grid: {
-      borderColor: "#1e293b",
+      borderColor: gridColor,
       strokeDashArray: 0,
       xaxis: {
         lines: {
@@ -141,7 +151,7 @@ export default function WarehouseAnalysis() {
     },
     tooltip: {
       enabled: true,
-      theme: "dark",
+      theme: tooltipTheme,
       style: {
         fontSize: "12px",
       },
@@ -149,13 +159,6 @@ export default function WarehouseAnalysis() {
         formatter: function (val) {
           return val.toFixed(0);
         },
-      },
-      custom: function ({ series, seriesIndex, dataPointIndex, w }) {
-        const value = series[seriesIndex][dataPointIndex];
-        if (value === 620) {
-          return `<div className="bg-white text-slate-900 px-3 py-1.5 rounded-lg font-semibold text-sm shadow-lg">${value}</div>`;
-        }
-        return `<div className="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-sm">${value}</div>`;
       },
     },
     annotations: {

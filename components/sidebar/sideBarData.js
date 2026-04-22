@@ -1,112 +1,89 @@
 "use client";
 import config from "@/config";
 
-// Role constants for clarity and reuse
 export const ROLES = {
   GC_PM: "gc_pm",
   GC_ADMIN: "gc_admin",
   OEM_PM: "oem_pm",
   OEM_ADMIN: "oem_admin",
-  FSM: "fsm", // Field Service Manager / Scheduler – OEM
-  FSE: "fse", // Field Service Engineer / ASP – OEM
-  SUPERINTENDENT: "superintendent", // GC
-  QA_QC: "qa_manager", // GC or OEM
-  SAFETY: "safety_officer", // GC or OEM
-  FINANCE: "finance", // GC or OEM
+  FSM: "fsm",
+  FSE: "fse",
+  SUPERINTENDENT: "superintendent",
+  QA_QC: "qa_manager",
+  SAFETY: "safety_officer",
+  FINANCE: "finance",
   EXECUTIVE: "executive",
   SUPERADMIN: "SUPERADMIN",
 };
 
+const ALL = Object.values(ROLES);
+
+// Helper: union of role arrays (deduped)
+const union = (...arrays) => [...new Set(arrays.flat())];
+
 export const sidebarItems = [
-  // ─── GC PM Dashboard ───────────────────────────────────────────────
+
+  // ─── Dashboards ─────────────────────────────────────────────────────
   {
-    title: "GC Dashboard",
+    title: "Dashboards",
     icon: config?.chart,
     iconActive: config?.home,
     path: "/",
     type: "link",
-    submenu: [],
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
+    roles: ALL,
+    submenu: [
+      {
+        title: "GC Dashboard",
+        type: "link",
+        path: "/",
+        roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "OEM Dashboard",
+        type: "link",
+        path: "/OEM/Dashboard",
+        roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "FSM Dashboard",
+        type: "link",
+        path: "/Dispatch/Dashboard",
+        roles: [ROLES.FSM, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Field Dashboard",
+        type: "link",
+        path: "/Field/Dashboard",
+        roles: [ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
+      },
+      {
+        title: "QA/QC Dashboard",
+        type: "link",
+        path: "/QAQC/Dashboard",
+        roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Safety Dashboard",
+        type: "link",
+        path: "/Safety/Audits",
+        roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Finance Dashboard",
+        type: "link",
+        path: "/Finance/Dashboard",
+        roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Executive Dashboard",
+        type: "link",
+        path: "/Executive/Dashboard",
+        roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
+      },
+    ],
   },
 
-  // ─── OEM PM Dashboard ──────────────────────────────────────────────
-  {
-    title: "OEM Dashboard",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/OEM/Dashboard",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
-  },
-
-  // ─── FSM / Scheduler Dashboard ─────────────────────────────────────
-  {
-    title: "FSM Dashboard",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Dispatch/Dashboard",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.FSM, ROLES.SUPERADMIN],
-  },
-
-  // ─── Superintendent Field Dashboard ────────────────────────────────
-  {
-    title: "Today / Field Dashboard",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Field/Dashboard",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
-  },
-
-  // ─── QA/QC Dashboard ───────────────────────────────────────────────
-  {
-    title: "QA/QC Dashboard",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/QAQC/Dashboard",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
-  },
-
-  // ─── Safety Dashboard ──────────────────────────────────────────────
-  {
-    title: "Safety Dashboard",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Safety/Audits",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
-  },
-
-  // ─── Finance Dashboard ─────────────────────────────────────────────
-  {
-    title: "Finance Dashboard",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Finance/Dashboard",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.FINANCE, ROLES.SUPERADMIN],
-  },
-
-  // ─── Executive Dashboard ───────────────────────────────────────────
-  {
-    title: "Executive Dashboard",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Executive/Dashboard",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
-  },
-
-  // ─── Projects ──────────────────────────────────────────────────────
+  // ─── Projects ───────────────────────────────────────────────────────
   {
     title: "Projects",
     icon: config?.chart,
@@ -114,609 +91,478 @@ export const sidebarItems = [
     path: "/Projects",
     type: "link",
     submenu: [],
-    // GC PM: Edit/Approve | OEM PM: Edit | FSM: View (limited) | QA/QC: View (limited)
     roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.FSM,
-      ROLES.QA_QC,
-      ROLES.SUPERADMIN,
+      ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_ADMIN, ROLES.OEM_PM,
+      ROLES.FSM, ROLES.QA_QC, ROLES.SUPERADMIN,
     ],
   },
 
-  // ─── CRM ───────────────────────────────────────────────────────────
+  // ─── CRM ────────────────────────────────────────────────────────────
   {
     title: "CRM",
     icon: config?.chart,
     iconActive: config?.home,
     path: "/CRM/Leads/List",
     type: "link",
-    roles: Object.values(ROLES),
+    roles: ALL,
     submenu: [
-      { title: "Leads", type: "link", path: "/CRM/Leads/List" },
-      { title: "Contacts", type: "link", path: "/CRM/Contacts/List" },
-      { title: "Companies", type: "link", path: "/Company/List" },
-      { title: "Deals", type: "link", path: "/CRM/Deals/List" },
+      { title: "Leads",     type: "link", path: "/CRM/Leads/List",    roles: ALL },
+      { title: "Companies", type: "link", path: "/Company/List",       roles: ALL },
+      { title: "Contacts",  type: "link", path: "/CRM/Contacts/List",  roles: ALL },
+      { title: "Deals",     type: "link", path: "/CRM/Deals/List",     roles: ALL },
     ],
   },
 
-  // ─── Phase Gates ─────────────────────────────────────────────────────
-  // {
-  //   title: "Phase Gates",
-  //   icon: config?.chart,
-  //   iconActive: config?.home,
-  //   path: "/PhaseGates",
-  //   type: "link",
-  //   submenu: [],
-  //   roles: Object.values(ROLES), // All roles can access
-  // },
-
-  // ─── Checklist ─────────────────────────────────────────────────────
+  // ─── Operations ─────────────────────────────────────────────────────
   {
-    title: "Checklists",
+    title: "Operations",
     icon: config?.chart,
     iconActive: config?.home,
     path: "/Checklist/List",
     type: "link",
-    submenu: [],
-    roles: Object.values(ROLES), // All roles can access
+    roles: ALL,
+    submenu: [
+      {
+        title: "Checklists",
+        type: "link",
+        path: "/Checklist/List",
+        roles: ALL,
+      },
+      {
+        title: "Tasks",
+        type: "link",
+        path: "/Tasks/List",
+        roles: [ROLES.FSE, ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Issues",
+        type: "link",
+        path: "/Issues/List",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.FSE, ROLES.SUPERINTENDENT, ROLES.QA_QC,
+          ROLES.SAFETY, ROLES.EXECUTIVE, ROLES.SUPERADMIN,
+        ],
+      },
+      {
+        title: "RFIs",
+        type: "link",
+        path: "/RFI/List",
+        roles: ALL,
+      },
+      {
+        title: "Meetings",
+        type: "link",
+        path: "/Meeting/List",
+        roles: ALL,
+      },
+      {
+        title: "Site Access (TARF)",
+        type: "link",
+        path: "/TARF/List",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.FSE, ROLES.SUPERINTENDENT, ROLES.SAFETY,
+          ROLES.QA_QC, ROLES.SUPERADMIN,
+        ],
+      },
+      {
+        title: "Change Orders",
+        type: "link",
+        path: "/ChangeOrders",
+        roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
+      },
+    ],
   },
 
-  // ─── Inventory Management ──────────────────────────────────────────
+  // ─── Scheduling ─────────────────────────────────────────────────────
   {
-    title: "Inventory",
+    title: "Scheduling",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Schedule",
+    type: "link",
+    roles: union(
+      [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERINTENDENT],
+      [ROLES.OEM_PM, ROLES.OEM_ADMIN],
+      [ROLES.FSM],
+      [ROLES.FSE],
+      [ROLES.SUPERADMIN],
+    ),
+    submenu: [
+      {
+        title: "Schedule & Look-Ahead",
+        type: "link",
+        path: "/Schedule",
+        roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Service Schedule / Dispatch",
+        type: "link",
+        path: "/ServiceSchedule",
+        roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Assignments",
+        type: "link",
+        path: "/Assignments",
+        roles: [ROLES.FSM, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Schedule & Windows",
+        type: "link",
+        path: "/ScheduleWindows",
+        roles: [ROLES.FSM, ROLES.SUPERADMIN],
+      },
+      {
+        title: "My Assignments",
+        type: "link",
+        path: "/MyAssignments",
+        roles: [ROLES.FSE, ROLES.SUPERADMIN],
+      },
+    ],
+  },
+
+  // ─── Field Operations ───────────────────────────────────────────────
+  {
+    title: "Field Operations",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Commissioning",
+    type: "link",
+    roles: union(
+      [ROLES.GC_PM, ROLES.GC_ADMIN],
+      [ROLES.OEM_PM, ROLES.OEM_ADMIN],
+      [ROLES.FSM, ROLES.FSE],
+      [ROLES.SUPERINTENDENT],
+      [ROLES.SUPERADMIN],
+    ),
+    submenu: [
+      {
+        title: "Commissioning",
+        type: "link",
+        path: "/Commissioning",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.FSE, ROLES.SUPERADMIN,
+        ],
+      },
+      {
+        title: "Test Results Upload",
+        type: "link",
+        path: "/TestResults",
+        roles: [ROLES.FSE, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Field Reports",
+        type: "link",
+        path: "/FieldReports",
+        roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Daily Reports",
+        type: "link",
+        path: "/DailyReports",
+        roles: [ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Logistics",
+        type: "link",
+        path: "/Logistics",
+        roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
+      },
+    ],
+  },
+
+  // ─── Supply Chain ───────────────────────────────────────────────────
+  {
+    title: "Supply Chain",
     icon: config?.chart,
     iconActive: config?.home,
     path: "/Inventory/Products/List",
     type: "link",
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSM,
-      ROLES.SUPERINTENDENT,
-      ROLES.FINANCE,
-      ROLES.SUPERADMIN,
-    ],
+    roles: union(
+      [ROLES.GC_PM, ROLES.GC_ADMIN],
+      [ROLES.OEM_PM, ROLES.OEM_ADMIN],
+      [ROLES.FSM, ROLES.FSE],
+      [ROLES.SUPERINTENDENT],
+      [ROLES.FINANCE],
+      [ROLES.SUPERADMIN],
+    ),
     submenu: [
       {
         title: "Products & SKUs",
         type: "link",
         path: "/Inventory/Products/List",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.SUPERINTENDENT, ROLES.FINANCE, ROLES.SUPERADMIN,
+        ],
       },
       {
         title: "Stock Movements",
         type: "link",
         path: "/Inventory/Movements/List",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.SUPERINTENDENT, ROLES.FINANCE, ROLES.SUPERADMIN,
+        ],
       },
-      { title: "Warehouses", type: "link", path: "/Inventory/Warehouses/List" },
-      { title: "Suppliers", type: "link", path: "/Inventory/Suppliers/List" },
+      {
+        title: "Warehouses",
+        type: "link",
+        path: "/Inventory/Warehouses/List",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.SUPERINTENDENT, ROLES.FINANCE, ROLES.SUPERADMIN,
+        ],
+      },
+      {
+        title: "Suppliers",
+        type: "link",
+        path: "/Inventory/Suppliers/List",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.SUPERINTENDENT, ROLES.FINANCE, ROLES.SUPERADMIN,
+        ],
+      },
+      {
+        title: "Shipments",
+        type: "link",
+        path: "/Shipments/List",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.SUPERINTENDENT, ROLES.FINANCE, ROLES.SUPERADMIN,
+        ],
+      },
+      {
+        title: "Carriers",
+        type: "link",
+        path: "/Shipments/Carriers",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.SUPERINTENDENT, ROLES.FINANCE, ROLES.SUPERADMIN,
+        ],
+      },
+      {
+        title: "OEM Supply Chain",
+        type: "link",
+        path: "/SupplyChain",
+        roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Shipment Dashboard",
+        type: "link",
+        path: "/Shipment/Dashboard",
+        roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Receiving",
+        type: "link",
+        path: "/Receiving/Overview",
+        roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Assets",
+        type: "link",
+        path: "/Assets/List",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+          ROLES.FSM, ROLES.FSE, ROLES.SUPERINTENDENT, ROLES.FINANCE,
+          ROLES.SUPERADMIN,
+        ],
+      },
+      {
+        title: "RMA / Service",
+        type: "link",
+        path: "/RMA",
+        roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.FSM, ROLES.FSE, ROLES.SUPERADMIN],
+      },
     ],
   },
 
-  // ─── Shipments & Logistics ─────────────────────────────────────────
+  // ─── Quality & Safety ───────────────────────────────────────────────
   {
-    title: "Shipments",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Shipments/List",
-    type: "link",
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSM,
-      ROLES.SUPERINTENDENT,
-      ROLES.FINANCE,
-      ROLES.SUPERADMIN,
-    ],
-    submenu: [
-      { title: "All Shipments", type: "link", path: "/Shipments/List" },
-      { title: "Carriers", type: "link", path: "/Shipments/Carriers" },
-    ],
-  },
-
-  // ─── Asset Management ──────────────────────────────────────────────
-  {
-    title: "Assets",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Assets/List",
-    type: "link",
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSM,
-      ROLES.FSE,
-      ROLES.SUPERINTENDENT,
-      ROLES.FINANCE,
-      ROLES.SUPERADMIN,
-    ],
-    submenu: [
-      { title: "All Assets", type: "link", path: "/Assets/List" },
-      { title: "Assignments", type: "link", path: "/Assets/Assignments" },
-    ],
-  },
-
-  // ─── Issues Management ─────────────────────────────────────────────
-  {
-    title: "Issues",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Issues/List",
-    type: "link",
-    submenu: [],
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSM,
-      ROLES.FSE,
-      ROLES.SUPERINTENDENT,
-      ROLES.QA_QC,
-      ROLES.SAFETY,
-      ROLES.EXECUTIVE,
-      ROLES.SUPERADMIN,
-    ],
-  },
-
-  // ─── TARF (Site Access / Trade Access Request Form) ────────────────
-  {
-    title: "Site Access (TARF)",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/TARF/List",
-    type: "link",
-    submenu: [],
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSM,
-      ROLES.FSE,
-      ROLES.SUPERINTENDENT,
-      ROLES.SAFETY,
-      ROLES.QA_QC,
-      ROLES.SUPERADMIN,
-    ],
-  },
-
-  // ─── RFIs (Requests For Information) ────────────────────────────────
-  {
-    title: "RFIs",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/RFI/List",
-    type: "link",
-    submenu: [],
-    roles: Object.values(ROLES), // All roles can access
-  },
-
-  // ─── RFIs (Requests For Information) ────────────────────────────────
-  {
-    title: "Meetings",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Meeting/List",
-    type: "link",
-    submenu: [],
-    roles: Object.values(ROLES), // All roles can access
-  },
-
-  // ─── Teams ──────────────────────────────────────────────────────
-  {
-    title: "Teams",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Teams/List",
-    type: "link",
-    submenu: [],
-    // GC PM: Edit/Approve | OEM PM: Edit | FSM: View (limited) | QA/QC: View (limited)
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.FSM,
-      ROLES.QA_QC,
-      ROLES.SUPERADMIN,
-    ],
-  },
-
-  // ─── Portfolio (Executive only) ────────────────────────────────────
-  {
-    title: "Portfolio",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Portfolio",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
-  },
-
-  // ─── KPIs (Executive only) ─────────────────────────────────────────
-  {
-    title: "KPIs",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/KPIs",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
-  },
-
-  // ─── Schedule & Look-Ahead ─────────────────────────────────────────
-  {
-    title: "Schedule & Look-Ahead",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Schedule",
-    type: "link",
-    submenu: [],
-    // GC PM: Edit | Superintendent: View
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.SUPERINTENDENT,
-      ROLES.SUPERADMIN,
-    ],
-  },
-
-  // ─── Service Schedule / Dispatch ───────────────────────────────────
-  {
-    title: "Service Schedule / Dispatch",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/ServiceSchedule",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
-  },
-
-  // ─── Assignments (FSM) ─────────────────────────────────────────────
-  {
-    title: "Assignments",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Assignments",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.FSM, ROLES.SUPERADMIN],
-  },
-
-  // ─── Schedule & Windows (FSM) ──────────────────────────────────────
-  {
-    title: "Schedule & Windows",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/ScheduleWindows",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.FSM, ROLES.SUPERADMIN],
-  },
-
-  // ─── My Assignments (FSE) ──────────────────────────────────────────
-  {
-    title: "My Assignments",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/MyAssignments",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.FSE, ROLES.SUPERADMIN],
-  },
-
-  // ─── Tasks ─────────────────────────────────────────────────────────
-  {
-    title: "Tasks",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Tasks/List",
-    type: "link",
-    submenu: [],
-    // FSE & Superintendent: Execute
-    roles: [ROLES.FSE, ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
-  },
-
-  // ─── Logistics (Site Deliveries) ───────────────────────────────────
-  {
-    title: "Logistics",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Logistics",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
-  },
-
-  // ─── Supply Chain ──────────────────────────────────────────────────
-  {
-    title: "Supply Chain",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/SupplyChain",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
-  },
-
-  // ─── Outbound Logistics / Shipments ────────────────────────────────
-  {
-    title: "Shipment",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Shipment/Dashboard",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
-  },
-
-  // ─── Receiving / Inspection ────────────────────────────────────────
-  // {
-  //   title: "FSM",
-  //   icon: config?.chart,
-  //   iconActive: config?.home,
-  //   category: "",
-  //   path: "/FSM/Dashboard",
-  //   roles: [ROLES.FSM],
-
-  //   submenu: [
-  //     {
-  //       title: "Dashboard",
-  //       type: "link",
-  //       path: "/FSM/Dashboard",
-  //     },
-  //     {
-  //       title: "Dispatch Console",
-  //       type: "link",
-  //       path: "/FSM/DispatchConsole",
-  //     },
-  //     {
-  //       title: "Services & Parts",
-  //       type: "link",
-  //       path: "/FSM/ServicesParts",
-  //     },
-  //     {
-  //       title: "Invoices",
-  //       type: "link",
-  //       path: "/FSM/Invoices",
-  //     },
-  //   ],
-  // },
-  {
-    title: "Receiving",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Receiving/Overview",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
-  },
-
-  // ─── Field Reports ─────────────────────────────────────────────────
-  {
-    title: "Field Reports",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/FieldReports",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
-  },
-
-  // ─── Daily Reports (Superintendent) ───────────────────────────────
-  {
-    title: "Daily Reports",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/DailyReports",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
-  },
-
-  // ─── Quality / NCR ─────────────────────────────────────────────────
-  {
-    title: "Quality (NCR)",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Quality",
-    type: "link",
-    submenu: [],
-    // GC PM: View/Escalate | Superintendent: Edit (Install QC)
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.SUPERINTENDENT,
-      ROLES.SUPERADMIN,
-    ],
-  },
-
-  // ─── QA/QC (Inspections, NCRs, Corrective Actions) ────────────────
-  {
-    title: "Inspections",
+    title: "Quality & Safety",
     icon: config?.chart,
     iconActive: config?.home,
     path: "/QAQC/Inspections",
     type: "link",
-    submenu: [],
-    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
-  },
-  {
-    title: "NCRs / Defects",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/QAQC/NCRs",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
-  },
-  {
-    title: "Corrective Actions",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/QAQC/CorrectiveActions",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
-  },
-  {
-    title: "Evidence Library",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/QAQC/EvidenceLibrary",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
-  },
-
-  // ─── Safety ────────────────────────────────────────────────────────
-  {
-    title: "Safety",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Safety",
-    type: "link",
-    submenu: [],
-    // GC PM: View | Superintendent: Execute
-    roles: [ROLES.GC_PM, ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
-  },
-  {
-    title: "JHAs/JSAs & Permits",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Safety/Reports",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
-  },
-  {
-    title: "Incidents",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Safety/Incidents",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.SAFETY, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
-  },
-  {
-    title: "Audits",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Safety/Audits",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
-  },
-  {
-    title: "Training Compliance",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Safety/Training",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
-  },
-
-  // ─── Commissioning ─────────────────────────────────────────────────
-  {
-    title: "Commissioning",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/Commissioning",
-    type: "link",
-    submenu: [],
-    // GC PM: View/Coordinate | OEM PM: Edit/Approve | FSM: View | FSE: Execute
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSM,
-      ROLES.FSE,
-      ROLES.SUPERADMIN,
+    roles: union(
+      [ROLES.GC_PM, ROLES.GC_ADMIN],
+      [ROLES.SUPERINTENDENT],
+      [ROLES.QA_QC],
+      [ROLES.SAFETY],
+      [ROLES.SUPERADMIN],
+    ),
+    submenu: [
+      {
+        title: "Quality (NCR)",
+        type: "link",
+        path: "/Quality",
+        roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Inspections",
+        type: "link",
+        path: "/QAQC/Inspections",
+        roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
+      },
+      {
+        title: "NCRs / Defects",
+        type: "link",
+        path: "/QAQC/NCRs",
+        roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Corrective Actions",
+        type: "link",
+        path: "/QAQC/CorrectiveActions",
+        roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Evidence Library",
+        type: "link",
+        path: "/QAQC/EvidenceLibrary",
+        roles: [ROLES.QA_QC, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Safety",
+        type: "link",
+        path: "/Safety",
+        roles: [ROLES.GC_PM, ROLES.SUPERINTENDENT, ROLES.SUPERADMIN],
+      },
+      {
+        title: "JHAs / JSAs & Permits",
+        type: "link",
+        path: "/Safety/Reports",
+        roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Incidents",
+        type: "link",
+        path: "/Safety/Incidents",
+        roles: [ROLES.SAFETY, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Audits",
+        type: "link",
+        path: "/Safety/Audits",
+        roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Training Compliance",
+        type: "link",
+        path: "/Safety/Training",
+        roles: [ROLES.SAFETY, ROLES.SUPERADMIN],
+      },
     ],
   },
 
-  // ─── Test Results Upload (FSE) ─────────────────────────────────────
-  {
-    title: "Test Results Upload",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/TestResults",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.FSE, ROLES.SUPERADMIN],
-  },
-
-  // ─── RMA / Service ─────────────────────────────────────────────────
-  {
-    title: "RMA / Service",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/RMA",
-    type: "link",
-    submenu: [],
-    // OEM PM: Edit | FSM: View | FSE: Edit
-    roles: [
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSM,
-      ROLES.FSE,
-      ROLES.SUPERADMIN,
-    ],
-  },
-
-  // ─── Change Orders ─────────────────────────────────────────────────
-  {
-    title: "Change Orders",
-    icon: config?.chart,
-    iconActive: config?.home,
-    path: "/ChangeOrders",
-    type: "link",
-    submenu: [],
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.SUPERADMIN],
-  },
-
-  // ─── Finance ───────────────────────────────────────────────────────
+  // ─── Finance ────────────────────────────────────────────────────────
   {
     title: "Finance",
     icon: config?.chart,
     iconActive: config?.home,
     path: "/Finance/Dashboard",
     type: "link",
-    roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+    roles: [
+      ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM,
+      ROLES.OEM_ADMIN, ROLES.SUPERADMIN,
+    ],
     submenu: [
-      { title: "Finance Dashboard",    type: "link", path: "/Finance/Dashboard" },
-      { title: "Contracts & Budget",   type: "link", path: "/Finance/Contracts" },
-      { title: "Vendor Quotes",        type: "link", path: "/Finance/VendorQuotes" },
-      { title: "Finance & Billing",    type: "link", path: "/Finance/Billing" },
-      { title: "Billing Chain",        type: "link", path: "/Finance/BillingChain" },
-      { title: "Procurement & Delays", type: "link", path: "/Finance/Procurement" },
+      {
+        title: "Dashboard",
+        type: "link",
+        path: "/Finance/Dashboard",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Contracts & Budget",
+        type: "link",
+        path: "/Finance/Contracts",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Vendor Quotes",
+        type: "link",
+        path: "/Finance/VendorQuotes",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Billing",
+        type: "link",
+        path: "/Finance/Billing",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Billing Chain",
+        type: "link",
+        path: "/Finance/BillingChain",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Procurement & Delays",
+        type: "link",
+        path: "/Finance/Procurement",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Payroll Dashboard",
+        type: "link",
+        path: "/Finance/Payroll/Dashboard",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Employees",
+        type: "link",
+        path: "/Finance/Payroll/Employees",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Timesheets",
+        type: "link",
+        path: "/Finance/Payroll/Timesheets",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
+      {
+        title: "Payroll Processing",
+        type: "link",
+        path: "/Finance/Payroll/PayrollProcessing",
+        roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
     ],
   },
 
-  // ─── Payroll ───────────────────────────────────────────────────────
+  // ─── People ─────────────────────────────────────────────────────────
   {
-    title: "Payroll",
+    title: "People",
     icon: config?.chart,
     iconActive: config?.home,
-    path: "/Finance/Payroll/Dashboard",
+    path: "/Teams/List",
     type: "link",
-    roles: [ROLES.FINANCE, ROLES.GC_ADMIN, ROLES.GC_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+    roles: union(
+      [ROLES.GC_PM, ROLES.GC_ADMIN],
+      [ROLES.OEM_PM, ROLES.OEM_ADMIN],
+      [ROLES.FSM, ROLES.QA_QC],
+      [ROLES.SUPERADMIN],
+    ),
     submenu: [
-      { title: "Dashboard",          type: "link", path: "/Finance/Payroll/Dashboard" },
-      { title: "Employees",          type: "link", path: "/Finance/Payroll/Employees" },
-      { title: "Timesheets",         type: "link", path: "/Finance/Payroll/Timesheets" },
-      { title: "Payroll Processing", type: "link", path: "/Finance/Payroll/PayrollProcessing" },
+      {
+        title: "Teams",
+        type: "link",
+        path: "/Teams/List",
+        roles: [
+          ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_ADMIN, ROLES.OEM_PM,
+          ROLES.FSM, ROLES.QA_QC, ROLES.SUPERADMIN,
+        ],
+      },
+      {
+        title: "Users",
+        type: "link",
+        path: "/Users/List",
+        roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN, ROLES.SUPERADMIN],
+      },
     ],
   },
 
@@ -727,14 +573,14 @@ export const sidebarItems = [
     iconActive: config?.home,
     path: "/Document/List",
     type: "link",
-    roles: Object.values(ROLES),
+    roles: ALL,
     submenu: [
-      { title: "Documents", type: "link", path: "/Document/List" },
-      { title: "Submittals", type: "link", path: "/Submittals/List" },
+      { title: "Documents",  type: "link", path: "/Document/List",    roles: ALL },
+      { title: "Submittals", type: "link", path: "/Submittals/List",  roles: ALL },
     ],
   },
 
-  // ─── Reports ───────────────────────────────────────────────────────
+  // ─── Reports ────────────────────────────────────────────────────────
   {
     title: "Reports",
     icon: config?.chart,
@@ -743,106 +589,117 @@ export const sidebarItems = [
     type: "link",
     submenu: [],
     roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSM,
-      ROLES.FSE,
-      ROLES.QA_QC,
-      ROLES.SAFETY,
-      ROLES.FINANCE,
-      ROLES.EXECUTIVE,
-      ROLES.SUPERADMIN,
+      ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN,
+      ROLES.FSM, ROLES.FSE, ROLES.QA_QC, ROLES.SAFETY,
+      ROLES.FINANCE, ROLES.EXECUTIVE, ROLES.SUPERADMIN,
     ],
   },
 
-  // ─── Roles (all roles – adjust as needed) ───────────────────────
-
+  // ─── Executive ──────────────────────────────────────────────────────
   {
-    title: "Roles",
-    path: "/Roles/List",
+    title: "Executive",
     icon: config?.chart,
     iconActive: config?.home,
+    path: "/Portfolio",
     type: "link",
-    submenu: [],
-    roles: [ROLES.SUPERADMIN],
+    roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
+    submenu: [
+      {
+        title: "Portfolio",
+        type: "link",
+        path: "/Portfolio",
+        roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
+      },
+      {
+        title: "KPIs",
+        type: "link",
+        path: "/KPIs",
+        roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN],
+      },
+    ],
   },
 
-  // ─── Users (all roles – adjust as needed) ───────────────────────
-
+  // ─── Administration ─────────────────────────────────────────────────
   {
-    title: "Users",
-    path: "/Users/List",
+    title: "Administration",
     icon: config?.chart,
     iconActive: config?.home,
+    path: "/Admin/OwnerPortal",
     type: "link",
-    submenu: [],
-    roles: [ROLES.GC_PM, ROLES.GC_ADMIN, ROLES.OEM_PM, ROLES.OEM_ADMIN],
+    roles: ALL,
+    submenu: [
+      {
+        title: "Owner Portal",
+        type: "link",
+        path: "/Admin/OwnerPortal",
+        roles: ALL,
+      },
+      {
+        title: "Tenants",
+        type: "link",
+        path: "/Admin/OwnerPortal/Tenants",
+        roles: ALL,
+      },
+      {
+        title: "Platform Subscriptions",
+        type: "link",
+        path: "/Admin/OwnerPortal/Subscriptions",
+        roles: ALL,
+      },
+      {
+        title: "Audit Logs",
+        type: "link",
+        path: "/Admin/OwnerPortal/AuditLogs",
+        roles: ALL,
+      },
+      {
+        title: "Roles",
+        type: "link",
+        path: "/Roles/List",
+        roles: [ROLES.SUPERADMIN],
+      },
+      {
+        title: "Permissions",
+        type: "link",
+        path: "/Permissions",
+        roles: [ROLES.SUPERADMIN],
+      },
+      {
+        title: "Subscriptions",
+        type: "link",
+        path: "/Subscriptions/List",
+        roles: [ROLES.SUPERADMIN],
+      },
+    ],
   },
 
-  // ─── Permissions (all roles – adjust as needed) ───────────────────────
-
-  {
-    title: "Permissions",
-    path: "/Permissions",
-    icon: config?.chart,
-    iconActive: config?.home,
-    type: "link",
-    submenu: [],
-    roles: [ROLES.SUPERADMIN],
-  },
-
-  // ─── Subscriptions (all roles – adjust as needed) ───────────────────────
-
-  {
-    title: "Subscriptions",
-    path: "/Subscriptions/List",
-    icon: config?.chart,
-    iconActive: config?.home,
-    type: "link",
-    submenu: [],
-    roles: [ROLES.SUPERADMIN],
-  },
-
-  // ─── Settings (all roles – adjust as needed) ───────────────────────
+  // ─── Settings ───────────────────────────────────────────────────────
   {
     title: "Settings",
-    path: "/Settings",
     icon: config?.chart,
     iconActive: config?.home,
+    path: "/Settings",
     type: "link",
     submenu: [],
-    roles: [
-      ROLES.GC_PM,
-      ROLES.GC_ADMIN,
-      ROLES.OEM_PM,
-      ROLES.OEM_ADMIN,
-      ROLES.FSM,
-      ROLES.FSE,
-      ROLES.SUPERINTENDENT,
-      ROLES.QA_QC,
-      ROLES.SAFETY,
-      ROLES.FINANCE,
-      ROLES.EXECUTIVE,
-      ROLES.SUPERADMIN,
-    ],
+    roles: ALL,
   },
 ];
 
 /**
- * Returns the filtered sidebar items for a given role.
- *
- * Usage in your sidebar component:
- *   const visibleItems = getMenuByRole(currentUser.role);
- *
- * @param {string} role – one of the ROLES constants
- * @returns {Array} filtered sidebarItems
+ * Returns sidebar items filtered by role.
+ * Also filters submenu items by role so only accessible children are shown.
+ * Parents with all children filtered out are removed.
  */
 export function getMenuByRole(role) {
-  // SUPERADMIN sees everything
-
-  return sidebarItems.filter(
-    (item) => !item.roles || item.roles.includes(role),
-  );
+  return sidebarItems
+    .filter((item) => !item.roles || item.roles.includes(role))
+    .map((item) => ({
+      ...item,
+      submenu: (item.submenu || []).filter(
+        (sub) => !sub.roles || sub.roles.includes(role),
+      ),
+    }))
+    .filter(
+      (item) => item.submenu.length === 0 || item.submenu.length > 0,
+    );
 }

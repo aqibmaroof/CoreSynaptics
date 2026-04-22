@@ -35,10 +35,10 @@ const PAGE_TITLES = {
 
 // Quick-nav tabs shown on main dashboard
 const DASH_TABS = [
-  { label: "Issues", path: "/QA/QC" },
+  { label: "Issues", path: "/Issues/List" },
   { label: "Schedule", path: "/Shipment/Dashboard" },
   { label: "OEM", path: "/OEM/Dashboard" },
-  { label: "Team", path: "/Managers/List" },
+  { label: "Team", path: "/Teams/List" },
 ];
 
 const Layout = ({ children }) => {
@@ -51,7 +51,9 @@ const Layout = ({ children }) => {
 
   const pageTitle =
     PAGE_TITLES[pathname] ??
-    (pathname.startsWith("/Profile/Managers/") ? "Project Manager Profile" : "Dashboard");
+    (pathname.startsWith("/Profile/Managers/")
+      ? "Project Manager Profile"
+      : "Dashboard");
 
   const isDashboard = pathname === "/" || pathname === "/OEM/Dashboard";
 
@@ -155,8 +157,8 @@ const Layout = ({ children }) => {
                               ? "bg-cyan-900/50 text-cyan-400 border border-cyan-800"
                               : "bg-sky-100 text-sky-700 border border-sky-200"
                             : isDark
-                            ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/60"
-                            : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/70"
+                              ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/60"
+                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/70"
                         }`}
                       >
                         {tab.label}
@@ -228,17 +230,19 @@ const Layout = ({ children }) => {
                 <div className="dropdown dropdown-end">
                   <label
                     tabIndex={0}
-                    className="btn btn-ghost hover:shadow-none focus:shadow-none active:shadow-none hover:bg-transparent focus:bg-transparent active:bg-transparent hover:border-transparent focus:border-transparent active:border-transparent btn-circle avatar w-10 h-10 min-h-0 p-0"
+                    className="btn btn-ghost hover:shadow-none focus:shadow-none active:shadow-none hover:bg-transparent focus:bg-transparent active:bg-transparent hover:border-transparent focus:border-transparent active:border-transparent btn-circle avatar"
                   >
-                    <div className="relative">
-                      <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-offset-1 ring-offset-transparent ring-slate-600">
+                    <div className="relative rounded-full flex items-center justify-center w-full">
+                      <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-offset-1 ring-offset-transparent ring-slate-600">
                         <img
-                          src={config?.user_icon || "https://placehold.co/100x100"}
+                          src={
+                            config?.user_icon || "https://placehold.co/100x100"
+                          }
                           className="w-full h-full object-cover"
                           alt="user"
                         />
                       </div>
-                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+                      <span className="absolute bottom-0.5 right-[7px] w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
                     </div>
                   </label>
 
@@ -251,18 +255,21 @@ const Layout = ({ children }) => {
                     }}
                   >
                     {/* User info */}
-                    <li className="flex flex-row items-center gap-3 p-2 mb-1">
+                    <li className="flex items-center gap-3 p-2 mb-1">
                       <div className="relative shrink-0">
                         <div className="w-11 h-11 rounded-full overflow-hidden">
                           <img
-                            src={config?.user_icon || "https://placehold.co/100x100"}
+                            src={
+                              config?.user_icon ||
+                              "https://placehold.co/100x100"
+                            }
                             className="w-full h-full object-cover"
                             alt="user"
                           />
                         </div>
-                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+                        <span className="absolute bottom-1 right-3 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
                       </div>
-                      <div className="flex flex-col min-w-0">
+                      <div className="flex flex-col text-left min-w-0">
                         <span
                           className="font-semibold text-[13px] truncate"
                           style={{ color: "var(--rf-txt)" }}

@@ -480,6 +480,14 @@ const formatToDatetimeLocal = (isoString) => {
   return isoString.slice(0, 16); // "2026-03-07T18:41"
 };
 
+function formatToYYYYMMDD(isoDate) {
+  const date = new Date(isoDate);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 const tasks = [
   {
     id: 1,
@@ -574,7 +582,6 @@ export default function KanbanBoard() {
   const [editingTask, setEditingTask] = useState(null); // task being edited
   const [editingSubtask, setEditingSubtask] = useState(null); // subtask being edited
   const [teams, setTeams] = useState([]);
-
   const [editTaskForm, setEditTaskForm] = useState({
     name: "",
     description: "",
@@ -585,6 +592,7 @@ export default function KanbanBoard() {
     status: "PENDING",
     assignedTo: "",
   });
+
   const [editSubtaskForm, setEditSubtaskForm] = useState({
     name: "",
     description: "",
@@ -703,7 +711,8 @@ export default function KanbanBoard() {
       } else {
         setPhaseSeeded(false);
       }
-      if (conditions.status === "fulfilled") setPhaseConditions(conditions.value || []);
+      if (conditions.status === "fulfilled")
+        setPhaseConditions(conditions.value || []);
       if (readiness.status === "fulfilled") setPhaseReadiness(readiness.value);
       if (history.status === "fulfilled") setPhaseHistory(history.value || []);
     } catch (err) {
@@ -720,7 +729,10 @@ export default function KanbanBoard() {
       setMessage({ type: "success", text: "Phase gates seeded successfully!" });
       await fetchPhaseData();
     } catch (err) {
-      setMessage({ type: "error", text: `Error seeding phase gates: ${err?.message}` });
+      setMessage({
+        type: "error",
+        text: `Error seeding phase gates: ${err?.message}`,
+      });
     } finally {
       setPhaseLoading(false);
     }
@@ -730,12 +742,18 @@ export default function KanbanBoard() {
     setPhaseLoading(true);
     try {
       await advancePhase(id, { notes: advanceNotes });
-      setMessage({ type: "success", text: `Phase advanced to ${phaseState?.nextPhase}!` });
+      setMessage({
+        type: "success",
+        text: `Phase advanced to ${phaseState?.nextPhase}!`,
+      });
       setAdvanceNotes("");
       document.getElementById("advance_phase_modal").close();
       await fetchPhaseData();
     } catch (err) {
-      setMessage({ type: "error", text: `Error advancing phase: ${err?.message}` });
+      setMessage({
+        type: "error",
+        text: `Error advancing phase: ${err?.message}`,
+      });
     } finally {
       setPhaseLoading(false);
     }
@@ -754,7 +772,10 @@ export default function KanbanBoard() {
       document.getElementById("condition_action_modal").close();
       await fetchPhaseData();
     } catch (err) {
-      setMessage({ type: "error", text: `Error marking condition: ${err?.message}` });
+      setMessage({
+        type: "error",
+        text: `Error marking condition: ${err?.message}`,
+      });
     } finally {
       setPhaseLoading(false);
     }
@@ -763,18 +784,26 @@ export default function KanbanBoard() {
   const handleWaiveCondition = async () => {
     if (!conditionAction) return;
     if (!conditionAction.reason || conditionAction.reason.length < 20) {
-      setMessage({ type: "error", text: "Waive reason must be at least 20 characters." });
+      setMessage({
+        type: "error",
+        text: "Waive reason must be at least 20 characters.",
+      });
       return;
     }
     setPhaseLoading(true);
     try {
-      await waiveCondition(conditionAction.conditionId, { reason: conditionAction.reason });
+      await waiveCondition(conditionAction.conditionId, {
+        reason: conditionAction.reason,
+      });
       setMessage({ type: "success", text: "Condition waived!" });
       setConditionAction(null);
       document.getElementById("condition_action_modal").close();
       await fetchPhaseData();
     } catch (err) {
-      setMessage({ type: "error", text: `Error waiving condition: ${err?.message}` });
+      setMessage({
+        type: "error",
+        text: `Error waiving condition: ${err?.message}`,
+      });
     } finally {
       setPhaseLoading(false);
     }
@@ -2234,6 +2263,13 @@ export default function KanbanBoard() {
                                       name: task.name,
                                       description: task.description || "",
                                       status: task.status,
+                                      priority: task?.priority,
+                                      startDate: formatToYYYYMMDD(
+                                        task?.startDate,
+                                      ),
+                                      dueDate: formatToYYYYMMDD(task?.dueDate),
+                                      category: task?.category,
+                                      assignedTo: task?.assignedTo,
                                     });
                                     document
                                       .getElementById("edit_task_modal")
@@ -3678,12 +3714,16 @@ export default function KanbanBoard() {
             {/* ── PHASE GATES VIEW ── */}
             <div className="w-full">
               {phaseLoading && (
-                <div className="text-center text-gray-400 py-12 text-sm">Loading phase gate data...</div>
+                <div className="text-center text-gray-400 py-12 text-sm">
+                  Loading phase gate data...
+                </div>
               )}
 
               {!phaseLoading && !phaseSeeded && (
                 <div className="flex flex-col items-center justify-center py-16 gap-4">
-                  <p className="text-gray-400 text-sm">Phase gates have not been initialized for this project.</p>
+                  <p className="text-gray-400 text-sm">
+                    Phase gates have not been initialized for this project.
+                  </p>
                   <button
                     onClick={handleSeedPhaseGates}
                     className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-6 rounded-xl border border-white/20 transition-all cursor-pointer text-sm font-medium"
@@ -3699,13 +3739,20 @@ export default function KanbanBoard() {
                   <div className="mb-6 px-2">
                     <div className="flex items-center gap-0">
                       {PHASES.map((phase, idx) => {
-                        const currentIdx = PHASES.indexOf(phaseState.currentPhase);
+                        const currentIdx = PHASES.indexOf(
+                          phaseState.currentPhase,
+                        );
                         const isDone = idx < currentIdx;
                         const isCurrent = idx === currentIdx;
                         const isNext = idx === currentIdx + 1;
                         return (
-                          <div key={phase} className="flex items-center flex-1 last:flex-none">
-                            <div className={`flex flex-col items-center gap-1 ${isNext ? "opacity-100" : ""}`}>
+                          <div
+                            key={phase}
+                            className="flex items-center flex-1 last:flex-none"
+                          >
+                            <div
+                              className={`flex flex-col items-center gap-1 ${isNext ? "opacity-100" : ""}`}
+                            >
                               <div
                                 className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
                                   isDone
@@ -3719,12 +3766,22 @@ export default function KanbanBoard() {
                               >
                                 {isDone ? "✓" : phase}
                               </div>
-                              <span className={`text-[10px] whitespace-nowrap ${isCurrent ? "text-blue-300 font-semibold" : isDone ? "text-green-400" : "text-gray-600"}`}>
-                                {isCurrent ? "Current" : isDone ? "Done" : isNext ? "Next" : ""}
+                              <span
+                                className={`text-[10px] whitespace-nowrap ${isCurrent ? "text-blue-300 font-semibold" : isDone ? "text-green-400" : "text-gray-600"}`}
+                              >
+                                {isCurrent
+                                  ? "Current"
+                                  : isDone
+                                    ? "Done"
+                                    : isNext
+                                      ? "Next"
+                                      : ""}
                               </span>
                             </div>
                             {idx < PHASES.length - 1 && (
-                              <div className={`flex-1 h-0.5 mx-1 mb-4 ${idx < currentIdx ? "bg-green-500/50" : idx === currentIdx ? "bg-blue-500/30" : "bg-gray-700"}`} />
+                              <div
+                                className={`flex-1 h-0.5 mx-1 mb-4 ${idx < currentIdx ? "bg-green-500/50" : idx === currentIdx ? "bg-blue-500/30" : "bg-gray-700"}`}
+                              />
                             )}
                           </div>
                         );
@@ -3736,35 +3793,69 @@ export default function KanbanBoard() {
                   <div className="grid grid-cols-3 gap-4 mb-6">
                     {/* Current Phase Card */}
                     <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 border border-blue-500/20 rounded-xl p-4">
-                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Current Phase</p>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">
+                        Current Phase
+                      </p>
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-blue-300">{phaseState.currentPhase}</span>
+                        <span className="text-2xl font-bold text-blue-300">
+                          {phaseState.currentPhase}
+                        </span>
                         {phaseState.isAtTerminalPhase && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">Terminal</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                            Terminal
+                          </span>
                         )}
                       </div>
                       {phaseState.lastAdvancedAt && (
                         <p className="text-xs text-gray-500 mt-2">
-                          Advanced: {new Date(phaseState.lastAdvancedAt).toLocaleDateString()}
+                          Advanced:{" "}
+                          {new Date(
+                            phaseState.lastAdvancedAt,
+                          ).toLocaleDateString()}
                         </p>
                       )}
                     </div>
 
                     {/* Readiness Card */}
-                    <div className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl p-4 border ${phaseReadiness?.canAdvance ? "border-green-500/30" : "border-yellow-500/20"}`}>
-                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Readiness</p>
+                    <div
+                      className={`bg-gradient-to-br from-gray-800/40 to-gray-900/40 rounded-xl p-4 border ${phaseReadiness?.canAdvance ? "border-green-500/30" : "border-yellow-500/20"}`}
+                    >
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">
+                        Readiness
+                      </p>
                       {phaseState.isAtTerminalPhase ? (
-                        <span className="text-sm text-green-400 font-medium">Project at IST — commissioning complete</span>
+                        <span className="text-sm text-green-400 font-medium">
+                          Project at IST — commissioning complete
+                        </span>
                       ) : phaseReadiness ? (
                         <>
-                          <div className={`text-sm font-semibold mb-2 ${phaseReadiness.canAdvance ? "text-green-400" : "text-yellow-400"}`}>
-                            {phaseReadiness.canAdvance ? "Ready to Advance" : "Not Yet Ready"}
+                          <div
+                            className={`text-sm font-semibold mb-2 ${phaseReadiness.canAdvance ? "text-green-400" : "text-yellow-400"}`}
+                          >
+                            {phaseReadiness.canAdvance
+                              ? "Ready to Advance"
+                              : "Not Yet Ready"}
                           </div>
-                          {!phaseReadiness.canAdvance && phaseReadiness.blockingUnmet?.length > 0 && (
-                            <p className="text-xs text-red-400">{phaseReadiness.blockingUnmet.length} blocking condition{phaseReadiness.blockingUnmet.length !== 1 ? "s" : ""} unmet</p>
-                          )}
+                          {!phaseReadiness.canAdvance &&
+                            phaseReadiness.blockingUnmet?.length > 0 && (
+                              <p className="text-xs text-red-400">
+                                {phaseReadiness.blockingUnmet.length} blocking
+                                condition
+                                {phaseReadiness.blockingUnmet.length !== 1
+                                  ? "s"
+                                  : ""}{" "}
+                                unmet
+                              </p>
+                            )}
                           {phaseReadiness.advisoryUnmet?.length > 0 && (
-                            <p className="text-xs text-yellow-500/70">{phaseReadiness.advisoryUnmet.length} advisory condition{phaseReadiness.advisoryUnmet.length !== 1 ? "s" : ""} pending</p>
+                            <p className="text-xs text-yellow-500/70">
+                              {phaseReadiness.advisoryUnmet.length} advisory
+                              condition
+                              {phaseReadiness.advisoryUnmet.length !== 1
+                                ? "s"
+                                : ""}{" "}
+                              pending
+                            </p>
                           )}
                         </>
                       ) : (
@@ -3774,11 +3865,17 @@ export default function KanbanBoard() {
 
                     {/* Actions Card */}
                     <div className="bg-gradient-to-br from-gray-800/40 to-gray-900/40 border border-gray-700/50 rounded-xl p-4 flex flex-col gap-2">
-                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Actions</p>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+                        Actions
+                      </p>
                       {!phaseState.isAtTerminalPhase && (
                         <button
                           disabled={!phaseReadiness?.canAdvance || phaseLoading}
-                          onClick={() => document.getElementById("advance_phase_modal").showModal()}
+                          onClick={() =>
+                            document
+                              .getElementById("advance_phase_modal")
+                              .showModal()
+                          }
                           className="w-full py-2 px-3 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-700 disabled:to-gray-600 text-white disabled:text-gray-500 transition-all cursor-pointer disabled:cursor-not-allowed"
                         >
                           Advance to {phaseState.nextPhase}
@@ -3804,9 +3901,17 @@ export default function KanbanBoard() {
                   {/* Conditions Section */}
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-white font-semibold text-base uppercase tracking-wider" style={{ fontFamily: "Rajdhani, sans-serif", letterSpacing: "1px" }}>
+                      <h2
+                        className="text-white font-semibold text-base uppercase tracking-wider"
+                        style={{
+                          fontFamily: "Rajdhani, sans-serif",
+                          letterSpacing: "1px",
+                        }}
+                      >
                         Gate Conditions
-                        <span className="ml-2 text-xs font-normal text-gray-400 normal-case tracking-normal">({phaseConditions.length})</span>
+                        <span className="ml-2 text-xs font-normal text-gray-400 normal-case tracking-normal">
+                          ({phaseConditions.length})
+                        </span>
                       </h2>
 
                       {/* Transition Filter */}
@@ -3817,9 +3922,18 @@ export default function KanbanBoard() {
                         >
                           All
                         </button>
-                        {["NONE_L1", "L1_L2", "L2_L3", "L3_L4", "L4_L5", "L5_IST"].map((key) => {
+                        {[
+                          "NONE_L1",
+                          "L1_L2",
+                          "L2_L3",
+                          "L3_L4",
+                          "L4_L5",
+                          "L5_IST",
+                        ].map((key) => {
                           const [from, to] = key.split("_");
-                          const hasConditions = phaseConditions.some((c) => c.fromPhase === from && c.toPhase === to);
+                          const hasConditions = phaseConditions.some(
+                            (c) => c.fromPhase === from && c.toPhase === to,
+                          );
                           if (!hasConditions) return null;
                           return (
                             <button
@@ -3838,12 +3952,24 @@ export default function KanbanBoard() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="bg-[#080C26] text-gray-400">
-                            <th className="py-3 px-4 text-left font-medium text-xs">Transition</th>
-                            <th className="py-3 px-4 text-left font-medium text-xs">Description</th>
-                            <th className="py-3 px-4 text-center font-medium text-xs">Type</th>
-                            <th className="py-3 px-4 text-center font-medium text-xs">Status</th>
-                            <th className="py-3 px-4 text-center font-medium text-xs">Blocking</th>
-                            <th className="py-3 px-4 text-center font-medium text-xs">Actions</th>
+                            <th className="py-3 px-4 text-left font-medium text-xs">
+                              Transition
+                            </th>
+                            <th className="py-3 px-4 text-left font-medium text-xs">
+                              Description
+                            </th>
+                            <th className="py-3 px-4 text-center font-medium text-xs">
+                              Type
+                            </th>
+                            <th className="py-3 px-4 text-center font-medium text-xs">
+                              Status
+                            </th>
+                            <th className="py-3 px-4 text-center font-medium text-xs">
+                              Blocking
+                            </th>
+                            <th className="py-3 px-4 text-center font-medium text-xs">
+                              Actions
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -3854,14 +3980,24 @@ export default function KanbanBoard() {
                               return c.fromPhase === from && c.toPhase === to;
                             })
                             .map((condition) => (
-                              <tr key={condition.id} className="border-t border-gray-700/40 hover:bg-white/5 transition-colors">
+                              <tr
+                                key={condition.id}
+                                className="border-t border-gray-700/40 hover:bg-white/5 transition-colors"
+                              >
                                 <td className="py-3 px-4 text-xs text-gray-400 whitespace-nowrap">
                                   {condition.fromPhase} → {condition.toPhase}
                                 </td>
                                 <td className="py-3 px-4 text-xs text-gray-300 max-w-xs">
-                                  <div className="truncate" title={condition.description}>{condition.description}</div>
+                                  <div
+                                    className="truncate"
+                                    title={condition.description}
+                                  >
+                                    {condition.description}
+                                  </div>
                                   {condition.conditionKey && (
-                                    <div className="text-[10px] text-gray-600 font-mono mt-0.5">{condition.conditionKey}</div>
+                                    <div className="text-[10px] text-gray-600 font-mono mt-0.5">
+                                      {condition.conditionKey}
+                                    </div>
                                   )}
                                 </td>
                                 <td className="py-3 px-4 text-center">
@@ -3870,30 +4006,44 @@ export default function KanbanBoard() {
                                   </span>
                                 </td>
                                 <td className="py-3 px-4 text-center">
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                                    condition.status === "MET"
-                                      ? "bg-green-500/20 text-green-400 border-green-500/30"
-                                      : condition.status === "WAIVED"
-                                        ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                                        : condition.status === "BLOCKED"
-                                          ? "bg-red-500/20 text-red-400 border-red-500/30"
-                                          : "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
-                                  }`}>
+                                  <span
+                                    className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                                      condition.status === "MET"
+                                        ? "bg-green-500/20 text-green-400 border-green-500/30"
+                                        : condition.status === "WAIVED"
+                                          ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                          : condition.status === "BLOCKED"
+                                            ? "bg-red-500/20 text-red-400 border-red-500/30"
+                                            : "bg-yellow-500/15 text-yellow-400 border-yellow-500/30"
+                                    }`}
+                                  >
                                     {condition.status}
                                   </span>
                                 </td>
                                 <td className="py-3 px-4 text-center">
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${condition.isBlocking ? "bg-red-500/15 text-red-400" : "bg-gray-500/15 text-gray-400"}`}>
+                                  <span
+                                    className={`text-[10px] px-2 py-0.5 rounded-full ${condition.isBlocking ? "bg-red-500/15 text-red-400" : "bg-gray-500/15 text-gray-400"}`}
+                                  >
                                     {condition.isBlocking ? "Yes" : "No"}
                                   </span>
                                 </td>
                                 <td className="py-3 px-4 text-center">
-                                  {condition.status === "PENDING" || condition.status === "BLOCKED" ? (
+                                  {condition.status === "PENDING" ||
+                                  condition.status === "BLOCKED" ? (
                                     <div className="flex items-center justify-center gap-1.5">
                                       <button
                                         onClick={() => {
-                                          setConditionAction({ type: "markMet", conditionId: condition.id, evidenceUrl: "", evidenceNote: "" });
-                                          document.getElementById("condition_action_modal").showModal();
+                                          setConditionAction({
+                                            type: "markMet",
+                                            conditionId: condition.id,
+                                            evidenceUrl: "",
+                                            evidenceNote: "",
+                                          });
+                                          document
+                                            .getElementById(
+                                              "condition_action_modal",
+                                            )
+                                            .showModal();
                                         }}
                                         className="text-[10px] px-2.5 py-1 rounded-lg bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25 transition-all whitespace-nowrap"
                                       >
@@ -3901,8 +4051,16 @@ export default function KanbanBoard() {
                                       </button>
                                       <button
                                         onClick={() => {
-                                          setConditionAction({ type: "waive", conditionId: condition.id, reason: "" });
-                                          document.getElementById("condition_action_modal").showModal();
+                                          setConditionAction({
+                                            type: "waive",
+                                            conditionId: condition.id,
+                                            reason: "",
+                                          });
+                                          document
+                                            .getElementById(
+                                              "condition_action_modal",
+                                            )
+                                            .showModal();
                                         }}
                                         className="text-[10px] px-2.5 py-1 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 transition-all"
                                       >
@@ -3911,15 +4069,29 @@ export default function KanbanBoard() {
                                     </div>
                                   ) : (
                                     <span className="text-gray-600 text-[10px]">
-                                      {condition.status === "MET" ? `Met ${condition.metAt ? new Date(condition.metAt).toLocaleDateString() : ""}` : `Waived`}
+                                      {condition.status === "MET"
+                                        ? `Met ${condition.metAt ? new Date(condition.metAt).toLocaleDateString() : ""}`
+                                        : `Waived`}
                                     </span>
                                   )}
                                 </td>
                               </tr>
                             ))}
-                          {phaseConditions.filter((c) => conditionsFilter === "all" || (() => { const [f, t] = conditionsFilter.split("_"); return c.fromPhase === f && c.toPhase === t; })()).length === 0 && (
+                          {phaseConditions.filter(
+                            (c) =>
+                              conditionsFilter === "all" ||
+                              (() => {
+                                const [f, t] = conditionsFilter.split("_");
+                                return c.fromPhase === f && c.toPhase === t;
+                              })(),
+                          ).length === 0 && (
                             <tr>
-                              <td colSpan={6} className="py-8 text-center text-gray-500 text-xs">No conditions found.</td>
+                              <td
+                                colSpan={6}
+                                className="py-8 text-center text-gray-500 text-xs"
+                              >
+                                No conditions found.
+                              </td>
                             </tr>
                           )}
                         </tbody>
@@ -3933,8 +4105,18 @@ export default function KanbanBoard() {
                       onClick={() => setShowHistory((v) => !v)}
                       className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-3"
                     >
-                      <svg className={`w-4 h-4 transition-transform ${showHistory ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <svg
+                        className={`w-4 h-4 transition-transform ${showHistory ? "rotate-90" : ""}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                       Advancement History ({phaseHistory.length})
                     </button>
@@ -3942,27 +4124,52 @@ export default function KanbanBoard() {
                     {showHistory && (
                       <div className="overflow-x-auto rounded-xl border border-gray-700/50">
                         {phaseHistory.length === 0 ? (
-                          <p className="text-center text-gray-500 text-xs py-6">No phase advancements recorded yet.</p>
+                          <p className="text-center text-gray-500 text-xs py-6">
+                            No phase advancements recorded yet.
+                          </p>
                         ) : (
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="bg-[#080C26] text-gray-400">
-                                <th className="py-3 px-4 text-left text-xs font-medium">From</th>
-                                <th className="py-3 px-4 text-left text-xs font-medium">To</th>
-                                <th className="py-3 px-4 text-left text-xs font-medium">Advanced At</th>
-                                <th className="py-3 px-4 text-left text-xs font-medium">Notes</th>
+                                <th className="py-3 px-4 text-left text-xs font-medium">
+                                  From
+                                </th>
+                                <th className="py-3 px-4 text-left text-xs font-medium">
+                                  To
+                                </th>
+                                <th className="py-3 px-4 text-left text-xs font-medium">
+                                  Advanced At
+                                </th>
+                                <th className="py-3 px-4 text-left text-xs font-medium">
+                                  Notes
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
                               {phaseHistory.map((log) => (
-                                <tr key={log.id} className="border-t border-gray-700/40 hover:bg-white/5 transition-colors">
-                                  <td className="py-3 px-4 text-xs text-gray-300">{log.fromPhase}</td>
-                                  <td className="py-3 px-4 text-xs">
-                                    <span className="text-blue-300 font-semibold">{log.toPhase}</span>
+                                <tr
+                                  key={log.id}
+                                  className="border-t border-gray-700/40 hover:bg-white/5 transition-colors"
+                                >
+                                  <td className="py-3 px-4 text-xs text-gray-300">
+                                    {log.fromPhase}
                                   </td>
-                                  <td className="py-3 px-4 text-xs text-gray-400">{log.advancedAt ? new Date(log.advancedAt).toLocaleString() : "—"}</td>
+                                  <td className="py-3 px-4 text-xs">
+                                    <span className="text-blue-300 font-semibold">
+                                      {log.toPhase}
+                                    </span>
+                                  </td>
+                                  <td className="py-3 px-4 text-xs text-gray-400">
+                                    {log.advancedAt
+                                      ? new Date(
+                                          log.advancedAt,
+                                        ).toLocaleString()
+                                      : "—"}
+                                  </td>
                                   <td className="py-3 px-4 text-xs text-gray-400 max-w-xs">
-                                    <div className="truncate" title={log.notes}>{log.notes || "—"}</div>
+                                    <div className="truncate" title={log.notes}>
+                                      {log.notes || "—"}
+                                    </div>
                                   </td>
                                 </tr>
                               ))}
@@ -4607,61 +4814,61 @@ export default function KanbanBoard() {
                 >
                   <option
                     value="GENERAL"
-                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                   >
                     General
                   </option>
                   <option
                     value="WORK"
-                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                   >
                     Work
                   </option>
                   <option
                     value="PERSONAL"
-                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                   >
                     Personal
                   </option>
                   <option
                     value="URGENT"
-                    style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-red)" }}
                   >
                     Urgent
                   </option>
                   <option
                     value="PLANNING"
-                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                   >
                     Planning
                   </option>
                   <option
                     value="REVIEW"
-                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                   >
                     Review
                   </option>
                   <option
                     value="IMPLEMENTATION"
-                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                   >
                     Implementation
                   </option>
                   <option
                     value="TESTING"
-                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                   >
                     Testing
                   </option>
                   <option
                     value="DOCUMENTATION"
-                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                   >
                     Documentation
                   </option>
                   <option
                     value="SUPPORT"
-                    style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                    style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                   >
                     Support
                   </option>
@@ -4857,61 +5064,61 @@ export default function KanbanBoard() {
                     >
                       <option
                         value="GENERAL"
-                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                       >
                         General
                       </option>
                       <option
                         value="WORK"
-                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                       >
                         Work
                       </option>
                       <option
                         value="PERSONAL"
-                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                       >
                         Personal
                       </option>
                       <option
                         value="URGENT"
-                        style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-red)" }}
                       >
                         Urgent
                       </option>
                       <option
                         value="PLANNING"
-                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                       >
                         Planning
                       </option>
                       <option
                         value="REVIEW"
-                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                       >
                         Review
                       </option>
                       <option
                         value="IMPLEMENTATION"
-                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                       >
                         Implementation
                       </option>
                       <option
                         value="TESTING"
-                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                       >
                         Testing
                       </option>
                       <option
                         value="DOCUMENTATION"
-                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                       >
                         Documentation
                       </option>
                       <option
                         value="SUPPORT"
-                        style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                        style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                       >
                         Support
                       </option>
@@ -5268,61 +5475,61 @@ export default function KanbanBoard() {
               >
                 <option
                   value="GENERAL"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   General
                 </option>
                 <option
                   value="WORK"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Work
                 </option>
                 <option
                   value="PERSONAL"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Personal
                 </option>
                 <option
                   value="URGENT"
-                  style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-red)" }}
                 >
                   Urgent
                 </option>
                 <option
                   value="PLANNING"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Planning
                 </option>
                 <option
                   value="REVIEW"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Review
                 </option>
                 <option
                   value="IMPLEMENTATION"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Implementation
                 </option>
                 <option
                   value="TESTING"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Testing
                 </option>
                 <option
                   value="DOCUMENTATION"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Documentation
                 </option>
                 <option
                   value="SUPPORT"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Support
                 </option>
@@ -5627,61 +5834,61 @@ export default function KanbanBoard() {
               >
                 <option
                   value="GENERAL"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   General
                 </option>
                 <option
                   value="WORK"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Work
                 </option>
                 <option
                   value="PERSONAL"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Personal
                 </option>
                 <option
                   value="URGENT"
-                  style={{ backgroundColor: "#1f2937", color: "#fca5a5" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-red)" }}
                 >
                   Urgent
                 </option>
                 <option
                   value="PLANNING"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Planning
                 </option>
                 <option
                   value="REVIEW"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Review
                 </option>
                 <option
                   value="IMPLEMENTATION"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Implementation
                 </option>
                 <option
                   value="TESTING"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Testing
                 </option>
                 <option
                   value="DOCUMENTATION"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Documentation
                 </option>
                 <option
                   value="SUPPORT"
-                  style={{ backgroundColor: "#1f2937", color: "#f3f4f6" }}
+                  style={{ backgroundColor: "var(--rf-bg3)", color: "var(--rf-txt)" }}
                 >
                   Support
                 </option>
@@ -5806,23 +6013,45 @@ export default function KanbanBoard() {
       </dialog>
 
       {/* ── ADVANCE PHASE MODAL ── */}
-      <dialog id="advance_phase_modal" className="modal items-start justify-center p-10">
+      <dialog
+        id="advance_phase_modal"
+        className="modal items-start justify-center p-10"
+      >
         <div className="modal-box pt-0 px-0 w-[540px] border border-blue-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-xl">
           <div className="flex items-center justify-between pt-6 px-6 pb-4 border-b border-gray-700/50">
             <div>
-              <h3 className="font-bold text-lg text-white" style={{ fontFamily: "Rajdhani, sans-serif", letterSpacing: "1px" }}>
+              <h3
+                className="font-bold text-lg text-white"
+                style={{
+                  fontFamily: "Rajdhani, sans-serif",
+                  letterSpacing: "1px",
+                }}
+              >
                 ADVANCE PHASE
               </h3>
               {phaseState && (
                 <p className="text-xs text-gray-400 mt-1">
-                  {phaseState.currentPhase} → <span className="text-blue-300 font-semibold">{phaseState.nextPhase}</span>
+                  {phaseState.currentPhase} →{" "}
+                  <span className="text-blue-300 font-semibold">
+                    {phaseState.nextPhase}
+                  </span>
                 </p>
               )}
             </div>
             <form method="dialog">
               <button className="size-9 rounded-lg hover:bg-red-500/20 flex items-center justify-center border border-red-500/30 hover:border-red-500 text-red-400 transition-all">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </form>
@@ -5830,10 +6059,16 @@ export default function KanbanBoard() {
           <div className="h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
           <div className="px-6 py-6 space-y-4">
             <div className="p-3 rounded-lg border border-blue-500/20 bg-blue-500/5">
-              <p className="text-xs text-gray-300">All blocking conditions are satisfied. This action is irreversible and will be recorded in the audit log.</p>
+              <p className="text-xs text-gray-300">
+                All blocking conditions are satisfied. This action is
+                irreversible and will be recorded in the audit log.
+              </p>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "IBM Plex Mono, monospace" }}>
+              <label
+                className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                style={{ fontFamily: "IBM Plex Mono, monospace" }}
+              >
                 Notes (optional)
               </label>
               <textarea
@@ -5856,26 +6091,49 @@ export default function KanbanBoard() {
               disabled={phaseLoading}
               className="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-gray-600 disabled:to-gray-500 text-white font-medium text-sm transition-all disabled:opacity-60"
             >
-              {phaseLoading ? "Advancing..." : `Advance to ${phaseState?.nextPhase}`}
+              {phaseLoading
+                ? "Advancing..."
+                : `Advance to ${phaseState?.nextPhase}`}
             </button>
           </div>
         </div>
       </dialog>
 
       {/* ── CONDITION ACTION MODAL (Mark Met / Waive) ── */}
-      <dialog id="condition_action_modal" className="modal items-start justify-center p-10">
+      <dialog
+        id="condition_action_modal"
+        className="modal items-start justify-center p-10"
+      >
         <div className="modal-box pt-0 px-0 w-[540px] border border-cyan-500/30 backdrop-blur-2xl bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 rounded-xl">
           <div className="flex items-center justify-between pt-6 px-6 pb-4 border-b border-gray-700/50">
-            <h3 className="font-bold text-lg text-white" style={{ fontFamily: "Rajdhani, sans-serif", letterSpacing: "1px" }}>
-              {conditionAction?.type === "markMet" ? "MARK CONDITION AS MET" : "WAIVE CONDITION"}
+            <h3
+              className="font-bold text-lg text-white"
+              style={{
+                fontFamily: "Rajdhani, sans-serif",
+                letterSpacing: "1px",
+              }}
+            >
+              {conditionAction?.type === "markMet"
+                ? "MARK CONDITION AS MET"
+                : "WAIVE CONDITION"}
             </h3>
             <form method="dialog">
               <button
                 onClick={() => setConditionAction(null)}
                 className="size-9 rounded-lg hover:bg-red-500/20 flex items-center justify-center border border-red-500/30 hover:border-red-500 text-red-400 transition-all"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </form>
@@ -5885,29 +6143,48 @@ export default function KanbanBoard() {
           {conditionAction?.type === "markMet" && (
             <div className="px-6 py-6 space-y-4">
               <div className="p-3 rounded-lg border border-green-500/20 bg-green-500/5">
-                <p className="text-xs text-gray-300">Mark this condition as completed. Provide evidence to support the record.</p>
+                <p className="text-xs text-gray-300">
+                  Mark this condition as completed. Provide evidence to support
+                  the record.
+                </p>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "IBM Plex Mono, monospace" }}>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
                   Evidence URL (optional)
                 </label>
                 <input
                   type="text"
                   placeholder="https://..."
                   value={conditionAction?.evidenceUrl || ""}
-                  onChange={(e) => setConditionAction({ ...conditionAction, evidenceUrl: e.target.value })}
+                  onChange={(e) =>
+                    setConditionAction({
+                      ...conditionAction,
+                      evidenceUrl: e.target.value,
+                    })
+                  }
                   className="w-full bg-gray-800/50 text-white placeholder-gray-600 px-4 py-2.5 rounded-lg border border-gray-700/50 hover:border-green-500/30 focus:border-green-500/50 focus:outline-none transition-all text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "IBM Plex Mono, monospace" }}>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
                   Evidence Note (optional)
                 </label>
                 <textarea
                   rows="2"
                   placeholder="Describe how this was verified..."
                   value={conditionAction?.evidenceNote || ""}
-                  onChange={(e) => setConditionAction({ ...conditionAction, evidenceNote: e.target.value })}
+                  onChange={(e) =>
+                    setConditionAction({
+                      ...conditionAction,
+                      evidenceNote: e.target.value,
+                    })
+                  }
                   className="w-full bg-gray-800/50 text-white placeholder-gray-600 px-4 py-2.5 rounded-lg border border-gray-700/50 hover:border-green-500/30 focus:border-green-500/50 focus:outline-none transition-all resize-none text-sm"
                 />
               </div>
@@ -5917,20 +6194,33 @@ export default function KanbanBoard() {
           {conditionAction?.type === "waive" && (
             <div className="px-6 py-6 space-y-4">
               <div className="p-3 rounded-lg border border-yellow-500/20 bg-yellow-500/5">
-                <p className="text-xs text-gray-300">Waiving this condition marks it as bypassed with a recorded justification. Minimum 20 characters required.</p>
+                <p className="text-xs text-gray-300">
+                  Waiving this condition marks it as bypassed with a recorded
+                  justification. Minimum 20 characters required.
+                </p>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider" style={{ fontFamily: "IBM Plex Mono, monospace" }}>
+                <label
+                  className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider"
+                  style={{ fontFamily: "IBM Plex Mono, monospace" }}
+                >
                   Reason <span className="text-red-400">*</span>
                 </label>
                 <textarea
                   rows="4"
                   placeholder="Provide a justification for waiving this condition..."
                   value={conditionAction?.reason || ""}
-                  onChange={(e) => setConditionAction({ ...conditionAction, reason: e.target.value })}
+                  onChange={(e) =>
+                    setConditionAction({
+                      ...conditionAction,
+                      reason: e.target.value,
+                    })
+                  }
                   className="w-full bg-gray-800/50 text-white placeholder-gray-600 px-4 py-2.5 rounded-lg border border-gray-700/50 hover:border-yellow-500/30 focus:border-yellow-500/50 focus:outline-none transition-all resize-none text-sm"
                 />
-                <p className={`text-[10px] mt-1 ${(conditionAction?.reason?.length || 0) >= 20 ? "text-green-400" : "text-gray-500"}`}>
+                <p
+                  className={`text-[10px] mt-1 ${(conditionAction?.reason?.length || 0) >= 20 ? "text-green-400" : "text-gray-500"}`}
+                >
                   {conditionAction?.reason?.length || 0}/20 min characters
                 </p>
               </div>
@@ -5947,11 +6237,23 @@ export default function KanbanBoard() {
               </button>
             </form>
             <button
-              onClick={conditionAction?.type === "markMet" ? handleMarkMet : handleWaiveCondition}
-              disabled={phaseLoading || (conditionAction?.type === "waive" && (conditionAction?.reason?.length || 0) < 20)}
+              onClick={
+                conditionAction?.type === "markMet"
+                  ? handleMarkMet
+                  : handleWaiveCondition
+              }
+              disabled={
+                phaseLoading ||
+                (conditionAction?.type === "waive" &&
+                  (conditionAction?.reason?.length || 0) < 20)
+              }
               className={`px-5 py-2 rounded-lg disabled:from-gray-600 disabled:to-gray-500 text-white font-medium text-sm transition-all disabled:opacity-60 bg-gradient-to-r ${conditionAction?.type === "markMet" ? "from-green-600 to-green-500 hover:from-green-500 hover:to-green-400" : "from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400"}`}
             >
-              {phaseLoading ? "Saving..." : conditionAction?.type === "markMet" ? "Mark as Met" : "Waive Condition"}
+              {phaseLoading
+                ? "Saving..."
+                : conditionAction?.type === "markMet"
+                  ? "Mark as Met"
+                  : "Waive Condition"}
             </button>
           </div>
         </div>

@@ -163,7 +163,7 @@ export default function KanbanBoard() {
   ];
 
   return (
-    <div className="min-h-screen font-gilroy p-6 text-white">
+    <div className="min-h-screen font-gilroy p-6" style={{ color: "var(--rf-txt)" }}>
       <h1 className="font-bold text-xl md:text-2xl">Task overveiw</h1>
       {/* Stats */}
       <div className="flex items-center justify-between w-full gap-20 md:gap-8 px-3 font-gilroy mt-6 mb-6">
@@ -212,14 +212,14 @@ export default function KanbanBoard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-white text-sm md:text-xl font-semibold">
+              <h2 className="text-sm md:text-xl font-semibold" style={{ color: "var(--rf-txt)" }}>
                 Projects List
               </h2>
             </div>
 
             <div className="flex items-center justify-between gap-3">
-              <div className="border border-[#FFFFFF]/30 rounded-full px-2 py-2">
-                <button className="font-semibold text-xs md:text-sm mx-2">
+              <div className="border rounded-full px-2 py-2" style={{ borderColor: "var(--rf-border2)" }}>
+                <button className="font-semibold text-xs md:text-sm mx-2" style={{ color: "var(--rf-txt)" }}>
                   {" "}
                   Nearest Due Date <span className="ml-3">▼</span>
                 </button>
@@ -245,7 +245,7 @@ export default function KanbanBoard() {
                   />
                 </svg>
               </button>
-              <button className="bg-white text-[#BEBEC8] p-2 border-[#E5E5EC] rounded-xl hover:bg-[#fbbf24] transition-all">
+              <button className="p-2 rounded-xl hover:bg-[#fbbf24] transition-all border" style={{ background: "var(--rf-bg2)", color: "var(--rf-txt3)", borderColor: "var(--rf-border)" }}>
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -294,19 +294,19 @@ export default function KanbanBoard() {
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-white font-semibold text-sm">
+                      <h3 className="font-semibold text-sm" style={{ color: "var(--rf-txt)" }}>
                         {project.name}
                       </h3>
-                      <p className="text-gray-400 flex items-center text-xs">
+                      <p className="flex items-center text-xs" style={{ color: "var(--rf-txt2)" }}>
                        Org : {project.organization?.name}
                       </p>
-                      <p className="text-gray-400 flex items-center text-xs">
+                      <p className="flex items-center text-xs" style={{ color: "var(--rf-txt2)" }}>
                         Type : {project?.projectType || project?.projectCategory}
                       </p>
-                      <p className="flex items-center gap-1 flex-wrap text-gray-400 text-xs">
+                      <p className="flex items-center gap-1 flex-wrap text-xs" style={{ color: "var(--rf-txt2)" }}>
                         Assignee :
                         {project.assignedUsers?.map((item, i) => (
-                          <p key={i} className="flex items-center gap-1 text-gray-400 text-xs">
+                          <p key={i} className="flex items-center gap-1 text-xs" style={{ color: "var(--rf-txt2)" }}>
                             {item?.firstName} {item?.lastName}
                           </p>
                         ))}
@@ -334,7 +334,8 @@ export default function KanbanBoard() {
                     >
                       <li>
                         <button
-                          className={`text-[16px] text-white gap-3 mt-2 `}
+                          className={`text-[16px] gap-3 mt-2`}
+                          style={{ color: "var(--rf-txt)" }}
                           onClick={() =>
                             router.push(
                               `/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`
@@ -346,7 +347,8 @@ export default function KanbanBoard() {
                       </li>
                       <li>
                         <button
-                          className={`text-[16px] text-white gap-3 mt-2 `}
+                          className={`text-[16px] gap-3 mt-2`}
+                          style={{ color: "var(--rf-txt)" }}
                           onClick={() => deleteProject(project?.id)}
                         >
                           <FaTrash className="text-lg text-error" /> Delete
@@ -375,7 +377,7 @@ export default function KanbanBoard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-white text-sm md:text-xl font-semibold">
+              <h2 className="text-sm md:text-xl font-semibold" style={{ color: "var(--rf-txt)" }}>
                 Members
               </h2>
             </div>
@@ -395,7 +397,7 @@ export default function KanbanBoard() {
                   />
                 </svg>
               </button>
-              <button className="bg-white text-[#BEBEC8] p-2 border-[#E5E5EC] rounded-xl hover:bg-[#fbbf24] transition-all">
+              <button className="p-2 rounded-xl hover:bg-[#fbbf24] transition-all border" style={{ background: "var(--rf-bg2)", color: "var(--rf-txt3)", borderColor: "var(--rf-border)" }}>
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -430,10 +432,10 @@ export default function KanbanBoard() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold text-sm">
+                    <h3 className="font-semibold text-sm" style={{ color: "var(--rf-txt)" }}>
                       {member.name}
                     </h3>
-                    <p className="text-gray-400 text-xs">{member.email}</p>
+                    <p className="text-xs" style={{ color: "var(--rf-txt2)" }}>{member.email}</p>
                   </div>
                 </div>
                 <div>
@@ -476,7 +478,7 @@ export default function KanbanBoard() {
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
         {/* Header */}
         <div className="flex items-center justify-between gap-16 mb-8">
-          <h1 className="text-white mt-5 ml-4 text-lg md:text-xl font-bold">
+          <h1 className="mt-5 ml-4 text-lg md:text-xl font-bold" style={{ color: "var(--rf-txt)" }}>
             Task List
           </h1>
           <div className="flex items-center gap-5">
@@ -705,14 +707,14 @@ export default function KanbanBoard() {
                   </td>
                   <td className="py-4 px-1 ">
                     <div className="flex items-center gap-2 text-[14px]">
-                      <button className="text-gray-400 hover:text-white transition-colors p-2">
-                        <FiMessageCircle className="text-white" />
+                      <button className="hover:text-white transition-colors p-2" style={{ color: "var(--rf-txt2)" }}>
+                        <FiMessageCircle />
                       </button>
-                      <button className="text-gray-400 hover:text-yellow-400 transition-colors p-2">
-                        <FiStar className="text-white" />
+                      <button className="hover:text-yellow-400 transition-colors p-2" style={{ color: "var(--rf-txt2)" }}>
+                        <FiStar />
                       </button>
-                      <button className="text-gray-400 hover:text-blue-400 transition-colors p-2">
-                        <FaPencil className="text-white text-[12px]" />
+                      <button className="hover:text-blue-400 transition-colors p-2" style={{ color: "var(--rf-txt2)" }}>
+                        <FaPencil className="text-[12px]" />
                       </button>
                       <button className="text-gray-400 hover:text-white transition-colors p-2">
                         <svg
@@ -887,7 +889,7 @@ export default function KanbanBoard() {
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-white font-semibold text-sm">
+                        <h3 className="font-semibold text-sm" style={{ color: "var(--rf-txt)" }}>
                           {member.name}
                         </h3>
                       </div>

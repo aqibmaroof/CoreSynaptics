@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import config from "../../../config";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GetUser, GetOrganization, AcceptInvite } from "../../../services/auth";
@@ -320,7 +319,7 @@ const LoginPage = () => {
         >
           <li
             className="flex items-center gap-3 text-xs font-light tracking-wider"
-            style={{ color: "#7ab8cc" }}
+            style={{ color: "#117292ff" }}
           >
             <span
               className="w-2 h-2 rounded-full flex-shrink-0"
@@ -333,7 +332,7 @@ const LoginPage = () => {
           </li>
           <li
             className="flex items-center gap-3 text-xs font-light tracking-wider"
-            style={{ color: "#7ab8cc" }}
+            style={{ color: "#117292ff" }}
           >
             <span
               className="w-2 h-2 rounded-full flex-shrink-0"
@@ -346,7 +345,7 @@ const LoginPage = () => {
           </li>
           <li
             className="flex items-center gap-3 text-xs font-light tracking-wider"
-            style={{ color: "#7ab8cc" }}
+            style={{ color: "#117292ff" }}
           >
             <span
               className="w-2 h-2 rounded-full flex-shrink-0"
@@ -359,7 +358,7 @@ const LoginPage = () => {
           </li>
           <li
             className="flex items-center gap-3 text-xs font-light tracking-wider"
-            style={{ color: "#7ab8cc" }}
+            style={{ color: "#117292ff" }}
           >
             <span
               className="w-2 h-2 rounded-full flex-shrink-0"
@@ -372,7 +371,7 @@ const LoginPage = () => {
           </li>
           <li
             className="flex items-center gap-3 text-xs font-light tracking-wider"
-            style={{ color: "#7ab8cc" }}
+            style={{ color: "#117292ff" }}
           >
             <span
               className="w-2 h-2 rounded-full flex-shrink-0"
@@ -388,7 +387,7 @@ const LoginPage = () => {
         {/* Tagline */}
         <div className="text-center relative z-10">
           <p
-            className="text-base font-medium text-cyan-100"
+            className="text-base font-medium text-cyan-300"
             style={{ letterSpacing: "0.03em" }}
           >
             Mission-critical commissioning.
@@ -450,7 +449,7 @@ const LoginPage = () => {
       {/* ══ RIGHT PANEL ══ */}
       <section
         className="flex-1 flex flex-col items-center justify-center relative p-12"
-        style={{ backgroundColor: "#050f1a" }}
+        style={{ backgroundColor: "var(--rf-bg)" }}
       >
         {/* Subtle radial glow */}
         <div

@@ -4,30 +4,29 @@ import {
   getVendorQuotes,
   createVendorQuote,
   updateVendorQuote,
-  deleteVendorQuote,
+  submitVendorQuote,
   approveVendorQuote,
   rejectVendorQuote,
-  compareQuotes,
 } from "@/services/Finance/VendorQuotes";
+import { getProjects } from "@/services/Projects";
+import { getSuppliers } from "@/services/Inventory";
 import { formatCurrency } from "@/Utils/payrollCalculations";
 
-const QUOTE_STATUSES = ["Draft", "Submitted", "Under Review", "Approved", "Rejected"];
 const STATUS_BADGE = {
-  Draft: "badge-ghost",
-  Submitted: "badge-warning",
-  "Under Review": "badge-info",
-  Approved: "badge-success",
-  Rejected: "badge-error",
+  DRAFT: "badge-ghost",
+  SUBMITTED: "badge-warning",
+  APPROVED: "badge-success",
+  REJECTED: "badge-error",
 };
 
 const EMPTY_FORM = {
-  vendor_id: "",
-  vendor_name: "",
-  project_id: "",
-  scope: "",
-  quoted_amount: "",
-  validity_date: "",
-  status: "Draft",
+  vendorId: "",
+  vendorName: "",
+  projectId: "",
+  contractId: "",
+  scopeOfWork: "",
+  quotedAmount: "",
+  validUntil: "",
   notes: "",
 };
 
@@ -43,26 +42,25 @@ export default function VendorQuotes() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
-  // Compare mode
-  const [compareIds, setCompareIds] = useState([]);
-  const [compareResult, setCompareResult] = useState(null);
-  const [comparing, setComparing] = useState(false);
-
   // Action modals
-  const [actionTarget, setActionTarget] = useState(null); // { quote, type: 'approve'|'reject' }
+  const [actionTarget, setActionTarget] = useState(null); // { quote, type: 'submit'|'approve'|'reject' }
   const [actionNote, setActionNote] = useState("");
   const [actioning, setActioning] = useState(false);
 
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
 
-  useEffect(() => { fetchQuotes(); }, []);
+  useEffect(() => {
+    fetchQuotes();
+    getProjects().then((res) => setProjects(res?.projects || [])).catch(() => {});
+    getSuppliers().then((res) => setSuppliers(res?.data || [])).catch(() => {});
+  }, []);
 
   async function fetchQuotes() {
     setLoading(true);
     try {
       const res = await getVendorQuotes();
-      setQuotes(res?.data?.items || res?.data || []);
+      setQuotes(res?.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }
@@ -71,13 +69,13 @@ export default function VendorQuotes() {
   const openEdit = (q) => {
     setEditing(q);
     setForm({
-      vendor_id: q.vendor_id || "",
-      vendor_name: q.vendor_name || "",
-      project_id: q.project_id || "",
-      scope: q.scope || "",
-      quoted_amount: q.quoted_amount || "",
-      validity_date: q.validity_date?.slice(0, 10) || "",
-      status: q.status || "Draft",
+      vendorId: q.vendorId || "",
+      vendorName: q.vendorName || "",
+      projectId: q.projectId || "",
+      contractId: q.contractId || "",
+      scopeOfWork: q.scopeOfWork || "",
+      quotedAmount: q.quotedAmount || "",
+      validUntil: q.validUntil?.slice(0, 10) || "",
       notes: q.notes || "",
     });
     setShowModal(true);
@@ -86,7 +84,12 @@ export default function VendorQuotes() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const payload = { ...form, quoted_amount: parseFloat(form.quoted_amount) || 0 };
+      const payload = {
+        ...form,
+        quotedAmount: parseFloat(form.quotedAmount) || 0,
+        validUntil: form.validUntil ? new Date(form.validUntil).toISOString() : undefined,
+      };
+      if (!payload.contractId) delete payload.contractId;
       if (editing) await updateVendorQuote(editing.id, payload);
       else await createVendorQuote(payload);
       setShowModal(false);
@@ -95,21 +98,13 @@ export default function VendorQuotes() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async () => {
-    setDeleting(true);
-    try {
-      await deleteVendorQuote(deleteTarget.id);
-      setDeleteTarget(null);
-      fetchQuotes();
-    } catch (e) { console.error(e); }
-    finally { setDeleting(false); }
-  };
-
   const handleAction = async () => {
     setActioning(true);
     try {
-      if (actionTarget.type === "approve") {
-        await approveVendorQuote(actionTarget.quote.id, { notes: actionNote });
+      if (actionTarget.type === "submit") {
+        await submitVendorQuote(actionTarget.quote.id);
+      } else if (actionTarget.type === "approve") {
+        await approveVendorQuote(actionTarget.quote.id);
       } else {
         await rejectVendorQuote(actionTarget.quote.id, { reason: actionNote });
       }
@@ -120,30 +115,13 @@ export default function VendorQuotes() {
     finally { setActioning(false); }
   };
 
-  const toggleCompare = (id) => {
-    setCompareIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 3 ? [...prev, id] : prev
-    );
-  };
-
-  const handleCompare = async () => {
-    setComparing(true);
-    try {
-      const res = await compareQuotes(compareIds);
-      setCompareResult(res?.data || null);
-    } catch (e) { console.error(e); }
-    finally { setComparing(false); }
-  };
-
   const filtered = quotes.filter((q) => {
     const ms = !search ||
-      q.vendor_name?.toLowerCase().includes(search.toLowerCase()) ||
-      q.scope?.toLowerCase().includes(search.toLowerCase());
+      q.vendorName?.toLowerCase().includes(search.toLowerCase()) ||
+      q.scopeOfWork?.toLowerCase().includes(search.toLowerCase());
     const mf = statusFilter === "All" || q.status === statusFilter;
     return ms && mf;
   });
-
-  const isExpired = (q) => q.validity_date && new Date(q.validity_date) < new Date();
 
   return (
     <div className="p-6 space-y-6">
@@ -152,26 +130,11 @@ export default function VendorQuotes() {
         <div>
           <h1 className="text-2xl font-bold text-gray-100">Vendor Quotes</h1>
           <p className="text-sm text-gray-400 mt-0.5">
-            Compare vendor quotations, attach documents, and approve/reject
+            Manage vendor quotation requests and approvals
           </p>
         </div>
-        <div className="flex gap-2">
-          {compareIds.length >= 2 && (
-            <button className="btn btn-sm btn-secondary" onClick={handleCompare} disabled={comparing}>
-              {comparing ? "Comparing..." : `Compare (${compareIds.length})`}
-            </button>
-          )}
-          <button className="btn btn-sm btn-info" onClick={openAdd}>+ Request Quote</button>
-        </div>
+        <button className="btn btn-sm btn-info" onClick={openAdd}>+ Request Quote</button>
       </div>
-
-      {/* Compare selection hint */}
-      {compareIds.length > 0 && (
-        <div className="alert alert-info rounded-xl py-2 text-sm">
-          {compareIds.length} quote(s) selected for comparison. Select up to 3.
-          <button className="btn btn-xs btn-ghost ml-auto" onClick={() => setCompareIds([])}>Clear</button>
-        </div>
-      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 p-4 rounded-xl">
@@ -179,7 +142,7 @@ export default function VendorQuotes() {
           className="input input-sm input-bordered bg-slate-700 text-gray-100 w-64"
           value={search} onChange={(e) => setSearch(e.target.value)} />
         <div className="flex gap-2 flex-wrap">
-          {["All", ...QUOTE_STATUSES].map((s) => (
+          {["All", "DRAFT", "SUBMITTED", "APPROVED", "REJECTED"].map((s) => (
             <button key={s}
               className={`btn btn-sm ${statusFilter === s ? "btn-info" : "btn-ghost text-gray-100"}`}
               onClick={() => setStatusFilter(s)}>{s}</button>
@@ -202,9 +165,6 @@ export default function VendorQuotes() {
             <table className="table table-sm w-full">
               <thead>
                 <tr className="text-gray-400 text-xs">
-                  <th className="w-8">
-                    <span className="text-gray-500 text-xs">Compare</span>
-                  </th>
                   <th>Vendor</th>
                   <th>Project</th>
                   <th>Scope</th>
@@ -218,22 +178,20 @@ export default function VendorQuotes() {
                 {filtered.map((q) => (
                   <tr key={q.id} className="hover:bg-slate-700">
                     <td>
-                      <input type="checkbox" className="checkbox checkbox-xs checkbox-info"
-                        checked={compareIds.includes(q.id)}
-                        onChange={() => toggleCompare(q.id)}
-                        disabled={!compareIds.includes(q.id) && compareIds.length >= 3} />
+                      <div className="text-gray-100 font-medium">
+                        {suppliers.find((s) => s.id === q.vendorId)?.name || q.vendorName || "—"}
+                      </div>
+                      <div className="text-xs text-gray-400">{q.vendorId}</div>
                     </td>
-                    <td>
-                      <div className="text-gray-100 font-medium">{q.vendor_name || "—"}</div>
-                      <div className="text-xs text-gray-400">{q.vendor_id}</div>
+                    <td className="text-gray-300 text-xs">
+                      {projects.find((p) => p.id === q.projectId)?.name || q.projectId || "—"}
                     </td>
-                    <td className="text-gray-300 text-xs">{q.project_name || q.project_id || "—"}</td>
-                    <td className="text-gray-300 text-sm max-w-48 truncate" title={q.scope}>{q.scope}</td>
-                    <td className="text-gray-100 font-medium">{formatCurrency(q.quoted_amount)}</td>
+                    <td className="text-gray-300 text-sm max-w-48 truncate" title={q.scopeOfWork}>{q.scopeOfWork || "—"}</td>
+                    <td className="text-gray-100 font-medium">{formatCurrency(q.quotedAmount)}</td>
                     <td>
-                      <span className={isExpired(q) ? "text-error text-xs" : "text-gray-400 text-xs"}>
-                        {q.validity_date ? new Date(q.validity_date).toLocaleDateString() : "—"}
-                        {isExpired(q) && <span className="badge badge-error badge-xs ml-1">Expired</span>}
+                      <span className={q.isExpired ? "text-error text-xs" : "text-gray-400 text-xs"}>
+                        {q.validUntil ? new Date(q.validUntil).toLocaleDateString() : "—"}
+                        {q.isExpired && <span className="badge badge-error badge-xs ml-1">Expired</span>}
                       </span>
                     </td>
                     <td>
@@ -243,7 +201,16 @@ export default function VendorQuotes() {
                     </td>
                     <td>
                       <div className="flex gap-1 flex-wrap">
-                        {q.status === "Submitted" || q.status === "Under Review" ? (
+                        {q.status === "DRAFT" && (
+                          <>
+                            <button className="btn btn-xs btn-warning"
+                              onClick={() => setActionTarget({ quote: q, type: "submit" })}>
+                              Submit
+                            </button>
+                            <button className="btn btn-xs btn-ghost text-gray-100" onClick={() => openEdit(q)}>Edit</button>
+                          </>
+                        )}
+                        {q.status === "SUBMITTED" && (
                           <>
                             <button className="btn btn-xs btn-success"
                               onClick={() => setActionTarget({ quote: q, type: "approve" })}>
@@ -253,10 +220,9 @@ export default function VendorQuotes() {
                               onClick={() => setActionTarget({ quote: q, type: "reject" })}>
                               Reject
                             </button>
+                            <button className="btn btn-xs btn-ghost text-gray-100" onClick={() => openEdit(q)}>Edit</button>
                           </>
-                        ) : null}
-                        <button className="btn btn-xs btn-ghost text-gray-100" onClick={() => openEdit(q)}>Edit</button>
-                        <button className="btn btn-xs btn-ghost text-error" onClick={() => setDeleteTarget(q)}>Del</button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -267,67 +233,31 @@ export default function VendorQuotes() {
         )}
       </div>
 
-      {/* Compare Result Modal */}
-      {compareResult && (
-        <div className="modal modal-open">
-          <div className="modal-box bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 max-w-3xl">
-            <h3 className="font-bold text-lg text-gray-100 mb-4">Quote Comparison</h3>
-            <div className="overflow-x-auto">
-              <table className="table table-sm w-full">
-                <thead>
-                  <tr className="text-gray-400 text-xs">
-                    <th>Field</th>
-                    {compareResult.quotes?.map((q) => (
-                      <th key={q.id}>{q.vendor_name}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {["quoted_amount", "validity_date", "scope", "status"].map((field) => (
-                    <tr key={field} className="hover:bg-slate-700">
-                      <td className="text-gray-400 capitalize text-xs">{field.replace("_", " ")}</td>
-                      {compareResult.quotes?.map((q) => (
-                        <td key={q.id} className={`text-gray-100 text-sm ${field === "quoted_amount" && q.is_lowest ? "text-success font-bold" : ""
-                          }`}>
-                          {field === "quoted_amount" ? formatCurrency(q[field]) : q[field] || "—"}
-                          {field === "quoted_amount" && q.is_lowest && (
-                            <span className="badge badge-success badge-xs ml-1">Lowest</span>
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="modal-action">
-              <button className="btn btn-ghost btn-sm text-gray-100" onClick={() => setCompareResult(null)}>Close</button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setCompareResult(null)} />
-        </div>
-      )}
-
-      {/* Approve / Reject Modal */}
+      {/* Submit / Approve / Reject Modal */}
       {actionTarget && (
         <div className="modal modal-open">
           <div className="modal-box bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 max-w-sm">
             <h3 className="font-bold text-gray-100">
-              {actionTarget.type === "approve" ? "Approve Quote" : "Reject Quote"}
+              {actionTarget.type === "submit" ? "Submit Quote for Review" :
+                actionTarget.type === "approve" ? "Approve Quote" : "Reject Quote"}
             </h3>
             <p className="text-sm text-gray-400 mt-2 mb-3">
-              {actionTarget.quote.vendor_name} — {formatCurrency(actionTarget.quote.quoted_amount)}
+              {actionTarget.quote.vendorName} — {formatCurrency(actionTarget.quote.quotedAmount)}
             </p>
-            <textarea className="textarea textarea-bordered w-full bg-slate-700 text-gray-100 text-sm" rows={2}
-              placeholder={actionTarget.type === "approve" ? "Approval notes (optional)" : "Rejection reason..."}
-              value={actionNote} onChange={(e) => setActionNote(e.target.value)} />
+            {actionTarget.type === "reject" && (
+              <textarea className="textarea textarea-bordered w-full bg-slate-700 text-gray-100 text-sm" rows={2}
+                placeholder="Rejection reason (optional)"
+                value={actionNote} onChange={(e) => setActionNote(e.target.value)} />
+            )}
             <div className="modal-action">
               <button className="btn btn-ghost btn-sm text-gray-100"
                 onClick={() => { setActionTarget(null); setActionNote(""); }}>Cancel</button>
               <button
-                className={`btn btn-sm ${actionTarget.type === "approve" ? "btn-success" : "btn-error"}`}
+                className={`btn btn-sm ${actionTarget.type === "approve" ? "btn-success" : actionTarget.type === "reject" ? "btn-error" : "btn-warning"}`}
                 onClick={handleAction} disabled={actioning}>
-                {actioning ? "Processing..." : actionTarget.type === "approve" ? "Confirm Approve" : "Confirm Reject"}
+                {actioning ? "Processing..." :
+                  actionTarget.type === "submit" ? "Confirm Submit" :
+                    actionTarget.type === "approve" ? "Confirm Approve" : "Confirm Reject"}
               </button>
             </div>
           </div>
@@ -343,47 +273,54 @@ export default function VendorQuotes() {
               {editing ? "Edit Quote" : "Request Quote"}
             </h3>
             <div className="space-y-3">
+              <div>
+                <label className="label text-xs text-gray-400">Vendor *</label>
+                <select className="select select-sm select-bordered w-full bg-slate-700 text-gray-100"
+                  value={form.vendorId}
+                  onChange={(e) => {
+                    const sup = suppliers.find((s) => s.id === e.target.value);
+                    setForm({ ...form, vendorId: e.target.value, vendorName: sup?.name || "" });
+                  }}>
+                  <option value="">— Select Vendor —</option>
+                  {suppliers.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label text-xs text-gray-400">Vendor Name</label>
-                  <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.vendor_name} onChange={(e) => setForm({ ...form, vendor_name: e.target.value })} />
+                  <label className="label text-xs text-gray-400">Project *</label>
+                  <select className="select select-sm select-bordered w-full bg-slate-700 text-gray-100"
+                    value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })}>
+                    <option value="">— Select Project —</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <label className="label text-xs text-gray-400">Vendor ID (optional)</label>
+                  <label className="label text-xs text-gray-400">Contract ID (optional)</label>
                   <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.vendor_id} onChange={(e) => setForm({ ...form, vendor_id: e.target.value })} />
+                    value={form.contractId} onChange={(e) => setForm({ ...form, contractId: e.target.value })} />
                 </div>
-              </div>
-              <div>
-                <label className="label text-xs text-gray-400">Project ID</label>
-                <input className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                  value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })} />
               </div>
               <div>
                 <label className="label text-xs text-gray-400">Scope of Work</label>
                 <textarea className="textarea textarea-bordered w-full bg-slate-700 text-gray-100 text-sm" rows={2}
-                  value={form.scope} onChange={(e) => setForm({ ...form, scope: e.target.value })} />
+                  value={form.scopeOfWork} onChange={(e) => setForm({ ...form, scopeOfWork: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label text-xs text-gray-400">Quoted Amount ($)</label>
-                  <input type="number" min="0" step="0.01"
+                  <label className="label text-xs text-gray-400">Quoted Amount ($) *</label>
+                  <input type="number" min="0.01" step="0.01"
                     className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.quoted_amount} onChange={(e) => setForm({ ...form, quoted_amount: e.target.value })} />
+                    value={form.quotedAmount} onChange={(e) => setForm({ ...form, quotedAmount: e.target.value })} />
                 </div>
                 <div>
-                  <label className="label text-xs text-gray-400">Valid Until</label>
+                  <label className="label text-xs text-gray-400">Valid Until *</label>
                   <input type="date" className="input input-sm input-bordered w-full bg-slate-700 text-gray-100"
-                    value={form.validity_date} onChange={(e) => setForm({ ...form, validity_date: e.target.value })} />
+                    value={form.validUntil} onChange={(e) => setForm({ ...form, validUntil: e.target.value })} />
                 </div>
-              </div>
-              <div>
-                <label className="label text-xs text-gray-400">Status</label>
-                <select className="select select-sm select-bordered w-full bg-slate-700 text-gray-100"
-                  value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                  {QUOTE_STATUSES.map((s) => <option key={s}>{s}</option>)}
-                </select>
               </div>
               <div>
                 <label className="label text-xs text-gray-400">Notes</label>
@@ -394,31 +331,12 @@ export default function VendorQuotes() {
             <div className="modal-action">
               <button className="btn btn-ghost btn-sm text-gray-100" onClick={() => setShowModal(false)}>Cancel</button>
               <button className="btn btn-info btn-sm" onClick={handleSave}
-                disabled={saving || !form.vendor_name}>
+                disabled={saving || !form.vendorId || !form.projectId || !form.quotedAmount || !form.validUntil}>
                 {saving ? "Saving..." : editing ? "Update" : "Create"}
               </button>
             </div>
           </div>
           <div className="modal-backdrop" onClick={() => setShowModal(false)} />
-        </div>
-      )}
-
-      {/* Delete Confirm */}
-      {deleteTarget && (
-        <div className="modal modal-open">
-          <div className="modal-box bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 max-w-sm">
-            <h3 className="font-bold text-gray-100">Delete Quote?</h3>
-            <p className="text-sm text-gray-400 mt-2">
-              Delete quote from <strong className="text-gray-100">{deleteTarget.vendor_name}</strong>?
-            </p>
-            <div className="modal-action">
-              <button className="btn btn-ghost btn-sm text-gray-100" onClick={() => setDeleteTarget(null)}>Cancel</button>
-              <button className="btn btn-error btn-sm" onClick={handleDelete} disabled={deleting}>
-                {deleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => setDeleteTarget(null)} />
         </div>
       )}
     </div>

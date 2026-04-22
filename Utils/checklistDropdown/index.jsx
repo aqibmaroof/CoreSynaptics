@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {getChecklists} from "@/services/Checklist"
 
 export function ChecklistDropdownForProjects({
   entityType,
@@ -21,7 +22,7 @@ export function ChecklistDropdownForProjects({
   const fetchChecklists = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/checklist");
+      const response = await getChecklists();
       if (!response.ok) throw new Error("Failed to fetch checklists");
       const data = await response.json();
       setChecklists(data);

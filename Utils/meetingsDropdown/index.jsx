@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
+import { getMeetings } from "@/services/Meetings";
 export function MeetingsDropdownForProjects({
   entityType,
   selectedMeeting,
@@ -21,7 +21,7 @@ export function MeetingsDropdownForProjects({
   const fetchMeetings = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/meetings");
+      const response = getMeetings();
       if (!response.ok) throw new Error("Failed to fetch meetings");
       const data = await response.json();
       setMeetings(data);

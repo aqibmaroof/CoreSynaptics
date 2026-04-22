@@ -7,6 +7,7 @@ import { getProjects } from "@/services/Projects";
 import { getCompanies } from "@/services/Companies";
 import { getUsers } from "@/services/Users";
 import { getAssets } from "../../../services/AssetManagement";
+import CompanySelect from "@/components/CRM/CompanySelect";
 
 const fetchAssets = async () => [];
 
@@ -234,13 +235,13 @@ export default function IssuesAdd() {
                 </div>
 
                 <div>
-                  <FieldLabel>Assign to Company</FieldLabel>
-                  <select value={form.assignedToCompanyId} onChange={set("assignedToCompanyId")} className={INPUT_CLS}>
-                    <option value="">No company assigned</option>
-                    {companies.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                  <CompanySelect
+                    value={form.assignedToCompanyId}
+                    onChange={(id) => setForm((prev) => ({ ...prev, assignedToCompanyId: id }))}
+                    companies={companies}
+                    onCreated={(company) => setCompanies((prev) => [...prev, company])}
+                    label="Assign to Company"
+                  />
                 </div>
               </div>
             </section>

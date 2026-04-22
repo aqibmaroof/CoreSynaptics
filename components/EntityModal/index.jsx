@@ -8,11 +8,11 @@ import { CreateEquipment } from "@/services/Equipment";
 import { GetFields } from "@/services/Types";
 import { getUser } from "@/services/instance/tokenService";
 import { useParams } from "next/navigation";
-import { CompanyDropdownForProjects } from "@/Utils/companyDropdown"
-import { RFIDropdown } from "@/components/RfiDropDown"
-import { ChecklistDropdownForProjects } from "@/Utils/checklistDropdown"
-import { DocumentsDropdownForProjects } from "@/Utils/documentsDropdown"
-import { MeetingsDropdownForProjects } from "@/Utils/meetingsDropdown"
+import { CompanyDropdownForProjects } from "@/Utils/companyDropdown";
+import { RFIDropdown } from "@/components/RfiDropDown";
+import { ChecklistDropdownForProjects } from "@/Utils/checklistDropdown";
+import { DocumentsDropdownForProjects } from "@/Utils/documentsDropdown";
+import { MeetingsDropdownForProjects } from "@/Utils/meetingsDropdown";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const CapitalizeText = (text) =>
@@ -487,8 +487,9 @@ function PhaseIndicator({ currentPhase, totalPhases, phases }) {
         {phases.map((phase, idx) => (
           <div key={idx} className="flex-1">
             <div
-              className={`h-1.5 rounded-full transition-all ${idx + 1 <= currentPhase ? "bg-blue-500" : "bg-gray-700"
-                }`}
+              className={`h-1.5 rounded-full transition-all ${
+                idx + 1 <= currentPhase ? "bg-blue-500" : "bg-gray-700"
+              }`}
             />
             <div className="text-xs mt-1 text-gray-400 text-center truncate">
               {phase.label}
@@ -540,7 +541,7 @@ export default function EntityModal({
   const [selectedChecklist, setSelectedChecklist] = useState("");
   const [selectedDocument, setSelectedDocument] = useState("");
   const [selectedMeeting, setSelectedMeeting] = useState("");
-
+  console.log(selectedRFIs);
   // Base form states
   const [projectForm, setProjectForm] = useState({
     name: "",
@@ -793,21 +794,21 @@ export default function EntityModal({
           timezone: projectForm.timezone,
           address: projectForm.address,
         };
-        if (selectedCompany) {
-          payload.companyId = selectedCompany;
-        }
-        if (selectedRFIs.length > 0) {
-          payload.rfiIds = selectedRFIs;
-        }
-        if (selectedChecklist) {
-          payload.checklistId = selectedChecklist;
-        }
-        if (selectedDocument) {
-          payload.documentId = selectedDocument;
-        }
-        if (selectedMeeting) {
-          payload.meetingId = selectedMeeting;
-        }
+        // if (selectedCompany) {
+        //   payload.companyId = selectedCompany;
+        // }
+        // if (selectedRFIs.length > 0) {
+        //   payload.rfiIds = selectedRFIs;
+        // }
+        // if (selectedChecklist) {
+        //   payload.checklistId = selectedChecklist;
+        // }
+        // if (selectedDocument) {
+        //   payload.documentId = selectedDocument;
+        // }
+        // if (selectedMeeting) {
+        //   payload.meetingId = selectedMeeting;
+        // }
         if (!selectedSubType) {
           payload = {
             ...payload,
@@ -994,10 +995,11 @@ export default function EntityModal({
         {/* Message */}
         {message.text && (
           <div
-            className={`mx-6 mt-4 p-4 rounded-lg ${message.type === "success"
+            className={`mx-6 mt-4 p-4 rounded-lg ${
+              message.type === "success"
                 ? "bg-green-500/20 border border-green-500 text-green-400"
                 : "bg-red-500/20 border border-red-500 text-red-400"
-              }`}
+            }`}
           >
             {message.text}
           </div>
@@ -1005,7 +1007,7 @@ export default function EntityModal({
 
         {/* Form Content */}
         <form
-          onSubmit={handleCreate}
+          onSubmit={(e) => handleCreate(e)}
           className="flex-1 overflow-y-auto p-6 space-y-4"
         >
           {/* ─── PROJECTS ─── */}
@@ -1085,9 +1087,9 @@ export default function EntityModal({
 
                   {!id && !subId && (
                     <RFIDropdown
-                      projectId={null}
+                      projectId={id || ""}
                       selectedRFIs={selectedRFIs}
-                      onRFISelect={setSelectedRFIs}
+                      onRFISelect={(value) => setSelectedRFIs(value)}
                     />
                   )}
                   {id && subId && (
@@ -1318,8 +1320,8 @@ export default function EntityModal({
                           : isSubField
                             ? subMetadata[field.name]
                             : siteMetadata[field.name] ||
-                            zoneMetadata[field.name] ||
-                            assetMetadata[field.name];
+                              zoneMetadata[field.name] ||
+                              assetMetadata[field.name];
 
                         const metaHandler = isRootField
                           ? handleRootMeta
@@ -1627,8 +1629,8 @@ export default function EntityModal({
                             key={key}
                             value={key}
                             style={{
-                              backgroundColor: "#1f2937",
-                              color: "#f3f4f6",
+                              backgroundColor: "var(--rf-bg3)",
+                              color: "var(--rf-txt)",
                             }}
                           >
                             {cat.label}
@@ -1868,7 +1870,7 @@ export default function EntityModal({
           {currentPhase === totalPhases && (
             <button
               type="submit"
-              onClick={handleCreate}
+              onClick={(e) => handleCreate(e)}
               disabled={loading}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded-lg transition-colors"
             >

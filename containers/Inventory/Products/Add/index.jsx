@@ -39,6 +39,7 @@ export default function ProductAdd() {
     category: "",
     brand: "",
     unit: "pcs",
+    quantity: "",
   });
 
   const set = (k) => (e) => {
@@ -65,6 +66,7 @@ export default function ProductAdd() {
         category: form.category || undefined,
         brand: form.brand || undefined,
         unit: form.unit,
+        quantity: form?.quantity,
       });
       setMsg({
         type: "success",
@@ -138,6 +140,20 @@ export default function ProductAdd() {
               />
               {errors.name && (
                 <p className="text-red-400 text-xs mt-1">{errors.name}</p>
+              )}
+            </div>
+
+            <div>
+              <FL required>Product Quantity</FL>
+              <input
+                type="text"
+                value={form.quantity}
+                onChange={set("quantity")}
+                placeholder="e.g. 10"
+                className={`${INPUT} ${errors.quantity ? "border-red-500" : ""}`}
+              />
+              {errors.quantity && (
+                <p className="text-red-400 text-xs mt-1">{errors.quantity}</p>
               )}
             </div>
 
