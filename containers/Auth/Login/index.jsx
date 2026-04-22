@@ -609,7 +609,7 @@ const LoginPage = () => {
                     message.type === "success"
                       ? "rgba(0, 255, 136, 0.3)"
                       : "rgba(255, 100, 100, 0.1)",
-                  color: message.type === "success" ? "#043d22ff" : "#ff6464",
+                  color: message.type === "success" ? "var(--rf-green)" : "var(--rf-red)",
                   border:
                     message.type === "success"
                       ? "1px solid rgba(0, 255, 136, 0.3)"

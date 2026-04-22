@@ -17,7 +17,7 @@ import {
   SaveTeam,
 } from "../../../services/setup";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import {
   getAccessToken,
   setOrganization,
@@ -1221,7 +1221,7 @@ function StepCompany({ w, u, showPwd, setShowPwd }) {
             />
           </G>
           <FI
-            label="Admin email"
+            label="Admin email - this email will be used as a login email to the board"
             type="email"
             placeholder="you@company.com"
             value={w.adminEmail}
@@ -1614,9 +1614,7 @@ function StepPartners({ w, u }) {
                   padding: "2px 8px",
                   borderRadius: 20,
                   background:
-                    w.mode === m.id
-                      ? "rgba(0,200,255,0.1)"
-                      : "var(--rf-bg3)",
+                    w.mode === m.id ? "rgba(0,200,255,0.1)" : "var(--rf-bg3)",
                   color: w.mode === m.id ? C.accent : C.muted,
                   fontFamily: C.mono,
                 }}
@@ -3671,103 +3669,103 @@ function LeftPanel() {
       <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-cyan-700" />
       <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-cyan-700" />
       <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-cyan-700" />
-     <div className="w-28 h-28 mb-7 relative z-10">
-          <svg
-            viewBox="0 0 110 110"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+      <div className="w-28 h-28 mb-7 relative z-10">
+        <svg
+          viewBox="0 0 110 110"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Glow backdrop */}
+          <circle
+            cx="55"
+            cy="55"
+            r="32"
+            fill="rgba(0,180,255,0.10)"
+            style={{
+              animation: "pulse 2s ease-in-out infinite",
+              filter: "blur(12px)",
+            }}
+          />
+
+          {/* Outer dashed ring */}
+          <g
+            style={{
+              animation: "spin 8s linear infinite",
+              transformOrigin: "50% 50%",
+            }}
           >
-            {/* Glow backdrop */}
             <circle
               cx="55"
               cy="55"
-              r="32"
-              fill="rgba(0,180,255,0.10)"
-              style={{
-                animation: "pulse 2s ease-in-out infinite",
-                filter: "blur(12px)",
-              }}
+              r="50"
+              stroke="rgba(0,180,220,0.18)"
+              strokeWidth="1"
+              strokeDasharray="4 6"
             />
+          </g>
 
-            {/* Outer dashed ring */}
-            <g
-              style={{
-                animation: "spin 8s linear infinite",
-                transformOrigin: "50% 50%",
-              }}
-            >
-              <circle
-                cx="55"
-                cy="55"
-                r="50"
-                stroke="rgba(0,180,220,0.18)"
-                strokeWidth="1"
-                strokeDasharray="4 6"
-              />
-            </g>
-
-            {/* Mid ring with gaps */}
-            <g
-              style={{
-                animation: "spin-reverse 5s linear infinite",
-                transformOrigin: "50% 50%",
-              }}
-            >
-              <circle
-                cx="55"
-                cy="55"
-                r="40"
-                stroke="rgba(0,212,255,0.28)"
-                strokeWidth="1.2"
-                strokeDasharray="10 4"
-              />
-            </g>
-
-            {/* Solid arcs (the "C" shape) */}
-            <path
-              d="M 55 18 A 37 37 0 1 1 20 55"
-              stroke="#00d4ff"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Inner arc */}
-            <path
-              d="M 55 30 A 25 25 0 1 1 30 55"
-              stroke="#0090bb"
-              strokeWidth="2"
-              strokeLinecap="round"
-              fill="none"
-            />
-
-            {/* Dot on arc end */}
-            <circle cx="20" cy="55" r="4" fill="#00d4ff" />
-            <circle cx="30" cy="55" r="2.5" fill="#00aadd" />
-
-            {/* Small accent tick */}
-            <line
-              x1="55"
-              y1="14"
-              x2="55"
-              y2="22"
-              stroke="#00d4ff"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-
-            {/* Inner filled ring */}
+          {/* Mid ring with gaps */}
+          <g
+            style={{
+              animation: "spin-reverse 5s linear infinite",
+              transformOrigin: "50% 50%",
+            }}
+          >
             <circle
               cx="55"
               cy="55"
-              r="10"
-              fill="rgba(0,60,90,0.7)"
-              stroke="#00d4ff"
-              strokeWidth="1.5"
+              r="40"
+              stroke="rgba(0,212,255,0.28)"
+              strokeWidth="1.2"
+              strokeDasharray="10 4"
             />
-            <circle cx="55" cy="55" r="4" fill="#00d4ff" />
-          </svg>
+          </g>
 
-          <style>{`
+          {/* Solid arcs (the "C" shape) */}
+          <path
+            d="M 55 18 A 37 37 0 1 1 20 55"
+            stroke="#00d4ff"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Inner arc */}
+          <path
+            d="M 55 30 A 25 25 0 1 1 30 55"
+            stroke="#0090bb"
+            strokeWidth="2"
+            strokeLinecap="round"
+            fill="none"
+          />
+
+          {/* Dot on arc end */}
+          <circle cx="20" cy="55" r="4" fill="#00d4ff" />
+          <circle cx="30" cy="55" r="2.5" fill="#00aadd" />
+
+          {/* Small accent tick */}
+          <line
+            x1="55"
+            y1="14"
+            x2="55"
+            y2="22"
+            stroke="#00d4ff"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+
+          {/* Inner filled ring */}
+          <circle
+            cx="55"
+            cy="55"
+            r="10"
+            fill="rgba(0,60,90,0.7)"
+            stroke="#00d4ff"
+            strokeWidth="1.5"
+          />
+          <circle cx="55" cy="55" r="4" fill="#00d4ff" />
+        </svg>
+
+        <style>{`
             @keyframes spin {
               to { transform: rotate(360deg); }
             }
@@ -3779,7 +3777,7 @@ function LeftPanel() {
               50% { opacity: 1; filter: blur(18px); }
             }
           `}</style>
-        </div>
+      </div>
       <div className="text-center mb-7 relative z-10">
         <div
           className="text-3xl font-bold mb-1"
@@ -3973,6 +3971,12 @@ export default function RegisterPage() {
     d.team = JSON.parse(JSON.stringify(TEAMS_BY_TYPE.customer));
     return d;
   });
+
+  // Apply saved theme synchronously before paint (prevents dark flash on refresh)
+  useLayoutEffect(() => {
+    const saved = localStorage.getItem("theme") || "dark";
+    document.documentElement.setAttribute("data-theme", saved);
+  }, []);
 
   // On mount: create session for new users; or resume setup for authed users
   useEffect(() => {
@@ -4209,71 +4213,6 @@ export default function RegisterPage() {
       sessionId || sessionStorage.getItem("cxcontrol_session_id") || "";
 
     try {
-      // Re-save company to ensure latest credentials are persisted
-      await SaveCompany({
-        sessionId: sid,
-        companyName: wizard.companyName,
-        companyEmail: wizard.companyEmail,
-        companyRole: wizard.companyType,
-        companySize: wizard.companySize,
-        adminFirstName: wizard.adminFirstName,
-        adminLastName: wizard.adminLastName,
-        adminEmail: wizard.adminEmail,
-        adminPassword: wizard.adminPassword,
-      });
-
-      // Steps 2–6: Save in parallel
-      const rolesPayload =
-        apiRoles.length > 0
-          ? Object.entries(roleQtys).map(([roleKey, qty]) => {
-              const role = apiRoles.find((r) => r.roleKey === roleKey);
-              return {
-                name: role?.name || roleKey,
-                tier: role?.tier || "S",
-                qty,
-              };
-            })
-          : (wizard.team || []).map((r) => ({
-              name: r.n,
-              tier: r.tier,
-              qty: r.qty,
-            }));
-
-      await Promise.allSettled([
-        SaveScope({
-          sessionId: sid,
-          multiDC: wizard.multiDC,
-          defaultConnected: wizard.defaultConnected,
-        }),
-        SaveFacility({
-          sessionId: sid,
-          name: wizard.facilityName,
-          dcType: wizard.dcType,
-          uptime: wizard.uptime,
-          scale: wizard.scale,
-          cooling: wizard.cooling,
-          power: wizard.power,
-        }),
-        SaveEquipment({
-          sessionId: sid,
-          equipment: wizard.equipment.map((e) => ({
-            abbr: e.abbr,
-            name: e.name,
-            oem: e.oem,
-            qty: e.qty,
-            proc: e.proc,
-            leadWeeks: e.leadWeeks,
-          })),
-        }),
-        SaveTeam({ sessionId: sid, roles: rolesPayload }),
-        SaveBrand({
-          sessionId: sid,
-          logoUrl: wizard.logoUrl,
-          primaryColor: wizard.primaryColor,
-          googleEarth: wizard.googleEarth,
-        }),
-      ]);
-
       // Finalize — creates org + user + returns JWT
       const finalizeRes = await FinalizeSetup({ sessionId: sid });
       const { accessToken, organization, user } = finalizeRes || {};
@@ -4627,10 +4566,9 @@ export default function RegisterPage() {
                   borderRadius: 6,
                   border: "none",
                   background:
-                    canAdvance() && !stepLoading
-                      ? C.accent
-                      : "var(--rf-bg4)",
-                  color: canAdvance() && !stepLoading ? "var(--rf-bg)" : C.muted,
+                    canAdvance() && !stepLoading ? C.accent : "var(--rf-bg4)",
+                  color:
+                    canAdvance() && !stepLoading ? "var(--rf-bg)" : C.muted,
                   fontFamily: C.mono,
                   fontSize: "0.7rem",
                   fontWeight: 600,
