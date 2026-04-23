@@ -30,7 +30,10 @@ import {
   getOnboardingUploadUrl,
   putFileToS3,
 } from "../../../services/Onboarding";
-
+import {
+  getSubscriptions,
+  selectSubscription,
+} from "../../../services/Subscriptions";
 // ── Data ──────────────────────────────────────────────────────────────────────
 
 const COMPANY_TYPES = [
@@ -1036,7 +1039,7 @@ function calcPricing(w) {
 
 // ── Steps ──────────────────────────────────────────────────────────────────────
 
-function StepCompany({ w, u, showPwd, setShowPwd }) {
+function StepCompany({ w, u, showPwd, setShowPwd, subscriptions }) {
   const p = calcPricing(w);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
@@ -1107,18 +1110,28 @@ function StepCompany({ w, u, showPwd, setShowPwd }) {
             marginBottom: 12,
           }}
         >
-          {COMPANY_SIZES.map((s) => (
+          {subscriptions.map((s) => (
             <div
               key={s.id}
-              onClick={() => u({ companySize: s.id })}
+              onClick={() =>
+                u({
+                  companySize:
+                    s.name === "BASIC"
+                      ? "small"
+                      : s?.name === "PRO"
+                        ? "medium"
+                        : "ent",
+                  companyId: s?.id,
+                })
+              }
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
                 padding: "12px 14px",
-                background: w.companySize === s.id ? C.selBg : C.card,
+                background: w.companyId === s.id ? C.selBg : C.card,
                 border:
-                  w.companySize === s.id
+                  w.companyId === s.id
                     ? `1.5px solid ${C.sel}`
                     : `1px solid ${C.border}`,
                 borderRadius: 8,
@@ -1131,11 +1144,11 @@ function StepCompany({ w, u, showPwd, setShowPwd }) {
                   style={{
                     fontSize: "0.8rem",
                     fontWeight: 600,
-                    color: w.companySize === s.id ? C.accent : C.text,
+                    color: w.companyId === s.id ? C.accent : C.text,
                     fontFamily: C.sans,
                   }}
                 >
-                  {s.plan}
+                  {s.displayName}
                 </div>
                 <div
                   style={{
@@ -1145,17 +1158,17 @@ function StepCompany({ w, u, showPwd, setShowPwd }) {
                     marginTop: 2,
                   }}
                 >
-                  {s.d}
+                  1-{s.userLimit || "2500+"} people
                 </div>
               </div>
               <div
                 style={{
                   fontFamily: C.mono,
                   fontSize: "0.7rem",
-                  color: w.companySize === s.id ? C.accent : C.muted,
+                  color: w.companyId === s.id ? C.accent : C.muted,
                 }}
               >
-                {s.n}
+                {s.displayName}
               </div>
             </div>
           ))}
@@ -3884,7 +3897,8 @@ function LeftPanel() {
 const DEFAULT_WIZARD = {
   companyType: "customer",
   companyName: "",
-  companySize: "medium",
+  companySize: "med",
+  companyId: "",
   multiDC: true,
   defaultConnected: false,
   facilityName: "",
@@ -3944,6 +3958,7 @@ export default function RegisterPage() {
   const [stepError, setStepError] = useState("");
   const [apiRoles, setApiRoles] = useState([]);
   const [roleQtys, setRoleQtys] = useState({});
+  const [subscriptions, setSubscriptions] = useState([]);
   const [sessionId, setSessionId] = useState(() => {
     try {
       return sessionStorage.getItem("cxcontrol_session_id") || "";
@@ -3976,7 +3991,17 @@ export default function RegisterPage() {
   useLayoutEffect(() => {
     const saved = localStorage.getItem("theme") || "dark";
     document.documentElement.setAttribute("data-theme", saved);
+    getSubscriptionsList();
   }, []);
+
+  const getSubscriptionsList = async () => {
+    try {
+      const res = await getSubscriptions();
+      setSubscriptions(res?.data || []);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   // On mount: create session for new users; or resume setup for authed users
   useEffect(() => {
@@ -4108,7 +4133,6 @@ export default function RegisterPage() {
       return next;
     });
   };
-
   const canAdvance = () => {
     if (step === 0)
       return (
@@ -4214,6 +4238,7 @@ export default function RegisterPage() {
 
     try {
       // Finalize — creates org + user + returns JWT
+
       const finalizeRes = await FinalizeSetup({ sessionId: sid });
       const { accessToken, organization, user } = finalizeRes || {};
 
@@ -4241,6 +4266,8 @@ export default function RegisterPage() {
       try {
         sessionStorage.removeItem("cxcontrol_session_id");
       } catch {}
+      await selectSubscription({ subscriptionPlanId: wizard?.companyId });
+
       setTimeout(() => router.push("/"), 2200);
     } catch (error) {
       setMsg({
@@ -4435,6 +4462,7 @@ export default function RegisterPage() {
                 u={update}
                 showPwd={showPwd}
                 setShowPwd={setShowPwd}
+                subscriptions={subscriptions}
               />
             )}
             {step === 1 && <StepScope w={wizard} u={update} />}
