@@ -33,6 +33,10 @@ export const saveWizardStep = async (draftId, step, data) =>
 export const finalizeWizardDraft = async (draftId) =>
   sendRequest({ url: `${DRAFT_BASE}/${draftId}/finalize`, method: "POST" });
 
+/** GET /api/project-wizard/org-catalog — returns active workflows, SOPs, and partner companies for wizard pickers */
+export const getWizardOrgCatalog = async () =>
+  sendRequest({ url: `${DRAFT_BASE.replace('/drafts', '')}/org-catalog`, method: "GET" });
+
 // ─── ORG WORKFLOWS  (/api/org-workflows) ─────────────────────────────────────
 
 const ORG_WF = "/org-workflows";
