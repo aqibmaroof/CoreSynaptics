@@ -6013,69 +6013,6 @@ export default function ProjectWizard() {
       return "var(--smoke)";
     };
 
-    const PartnerInviteForm = ({ p }) => (
-      <div
-        style={{
-          padding: "14px 16px",
-          borderTop: "1px solid var(--stone-dark)",
-          background: "var(--bone)",
-        }}
-      >
-        <div className="group-sub-title" style={{ margin: "0 0 10px" }}>
-          Send invite to {p.name}
-        </div>
-        <div className="form-grid" style={{ marginBottom: 0 }}>
-          <div>
-            <label className="input-label">Contact email</label>
-            <input
-              className="input-field"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="pm@partner.com"
-            />
-          </div>
-          <div>
-            <label className="input-label">Access level</label>
-            <select
-              className="input-field"
-              value={inviteAccess}
-              onChange={(e) => setInviteAccess(e.target.value)}
-            >
-              <option value="read">Read only</option>
-              <option value="field">Field team</option>
-              <option value="pm">PM access</option>
-              <option value="full">Full access</option>
-            </select>
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button
-            className="nav-btn primary"
-            onClick={() => {
-              if (!inviteEmail.trim()) return;
-              upd((s) => ({
-                ...s,
-                partnerInvites: {
-                  ...s.partnerInvites,
-                  [p.id]: {
-                    email: inviteEmail,
-                    accessLevel: inviteAccess,
-                    status: "pending",
-                  },
-                },
-              }));
-              setPartnerInviteId(null);
-            }}
-          >
-            Send invite
-          </button>
-          <button className="nav-btn" onClick={() => setPartnerInviteId(null)}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-
     return (
       <div>
         <div className="step-head">
@@ -6227,7 +6164,68 @@ export default function ProjectWizard() {
                       </button>
                     </div>
                   </div>
-                  {partnerInviteId === p.id && <PartnerInviteForm p={p} />}
+                  {partnerInviteId === p.id && (
+                    <div
+                      style={{
+                        padding: "14px 16px",
+                        borderTop: "1px solid var(--stone-dark)",
+                        background: "var(--bone)",
+                      }}
+                    >
+                      <div className="group-sub-title" style={{ margin: "0 0 10px" }}>
+                        Send invite to {p.name}
+                      </div>
+                      <div className="form-grid" style={{ marginBottom: 0 }}>
+                        <div>
+                          <label className="input-label">Contact email</label>
+                          <input
+                            className="input-field"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            placeholder="pm@partner.com"
+                          />
+                        </div>
+                        <div>
+                          <label className="input-label">Access level</label>
+                          <select
+                            className="input-field"
+                            value={inviteAccess}
+                            onChange={(e) => setInviteAccess(e.target.value)}
+                          >
+                            <option value="read">Read only</option>
+                            <option value="field">Field team</option>
+                            <option value="pm">PM access</option>
+                            <option value="full">Full access</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                        <button
+                          className="nav-btn primary"
+                          onClick={() => {
+                            if (!inviteEmail.trim()) return;
+                            upd((s) => ({
+                              ...s,
+                              partnerInvites: {
+                                ...s.partnerInvites,
+                                [p.id]: {
+                                  email: inviteEmail,
+                                  accessLevel: inviteAccess,
+                                  status: "pending",
+                                },
+                              },
+                            }));
+                            setPartnerInviteId(null);
+                          }}
+                        >
+                          Send invite
+                        </button>
+                        <button className="nav-btn" onClick={() => setPartnerInviteId(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -6407,7 +6405,68 @@ export default function ProjectWizard() {
                     </button>
                   </div>
                 </div>
-                {partnerInviteId === p.id && <PartnerInviteForm p={p} />}
+                {partnerInviteId === p.id && (
+                  <div
+                    style={{
+                      padding: "14px 16px",
+                      borderTop: "1px solid var(--stone-dark)",
+                      background: "var(--bone)",
+                    }}
+                  >
+                    <div className="group-sub-title" style={{ margin: "0 0 10px" }}>
+                      Send invite to {p.name}
+                    </div>
+                    <div className="form-grid" style={{ marginBottom: 0 }}>
+                      <div>
+                        <label className="input-label">Contact email</label>
+                        <input
+                          className="input-field"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          placeholder="pm@partner.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="input-label">Access level</label>
+                        <select
+                          className="input-field"
+                          value={inviteAccess}
+                          onChange={(e) => setInviteAccess(e.target.value)}
+                        >
+                          <option value="read">Read only</option>
+                          <option value="field">Field team</option>
+                          <option value="pm">PM access</option>
+                          <option value="full">Full access</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                      <button
+                        className="nav-btn primary"
+                        onClick={() => {
+                          if (!inviteEmail.trim()) return;
+                          upd((s) => ({
+                            ...s,
+                            partnerInvites: {
+                              ...s.partnerInvites,
+                              [p.id]: {
+                                email: inviteEmail,
+                                accessLevel: inviteAccess,
+                                status: "pending",
+                              },
+                            },
+                          }));
+                          setPartnerInviteId(null);
+                        }}
+                      >
+                        Send invite
+                      </button>
+                      <button className="nav-btn" onClick={() => setPartnerInviteId(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -6415,9 +6474,66 @@ export default function ProjectWizard() {
           {/* Invite external partner */}
           {partnerInviteId === "__external__" ? (
             <div className="hub-cat" style={{ marginTop: 8 }}>
-              <PartnerInviteForm
-                p={{ id: "__external__", name: "New partner" }}
-              />
+              <div
+                style={{
+                  padding: "14px 16px",
+                  borderTop: "1px solid var(--stone-dark)",
+                  background: "var(--bone)",
+                }}
+              >
+                <div className="group-sub-title" style={{ margin: "0 0 10px" }}>
+                  Send invite to New partner
+                </div>
+                <div className="form-grid" style={{ marginBottom: 0 }}>
+                  <div>
+                    <label className="input-label">Contact email</label>
+                    <input
+                      className="input-field"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="pm@partner.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="input-label">Access level</label>
+                    <select
+                      className="input-field"
+                      value={inviteAccess}
+                      onChange={(e) => setInviteAccess(e.target.value)}
+                    >
+                      <option value="read">Read only</option>
+                      <option value="field">Field team</option>
+                      <option value="pm">PM access</option>
+                      <option value="full">Full access</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                  <button
+                    className="nav-btn primary"
+                    onClick={() => {
+                      if (!inviteEmail.trim()) return;
+                      upd((s) => ({
+                        ...s,
+                        partnerInvites: {
+                          ...s.partnerInvites,
+                          ["__external__"]: {
+                            email: inviteEmail,
+                            accessLevel: inviteAccess,
+                            status: "pending",
+                          },
+                        },
+                      }));
+                      setPartnerInviteId(null);
+                    }}
+                  >
+                    Send invite
+                  </button>
+                  <button className="nav-btn" onClick={() => setPartnerInviteId(null)}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           ) : (
             <button

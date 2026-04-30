@@ -6,12 +6,36 @@ import { useEffect, useState } from "react";
 import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
 import { useRouter } from "next/navigation";
-import { DeleteProjects, getProjects } from "@/services/Projects";
+import { getCxProjects, deleteCxProject } from "@/services/CxProjects";
 import EntityModal from "@/components/EntityModal";
+
+const STATUS_COLORS = {
+  ACTIVE: {
+    bg: "var(--rf-green-soft, #d1fae5)",
+    color: "var(--rf-green, #059669)",
+  },
+  ON_HOLD: {
+    bg: "var(--rf-amber-soft, #fef3c7)",
+    color: "var(--rf-amber, #d97706)",
+  },
+  COMPLETED: {
+    bg: "var(--rf-blue-soft, #dbeafe)",
+    color: "var(--rf-blue, #2563eb)",
+  },
+  ARCHIVED: {
+    bg: "var(--rf-smoke-soft, #f3f4f6)",
+    color: "var(--smoke, #6b7280)",
+  },
+};
 
 export default function KanbanBoard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [projects, setProjects] = useState([]);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    totalPages: 1,
+  });
   const router = useRouter();
   const [message, setMessage] = useState({ type: "", text: "" });
   const [isEntityModalOpen, setIsEntityModalOpen] = useState(false);
@@ -19,36 +43,38 @@ export default function KanbanBoard() {
   const [modalProjectCategory, setModalProjectCategory] = useState(null);
 
   useEffect(() => {
-    getProjectsList();
+    getProjectsList(1);
   }, []);
 
-  const getProjectsList = async () => {
+  const getProjectsList = async (page = 1) => {
     try {
-      const res = await getProjects();
-      setProjects(res.projects);
+      const res = await getCxProjects({ page, limit: 20 });
+      setProjects(res.data || []);
+      setPagination({
+        total: res.total || 0,
+        page: res.page || 1,
+        totalPages: res.totalPages || 1,
+      });
     } catch (error) {
       console.log("error fetching projects : ", error);
     }
   };
-
+  console.log(projects.filter((item) => item?.props));
   const deleteProject = async (id) => {
     try {
-      await DeleteProjects(id);
-      getProjectsList();
+      await deleteCxProject(id);
+      getProjectsList(pagination.page);
       setMessage({
         type: "success",
         text: "Project Deleted Successfully!",
       });
       setTimeout(() => {
-        setMessage({
-          type: "",
-          text: "",
-        });
-      }, [5000]);
+        setMessage({ type: "", text: "" });
+      }, 5000);
     } catch (error) {
       setMessage({
         type: "error",
-        text: `Error Deleting projects : ${error?.message}`,
+        text: `Error Deleting project: ${error?.message}`,
       });
     }
   };
@@ -171,7 +197,9 @@ export default function KanbanBoard() {
       {/* Stats */}
       <div className="flex items-center justify-between w-full gap-20 md:gap-8 px-3 font-gilroy mt-6 mb-6">
         <div className="flex items-center justify-left gap-2 md:gap-6 w-full ">
-          <p className="text-4xl md:text-7xl font-bold font-gilroy">80</p>
+          <p className="text-4xl md:text-7xl font-bold font-gilroy">
+            {pagination.total}
+          </p>
           <div className="flex flex-col items-start justify-end text-xs md:text-sm">
             <p>
               Total <br />
@@ -180,7 +208,7 @@ export default function KanbanBoard() {
           </div>
         </div>
         <div className="flex items-center justify-left gap-6 w-full">
-          <p className="text-4xl md:text-7xl font-bold ">15</p>
+          <p className="text-4xl md:text-7xl font-bold ">—</p>
           <div className="flex flex-col items-right justify-end text-xs md:text-sm ">
             <p>
               Projects Due <br />
@@ -189,7 +217,7 @@ export default function KanbanBoard() {
           </div>
         </div>
         <div className="flex items-center justify-left gap-6 w-full">
-          <p className="text-4xl md:text-7xl font-bold">20</p>
+          <p className="text-4xl md:text-7xl font-bold">—</p>
           <div className="flex flex-col items-start justify-end text-xs md:text-sm">
             <p>
               Overdue <br />
@@ -198,7 +226,9 @@ export default function KanbanBoard() {
           </div>
         </div>
         <div className="flex items-center justify-left gap-6 w-full">
-          <p className="text-4xl md:text-7xl font-bold">150</p>
+          <p className="text-4xl md:text-7xl font-bold">
+            {projects.filter((p) => p.props.status === "COMPLETED").length}
+          </p>
           <div className="flex flex-col items-start justify-end text-right text-xs md:text-sm">
             <p>
               Projects <br />
@@ -292,110 +322,112 @@ export default function KanbanBoard() {
                 </p>
               </div>
             ) : (
-              projects.map((project) => (
-                <div
-                  key={project.id}
-                  className={`flex cursor-pointer items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-4 mt-2 rounded-2xl bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]`}
-                >
-                  {/* Left Side - Avatar and Info */}
+              projects.map((project) => {
+                const statusStyle =
+                  STATUS_COLORS[project.status] || STATUS_COLORS.ARCHIVED;
+                return (
                   <div
-                    className="flex items-center gap-3"
-                    onClick={() =>
-                      router.push(
-                        `/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`,
-                      )
-                    }
+                    key={project?.props?.id}
+                    className={`flex cursor-pointer items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-4 mt-2 rounded-2xl bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a]`}
                   >
-                    <div className={`avatar online`}>
-                      <div className="w-8 h-8 text-center justify-center border-2 border-[#62647A] rounded-full bg-gradient-to-r from-[#01e590] to-[#17323f]">
-                        <p className="mt-1">
-                          {project.name.slice(0, 1)}
-                          {/* {project.name.split(" ")[1].slice(0, 1)} */}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <h3
-                        className="font-semibold text-sm"
-                        style={{ color: "var(--rf-txt)" }}
-                      >
-                        {project.name}
-                      </h3>
-                      <p
-                        className="flex items-center text-xs"
-                        style={{ color: "var(--rf-txt2)" }}
-                      >
-                        Org : {project.organization?.name}
-                      </p>
-                      <p
-                        className="flex items-center text-xs"
-                        style={{ color: "var(--rf-txt2)" }}
-                      >
-                        Type :{" "}
-                        {project?.projectType || project?.projectCategory}
-                      </p>
-                      <p
-                        className="flex items-center gap-1 flex-wrap text-xs"
-                        style={{ color: "var(--rf-txt2)" }}
-                      >
-                        Assignee :
-                        {project.assignedUsers?.map((item, i) => (
-                          <p
-                            key={i}
-                            className="flex items-center gap-1 text-xs"
-                            style={{ color: "var(--rf-txt2)" }}
-                          >
-                            {item?.firstName} {item?.lastName}
-                          </p>
-                        ))}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="dropdown dropdown-end">
-                    <label
-                      tabIndex={0}
-                      className="btn btn-ghost hover:shadow-none focus:shadow-none active:shadow-none hover:bg-[transparent] focus:bg-[transparent] active:bg-[transparent] hover:border-[transparent] focus:border-[transparent] active:border-[transparent] btn-circle avatar online w-15 h-15"
+                    {/* Left Side - Avatar and Info */}
+                    <div
+                      className="flex items-center gap-3"
+                      onClick={() =>
+                        router.push(
+                          `/ProjectDetails/cx/Project/${project?.props?.id}`,
+                        )
+                      }
                     >
-                      <div className="avatar online">
-                        <div className="relative inline-block ">
-                          <div className="text-white/70 hover:text-white">
-                            <FaEllipsisV size={14} />
-                          </div>
-                          {/* The Green Dot */}
+                      <div className={`avatar online`}>
+                        <div className="w-8 h-8 text-center justify-center border-2 border-[#62647A] rounded-full bg-gradient-to-r from-[#01e590] to-[#17323f]">
+                          <p className="mt-1">
+                            {(project?.props?.projectName || "?").slice(0, 1)}
+                          </p>
                         </div>
                       </div>
-                    </label>
-                    <ul
-                      tabIndex={0}
-                      className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a] border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-[max-content] border border-white/10"
-                    >
-                      <li>
-                        <button
-                          className={`text-[16px] gap-3 mt-2`}
+                      <div>
+                        <h3
+                          className="font-semibold text-sm"
                           style={{ color: "var(--rf-txt)" }}
-                          onClick={() =>
-                            router.push(
-                              `/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`,
-                            )
-                          }
                         >
-                          <FaPencil className="text-lg text-info" /> Edit
-                        </button>
-                      </li>
-                      <li>
-                        <button
-                          className={`text-[16px] gap-3 mt-2`}
-                          style={{ color: "var(--rf-txt)" }}
-                          onClick={() => deleteProject(project?.id)}
+                          {project?.props?.projectName}
+                        </h3>
+                        <p
+                          className="flex items-center text-xs"
+                          style={{ color: "var(--rf-txt2)" }}
                         >
-                          <FaTrash className="text-lg text-error" /> Delete
-                        </button>
-                      </li>
-                    </ul>
+                          Customer: {project?.props?.customer || "—"}
+                        </p>
+                        <p
+                          className="flex items-center text-xs"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
+                          Type: {project?.props?.projectType || "—"}
+                        </p>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            letterSpacing: "0.05em",
+                            padding: "2px 8px",
+                            borderRadius: 20,
+                            background: statusStyle.bg,
+                            color: statusStyle.color,
+                            display: "inline-block",
+                            marginTop: 4,
+                          }}
+                        >
+                          {project?.props?.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="dropdown dropdown-end">
+                      <label
+                        tabIndex={0}
+                        className="btn btn-ghost hover:shadow-none focus:shadow-none active:shadow-none hover:bg-[transparent] focus:bg-[transparent] active:bg-[transparent] hover:border-[transparent] focus:border-[transparent] active:border-[transparent] btn-circle avatar online w-15 h-15"
+                      >
+                        <div className="avatar online">
+                          <div className="relative inline-block ">
+                            <div className="text-white/70 hover:text-white">
+                              <FaEllipsisV size={14} />
+                            </div>
+                          </div>
+                        </div>
+                      </label>
+                      <ul
+                        tabIndex={0}
+                        className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-gradient-to-r  from-[#12153d] via-[#114a4f] to-[#19253a] border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-box w-[max-content] border border-white/10"
+                      >
+                        <li>
+                          <button
+                            className={`text-[16px] gap-3 mt-2`}
+                            style={{ color: "var(--rf-txt)" }}
+                            onClick={() =>
+                              router.push(
+                                `/ProjectDetails/cx/Project/${project?.props?.id}`,
+                              )
+                            }
+                          >
+                            <FaPencil className="text-lg text-info" /> View /
+                            Edit
+                          </button>
+                        </li>
+                        <li>
+                          <button
+                            className={`text-[16px] gap-3 mt-2`}
+                            style={{ color: "var(--rf-txt)" }}
+                            onClick={() => deleteProject(project?.props?.id)}
+                          >
+                            <FaTrash className="text-lg text-error" /> Delete
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
           {message.text && (
@@ -1013,15 +1045,15 @@ export default function KanbanBoard() {
               aria-label="Pagination"
               className="isolate inline-flex -space-x-px rounded-2xl"
             >
-              <a
-                href="#"
-                className="relative inline-flex items-center rounded-xl mr-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+              <button
+                disabled={pagination.page <= 1}
+                onClick={() => getProjectsList(pagination.page - 1)}
+                className="relative inline-flex items-center rounded-xl mr-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span className="sr-only">Previous</span>
                 <svg
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  data-slot="icon"
                   aria-hidden="true"
                   className="size-5"
                 >
@@ -1031,45 +1063,19 @@ export default function KanbanBoard() {
                     fillRule="evenodd"
                   />
                 </svg>
-              </a>
-              {/* <!-- Current: "z-10 text-white focus-visible:outline-2 focus-visible:outline-offset-2 bg-indigo-500 focus-visible:outline-indigo-500", Default: "inset-ring focus:outline-offset-0 text-gray-200 inset-ring-gray-700 hover:bg-white/5" --> */}
-              <a
-                href="#"
-                aria-current="page"
-                className="relative z-10 inline-flex items-center bg-[#656A80] px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 rounded-xl focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-              >
-                1
-              </a>
-              <a
-                href="#"
-                className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0"
-              >
-                2
-              </a>
-              <a
-                href="#"
-                className="relative hidden items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0 md:inline-flex"
-              >
-                3
-              </a>
-              <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-400 rounded-xl focus:outline-offset-0">
-                ...
+              </button>
+              <span className="relative z-10 inline-flex items-center bg-[#656A80] px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline-2 rounded-xl">
+                {pagination.page} / {pagination.totalPages}
               </span>
-              <a
-                href="#"
-                className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-200 rounded-xl hover:bg-white/5 focus:z-20 focus:outline-offset-0"
-              >
-                10
-              </a>
-              <a
-                href="#"
-                className="relative inline-flex items-center rounded-xl ml-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0"
+              <button
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => getProjectsList(pagination.page + 1)}
+                className="relative inline-flex items-center rounded-xl ml-5 px-2 py-2 text-gray-400 inset-ring inset-ring-gray-700 hover:bg-white/5 focus:z-20 focus:outline-offset-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span className="sr-only">Next</span>
                 <svg
                   viewBox="0 0 20 20"
                   fill="currentColor"
-                  data-slot="icon"
                   aria-hidden="true"
                   className="size-5"
                 >
@@ -1079,39 +1085,17 @@ export default function KanbanBoard() {
                     fillRule="evenodd"
                   />
                 </svg>
-              </a>
+              </button>
             </nav>
           </div>
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-gray-300">
-              Showing
-              <span className="font-medium"> 1 </span>
-              to
-              <span className="font-medium"> 10 </span>
+              Showing page
+              <span className="font-medium"> {pagination.page} </span>
               of
-              <span className="font-medium"> 97 </span>
-              entries
+              <span className="font-medium"> {pagination.totalPages} </span>(
+              {pagination.total} total)
             </p>
-            <div className="dropdown dropdown-top">
-              <div
-                tabIndex={0}
-                role="button"
-                className="btn border-none m-1 bg-white text-[#161618] rounded-xl"
-              >
-                Show 8{" "}
-              </div>
-              <ul
-                tabIndex="-1"
-                className="dropdown-content menu bg-white text-[#161618] rounded-xl z-1 w-52 "
-              >
-                <li>
-                  <a>Item 1</a>
-                </li>
-                <li>
-                  <a>Item 2</a>
-                </li>
-              </ul>
-            </div>
           </div>
         </div>
       </div>
