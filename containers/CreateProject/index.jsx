@@ -1808,7 +1808,6 @@ function buildApiCalls(key, s, extras = {}) {
   const {
     orgMobCatalog = {},
     teams = [],
-    teamMembersCache = {},
     contactsList = [],
     orgSafetyPlans = [],
   } = extras;
@@ -1844,7 +1843,10 @@ function buildApiCalls(key, s, extras = {}) {
           data: {
             assetIds: selectedAssetIds,
             tagScheme: s.tagScheme || "eq",
-            customTagFormat: s.tagScheme === "cust" ? (s.customTagFormat || undefined) : undefined,
+            customTagFormat:
+              s.tagScheme === "cust"
+                ? s.customTagFormat || undefined
+                : undefined,
           },
         },
       ];
@@ -1856,14 +1858,16 @@ function buildApiCalls(key, s, extras = {}) {
         {
           step: "assets",
           data: {
-            assets: EQUIPMENT_SCOPE.filter((e) => s.scopeSel[e.id]).map((e) => ({
-              abbr: e.id.toUpperCase(),
-              name: e.name,
-              assetType: ASSET_TYPE_MAP[e.id] || "Other",
-              quantity: 1,
-              procurementOwner: e.scope === "CX ONLY" ? "CFCI" : "OFCI",
-              laborHours: s.scopeHours?.[e.id] || 0,
-            })),
+            assets: EQUIPMENT_SCOPE.filter((e) => s.scopeSel[e.id]).map(
+              (e) => ({
+                abbr: e.id.toUpperCase(),
+                name: e.name,
+                assetType: ASSET_TYPE_MAP[e.id] || "Other",
+                quantity: 1,
+                procurementOwner: e.scope === "CX ONLY" ? "CFCI" : "OFCI",
+                laborHours: s.scopeHours?.[e.id] || 0,
+              }),
+            ),
           },
         },
       ];
@@ -1906,50 +1910,11 @@ function buildApiCalls(key, s, extras = {}) {
         };
       });
 
-      const teamStakeholders = activeTeamIds.flatMap((teamId) => {
-        const cachedMembers = teamMembersCache[teamId] || [];
-        const selectedMemberIds = new Set(
-          Object.entries(teamMemberSel[teamId] || {})
-            .filter(([, v]) => v)
-            .map(([id]) => id),
-        );
-        const teamObj = teams.find((t) => String(t.id) === String(teamId));
-        return cachedMembers
-          .filter((m) => selectedMemberIds.has(String(m.id)))
-          .map((m) => ({
-            name:
-              m.fullName ||
-              `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() ||
-              String(m.id),
-            role:
-              (typeof m.role === "object" ? m.role?.name : m.role) ||
-              m.jobTitle ||
-              teamObj?.name ||
-              "Team Member",
-            tier: "KEEP_INFORMED",
-          }));
-      });
-
-      const legacyMembers =
-        activeTeamIds.length === 0
-          ? Object.entries(s.assignments || {}).flatMap(([role, ids]) =>
-              ids.map((id) => {
-                const person = AVAILABLE_PEOPLE.find((p) => p.id === id);
-                return {
-                  name: person?.name || id,
-                  role: person?.role || role,
-                  tier: "KEEP_INFORMED",
-                };
-              }),
-            )
-          : [];
-
       return [
         {
           step: "team",
           data: {
             teams: teamAssignments,
-            stakeholders: [...teamStakeholders, ...legacyMembers],
           },
         },
       ];
@@ -2037,7 +2002,9 @@ function buildApiCalls(key, s, extras = {}) {
         {
           step: "documentation",
           data: {
-            standards: QUALITY_STANDARDS.filter((q) => s.qualitySel?.[q.id]).map((q) => ({
+            standards: QUALITY_STANDARDS.filter(
+              (q) => s.qualitySel?.[q.id],
+            ).map((q) => ({
               name: q.name,
               category: q.cat,
               required: q.required,
@@ -2093,18 +2060,24 @@ function buildApiCalls(key, s, extras = {}) {
       const ccById = Object.fromEntries(
         (s.costCodes || []).map((c) => [c.id, c]),
       );
-      const totalBudget = (s.costCodes || []).reduce((sum, c) => sum + (c.budget || 0), 0);
+      const totalBudget = (s.costCodes || []).reduce(
+        (sum, c) => sum + (c.budget || 0),
+        0,
+      );
       return [
         {
           step: "financials",
           data: {
-            contractValue: s.contractValue ? parseFloat(s.contractValue) : undefined,
+            contractValue: s.contractValue
+              ? parseFloat(s.contractValue)
+              : undefined,
             totalBudget,
             paymentTerms: "Net 30",
             progressBilling: true,
             milestoneBilling: false,
             retainage: s.retainage ?? 5,
-            laborBudget: (ccById["cc02"]?.budget || 0) + (ccById["cc07"]?.budget || 0),
+            laborBudget:
+              (ccById["cc02"]?.budget || 0) + (ccById["cc07"]?.budget || 0),
             equipmentBudget:
               (ccById["cc03"]?.budget || 0) +
               (ccById["cc04"]?.budget || 0) +
@@ -2130,12 +2103,14 @@ function buildApiCalls(key, s, extras = {}) {
         {
           step: "documentation",
           data: {
-            reports: REPORTING_ITEMS.filter((r) => s.reportSel?.[r.id]).map((r) => ({
-              name: r.name,
-              frequency: r.freq,
-              owner: r.owner,
-              automated: r.auto,
-            })),
+            reports: REPORTING_ITEMS.filter((r) => s.reportSel?.[r.id]).map(
+              (r) => ({
+                name: r.name,
+                frequency: r.freq,
+                owner: r.owner,
+                automated: r.auto,
+              }),
+            ),
             forecastWindow: "3wk",
           },
         },
@@ -2186,7 +2161,10 @@ function buildApiCalls(key, s, extras = {}) {
         {
           step: "partners",
           data: {
-            partners: PARTNERS_AVAILABLE.filter((p) => s.partnerSel?.[p.id]).map((p) => ({
+            partners: PARTNERS_AVAILABLE.filter(
+              (p) => s.partnerSel?.[p.id],
+            ).map((p) => ({
+              partnerId: p.id,
               name: p.name,
               tag: p.tag,
               role: p.role,
@@ -2374,8 +2352,15 @@ export default function ProjectWizard() {
   }, [state.step, urlProjectId]);
 
   const handleAddComm = async () => {
-    if (!newComm.commNumber.trim() || !newComm.subject.trim() || !newComm.body.trim() || !newComm.fromCompanyCode.trim()) {
-      setAddCommError("Comm number, subject, body, and from company code are required.");
+    if (
+      !newComm.commNumber.trim() ||
+      !newComm.subject.trim() ||
+      !newComm.body.trim() ||
+      !newComm.fromCompanyCode.trim()
+    ) {
+      setAddCommError(
+        "Comm number, subject, body, and from company code are required.",
+      );
       return;
     }
     setAddingComm(true);
@@ -2394,7 +2379,14 @@ export default function ProjectWizard() {
       const created = res?.data ?? res;
       setCommsList((prev) => [created, ...prev]);
       setShowAddComm(false);
-      setNewComm({ commType: "RFI", commNumber: "", subject: "", body: "", fromCompanyCode: "", toCompanyCode: "" });
+      setNewComm({
+        commType: "RFI",
+        commNumber: "",
+        subject: "",
+        body: "",
+        fromCompanyCode: "",
+        toCompanyCode: "",
+      });
     } catch (err) {
       setAddCommError(err?.message || "Failed to create communication.");
     } finally {
@@ -5106,27 +5098,56 @@ export default function ProjectWizard() {
   );
 
   const COMM_TYPES = [
-    "FORMAL_LETTER", "RFI", "TRANSMITTAL", "SUBMITTAL", "CHANGE_ORDER", "MEETING_MINUTES",
+    "FORMAL_LETTER",
+    "RFI",
+    "TRANSMITTAL",
+    "SUBMITTAL",
+    "CHANGE_ORDER",
+    "MEETING_MINUTES",
   ];
   const COMM_TYPE_LABEL = {
-    FORMAL_LETTER: "Letter", RFI: "RFI", TRANSMITTAL: "Transmittal",
-    SUBMITTAL: "Submittal", CHANGE_ORDER: "Change Order", MEETING_MINUTES: "Meeting Minutes",
+    FORMAL_LETTER: "Letter",
+    RFI: "RFI",
+    TRANSMITTAL: "Transmittal",
+    SUBMITTAL: "Submittal",
+    CHANGE_ORDER: "Change Order",
+    MEETING_MINUTES: "Meeting Minutes",
   };
   const COMM_STATE_COLOR = {
-    DRAFT: { bg: "color-mix(in srgb, var(--rf-txt3) 15%, transparent)", color: "var(--rf-txt3)" },
-    SENT: { bg: "color-mix(in srgb, var(--rf-accent) 15%, transparent)", color: "var(--rf-accent)" },
-    ACKNOWLEDGED: { bg: "color-mix(in srgb, var(--rf-yellow) 15%, transparent)", color: "var(--rf-yellow)" },
-    CLOSED: { bg: "color-mix(in srgb, var(--rf-green) 15%, transparent)", color: "var(--rf-green)" },
+    DRAFT: {
+      bg: "color-mix(in srgb, var(--rf-txt3) 15%, transparent)",
+      color: "var(--rf-txt3)",
+    },
+    SENT: {
+      bg: "color-mix(in srgb, var(--rf-accent) 15%, transparent)",
+      color: "var(--rf-accent)",
+    },
+    ACKNOWLEDGED: {
+      bg: "color-mix(in srgb, var(--rf-yellow) 15%, transparent)",
+      color: "var(--rf-yellow)",
+    },
+    CLOSED: {
+      bg: "color-mix(in srgb, var(--rf-green) 15%, transparent)",
+      color: "var(--rf-green)",
+    },
   };
 
   const renderComms = () => {
     const commBadge = (label, colorObj) => (
-      <span style={{
-        fontFamily: "var(--wfont-mono)", fontSize: 9, fontWeight: 700,
-        letterSpacing: ".05em", textTransform: "uppercase", padding: "3px 8px",
-        borderRadius: 4, flexShrink: 0,
-        background: colorObj?.bg ?? "var(--stone)", color: colorObj?.color ?? "var(--smoke)",
-      }}>
+      <span
+        style={{
+          fontFamily: "var(--wfont-mono)",
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: ".05em",
+          textTransform: "uppercase",
+          padding: "3px 8px",
+          borderRadius: 4,
+          flexShrink: 0,
+          background: colorObj?.bg ?? "var(--stone)",
+          color: colorObj?.color ?? "var(--smoke)",
+        }}
+      >
         {label}
       </span>
     );
@@ -5134,23 +5155,47 @@ export default function ProjectWizard() {
     return (
       <div>
         <div className="step-head">
-          <div className="kicker">Step {cur + 1} of {STEPS.length}</div>
+          <div className="kicker">
+            Step {cur + 1} of {STEPS.length}
+          </div>
           <h1 className="step-title">Communications</h1>
           <p className="step-sub">
-            Formal project communications — RFIs, transmittals, submittals, letters and more.
+            Formal project communications — RFIs, transmittals, submittals,
+            letters and more.
           </p>
         </div>
 
         {/* Header row */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={{ fontFamily: "var(--wfont-mono)", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--rf-txt3)" }}>
-            {commsLoading ? "Loading…" : `${commsList.length} communication${commsList.length !== 1 ? "s" : ""}`}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--wfont-mono)",
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: ".08em",
+              textTransform: "uppercase",
+              color: "var(--rf-txt3)",
+            }}
+          >
+            {commsLoading
+              ? "Loading…"
+              : `${commsList.length} communication${commsList.length !== 1 ? "s" : ""}`}
           </div>
           {!showAddComm && (
             <button
               className="rf-btn rf-btn-primary"
               style={{ fontSize: 12, padding: "5px 14px" }}
-              onClick={() => { setShowAddComm(true); setAddCommError(null); }}
+              onClick={() => {
+                setShowAddComm(true);
+                setAddCommError(null);
+              }}
             >
               + Add Communication
             </button>
@@ -5159,12 +5204,23 @@ export default function ProjectWizard() {
 
         {/* Add form */}
         {showAddComm && (
-          <div style={{
-            marginBottom: 16, padding: "14px 16px", borderRadius: 8,
-            border: "1px solid var(--rf-border, #e2e8f0)", background: "var(--rf-bg2, #f8fafc)",
-            display: "flex", flexDirection: "column", gap: 10,
-          }}>
-            <div style={{ fontWeight: 600, fontSize: 13, color: "var(--rf-txt)" }}>New Communication</div>
+          <div
+            style={{
+              marginBottom: 16,
+              padding: "14px 16px",
+              borderRadius: 8,
+              border: "1px solid var(--rf-border, #e2e8f0)",
+              background: "var(--rf-bg2, #f8fafc)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <div
+              style={{ fontWeight: 600, fontSize: 13, color: "var(--rf-txt)" }}
+            >
+              New Communication
+            </div>
 
             {/* Type selector */}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -5187,7 +5243,9 @@ export default function ProjectWizard() {
                 value={newComm.commNumber}
                 maxLength={50}
                 style={{ flex: 1 }}
-                onChange={(e) => setNewComm((p) => ({ ...p, commNumber: e.target.value }))}
+                onChange={(e) =>
+                  setNewComm((p) => ({ ...p, commNumber: e.target.value }))
+                }
               />
               <input
                 className="input-field"
@@ -5195,7 +5253,9 @@ export default function ProjectWizard() {
                 value={newComm.fromCompanyCode}
                 maxLength={50}
                 style={{ flex: 1 }}
-                onChange={(e) => setNewComm((p) => ({ ...p, fromCompanyCode: e.target.value }))}
+                onChange={(e) =>
+                  setNewComm((p) => ({ ...p, fromCompanyCode: e.target.value }))
+                }
               />
               <input
                 className="input-field"
@@ -5203,7 +5263,9 @@ export default function ProjectWizard() {
                 value={newComm.toCompanyCode}
                 maxLength={50}
                 style={{ flex: 1 }}
-                onChange={(e) => setNewComm((p) => ({ ...p, toCompanyCode: e.target.value }))}
+                onChange={(e) =>
+                  setNewComm((p) => ({ ...p, toCompanyCode: e.target.value }))
+                }
               />
             </div>
 
@@ -5212,7 +5274,9 @@ export default function ProjectWizard() {
               placeholder="Subject *"
               value={newComm.subject}
               maxLength={200}
-              onChange={(e) => setNewComm((p) => ({ ...p, subject: e.target.value }))}
+              onChange={(e) =>
+                setNewComm((p) => ({ ...p, subject: e.target.value }))
+              }
             />
 
             <textarea
@@ -5222,11 +5286,15 @@ export default function ProjectWizard() {
               maxLength={10000}
               rows={4}
               style={{ resize: "vertical" }}
-              onChange={(e) => setNewComm((p) => ({ ...p, body: e.target.value }))}
+              onChange={(e) =>
+                setNewComm((p) => ({ ...p, body: e.target.value }))
+              }
             />
 
             {addCommError && (
-              <div style={{ fontSize: 12, color: "var(--rf-red)" }}>{addCommError}</div>
+              <div style={{ fontSize: 12, color: "var(--rf-red)" }}>
+                {addCommError}
+              </div>
             )}
 
             <div style={{ display: "flex", gap: 8 }}>
@@ -5244,7 +5312,14 @@ export default function ProjectWizard() {
                 disabled={addingComm}
                 onClick={() => {
                   setShowAddComm(false);
-                  setNewComm({ commType: "RFI", commNumber: "", subject: "", body: "", fromCompanyCode: "", toCompanyCode: "" });
+                  setNewComm({
+                    commType: "RFI",
+                    commNumber: "",
+                    subject: "",
+                    body: "",
+                    fromCompanyCode: "",
+                    toCompanyCode: "",
+                  });
                   setAddCommError(null);
                 }}
               >
@@ -5256,19 +5331,31 @@ export default function ProjectWizard() {
 
         {/* List */}
         {commsLoading ? (
-          <div style={{ color: "var(--rf-txt3)", fontSize: 13, padding: "12px 0" }}>Loading communications…</div>
+          <div
+            style={{ color: "var(--rf-txt3)", fontSize: 13, padding: "12px 0" }}
+          >
+            Loading communications…
+          </div>
         ) : commsList.length === 0 ? (
-          <div style={{
-            textAlign: "center", padding: "32px 16px", borderRadius: 8,
-            border: "1px dashed var(--rf-border, #e2e8f0)",
-            color: "var(--rf-txt3)", fontSize: 13,
-          }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "32px 16px",
+              borderRadius: 8,
+              border: "1px dashed var(--rf-border, #e2e8f0)",
+              color: "var(--rf-txt3)",
+              fontSize: 13,
+            }}
+          >
             <div style={{ marginBottom: 10 }}>No communications yet.</div>
             {!showAddComm && (
               <button
                 className="rf-btn rf-btn-primary"
                 style={{ fontSize: 12 }}
-                onClick={() => { setShowAddComm(true); setAddCommError(null); }}
+                onClick={() => {
+                  setShowAddComm(true);
+                  setAddCommError(null);
+                }}
               >
                 + Add First Communication
               </button>
@@ -5278,21 +5365,79 @@ export default function ProjectWizard() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {commsList.map((c) => (
               <div key={c.id} className="wcard" style={{ cursor: "default" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 12,
+                  }}
+                >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3, flexWrap: "wrap" }}>
-                      <span style={{ fontFamily: "var(--wfont-mono)", fontSize: 10, color: "var(--smoke)" }}>{c.commNumber}</span>
-                      {commBadge(COMM_TYPE_LABEL[c.commType] ?? c.commType, null)}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        marginBottom: 3,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "var(--wfont-mono)",
+                          fontSize: 10,
+                          color: "var(--smoke)",
+                        }}
+                      >
+                        {c.commNumber}
+                      </span>
+                      {commBadge(
+                        COMM_TYPE_LABEL[c.commType] ?? c.commType,
+                        null,
+                      )}
                       {commBadge(c.state, COMM_STATE_COLOR[c.state])}
-                      {c.isOverdue && commBadge("OVERDUE", { bg: "color-mix(in srgb, var(--rf-red) 15%, transparent)", color: "var(--rf-red)" })}
+                      {c.isOverdue &&
+                        commBadge("OVERDUE", {
+                          bg: "color-mix(in srgb, var(--rf-red) 15%, transparent)",
+                          color: "var(--rf-red)",
+                        })}
                     </div>
-                    <div style={{ fontWeight: 500, color: "var(--rf-txt)", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div
+                      style={{
+                        fontWeight: 500,
+                        color: "var(--rf-txt)",
+                        fontSize: 13,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
                       {c.subject}
                     </div>
-                    <div style={{ fontFamily: "var(--wfont-mono)", fontSize: 11, color: "var(--smoke)", marginTop: 3, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--wfont-mono)",
+                        fontSize: 11,
+                        color: "var(--smoke)",
+                        marginTop: 3,
+                        display: "flex",
+                        gap: 10,
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <span>From: {c.fromCompanyCode}</span>
                       {c.toCompanyCode && <span>To: {c.toCompanyCode}</span>}
-                      {c.slaDeadline && <span>SLA: {new Date(c.slaDeadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
+                      {c.slaDeadline && (
+                        <span>
+                          SLA:{" "}
+                          {new Date(c.slaDeadline).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
