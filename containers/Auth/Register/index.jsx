@@ -5704,7 +5704,6 @@ export default function RegisterPage() {
   const update = (patch) => {
     setWizard((prev) => {
       const next = { ...prev, ...patch };
-      console.log(TEAMS_BY_TYPE[patch.companyType]);
       if (patch.companyType && patch.companyType !== prev.companyType) {
         next.team = JSON.parse(
           JSON.stringify(
