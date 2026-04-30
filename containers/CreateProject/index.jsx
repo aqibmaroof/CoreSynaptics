@@ -9,6 +9,7 @@ import {
   startWizardDraft,
   saveWizardStep,
   finalizeWizardDraft,
+  getWizardOrgCatalog,
 } from "@/services/ProjectWizard";
 import { getCompanies, createCompany } from "@/services/Companies";
 import { getContacts, createContact } from "@/services/Contacts";
@@ -1222,48 +1223,6 @@ const SOP_CATS = [
   "WARRANTY",
 ];
 
-const PARTNERS_AVAILABLE = [
-  {
-    id: "turner",
-    name: "Turner Construction",
-    tag: "GC",
-    role: "Primary builder",
-    scope: "Overall construction",
-    def: true,
-  },
-  {
-    id: "cec",
-    name: "CEC Inc",
-    tag: "TRADE",
-    role: "Electrical contractor",
-    scope: "Electrical install",
-    def: false,
-  },
-  {
-    id: "shermco",
-    name: "Shermco Industries",
-    tag: "TRADE",
-    role: "NETA testing",
-    scope: "Electrical testing",
-    def: true,
-  },
-  {
-    id: "cerio",
-    name: "Cerio Commissioning",
-    tag: "CXA",
-    role: "DC Cx specialist",
-    scope: "3rd-party Cx",
-    def: false,
-  },
-  {
-    id: "barnhart",
-    name: "Barnhart Crane",
-    tag: "RIG",
-    role: "Heavy rigging",
-    scope: "Equipment delivery",
-    def: true,
-  },
-];
 
 const SITES_LIST = [
   {
@@ -1715,9 +1674,6 @@ function buildDefaultState() {
     siteSel[s.id] = s.type === "primary";
   });
   const partnerSel = {};
-  PARTNERS_AVAILABLE.forEach((p) => {
-    partnerSel[p.id] = p.def === true;
-  });
 
   return {
     step: 0,
@@ -1810,6 +1766,7 @@ function buildApiCalls(key, s, extras = {}) {
     teams = [],
     contactsList = [],
     orgSafetyPlans = [],
+    orgPartners = [],
   } = extras;
 
   switch (key) {
@@ -2161,15 +2118,12 @@ function buildApiCalls(key, s, extras = {}) {
         {
           step: "partners",
           data: {
-            partners: PARTNERS_AVAILABLE.filter(
+            partners: orgPartners.filter(
               (p) => s.partnerSel?.[p.id],
             ).map((p) => ({
               partnerId: p.id,
-              name: p.name,
-              tag: p.tag,
-              role: p.role,
-              scope: p.scope,
-              invite: s.partnerInvites?.[p.id] || undefined,
+              role: p.role ?? undefined,
+              scope: p.scope ?? undefined,
             })),
           },
         },
@@ -2224,6 +2178,7 @@ export default function ProjectWizard() {
   });
   const [addingComm, setAddingComm] = useState(false);
   const [addCommError, setAddCommError] = useState(null);
+  const [orgPartners, setOrgPartners] = useState([]);
   const [teams, setTeams] = useState([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [expandedTeam, setExpandedTeam] = useState(null);
@@ -2308,12 +2263,16 @@ export default function ProjectWizard() {
       listOrgSafetyPlans()
         .then(toArr)
         .catch(() => []),
+      getWizardOrgCatalog()
+        .then((res) => res?.data?.partners ?? res?.partners ?? [])
+        .catch(() => []),
     ])
-      .then(([talks, workflows, sops, plans]) => {
+      .then(([talks, workflows, sops, plans, partners]) => {
         setOrgToolboxTalks(talks);
         setOrgWorkflows(workflows);
         setOrgSOPs(sops);
         setOrgSafetyPlans(plans);
+        setOrgPartners(partners);
         const def = plans.find((p) => p.isDefault);
         if (def)
           upd((s) => (s.safetyPlanId ? s : { ...s, safetyPlanId: def.id }));
@@ -2524,6 +2483,7 @@ export default function ProjectWizard() {
           teamMembersCache,
           contactsList,
           orgSafetyPlans,
+          orgPartners,
         });
         const currentCall = calls[0];
         if (currentCall?.data && Object.keys(currentCall.data).length > 0) {
@@ -6034,15 +5994,16 @@ export default function ProjectWizard() {
 
   const renderPartners = () => {
     const selTotal = Object.values(state.partnerSel).filter(Boolean).length;
-    const connected = PARTNERS_AVAILABLE.filter((p) => state.partnerSel[p.id]);
+    const connected = orgPartners.filter((p) => state.partnerSel[p.id]);
     const q = partnerDirSearch.toLowerCase();
-    const dirList = PARTNERS_AVAILABLE.filter(
+    const dirList = orgPartners.filter(
       (p) =>
         !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.tag.toLowerCase().includes(q) ||
-        p.role.toLowerCase().includes(q),
+        p.name?.toLowerCase().includes(q) ||
+        p.type?.toLowerCase().includes(q) ||
+        p.region?.toLowerCase().includes(q),
     );
+    const partnersLoading = orgDataLoading && orgPartners.length === 0;
 
     const tagColor = (tag) => {
       if (tag === "GC") return "var(--electric)";
@@ -6154,7 +6115,7 @@ export default function ProjectWizard() {
                       <div
                         className="person-avatar"
                         style={{
-                          background: tagColor(p.tag),
+                          background: tagColor(p.type),
                           width: 36,
                           height: 36,
                           fontSize: 13,
@@ -6197,34 +6158,38 @@ export default function ProjectWizard() {
                           >
                             CONNECTED
                           </span>
-                          <span
+                          {p.type && (
+                            <span
+                              style={{
+                                fontFamily: "var(--wfont-mono)",
+                                fontSize: 9,
+                                fontWeight: 700,
+                                letterSpacing: "0.06em",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                background:
+                                  "color-mix(in srgb, " +
+                                  tagColor(p.type) +
+                                  " 12%, var(--rf-bg2))",
+                                color: tagColor(p.type),
+                              }}
+                            >
+                              {p.type}
+                            </span>
+                          )}
+                        </div>
+                        {p.region && (
+                          <div
                             style={{
                               fontFamily: "var(--wfont-mono)",
-                              fontSize: 9,
-                              fontWeight: 700,
-                              letterSpacing: "0.06em",
-                              padding: "2px 6px",
-                              borderRadius: 4,
-                              background:
-                                "color-mix(in srgb, " +
-                                tagColor(p.tag) +
-                                " 12%, var(--rf-bg2))",
-                              color: tagColor(p.tag),
+                              fontSize: 11,
+                              color: "var(--smoke)",
+                              marginTop: 2,
                             }}
                           >
-                            {p.tag}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: "var(--wfont-mono)",
-                            fontSize: 11,
-                            color: "var(--smoke)",
-                            marginTop: 2,
-                          }}
-                        >
-                          <strong>{p.role}</strong> · {p.scope}
-                        </div>
+                            {p.region}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div
@@ -6302,7 +6267,16 @@ export default function ProjectWizard() {
               onChange={(e) => setPartnerDirSearch(e.target.value)}
             />
           </div>
-          {dirList.map((p) => {
+          {partnersLoading ? (
+            <div style={{ color: "var(--smoke)", fontSize: 13, padding: "10px 0" }}>
+              Loading partners…
+            </div>
+          ) : dirList.length === 0 ? (
+            <div style={{ color: "var(--smoke)", fontSize: 13, padding: "10px 0" }}>
+              No partner companies found — add them via the Companies module first.
+            </div>
+          ) : null}
+          {!partnersLoading && dirList.map((p) => {
             const sel = state.partnerSel[p.id];
             const invite = state.partnerInvites[p.id];
             return (
@@ -6326,7 +6300,7 @@ export default function ProjectWizard() {
                     <div
                       className="person-avatar"
                       style={{
-                        background: sel ? tagColor(p.tag) : "var(--stone)",
+                        background: sel ? tagColor(p.type) : "var(--stone)",
                         width: 36,
                         height: 36,
                         fontSize: 13,
@@ -6371,35 +6345,39 @@ export default function ProjectWizard() {
                             CONNECTED
                           </span>
                         )}
-                        <span
+                        {p.type && (
+                          <span
+                            style={{
+                              fontFamily: "var(--wfont-mono)",
+                              fontSize: 9,
+                              fontWeight: 700,
+                              letterSpacing: "0.06em",
+                              padding: "2px 6px",
+                              borderRadius: 4,
+                              background: sel
+                                ? "color-mix(in srgb, " +
+                                  tagColor(p.type) +
+                                  " 12%, var(--rf-bg2))"
+                                : "var(--stone)",
+                              color: sel ? tagColor(p.type) : "var(--smoke)",
+                            }}
+                          >
+                            {p.type}
+                          </span>
+                        )}
+                      </div>
+                      {p.region && (
+                        <div
                           style={{
                             fontFamily: "var(--wfont-mono)",
-                            fontSize: 9,
-                            fontWeight: 700,
-                            letterSpacing: "0.06em",
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                            background: sel
-                              ? "color-mix(in srgb, " +
-                                tagColor(p.tag) +
-                                " 12%, var(--rf-bg2))"
-                              : "var(--stone)",
-                            color: sel ? tagColor(p.tag) : "var(--smoke)",
+                            fontSize: 11,
+                            color: "var(--smoke)",
+                            marginTop: 2,
                           }}
                         >
-                          {p.tag}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          fontFamily: "var(--wfont-mono)",
-                          fontSize: 11,
-                          color: "var(--smoke)",
-                          marginTop: 2,
-                        }}
-                      >
-                        <strong>{p.role}</strong> · {p.scope}
-                      </div>
+                          {p.region}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div
