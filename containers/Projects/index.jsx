@@ -163,7 +163,10 @@ export default function KanbanBoard() {
   ];
 
   return (
-    <div className="min-h-screen font-gilroy p-6" style={{ color: "var(--rf-txt)" }}>
+    <div
+      className="min-h-screen font-gilroy p-6"
+      style={{ color: "var(--rf-txt)" }}
+    >
       <h1 className="font-bold text-xl md:text-2xl">Task overveiw</h1>
       {/* Stats */}
       <div className="flex items-center justify-between w-full gap-20 md:gap-8 px-3 font-gilroy mt-6 mb-6">
@@ -212,23 +215,34 @@ export default function KanbanBoard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-sm md:text-xl font-semibold" style={{ color: "var(--rf-txt)" }}>
+              <h2
+                className="text-sm md:text-xl font-semibold"
+                style={{ color: "var(--rf-txt)" }}
+              >
                 Projects List
               </h2>
             </div>
 
             <div className="flex items-center justify-between gap-3">
-              <div className="border rounded-full px-2 py-2" style={{ borderColor: "var(--rf-border2)" }}>
-                <button className="font-semibold text-xs md:text-sm mx-2" style={{ color: "var(--rf-txt)" }}>
+              <div
+                className="border rounded-full px-2 py-2"
+                style={{ borderColor: "var(--rf-border2)" }}
+              >
+                <button
+                  className="font-semibold text-xs md:text-sm mx-2"
+                  style={{ color: "var(--rf-txt)" }}
+                >
                   {" "}
                   Nearest Due Date <span className="ml-3">▼</span>
                 </button>
               </div>
-              <button
-                onClick={() => {
-                  setModalEntityType("project");
-                  setIsEntityModalOpen(true);
-                }}
+              <a
+                href="/CreateProject"
+                // onClick={() => {
+                //   router.push("/CreateProject");
+                //   // setModalEntityType("project");
+                //   // setIsEntityModalOpen(true);
+                // }}
                 className="bg-[#66ACFF] text-white p-2 rounded-xl hover:bg-[#fbbf24] transition-all cursor-pointer"
               >
                 <svg
@@ -244,8 +258,15 @@ export default function KanbanBoard() {
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-              </button>
-              <button className="p-2 rounded-xl hover:bg-[#fbbf24] transition-all border" style={{ background: "var(--rf-bg2)", color: "var(--rf-txt3)", borderColor: "var(--rf-border)" }}>
+              </a>
+              <button
+                className="p-2 rounded-xl hover:bg-[#fbbf24] transition-all border"
+                style={{
+                  background: "var(--rf-bg2)",
+                  color: "var(--rf-txt3)",
+                  borderColor: "var(--rf-border)",
+                }}
+              >
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -281,7 +302,7 @@ export default function KanbanBoard() {
                     className="flex items-center gap-3"
                     onClick={() =>
                       router.push(
-                        `/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`
+                        `/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`,
                       )
                     }
                   >
@@ -294,19 +315,36 @@ export default function KanbanBoard() {
                       </div>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-sm" style={{ color: "var(--rf-txt)" }}>
+                      <h3
+                        className="font-semibold text-sm"
+                        style={{ color: "var(--rf-txt)" }}
+                      >
                         {project.name}
                       </h3>
-                      <p className="flex items-center text-xs" style={{ color: "var(--rf-txt2)" }}>
-                       Org : {project.organization?.name}
+                      <p
+                        className="flex items-center text-xs"
+                        style={{ color: "var(--rf-txt2)" }}
+                      >
+                        Org : {project.organization?.name}
                       </p>
-                      <p className="flex items-center text-xs" style={{ color: "var(--rf-txt2)" }}>
-                        Type : {project?.projectType || project?.projectCategory}
+                      <p
+                        className="flex items-center text-xs"
+                        style={{ color: "var(--rf-txt2)" }}
+                      >
+                        Type :{" "}
+                        {project?.projectType || project?.projectCategory}
                       </p>
-                      <p className="flex items-center gap-1 flex-wrap text-xs" style={{ color: "var(--rf-txt2)" }}>
+                      <p
+                        className="flex items-center gap-1 flex-wrap text-xs"
+                        style={{ color: "var(--rf-txt2)" }}
+                      >
                         Assignee :
                         {project.assignedUsers?.map((item, i) => (
-                          <p key={i} className="flex items-center gap-1 text-xs" style={{ color: "var(--rf-txt2)" }}>
+                          <p
+                            key={i}
+                            className="flex items-center gap-1 text-xs"
+                            style={{ color: "var(--rf-txt2)" }}
+                          >
                             {item?.firstName} {item?.lastName}
                           </p>
                         ))}
@@ -338,7 +376,7 @@ export default function KanbanBoard() {
                           style={{ color: "var(--rf-txt)" }}
                           onClick={() =>
                             router.push(
-                              `/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`
+                              `/ProjectDetails/${project?.projectCategory}/Project/${project?.id}`,
                             )
                           }
                         >
@@ -362,10 +400,11 @@ export default function KanbanBoard() {
           </div>
           {message.text && (
             <div
-              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${message.type === "success"
+              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${
+                message.type === "success"
                   ? "bg-green-900/30 text-green-400 border border-green-500/30"
                   : "bg-red-900/30 text-red-400 border border-red-500/30"
-                }`}
+              }`}
             >
               {message.text}
             </div>
@@ -377,7 +416,10 @@ export default function KanbanBoard() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-sm md:text-xl font-semibold" style={{ color: "var(--rf-txt)" }}>
+              <h2
+                className="text-sm md:text-xl font-semibold"
+                style={{ color: "var(--rf-txt)" }}
+              >
                 Members
               </h2>
             </div>
@@ -397,7 +439,14 @@ export default function KanbanBoard() {
                   />
                 </svg>
               </button>
-              <button className="p-2 rounded-xl hover:bg-[#fbbf24] transition-all border" style={{ background: "var(--rf-bg2)", color: "var(--rf-txt3)", borderColor: "var(--rf-border)" }}>
+              <button
+                className="p-2 rounded-xl hover:bg-[#fbbf24] transition-all border"
+                style={{
+                  background: "var(--rf-bg2)",
+                  color: "var(--rf-txt3)",
+                  borderColor: "var(--rf-border)",
+                }}
+              >
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -419,10 +468,11 @@ export default function KanbanBoard() {
             {members.map((member) => (
               <div
                 key={member.id}
-                className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-1 md:p-3 mt-2 rounded-2xl ${member.isActive
+                className={`flex  items-center justify-between w-full font-gilroy border-3 border-white/[0.03] border-t-white/[0.09] p-1 md:p-3 mt-2 rounded-2xl ${
+                  member.isActive
                     ? "bg-emerald-600/30 border border-emerald-500/50"
                     : "bg-gradient-to-r from-[#0d2963] via-[#0d2963] to-[#19213d]"
-                  }`}
+                }`}
               >
                 {/* Left Side - Avatar and Info */}
                 <div className="flex items-center gap-1 md:gap-3 ">
@@ -432,10 +482,15 @@ export default function KanbanBoard() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm" style={{ color: "var(--rf-txt)" }}>
+                    <h3
+                      className="font-semibold text-sm"
+                      style={{ color: "var(--rf-txt)" }}
+                    >
                       {member.name}
                     </h3>
-                    <p className="text-xs" style={{ color: "var(--rf-txt2)" }}>{member.email}</p>
+                    <p className="text-xs" style={{ color: "var(--rf-txt2)" }}>
+                      {member.email}
+                    </p>
                   </div>
                 </div>
                 <div>
@@ -478,7 +533,10 @@ export default function KanbanBoard() {
       <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
         {/* Header */}
         <div className="flex items-center justify-between gap-16 mb-8">
-          <h1 className="mt-5 ml-4 text-lg md:text-xl font-bold" style={{ color: "var(--rf-txt)" }}>
+          <h1
+            className="mt-5 ml-4 text-lg md:text-xl font-bold"
+            style={{ color: "var(--rf-txt)" }}
+          >
             Task List
           </h1>
           <div className="flex items-center gap-5">
@@ -692,8 +750,9 @@ export default function KanbanBoard() {
                         key={index}
                         className={`avatar 
                               ${index !== 0 ? "-ml-2" : ""} 
-                              transition-transform duration-300 z-${task.assignee.length - index
-                          }`}
+                              transition-transform duration-300 z-${
+                                task.assignee.length - index
+                              }`}
                       >
                         <div className="w-[25px] h-[25px] rounded-full ring-3 ring-[#0C255B] shadow-xl">
                           <img
@@ -707,13 +766,22 @@ export default function KanbanBoard() {
                   </td>
                   <td className="py-4 px-1 ">
                     <div className="flex items-center gap-2 text-[14px]">
-                      <button className="hover:text-white transition-colors p-2" style={{ color: "var(--rf-txt2)" }}>
+                      <button
+                        className="hover:text-white transition-colors p-2"
+                        style={{ color: "var(--rf-txt2)" }}
+                      >
                         <FiMessageCircle />
                       </button>
-                      <button className="hover:text-yellow-400 transition-colors p-2" style={{ color: "var(--rf-txt2)" }}>
+                      <button
+                        className="hover:text-yellow-400 transition-colors p-2"
+                        style={{ color: "var(--rf-txt2)" }}
+                      >
                         <FiStar />
                       </button>
-                      <button className="hover:text-blue-400 transition-colors p-2" style={{ color: "var(--rf-txt2)" }}>
+                      <button
+                        className="hover:text-blue-400 transition-colors p-2"
+                        style={{ color: "var(--rf-txt2)" }}
+                      >
                         <FaPencil className="text-[12px]" />
                       </button>
                       <button className="text-gray-400 hover:text-white transition-colors p-2">
@@ -874,10 +942,11 @@ export default function KanbanBoard() {
                 {members.slice(0, 1).map((member) => (
                   <div
                     key={member.id}
-                    className={`flex items-center h-8 justify-between w-34 font-geist border border-[#656A80]  rounded-2xl ${member.isActive
+                    className={`flex items-center h-8 justify-between w-34 font-geist border border-[#656A80]  rounded-2xl ${
+                      member.isActive
                         ? "bg-emerald-600/30 border border-emerald-500/50"
                         : "bg-[#575975]"
-                      }`}
+                    }`}
                   >
                     {/* Left Side - Avatar and Info */}
                     <div className="flex items-center gap-3 ">
@@ -889,7 +958,10 @@ export default function KanbanBoard() {
                         </div>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-sm" style={{ color: "var(--rf-txt)" }}>
+                        <h3
+                          className="font-semibold text-sm"
+                          style={{ color: "var(--rf-txt)" }}
+                        >
                           {member.name}
                         </h3>
                       </div>

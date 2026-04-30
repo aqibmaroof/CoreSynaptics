@@ -44,6 +44,7 @@ export default function AssetAdd() {
     assetTag: "",
     name: "",
     category: "",
+    procurementType: "",
     purchaseDate: "",
     purchaseCost: "",
     currentValue: "",
@@ -78,6 +79,9 @@ export default function AssetAdd() {
       e.assetTag = "Asset tag is required and must be unique";
     if (!form.name.trim()) e.name = "Asset name is required";
     if (!form.category) e.category = "Category is required";
+    if (!form.procurementType) e.procurementType = "ProcurementType is required.";
+    else if (!["CFCI", "OFCI"].includes(form.procurementType))
+      e.procurementType = "ProcurementType must be one of: CFCI, OFCI.";
     if (form.purchaseCost && isNaN(Number(form.purchaseCost)))
       e.purchaseCost = "Must be a valid number";
     if (form.currentValue && isNaN(Number(form.currentValue)))
@@ -95,6 +99,7 @@ export default function AssetAdd() {
         assetTag: form.assetTag,
         name: form.name,
         category: form.category,
+        procurementType: form.procurementType,
         purchaseDate: form.purchaseDate || undefined,
         purchaseCost: form.purchaseCost
           ? parseFloat(form.purchaseCost)
@@ -218,6 +223,36 @@ export default function AssetAdd() {
               </select>
               {errors.category && (
                 <p className="text-red-400 text-xs mt-1">{errors.category}</p>
+              )}
+            </div>
+
+            <div>
+              <FL required>Procurement Type</FL>
+              <div className="flex gap-3 mt-1">
+                {["CFCI", "OFCI"].map((pt) => (
+                  <button
+                    key={pt}
+                    type="button"
+                    onClick={() => {
+                      setForm((p) => ({ ...p, procurementType: pt }));
+                      if (errors.procurementType)
+                        setErrors((p) => ({ ...p, procurementType: "" }));
+                    }}
+                    className={`flex-1 py-2.5 rounded-lg border text-sm font-mono font-medium transition-colors ${
+                      form.procurementType === pt
+                        ? "border-cyan-500 bg-cyan-500/10 text-cyan-300"
+                        : "border-gray-700 bg-gray-800/60 text-gray-400 hover:border-gray-500"
+                    }`}
+                  >
+                    {pt}
+                    <span className="block text-[10px] font-sans font-normal mt-0.5 opacity-70">
+                      {pt === "CFCI" ? "Contractor Furnished & Installed" : "Owner Furnished & Contractor Installed"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {errors.procurementType && (
+                <p className="text-red-400 text-xs mt-1">{errors.procurementType}</p>
               )}
             </div>
           </section>

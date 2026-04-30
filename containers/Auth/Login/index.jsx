@@ -1,7 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import config from "../../../config";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { LoginService, GetUser, GetOrganization } from "../../../services/auth";
@@ -565,7 +563,7 @@ const LoginPage = () => {
               <button
                 type="button"
                 onClick={togglePasswordVisibility}
-                className="absolute right-3 top-10 text-slate-400 hover:text-cyan-400 transition-colors"
+                className="absolute right-3 top-8.5 text-slate-400 hover:text-cyan-400 transition-colors"
                 style={{ color: "#5a9ab5" }}
               >
                 {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
@@ -609,7 +607,10 @@ const LoginPage = () => {
                     message.type === "success"
                       ? "rgba(0, 255, 136, 0.3)"
                       : "rgba(255, 100, 100, 0.1)",
-                  color: message.type === "success" ? "var(--rf-green)" : "var(--rf-red)",
+                  color:
+                    message.type === "success"
+                      ? "var(--rf-green)"
+                      : "var(--rf-red)",
                   border:
                     message.type === "success"
                       ? "1px solid rgba(0, 255, 136, 0.3)"

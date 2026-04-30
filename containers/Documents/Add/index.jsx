@@ -255,9 +255,6 @@ export default function DocumentAdd() {
 
   const validate = () => {
     if (!form.title.trim()) return "Title is required.";
-    if (!form.projectId) return "Project is required.";
-    if (!form.siteId) return "Site is required.";
-    if (!form.subProjectId) return "Sub-Project is required.";
     if (!selectedFile) return "Please select a file to upload.";
     if (form.linkedToType && !form.linkedToId.trim())
       return "Linked Entity ID is required when Linked Type is set.";
@@ -278,16 +275,16 @@ export default function DocumentAdd() {
       setStep(1);
       const payload = {
         title: form.title.trim(),
-        projectId: form.projectId,
-        siteId: form.siteId,
-        subProjectId: form.subProjectId,
         fileName: selectedFile.name,
         mimeType: selectedFile.type,
         fileSize: selectedFile.size,
       };
       if (form.description.trim())
         payload.description = form.description.trim();
+      if (form.projectId) payload.projectId = form.projectId;
+      if (form.siteId) payload.siteId = form.siteId;
       if (form.zoneId) payload.zoneId = form.zoneId;
+      if (form.subProjectId) payload.subProjectId = form.subProjectId;
       if (form.assetId) payload.assetId = form.assetId;
       if (form.category) payload.category = form.category;
       if (form.linkedToType) {
@@ -562,7 +559,10 @@ export default function DocumentAdd() {
                   {/* Project */}
                   <div className="mb-4">
                     <label className="block text-sm font-semibold text-white mb-2">
-                      Project <span className="text-red-400">*</span>
+                      Project{" "}
+                      <span className="text-gray-500 font-normal">
+                        (optional)
+                      </span>
                     </label>
                     <AppSelect
                       name="projectId"
@@ -581,7 +581,10 @@ export default function DocumentAdd() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <label className="block text-sm font-semibold text-white mb-2">
-                        Site <span className="text-red-400">*</span>
+                        Site{" "}
+                        <span className="text-gray-500 font-normal">
+                          (optional)
+                        </span>
                       </label>
                       <AppSelect
                         name="siteId"
@@ -605,7 +608,10 @@ export default function DocumentAdd() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-white mb-2">
-                        Sub-Project <span className="text-red-400">*</span>
+                        Sub-Project{" "}
+                        <span className="text-gray-500 font-normal">
+                          (optional)
+                        </span>
                       </label>
                       <AppSelect
                         name="subProjectId"
