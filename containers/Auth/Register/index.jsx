@@ -3802,126 +3802,35 @@ function StepTeam({ w, u, apiRoles, roleQtys, setRoleQtys }) {
           overflow: "hidden",
         }}
       >
-        {useApi
-          ? apiRoles.map((r, i) => {
-              const roleId = r.roleKey || r.id || String(i);
-              const qty = roleQtys[roleId] ?? r.defaultQty ?? 1;
-              return (
-                <div
-                  key={roleId}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto",
-                    gap: 10,
-                    alignItems: "center",
-                    padding: "10px 14px",
-                    borderBottom:
-                      i < apiRoles.length - 1
-                        ? `1px solid ${C.border}`
-                        : "none",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "0.76rem",
-                        fontWeight: 500,
-                        color: C.text,
-                        fontFamily: C.sans,
-                      }}
-                    >
-                      {r.name || r.roleName || r.title || roleId}
-                    </div>
-                    {r.description && (
-                      <div
-                        style={{
-                          fontSize: "0.6rem",
-                          color: C.muted,
-                          fontFamily: C.mono,
-                          marginTop: 1,
-                        }}
-                      >
-                        {r.description}
-                      </div>
-                    )}
-                  </div>
+        {useApi ? (
+          apiRoles.map((r, i) => {
+            const roleId = r.roleKey || r.id || String(i);
+            const qty = roleQtys[roleId] ?? r.defaultQty ?? 1;
+            return (
+              <div
+                key={roleId}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
+                  gap: 10,
+                  alignItems: "center",
+                  padding: "10px 14px",
+                  borderBottom:
+                    i < apiRoles.length - 1 ? `1px solid ${C.border}` : "none",
+                }}
+              >
+                <div>
                   <div
-                    style={{ display: "flex", gap: 4, alignItems: "center" }}
+                    style={{
+                      fontSize: "0.76rem",
+                      fontWeight: 500,
+                      color: C.text,
+                      fontFamily: C.sans,
+                    }}
                   >
-                    <button
-                      onClick={() => setQtyApi(roleId, -1)}
-                      style={{
-                        width: 22,
-                        height: 22,
-                        border: `1px solid ${C.border}`,
-                        background: "transparent",
-                        borderRadius: 5,
-                        fontSize: 12,
-                        cursor: "pointer",
-                        color: C.text,
-                      }}
-                    >
-                      −
-                    </button>
-                    <span
-                      style={{
-                        fontFamily: C.mono,
-                        fontSize: "0.75rem",
-                        color: C.text,
-                        fontWeight: 500,
-                        minWidth: 18,
-                        textAlign: "center",
-                      }}
-                    >
-                      {qty}
-                    </span>
-                    <button
-                      onClick={() => setQtyApi(roleId, 1)}
-                      style={{
-                        width: 22,
-                        height: 22,
-                        border: `1px solid ${C.border}`,
-                        background: "transparent",
-                        borderRadius: 5,
-                        fontSize: 12,
-                        cursor: "pointer",
-                        color: C.text,
-                      }}
-                    >
-                      +
-                    </button>
+                    {r.name || r.roleName || r.title || roleId}
                   </div>
-                </div>
-              );
-            })
-          : (w.team || []).map((r, i) => {
-              const t = ts[r.tier];
-              return (
-                <div
-                  key={i}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto auto",
-                    gap: 10,
-                    alignItems: "center",
-                    padding: "10px 14px",
-                    borderBottom:
-                      i < (w.team || []).length - 1
-                        ? `1px solid ${C.border}`
-                        : "none",
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "0.76rem",
-                        fontWeight: 500,
-                        color: C.text,
-                        fontFamily: C.sans,
-                      }}
-                    >
-                      {r.n}
-                    </div>
+                  {r.description && (
                     <div
                       style={{
                         fontSize: "0.6rem",
@@ -3930,72 +3839,68 @@ function StepTeam({ w, u, apiRoles, roleQtys, setRoleQtys }) {
                         marginTop: 1,
                       }}
                     >
-                      {r.d}
+                      {r.description}
                     </div>
-                  </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <button
+                    onClick={() => setQtyApi(roleId, -1)}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      border: `1px solid ${C.border}`,
+                      background: "transparent",
+                      borderRadius: 5,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      color: C.text,
+                    }}
+                  >
+                    −
+                  </button>
                   <span
                     style={{
                       fontFamily: C.mono,
-                      fontSize: "0.54rem",
-                      padding: "2px 6px",
-                      borderRadius: 4,
+                      fontSize: "0.75rem",
+                      color: C.text,
                       fontWeight: 500,
-                      background: t.bg,
-                      color: t.color,
-                      border: `1px solid ${t.bdr}`,
+                      minWidth: 18,
+                      textAlign: "center",
                     }}
                   >
-                    {t.label}
+                    {qty}
                   </span>
-                  <div
-                    style={{ display: "flex", gap: 4, alignItems: "center" }}
+                  <button
+                    onClick={() => setQtyApi(roleId, 1)}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      border: `1px solid ${C.border}`,
+                      background: "transparent",
+                      borderRadius: 5,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      color: C.text,
+                    }}
                   >
-                    <button
-                      onClick={() => setQtyLocal(i, -1)}
-                      style={{
-                        width: 22,
-                        height: 22,
-                        border: `1px solid ${C.border}`,
-                        background: "transparent",
-                        borderRadius: 5,
-                        fontSize: 12,
-                        cursor: "pointer",
-                        color: C.text,
-                      }}
-                    >
-                      −
-                    </button>
-                    <span
-                      style={{
-                        fontFamily: C.mono,
-                        fontSize: "0.75rem",
-                        color: C.text,
-                        fontWeight: 500,
-                        minWidth: 18,
-                        textAlign: "center",
-                      }}
-                    >
-                      {r.qty}
-                    </span>
-                    <button
-                      onClick={() => setQtyLocal(i, 1)}
-                      style={{
-                        width: 22,
-                        height: 22,
-                        border: `1px solid ${C.border}`,
-                        background: "transparent",
-                        borderRadius: 5,
-                        fontSize: 12,
-                        cursor: "pointer",
-                        color: C.text,
-                      }}
-                    >
-                      +
-                    </button>
-                  </div>
+                    +
+                  </button>
                 </div>
-              );
-            })}
+              </div>
+            );
+          })
+        ) : (
+          <p
+            style={{
+              color: C.text,
+              fontFamily: C.sans,
+            }}
+            className="text-xl p-5 text-center "
+          >
+            No Roles Found
+          </p>
+        )}
       </div>
       <div
         style={{
@@ -5779,16 +5684,13 @@ export default function RegisterPage() {
             ? Object.entries(roleQtys).map(([roleKey, qty]) => {
                 const role = apiRoles.find((r) => r.roleKey === roleKey);
                 return {
+                  roleKey: roleKey,
                   name: role?.name || roleKey,
                   tier: role?.tier || "S",
                   qty,
                 };
               })
-            : (wizard.team || []).map((r) => ({
-                name: r.n,
-                tier: r.tier,
-                qty: r.qty,
-              }));
+            : [];
         await SaveTeam({ sessionId: sid, roles: rolesPayload });
       } else if (step === 5) {
         await SaveBrand({
