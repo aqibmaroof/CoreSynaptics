@@ -59,7 +59,7 @@ export default function KanbanBoard() {
       console.log("error fetching projects : ", error);
     }
   };
-  console.log(projects.filter((item) => item?.props));
+
   const deleteProject = async (id) => {
     try {
       await deleteCxProject(id);

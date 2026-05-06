@@ -65,10 +65,10 @@ export const SaveEquipment = async (payload) => {
   }
 };
 
-export const GetSetupRoles = async (sessionId) => {
+export const GetSetupRoles = async (type) => {
   try {
     return await sendRequest({
-      url: `/setup/steps/5/role-presets/${sessionId}`,
+      url: `/setup/roles?companyType=${type}`,
     });
   } catch (error) {
     throw error;

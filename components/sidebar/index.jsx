@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getMenuByRole } from "./sideBarData";
+import { getMenuByRole, getRoleMeta, getLensNavItems, LENSES } from "./sideBarData";
 import { FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
 import config from "../../config";
@@ -28,6 +28,7 @@ const Sidebar = () => {
   const [openIndex, setOpenIndex] = useState(null);
   const [theme, setTheme] = useState("dark");
   const [currentUser, setCurrentUser] = useState(null);
+  const [roleMeta, setRoleMeta] = useState(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "dark";
@@ -40,8 +41,10 @@ const Sidebar = () => {
     const accessToken = getAccessToken();
     setCurrentUser(user);
 
-    const items = getMenuByRole(user?.activeRole?.name || user?.platformRole);
+    const roleId = user?.activeRole?.name || user?.platformRole;
+    const items = getMenuByRole(roleId);
     setVisibleItems(items);
+    setRoleMeta(getRoleMeta(roleId));
     setMounted(true);
 
     getRolesList();
@@ -61,10 +64,10 @@ const Sidebar = () => {
     const userResponse = await GetUser();
     setUser({ user: userResponse });
     setCurrentUser(userResponse);
-    const items = getMenuByRole(
-      userResponse?.activeRole?.name || userResponse?.platformRole
-    );
+    const roleId = userResponse?.activeRole?.name || userResponse?.platformRole;
+    const items = getMenuByRole(roleId);
     setVisibleItems(items);
+    setRoleMeta(getRoleMeta(roleId));
   };
 
   const getRolesList = async () => {
@@ -108,49 +111,65 @@ const Sidebar = () => {
 
         {currentUser && (
           <div
-            className={`flex gap-2.5 px-3 py-2.5 rounded-xl ${
+            className={`px-3 py-2.5 rounded-xl ${
               isDark
                 ? "bg-slate-800/60 border border-slate-700/60"
                 : "bg-slate-100 border border-slate-200"
             }`}
           >
-            <div className="relative shrink-0">
-              <div className="w-8 h-8 rounded-full overflow-hidden">
-                <img
-                  src={config?.user_icon || "https://placehold.co/100x100"}
-                  className="w-full h-full object-cover"
-                  alt="user"
-                />
+            {/* User identity row */}
+            <div className="flex gap-2.5 mb-2">
+              <div className="relative shrink-0">
+                <div className="w-8 h-8 rounded-full overflow-hidden">
+                  <img
+                    src={config?.user_icon || "https://placehold.co/100x100"}
+                    className="w-full h-full object-cover"
+                    alt="user"
+                  />
+                </div>
+                <span className="absolute bottom-5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
               </div>
-              <span className="absolute bottom-5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
+              <div className="min-w-0">
+                <p className={`text-xs font-semibold truncate leading-tight ${isDark ? "text-slate-100" : "text-slate-800"}`}>
+                  {currentUser?.firstName} {currentUser?.lastName}
+                </p>
+                <p className={`text-[10px] truncate leading-tight ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  {currentUser?.organizationName || ""}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p
-                className={`text-xs font-semibold truncate leading-tight ${
-                  isDark ? "text-slate-100" : "text-slate-800"
-                }`}
-              >
-                {currentUser?.firstName} {currentUser?.lastName}
-              </p>
-              <p
-                className={`text-[10px] mb-1 truncate leading-tight ${
-                  isDark ? "text-slate-400" : "text-slate-500"
-                }`}
-              >
-                {currentUser?.organizationName || ""}
-              </p>
-              {roleLabel && (
-                <span
-                  className={`text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wide shrink-0 ${
-                    isDark
-                      ? "bg-cyan-950 text-cyan-400 border border-cyan-800"
-                      : "bg-sky-100 text-sky-700 border border-sky-200"
-                  }`}
-                >
-                  {formatRole(roleLabel)}
-                </span>
-              )}
-            </div>
+
+            {/* Role card — shows library meta when available */}
+            {roleMeta ? (
+              <div className={`rounded-lg px-2.5 py-2 mt-1 ${isDark ? "bg-slate-700/50" : "bg-white/60 border border-slate-200"}`}>
+                <p className={`text-[9px] font-bold uppercase tracking-widest mb-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                  YOUR ROLE
+                </p>
+                <p className={`text-[10px] font-mono truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  {roleMeta.id}
+                </p>
+                <p className={`text-xs font-semibold truncate leading-tight ${isDark ? "text-white" : "text-slate-800"}`}>
+                  {roleMeta.name}
+                </p>
+                <p className={`text-[10px] truncate mb-1.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  {currentUser?.organizationName || roleMeta.companyType} · {roleMeta.tier}
+                </p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${isDark ? "bg-slate-600 text-slate-300" : "bg-slate-200 text-slate-600"}`}>
+                    LENS · {roleMeta.lens}
+                  </span>
+                  {LENSES[roleMeta.lens] && (
+                    <span className={`text-[9px] truncate ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                      {LENSES[roleMeta.lens].name}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : roleLabel ? (
+              <span className={`text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wide inline-block mt-1 ${isDark ? "bg-cyan-950 text-cyan-400 border border-cyan-800" : "bg-sky-100 text-sky-700 border border-sky-200"}`}>
+                {formatRole(roleLabel)}
+              </span>
+            ) : null}
           </div>
         )}
       </div>
@@ -258,6 +277,42 @@ const Sidebar = () => {
           );
         })}
       </ul>
+
+      {/* ── Lens Quick-Nav ───────────────────────────────────── */}
+      {roleMeta && (() => {
+        const lens = LENSES[roleMeta.lens];
+        const lensItems = getLensNavItems(roleMeta.lens);
+        if (!lens || !lensItems.length) return null;
+        return (
+          <div className="mb-2">
+            <div className="px-7 pt-3 pb-1">
+              <p className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+                {lens.name}
+              </p>
+            </div>
+            <ul className="list-none m-0 p-0">
+              {lensItems.map((item, i) => {
+                const isActive = pathname === item.path;
+                return (
+                  <li key={i}>
+                    <Link
+                      href={item.path}
+                      className={`flex items-center gap-2 px-7 py-1.5 text-[13px] transition-colors no-underline ${
+                        isActive
+                          ? isDark ? "text-white font-semibold" : "text-slate-900 font-semibold"
+                          : isDark ? "text-slate-400 hover:text-white hover:bg-slate-700/30" : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                      }`}
+                    >
+                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#0075FF] shrink-0" />}
+                      {item.title}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })()}
 
       {/* ── Need Help Card ────────────────────────────────────── */}
       {isDark ? (

@@ -23,6 +23,8 @@ import {
   listCommunications,
   createCommunication,
 } from "@/services/Communications";
+import { listPhases } from "@/services/Phases";
+import { listMilestones } from "@/services/ScheduleMilestones";
 
 // ─── STEPS ────────────────────────────────────────────────────────────────────
 const STEPS = [
@@ -1223,7 +1225,6 @@ const SOP_CATS = [
   "WARRANTY",
 ];
 
-
 const SITES_LIST = [
   {
     id: "site1",
@@ -2118,13 +2119,13 @@ function buildApiCalls(key, s, extras = {}) {
         {
           step: "partners",
           data: {
-            partners: orgPartners.filter(
-              (p) => s.partnerSel?.[p.id],
-            ).map((p) => ({
-              partnerId: p.id,
-              role: p.role ?? undefined,
-              scope: p.scope ?? undefined,
-            })),
+            partners: orgPartners
+              .filter((p) => s.partnerSel?.[p.id])
+              .map((p) => ({
+                partnerId: p.id,
+                role: p.role ?? undefined,
+                scope: p.scope ?? undefined,
+              })),
           },
         },
       ];
@@ -2208,6 +2209,15 @@ export default function ProjectWizard() {
   });
   const [addingContact, setAddingContact] = useState(false);
   const [addContactError, setAddContactError] = useState(null);
+
+  // ── Schedule step — API phases + milestones ────────────────────────────────
+  const [schedulePhases, setSchedulePhases] = useState([]);
+  const [schedulePhasesLoading, setSchedulePhasesLoading] = useState(false);
+  const [phaseDates, setPhaseDates] = useState({}); // { [phaseId]: { start, end } }
+  const [milestonesMap, setMilestonesMap] = useState({}); // phaseId → milestone[]
+  const [milestonesLoading, setMilestonesLoading] = useState({}); // phaseId → bool
+  const [expandedPhaseId, setExpandedPhaseId] = useState(null);
+
   const searchParams = useSearchParams();
   const urlProjectId = searchParams?.get("projectId") || null;
 
@@ -2224,6 +2234,52 @@ export default function ProjectWizard() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {}
   }, [state]);
+
+  // Load phases when schedule step is active
+  useEffect(() => {
+    const currentKey = STEPS[state.step]?.key;
+    if (currentKey !== "schedule") return;
+    if (schedulePhases.length > 0 || schedulePhasesLoading) return;
+    setSchedulePhasesLoading(true);
+    listPhases()
+      .then((d) => {
+        const arr = Array.isArray(d) ? d : (d?.data ?? d?.items ?? []);
+        setSchedulePhases(arr);
+        // Seed phaseDates with empty strings so controlled inputs work
+        setPhaseDates((prev) => {
+          const next = { ...prev };
+          arr.forEach((p) => {
+            if (!next[p.id]) next[p.id] = { start: "", end: "" };
+          });
+          return next;
+        });
+      })
+      .catch(() => setSchedulePhases([]))
+      .finally(() => setSchedulePhasesLoading(false));
+  }, [state.step]);
+
+  const loadMilestonesForPhase = async (phaseId) => {
+    if (milestonesMap[phaseId] !== undefined) return; // already loaded
+    setMilestonesLoading((prev) => ({ ...prev, [phaseId]: true }));
+    try {
+      const d = await listMilestones({ phaseId });
+      const arr = Array.isArray(d) ? d : (d?.data ?? d?.items ?? []);
+      setMilestonesMap((prev) => ({ ...prev, [phaseId]: arr }));
+    } catch {
+      setMilestonesMap((prev) => ({ ...prev, [phaseId]: [] }));
+    } finally {
+      setMilestonesLoading((prev) => ({ ...prev, [phaseId]: false }));
+    }
+  };
+
+  const toggleSchedulePhase = (phaseId) => {
+    if (expandedPhaseId === phaseId) {
+      setExpandedPhaseId(null);
+    } else {
+      setExpandedPhaseId(phaseId);
+      loadMilestonesForPhase(phaseId);
+    }
+  };
 
   useEffect(() => {
     setTeamsLoading(true);
@@ -3076,70 +3132,303 @@ export default function ProjectWizard() {
     </div>
   );
 
-  const renderSchedule = () => (
-    <div>
-      <div className="step-head">
-        <div className="kicker">Step 4 of {STEPS.length}</div>
-        <h1 className="step-title">
-          Baseline <em>schedule</em>
-        </h1>
-        <p className="step-sub">
-          Set target dates for each phase. You can refine in the full scheduler
-          after launch.
-        </p>
-      </div>
-      <div className="callout callout-amber">
-        <span className="callout-icon">⚠</span>
-        <div>
-          <div className="callout-t">Dates are planning targets</div>Actual
-          schedule will be managed in the project timeline after kickoff.
+  const fmtDate = (iso) =>
+    iso
+      ? new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" })
+      : "—";
+
+  const renderSchedule = () => {
+    const setPhaseDate = (phaseId, field, value) =>
+      setPhaseDates((prev) => ({
+        ...prev,
+        [phaseId]: {
+          ...(prev[phaseId] ?? { start: "", end: "" }),
+          [field]: value,
+        },
+      }));
+
+    const phases = schedulePhases;
+
+    return (
+      <div>
+        <div className="step-head">
+          <div className="kicker">Step 4 of {STEPS.length}</div>
+          <h1 className="step-title">
+            Baseline <em>schedule</em>
+          </h1>
+          <p className="step-sub">
+            Set target dates for each phase. You can refine in the full
+            scheduler after launch.
+          </p>
         </div>
-      </div>
-      {state.phases.map((phase, i) => (
-        <div key={phase.id} className="phase-card">
-          <div className="phase-num">{i + 1}</div>
+        <div className="callout callout-amber">
+          <span className="callout-icon">⚠</span>
           <div>
-            <div className="phase-name">{phase.name}</div>
-            <div className="phase-meta">
-              {phase.desc} · {phase.weeks}
+            <div className="callout-t">Dates are planning targets</div>Actual
+            schedule will be managed in the project timeline after kickoff.
+          </div>
+        </div>
+
+        {schedulePhasesLoading ? (
+          <div
+            className="phase-card"
+            style={{ justifyContent: "space-between", gap: 10 }}
+          >
+            <svg
+              style={{
+                width: 16,
+                height: 16,
+                flexShrink: 0,
+                animation: "spin 1s linear infinite",
+              }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            <span style={{ fontSize: 13, color: "var(--t4)" }}>
+              Loading phases…
+            </span>
+          </div>
+        ) : phases.length === 0 ? (
+          <div className="callout" style={{ gap: 10 }}>
+            <span className="callout-icon">ℹ</span>
+            <div>
+              <div className="callout-t">No phases found</div>
+              Create org phases in{" "}
+              <a
+                href="/Phases/List"
+                target="_blank"
+                style={{ color: "var(--ac)" }}
+              >
+                Phases → List
+              </a>{" "}
+              first, then return here.
             </div>
           </div>
-          <div className="phase-date">
-            <label className="input-label" style={{ marginBottom: 3 }}>
-              Start
-            </label>
-            <input
-              type="date"
-              value={phase.start}
-              onChange={(e) =>
-                upd((s) => {
-                  const ph = [...s.phases];
-                  ph[i] = { ...ph[i], start: e.target.value };
-                  return { ...s, phases: ph };
-                })
-              }
-            />
-          </div>
-          <div className="phase-date">
-            <label className="input-label" style={{ marginBottom: 3 }}>
-              End
-            </label>
-            <input
-              type="date"
-              value={phase.end}
-              onChange={(e) =>
-                upd((s) => {
-                  const ph = [...s.phases];
-                  ph[i] = { ...ph[i], end: e.target.value };
-                  return { ...s, phases: ph };
-                })
-              }
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+        ) : (
+          phases.map((phase, i) => {
+            const isOpen = expandedPhaseId === phase.id;
+            const milestones = milestonesMap[phase.id];
+            const msLoading = milestonesLoading[phase.id];
+            const dates = phaseDates[phase.id] ?? { start: "", end: "" };
+
+            return (
+              <div key={phase.id}>
+                <div className="phase-card">
+                  <div className="phase-num">{i + 1}</div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="phase-name">{phase.name}</div>
+                    <div className="phase-meta">
+                      {phase.description && <span>{phase.description}</span>}
+                      {phase.description && <span> · </span>}
+                      <button
+                        type="button"
+                        onClick={() => toggleSchedulePhase(phase.id)}
+                        style={{
+                          fontSize: 11,
+                          color: "var(--ac)",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: 0,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 3,
+                        }}
+                      >
+                        Milestones
+                        <svg
+                          style={{
+                            width: 10,
+                            height: 10,
+                            transform: isOpen ? "rotate(180deg)" : "none",
+                            transition: "transform 0.15s",
+                          }}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <polyline points="6 9 12 15 18 9" strokeWidth="2.5" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="phase-date">
+                    <label className="input-label" style={{ marginBottom: 3 }}>
+                      Start
+                    </label>
+                    <input
+                      type="date"
+                      value={dates.start}
+                      onChange={(e) =>
+                        setPhaseDate(phase.id, "start", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div className="phase-date">
+                    <label className="input-label" style={{ marginBottom: 3 }}>
+                      End
+                    </label>
+                    <input
+                      type="date"
+                      value={dates.end}
+                      onChange={(e) =>
+                        setPhaseDate(phase.id, "end", e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
+                {isOpen && (
+                  <div
+                    style={{
+                      borderTop: "1px solid var(--bdr)",
+                      padding: "10px 20px 14px 56px",
+                    }}
+                  >
+                    {msLoading ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          color: "var(--t4)",
+                          fontSize: 12,
+                        }}
+                      >
+                        <svg
+                          style={{
+                            width: 12,
+                            height: 12,
+                            animation: "spin 1s linear infinite",
+                          }}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Loading milestones…
+                      </div>
+                    ) : !milestones || milestones.length === 0 ? (
+                      <p
+                        style={{ fontSize: 12, color: "var(--t4)", margin: 0 }}
+                      >
+                        No milestones linked to this phase.
+                      </p>
+                    ) : (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 5,
+                        }}
+                      >
+                        {milestones.map((ms) => (
+                          <div
+                            key={ms.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              padding: "6px 12px",
+                              borderRadius: 6,
+                              background: "var(--bg3)",
+                              border: "1px solid var(--bdr)",
+                            }}
+                          >
+                            {ms.isCritical && (
+                              <span
+                                style={{
+                                  color: "#facc15",
+                                  fontSize: 10,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                ◆
+                              </span>
+                            )}
+                            <span
+                              style={{
+                                flex: 1,
+                                fontSize: 13,
+                                fontWeight: 500,
+                                color: "var(--t1)",
+                              }}
+                            >
+                              {ms.name}
+                            </span>
+                            <span style={{ fontSize: 11, color: "var(--t4)" }}>
+                              {fmtDate(ms.date)}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 10,
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                flexShrink: 0,
+                                border: "1px solid",
+                                ...(ms.type === "CONTRACT"
+                                  ? {
+                                      background: "rgba(127,29,29,0.4)",
+                                      color: "#fca5a5",
+                                      borderColor: "rgba(239,68,68,0.3)",
+                                    }
+                                  : ms.type === "OPS"
+                                    ? {
+                                        background: "rgba(120,53,15,0.4)",
+                                        color: "#fdba74",
+                                        borderColor: "rgba(249,115,22,0.3)",
+                                      }
+                                    : {
+                                        background: "rgba(55,65,81,0.6)",
+                                        color: "#d1d5db",
+                                        borderColor: "rgba(107,114,128,0.3)",
+                                      }),
+                              }}
+                            >
+                              {ms.type}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    );
+  };
 
   const handleTeamToggle = async (team) => {
     const teamId = String(team.id);
@@ -6172,7 +6461,10 @@ export default function ProjectWizard() {
                         background: "var(--bone)",
                       }}
                     >
-                      <div className="group-sub-title" style={{ margin: "0 0 10px" }}>
+                      <div
+                        className="group-sub-title"
+                        style={{ margin: "0 0 10px" }}
+                      >
                         Send invite to {p.name}
                       </div>
                       <div className="form-grid" style={{ marginBottom: 0 }}>
@@ -6220,7 +6512,10 @@ export default function ProjectWizard() {
                         >
                           Send invite
                         </button>
-                        <button className="nav-btn" onClick={() => setPartnerInviteId(null)}>
+                        <button
+                          className="nav-btn"
+                          onClick={() => setPartnerInviteId(null)}
+                        >
                           Cancel
                         </button>
                       </div>
@@ -6266,210 +6561,222 @@ export default function ProjectWizard() {
             />
           </div>
           {partnersLoading ? (
-            <div style={{ color: "var(--smoke)", fontSize: 13, padding: "10px 0" }}>
+            <div
+              style={{ color: "var(--smoke)", fontSize: 13, padding: "10px 0" }}
+            >
               Loading partners…
             </div>
           ) : dirList.length === 0 ? (
-            <div style={{ color: "var(--smoke)", fontSize: 13, padding: "10px 0" }}>
-              No partner companies found — add them via the Companies module first.
+            <div
+              style={{ color: "var(--smoke)", fontSize: 13, padding: "10px 0" }}
+            >
+              No partner companies found — add them via the Companies module
+              first.
             </div>
           ) : null}
-          {!partnersLoading && dirList.map((p) => {
-            const sel = state.partnerSel[p.id];
-            const invite = state.partnerInvites[p.id];
-            return (
-              <div key={p.id} className="hub-cat" style={{ marginBottom: 8 }}>
-                <div
-                  className="hub-cat-head"
-                  style={{ cursor: "pointer" }}
-                  onClick={() =>
-                    upd((s) => ({
-                      ...s,
-                      partnerSel: {
-                        ...s.partnerSel,
-                        [p.id]: !s.partnerSel[p.id],
-                      },
-                    }))
-                  }
-                >
+          {!partnersLoading &&
+            dirList.map((p) => {
+              const sel = state.partnerSel[p.id];
+              const invite = state.partnerInvites[p.id];
+              return (
+                <div key={p.id} className="hub-cat" style={{ marginBottom: 8 }}>
                   <div
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                    className="hub-cat-head"
+                    style={{ cursor: "pointer" }}
+                    onClick={() =>
+                      upd((s) => ({
+                        ...s,
+                        partnerSel: {
+                          ...s.partnerSel,
+                          [p.id]: !s.partnerSel[p.id],
+                        },
+                      }))
+                    }
                   >
                     <div
-                      className="person-avatar"
-                      style={{
-                        background: sel ? tagColor(p.type) : "var(--stone)",
-                        width: 36,
-                        height: 36,
-                        fontSize: 13,
-                      }}
+                      style={{ display: "flex", alignItems: "center", gap: 12 }}
                     >
-                      {p.name
-                        .split(" ")
-                        .map((w) => w[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </div>
-                    <div>
                       <div
+                        className="person-avatar"
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
+                          background: sel ? tagColor(p.type) : "var(--stone)",
+                          width: 36,
+                          height: 36,
+                          fontSize: 13,
                         }}
                       >
-                        <span
-                          style={{
-                            fontWeight: 600,
-                            color: "var(--navy)",
-                            fontSize: 13,
-                          }}
-                        >
-                          {p.name}
-                        </span>
-                        {sel && (
-                          <span
-                            style={{
-                              fontFamily: "var(--wfont-mono)",
-                              fontSize: 9,
-                              fontWeight: 700,
-                              letterSpacing: "0.06em",
-                              padding: "2px 6px",
-                              borderRadius: 4,
-                              background: "var(--emerald-soft)",
-                              color: "var(--emerald)",
-                            }}
-                          >
-                            CONNECTED
-                          </span>
-                        )}
-                        {p.type && (
-                          <span
-                            style={{
-                              fontFamily: "var(--wfont-mono)",
-                              fontSize: 9,
-                              fontWeight: 700,
-                              letterSpacing: "0.06em",
-                              padding: "2px 6px",
-                              borderRadius: 4,
-                              background: sel
-                                ? "color-mix(in srgb, " +
-                                  tagColor(p.type) +
-                                  " 12%, var(--rf-bg2))"
-                                : "var(--stone)",
-                              color: sel ? tagColor(p.type) : "var(--smoke)",
-                            }}
-                          >
-                            {p.type}
-                          </span>
-                        )}
+                        {p.name
+                          .split(" ")
+                          .map((w) => w[0])
+                          .join("")
+                          .slice(0, 2)}
                       </div>
-                      {p.region && (
+                      <div>
                         <div
                           style={{
-                            fontFamily: "var(--wfont-mono)",
-                            fontSize: 11,
-                            color: "var(--smoke)",
-                            marginTop: 2,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
                           }}
                         >
-                          {p.region}
+                          <span
+                            style={{
+                              fontWeight: 600,
+                              color: "var(--navy)",
+                              fontSize: 13,
+                            }}
+                          >
+                            {p.name}
+                          </span>
+                          {sel && (
+                            <span
+                              style={{
+                                fontFamily: "var(--wfont-mono)",
+                                fontSize: 9,
+                                fontWeight: 700,
+                                letterSpacing: "0.06em",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                background: "var(--emerald-soft)",
+                                color: "var(--emerald)",
+                              }}
+                            >
+                              CONNECTED
+                            </span>
+                          )}
+                          {p.type && (
+                            <span
+                              style={{
+                                fontFamily: "var(--wfont-mono)",
+                                fontSize: 9,
+                                fontWeight: 700,
+                                letterSpacing: "0.06em",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                background: sel
+                                  ? "color-mix(in srgb, " +
+                                    tagColor(p.type) +
+                                    " 12%, var(--rf-bg2))"
+                                  : "var(--stone)",
+                                color: sel ? tagColor(p.type) : "var(--smoke)",
+                              }}
+                            >
+                              {p.type}
+                            </span>
+                          )}
                         </div>
-                      )}
+                        {p.region && (
+                          <div
+                            style={{
+                              fontFamily: "var(--wfont-mono)",
+                              fontSize: 11,
+                              color: "var(--smoke)",
+                              marginTop: 2,
+                            }}
+                          >
+                            {p.region}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div
-                    style={{ display: "flex", gap: 8, alignItems: "center" }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {invite && (
-                      <span
-                        className={`partner-status ${invite.status === "accepted" ? "ps-accepted" : invite.status === "declined" ? "ps-declined" : "ps-pending"}`}
-                      >
-                        {invite.status}
-                      </span>
-                    )}
-                    <button
-                      className={`pill-btn${sel ? " primary" : ""}`}
-                      onClick={() =>
-                        upd((s) => ({
-                          ...s,
-                          partnerSel: {
-                            ...s.partnerSel,
-                            [p.id]: !s.partnerSel[p.id],
-                          },
-                        }))
-                      }
+                    <div
+                      style={{ display: "flex", gap: 8, alignItems: "center" }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {sel ? "✓ Connected" : "+ Connect"}
-                    </button>
-                  </div>
-                </div>
-                {partnerInviteId === p.id && (
-                  <div
-                    style={{
-                      padding: "14px 16px",
-                      borderTop: "1px solid var(--stone-dark)",
-                      background: "var(--bone)",
-                    }}
-                  >
-                    <div className="group-sub-title" style={{ margin: "0 0 10px" }}>
-                      Send invite to {p.name}
-                    </div>
-                    <div className="form-grid" style={{ marginBottom: 0 }}>
-                      <div>
-                        <label className="input-label">Contact email</label>
-                        <input
-                          className="input-field"
-                          value={inviteEmail}
-                          onChange={(e) => setInviteEmail(e.target.value)}
-                          placeholder="pm@partner.com"
-                        />
-                      </div>
-                      <div>
-                        <label className="input-label">Access level</label>
-                        <select
-                          className="input-field"
-                          value={inviteAccess}
-                          onChange={(e) => setInviteAccess(e.target.value)}
+                      {invite && (
+                        <span
+                          className={`partner-status ${invite.status === "accepted" ? "ps-accepted" : invite.status === "declined" ? "ps-declined" : "ps-pending"}`}
                         >
-                          <option value="read">Read only</option>
-                          <option value="field">Field team</option>
-                          <option value="pm">PM access</option>
-                          <option value="full">Full access</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                          {invite.status}
+                        </span>
+                      )}
                       <button
-                        className="nav-btn primary"
-                        onClick={() => {
-                          if (!inviteEmail.trim()) return;
+                        className={`pill-btn${sel ? " primary" : ""}`}
+                        onClick={() =>
                           upd((s) => ({
                             ...s,
-                            partnerInvites: {
-                              ...s.partnerInvites,
-                              [p.id]: {
-                                email: inviteEmail,
-                                accessLevel: inviteAccess,
-                                status: "pending",
-                              },
+                            partnerSel: {
+                              ...s.partnerSel,
+                              [p.id]: !s.partnerSel[p.id],
                             },
-                          }));
-                          setPartnerInviteId(null);
-                        }}
+                          }))
+                        }
                       >
-                        Send invite
-                      </button>
-                      <button className="nav-btn" onClick={() => setPartnerInviteId(null)}>
-                        Cancel
+                        {sel ? "✓ Connected" : "+ Connect"}
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  {partnerInviteId === p.id && (
+                    <div
+                      style={{
+                        padding: "14px 16px",
+                        borderTop: "1px solid var(--stone-dark)",
+                        background: "var(--bone)",
+                      }}
+                    >
+                      <div
+                        className="group-sub-title"
+                        style={{ margin: "0 0 10px" }}
+                      >
+                        Send invite to {p.name}
+                      </div>
+                      <div className="form-grid" style={{ marginBottom: 0 }}>
+                        <div>
+                          <label className="input-label">Contact email</label>
+                          <input
+                            className="input-field"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            placeholder="pm@partner.com"
+                          />
+                        </div>
+                        <div>
+                          <label className="input-label">Access level</label>
+                          <select
+                            className="input-field"
+                            value={inviteAccess}
+                            onChange={(e) => setInviteAccess(e.target.value)}
+                          >
+                            <option value="read">Read only</option>
+                            <option value="field">Field team</option>
+                            <option value="pm">PM access</option>
+                            <option value="full">Full access</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                        <button
+                          className="nav-btn primary"
+                          onClick={() => {
+                            if (!inviteEmail.trim()) return;
+                            upd((s) => ({
+                              ...s,
+                              partnerInvites: {
+                                ...s.partnerInvites,
+                                [p.id]: {
+                                  email: inviteEmail,
+                                  accessLevel: inviteAccess,
+                                  status: "pending",
+                                },
+                              },
+                            }));
+                            setPartnerInviteId(null);
+                          }}
+                        >
+                          Send invite
+                        </button>
+                        <button
+                          className="nav-btn"
+                          onClick={() => setPartnerInviteId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
           {/* Invite external partner */}
           {partnerInviteId === "__external__" ? (
@@ -6529,7 +6836,10 @@ export default function ProjectWizard() {
                   >
                     Send invite
                   </button>
-                  <button className="nav-btn" onClick={() => setPartnerInviteId(null)}>
+                  <button
+                    className="nav-btn"
+                    onClick={() => setPartnerInviteId(null)}
+                  >
                     Cancel
                   </button>
                 </div>
@@ -6579,8 +6889,14 @@ export default function ProjectWizard() {
       },
       {
         label: "Baseline schedule",
-        sub: `${state.phases.filter((p) => p.start).length}/${state.phases.length} phases dated`,
-        done: state.phases.some((p) => p.start),
+        sub: (() => {
+          const dated = Object.values(phaseDates).filter((d) => d.start).length;
+          const total = schedulePhases.length || state.phases.length;
+          return `${dated}/${total} phases dated`;
+        })(),
+        done:
+          Object.values(phaseDates).some((d) => d.start) ||
+          state.phases.some((p) => p.start),
       },
       {
         label: "Team assignments",

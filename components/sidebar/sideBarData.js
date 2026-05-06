@@ -314,6 +314,222 @@ const SALES_ROLES = [
   ROLES.STAFFING_ACCOUNT_MGR,
 ];
 
+// ════════════════════════════════════════════════════════════════════════════
+// COMPANIES — org catalogue (matches prototype COMPANIES object)
+// ════════════════════════════════════════════════════════════════════════════
+export const COMPANIES = {
+  delta:       { id:"delta",       code:"DELTA",       name:"Delta Electronics",              type:"oem",            desc:"OEM · Critical power equipment manufacturer · Plano TX HQ · Servicing 5 active DC commissioning projects across the Americas.", sites:5,  headcount:62, active_projects:5,  established:"2026", is_chris_company:true },
+  hitt:        { id:"hitt",        code:"HITT",        name:"HITT Contracting",               type:"gc",             desc:"GC · Mission-critical builder · DC, healthcare, federal · Falls Church VA HQ · Currently lead GC on ATL-DC-4.", sites:18, headcount:34, active_projects:1,  established:"1937" },
+  cloudx:      { id:"cloudx",      code:"CLOUDX",      name:"CloudX Infrastructure",          type:"customer",       desc:"Customer · Hyperscale operator · ATL-DC-4 owner · Multi-campus expansion across Atlanta, Dallas, Richmond.", sites:12, headcount:45, active_projects:8,  established:"2019" },
+  spark:       { id:"spark",       code:"SPARK",       name:"Spark Electric Co",              type:"trade",          desc:"Trade-E · Electrical contractor · Union local IBEW · ATL-DC-4 sub for feeders, gear, terminations.", sites:1,  headcount:42, active_projects:3,  established:"2008" },
+  primary:     { id:"primary",     code:"PRIMARY",     name:"Primary Integration",            type:"cxa",            desc:"CxA · Owner-hired commissioning agent · L3-L5 ownership · Authors test scripts, witnesses execution.", sites:1,  headcount:18, active_projects:6,  established:"2003" },
+  corgan:      { id:"corgan",      code:"CORGAN",      name:"Corgan Architects",              type:"ae",             desc:"A/E · Mission critical architect of record · IFC drawings, MEP engineering, RFI response on ATL-DC-4.", sites:1,  headcount:12, active_projects:14, established:"1938" },
+  bigfoot:     { id:"bigfoot",     code:"BIGFOOT",     name:"Bigfoot Crane & Rigging",        type:"rigger",         desc:"Rigger · Heavy-lift specialist for OEM equipment · UPS, gens, transformers, e-houses · CFCI subcontract on ATL-DC-4.", sites:1,  headcount:24, active_projects:6,  established:"2001" },
+  brasfield:   { id:"brasfield",   code:"BRASFIELD",   name:"Brasfield & Gorrie",             type:"builder",        desc:"Builder · Shell + interior · concrete tilt-up, structural steel, building envelope, slab-on-grade · subcontractor to GC.", sites:9,  headcount:38, active_projects:4,  established:"1922" },
+  convergint:  { id:"convergint",  code:"CONVERGINT",  name:"Convergint Technologies",        type:"security",       desc:"Security · Access control, CCTV, intrusion detection, perimeter, guarding integration · low-voltage subcontractor.", sites:1,  headcount:22, active_projects:7,  established:"2001" },
+  jci_fire:    { id:"jci_fire",    code:"JCI-FIRE",    name:"Johnson Controls Fire Protection",type:"fire",          desc:"Fire Alarm · Detection, suppression, clean-agent, sprinkler, FACP integration · life-safety subcontractor.", sites:1,  headcount:18, active_projects:9,  established:"1885" },
+  trillium:    { id:"trillium",    code:"TRILLIUM",    name:"Trillium Construction Staffing", type:"staffing",       desc:"Staffing · Skilled trades labor supply · journeymen, apprentices, helpers · short-term project labor for trades.", sites:1,  headcount:8,  active_projects:5,  established:"1984" },
+  mps:         { id:"mps",         code:"MPS",         name:"MPS Critical Power (Rosendin)",  type:"integrator",     desc:"Integrator · E-house, power skids, factory-built BMS/EPMS integration · Rosendin subsidiary · UL listed assemblies.", sites:2,  headcount:32, active_projects:3,  established:"2008" },
+  jci_ctrl:    { id:"jci_ctrl",    code:"JCI-CTRL",    name:"Johnson Controls (BAS Division)","type":"controls",     desc:"Controls · Building automation, BMS, PLC programming · Metasys / Niagara · controls integration subcontractor.", sites:1,  headcount:20, active_projects:8,  established:"1885" },
+  graybar_lv:  { id:"graybar_lv",  code:"GRAYBAR-LV",  name:"Graybar Low-Voltage Solutions",  type:"lowvoltage",     desc:"Low-Voltage / Cabling · Structured cabling, fiber, data infrastructure · BICSI certified.", sites:1,  headcount:14, active_projects:6,  established:"1869" },
+  emcor_mech:  { id:"emcor_mech",  code:"EMCOR-MECH",  name:"EMCOR Mechanical Services",      type:"mechanical",     desc:"Mechanical · Pipefitting, sheet metal, HVAC installation · UA / SMART unions · MEP subcontractor.", sites:1,  headcount:38, active_projects:5,  established:"1994" },
+  delta_corp:  { id:"delta_corp",  code:"DELTA-CORP",  name:"Delta Electronics · Corporate",  type:"operations",     desc:"Operations · Delta corporate executives, sales, back-office (non-project). Sister entity to the field-delivery Delta org.", sites:1,  headcount:26, active_projects:0,  established:"1971" },
+  cloudx_const:{ id:"cloudx_const",code:"CLOUDX-CON",  name:"CloudX Construction Group",      type:"customer_const", desc:"Customer · Construction-side · Owner's construction PMs, coordinators (separate from facility ops). Manages CloudX's build program.", sites:1,  headcount:18, active_projects:8,  established:"2019" },
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// LENSES — 8 dashboard lenses that role IDs map to
+// ════════════════════════════════════════════════════════════════════════════
+export const LENSES = {
+  exec:   { id:"exec",   name:"Executive · portfolio",  color:"pu", desc:"Portfolio of all active projects · margin · pipeline · escalations" },
+  pm:     { id:"pm",     name:"Project management",     color:"b",  desc:"Single project view · milestones · tasks · daily rollup · cross-company chat" },
+  field:  { id:"field",  name:"Field execution",        color:"g",  desc:"My assigned tasks · daily checklist · field reports" },
+  tech:   { id:"tech",   name:"Technical / engineering", color:"y", desc:"Submittals · drawings · technical RFIs · application questions" },
+  sales:  { id:"sales",  name:"Sales / account",        color:"k",  desc:"Pipeline · quotes · QBR readiness · forecast" },
+  safety: { id:"safety", name:"Safety / QA",            color:"r",  desc:"Incidents · NCR · audits · toolbox talks" },
+  warr:   { id:"warr",   name:"Warranty / parts",       color:"c",  desc:"Warranty queue · RMA · parts orders · field issues" },
+  cx:     { id:"cx",     name:"Commissioning",          color:"t",  desc:"L1-L5 progress · witness schedule · test results · IST" },
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// ROLE_LIBRARY — full role catalogue by company type
+// Each entry: { id, name, lens }  tier is on the parent tier object
+// ════════════════════════════════════════════════════════════════════════════
+export const ROLE_LIBRARY = {
+  oem: [
+    { tier:"Executive",             roles:[{ id:"oem_vp_ops",       name:"VP Operations",                lens:"exec"  },{ id:"oem_sales_dir",   name:"Sales Director",               lens:"sales" },{ id:"oem_vp_eng",       name:"VP Engineering",               lens:"exec"  }]},
+    { tier:"Project Management",    roles:[{ id:"oem_natl_pm",      name:"National PM",                  lens:"pm"    },{ id:"oem_reg_pm",      name:"Regional PM",                  lens:"pm"    },{ id:"oem_sr_pm",        name:"Senior PM",                    lens:"pm"    },{ id:"oem_pm",      name:"Project Manager",  lens:"pm"   },{ id:"oem_apm",   name:"Assistant PM",       lens:"pm"   },{ id:"oem_coord",   name:"Project Coordinator",   lens:"pm"   }]},
+    { tier:"Field Service",         roles:[{ id:"oem_reg_fsm",      name:"Regional Field Service Manager",lens:"pm"    },{ id:"oem_lead_fse",    name:"Lead FSE",                     lens:"field" },{ id:"oem_sr_fse",       name:"Senior FSE",                   lens:"field" },{ id:"oem_fse",     name:"Field Service Engineer",lens:"field"},{ id:"oem_app_fse",name:"Apprentice FSE",     lens:"field"},{ id:"oem_svc_dispatch",name:"Service Dispatch",lens:"warr" }]},
+    { tier:"Commissioning",         roles:[{ id:"oem_cx_lead",      name:"Cx Lead",                      lens:"cx"    },{ id:"oem_sr_cx",       name:"Senior Cx Engineer",           lens:"cx"    },{ id:"oem_cx",           name:"Cx Engineer",                  lens:"cx"    }]},
+    { tier:"Engineering",           roles:[{ id:"oem_app_eng",      name:"Application Engineer",          lens:"tech"  },{ id:"oem_sr_app_eng",  name:"Senior App Engineer",          lens:"tech"  },{ id:"oem_sol_eng",      name:"Solutions Engineer",           lens:"tech"  }]},
+    { tier:"Sales",                 roles:[{ id:"oem_sales_rep",    name:"Sales Rep",                    lens:"sales" },{ id:"oem_inside_sales", name:"Inside Sales",                lens:"sales" },{ id:"oem_sales_eng",    name:"Sales Engineer",               lens:"sales" },{ id:"oem_acct_mgr",name:"Account Manager",  lens:"sales"}]},
+    { tier:"Safety & Quality",      roles:[{ id:"oem_safety_mgr",   name:"Safety Manager",               lens:"safety"},{ id:"oem_safety_off",  name:"Site Safety Officer",          lens:"safety"},{ id:"oem_qaqc_mgr",     name:"QA/QC Manager",                lens:"safety"},{ id:"oem_qaqc_insp",name:"QA/QC Inspector",lens:"safety"}]},
+    { tier:"Scheduling & Controls", roles:[{ id:"oem_scheduler",    name:"Scheduler",                    lens:"pm"    },{ id:"oem_site_scheduler",name:"On-site Scheduler",           lens:"pm"    },{ id:"oem_proj_ctrl",    name:"Project Controls",             lens:"pm"    },{ id:"oem_estimator",name:"Estimator",       lens:"sales"}]},
+    { tier:"Warranty & Parts",      roles:[{ id:"oem_warranty_mgr", name:"Warranty Manager",             lens:"exec"  },{ id:"oem_warranty",    name:"Warranty Administrator",       lens:"warr"  },{ id:"oem_parts",        name:"Parts Coordinator",            lens:"warr"  },{ id:"oem_rma",     name:"RMA Specialist",   lens:"warr" }]},
+    { tier:"Finance & Admin",       roles:[{ id:"oem_finance",      name:"Finance Director",             lens:"exec"  },{ id:"oem_ar",          name:"AR Specialist",                lens:"exec"  },{ id:"oem_admin",        name:"Office Admin",                 lens:"pm"    }]},
+  ],
+  gc: [
+    { tier:"Executive",             roles:[{ id:"gc_proj_exec",     name:"Project Executive",            lens:"exec"  },{ id:"gc_vp_ops",       name:"VP Operations",                lens:"exec"  },{ id:"gc_vp_precon",     name:"VP Preconstruction",           lens:"exec"  }]},
+    { tier:"Project Management",    roles:[{ id:"gc_sr_pm",         name:"Senior PM",                    lens:"pm"    },{ id:"gc_pm",           name:"Project Manager",              lens:"pm"    },{ id:"gc_apm",           name:"Assistant PM",                 lens:"pm"    },{ id:"gc_proj_eng",name:"Project Engineer",lens:"tech" },{ id:"gc_doc_ctrl",name:"Document Controller",lens:"pm"  }]},
+    { tier:"Field Leadership",      roles:[{ id:"gc_sr_super",      name:"Senior Superintendent",        lens:"field" },{ id:"gc_super",        name:"Superintendent",               lens:"field" },{ id:"gc_asst_super",    name:"Assistant Superintendent",     lens:"field" },{ id:"gc_gen_foreman",name:"General Foreman",lens:"field"},{ id:"gc_foreman",name:"Foreman",          lens:"field"}]},
+    { tier:"MEP Coordination",      roles:[{ id:"gc_vp_mep",        name:"VP MEP / MEP Director",        lens:"exec"  },{ id:"gc_sr_mep_pm",    name:"Senior MEP PM",                lens:"pm"    },{ id:"gc_mep_pm",        name:"MEP Project Manager",          lens:"pm"    },{ id:"gc_sr_mep_super",name:"Senior MEP Superintendent",lens:"field"},{ id:"gc_mep_super",name:"MEP Superintendent",lens:"field"},{ id:"gc_asst_mep_super",name:"Assistant MEP Superintendent",lens:"field"},{ id:"gc_mep_elec_super",name:"Electrical Superintendent",lens:"field"},{ id:"gc_mep_mech_super",name:"Mechanical Superintendent",lens:"field"},{ id:"gc_mep_coord",name:"MEP Coordinator",lens:"tech"},{ id:"gc_mep_eng",name:"MEP Field Engineer",lens:"tech"},{ id:"gc_mep_qaqc",name:"MEP QA/QC",lens:"safety"}]},
+    { tier:"BIM / VDC",             roles:[{ id:"gc_bim_mgr",       name:"BIM Manager",                  lens:"tech"  },{ id:"gc_vdc_coord",    name:"VDC Coordinator",              lens:"tech"  },{ id:"gc_bim_mep",       name:"BIM/VDC MEP Coordinator",      lens:"tech"  }]},
+    { tier:"Safety & Quality",      roles:[{ id:"gc_safety_mgr",    name:"Safety Manager",               lens:"safety"},{ id:"gc_site_safety",  name:"Site Safety Officer",          lens:"safety"},{ id:"gc_qaqc",          name:"QA/QC Manager",                lens:"safety"}]},
+    { tier:"Controls & Procurement",roles:[{ id:"gc_scheduler",     name:"Scheduler",                    lens:"pm"    },{ id:"gc_estimator",    name:"Estimator",                    lens:"sales" },{ id:"gc_buyer",         name:"Buyer / Procurement",          lens:"sales" }]},
+  ],
+  customer: [
+    { tier:"Executive",             roles:[{ id:"cust_vp_infra",    name:"VP Infrastructure",            lens:"exec"  },{ id:"cust_dir_dc",     name:"Director DC Construction",     lens:"exec"  },{ id:"cust_dc_prog_dir", name:"DC Program Director",          lens:"exec"  }]},
+    { tier:"Construction Program",  roles:[{ id:"cust_prog_dir",    name:"Program Director",             lens:"exec"  },{ id:"cust_prog_lead",  name:"Construction Program Lead",    lens:"pm"    },{ id:"cust_sr_const_pm", name:"Senior Construction PM",       lens:"pm"    },{ id:"cust_const_coord",name:"Construction Coordinator",lens:"pm"},{ id:"cust_owner_rep",name:"Owner Rep",lens:"pm"}]},
+    { tier:"Facility Operations",   roles:[{ id:"cust_dc_ops",      name:"DC Ops Manager",               lens:"field" },{ id:"cust_facility_mgr",name:"Facility Manager",            lens:"field" },{ id:"cust_campus_fac_mgr",name:"Campus Facility Manager",     lens:"field" },{ id:"cust_crit_ops_mgr",name:"Critical Operations Manager",lens:"field"},{ id:"cust_chief_eng",name:"Chief Engineer",lens:"field"},{ id:"cust_lead_bldg_eng",name:"Lead Building Engineer",lens:"field"},{ id:"cust_crit_fac_eng",name:"Critical Facility Engineer",lens:"field"},{ id:"cust_bldg_eng",name:"Building Engineer",lens:"field"},{ id:"cust_elec_tech",name:"Electrical Technician",lens:"field"},{ id:"cust_ctrl_tech",name:"Controls Technician",lens:"field"}]},
+    { tier:"Network & Security Ops",roles:[{ id:"cust_net_ops",     name:"Network Operations",           lens:"tech"  },{ id:"cust_sec_ops",    name:"Security Operations",          lens:"safety"},{ id:"cust_ehs_mgr",     name:"EHS Manager",                  lens:"safety"}]},
+    { tier:"Business",              roles:[{ id:"cust_procure",     name:"Procurement",                  lens:"sales" },{ id:"cust_legal",      name:"Legal / Contracts",            lens:"exec"  },{ id:"cust_finance",     name:"Finance",                      lens:"exec"  },{ id:"cust_hr",     name:"HR",               lens:"warr" },{ id:"cust_payroll",name:"Payroll",          lens:"warr" }]},
+    { tier:"Site Services",         roles:[{ id:"cust_janitorial",  name:"Janitorial",                   lens:"field" },{ id:"cust_grounds",    name:"Groundskeeping",               lens:"field" }]},
+  ],
+  trade: [
+    { tier:"Management",            roles:[{ id:"tr_pm",            name:"Project Manager",              lens:"pm"    },{ id:"tr_apm",          name:"Assistant PM",                 lens:"pm"    },{ id:"tr_eng",           name:"Project Engineer",             lens:"tech"  },{ id:"tr_estimator",name:"Estimator",       lens:"sales"}]},
+    { tier:"Electrical Field",      roles:[{ id:"tr_elec_super",    name:"Electrical Superintendent",    lens:"field" },{ id:"tr_elec_gen_foreman",name:"Electrical General Foreman",lens:"field" },{ id:"tr_elec_foreman",  name:"Electrical Foreman",           lens:"field" },{ id:"tr_journey",  name:"Journeyman Electrician",lens:"field"},{ id:"tr_app",name:"Apprentice",          lens:"field"}]},
+    { tier:"Mechanical Field",      roles:[{ id:"tr_mech_estimator",name:"Mechanical Estimator",        lens:"sales" },{ id:"tr_mech_super",   name:"Mechanical Superintendent",    lens:"field" },{ id:"tr_mech_gen_foreman",name:"Mechanical General Foreman",lens:"field"},{ id:"tr_mech_foreman",name:"Mechanical Foreman",lens:"field"},{ id:"tr_pipefitter",name:"Pipefitter",lens:"field"},{ id:"tr_sheet_metal",name:"Sheet Metal Worker",lens:"field"},{ id:"tr_mech_app",name:"Mechanical Apprentice",lens:"field"},{ id:"tr_mech_safety",name:"Mechanical Safety Officer",lens:"safety"}]},
+    { tier:"Fire Protection Field", roles:[{ id:"tr_fp_designer",   name:"Fire Protection Designer",    lens:"tech"  },{ id:"tr_fp_foreman",   name:"Fire Protection Foreman",      lens:"field" },{ id:"tr_sprinkler",     name:"Sprinkler Fitter",             lens:"field" }]},
+    { tier:"Security / ACS Field",  roles:[{ id:"tr_sec_designer",  name:"Security Systems Designer",   lens:"tech"  },{ id:"tr_sec_foreman",  name:"Security Foreman",             lens:"field" },{ id:"tr_sec_acs_tech",  name:"Access Control Technician",    lens:"field" }]},
+    { tier:"Low-Voltage / Cabling", roles:[{ id:"tr_cabling_foreman",name:"Cabling Foreman",           lens:"field" },{ id:"tr_fiber_tech",   name:"Fiber Technician",             lens:"field" }]},
+    { tier:"Controls Field",        roles:[{ id:"tr_ctrl_pm",       name:"Controls PM",                  lens:"pm"    },{ id:"tr_ctrl_eng",     name:"Controls Engineer",            lens:"tech"  },{ id:"tr_ctrl_super",    name:"Controls Superintendent",      lens:"field" },{ id:"tr_ctrl_foreman",name:"Controls Foreman",lens:"field"},{ id:"tr_ctrl_tech",name:"Controls Technician",lens:"field"},{ id:"tr_ctrl_prog",name:"Controls Programmer",lens:"tech"}]},
+    { tier:"Quality",               roles:[{ id:"tr_qaqc",          name:"QA/QC",                        lens:"safety"},{ id:"tr_safety",       name:"Safety Officer",               lens:"safety"}]},
+  ],
+  cxa: [
+    { tier:"Leadership",            roles:[{ id:"cxa_principal",    name:"Principal",                    lens:"exec"  },{ id:"cxa_director",    name:"Cx Director",                  lens:"exec"  }]},
+    { tier:"Cx Operations",         roles:[{ id:"cxa_lead",         name:"Lead Cx Agent",                lens:"cx"    },{ id:"cxa_agent",       name:"Cx Agent",                     lens:"cx"    },{ id:"cxa_spec",         name:"Cx Specialist",                lens:"cx"    },{ id:"cxa_ftl",     name:"Functional Test Lead",lens:"cx"},{ id:"cxa_engineer",name:"Cx Engineer",         lens:"cx"},{ id:"cxa_sr_engineer_ee",name:"Senior Cx Engineer (EE)",lens:"cx"},{ id:"cxa_sr_engineer_me",name:"Senior Cx Engineer (ME)",lens:"cx"},{ id:"cxa_writer",name:"Cx Writer / Protocol Author",lens:"tech"},{ id:"cxa_coord",name:"Cx Coordinator",lens:"pm"}]},
+    { tier:"Support",               roles:[{ id:"cxa_doc",          name:"Documentation Specialist",     lens:"tech"  }]},
+  ],
+  ae: [
+    { tier:"Leadership",            roles:[{ id:"ae_principal",     name:"Principal in Charge",          lens:"exec"  },{ id:"ae_pm",           name:"Architectural PM",             lens:"pm"    }]},
+    { tier:"Architecture",          roles:[{ id:"ae_arch",          name:"Lead Architect",               lens:"tech"  },{ id:"ae_arch_design",  name:"Design Architect",             lens:"tech"  },{ id:"ae_arch_project",  name:"Project Architect",            lens:"tech"  }]},
+    { tier:"MEP Engineering",       roles:[{ id:"ae_lead_eng",      name:"Lead Engineer",                lens:"tech"  },{ id:"ae_mep_lead",     name:"MEP Engineering Lead",         lens:"tech"  },{ id:"ae_elec_eng",      name:"Electrical Engineer (PE)",     lens:"tech"  },{ id:"ae_mech_eng",name:"Mechanical Engineer (PE)",lens:"tech"},{ id:"ae_plumb_eng",name:"Plumbing Engineer",lens:"tech"},{ id:"ae_fire_eng",name:"Fire Protection Engineer",lens:"tech"},{ id:"ae_ctrl_eng",name:"Controls Engineer",lens:"tech"}]},
+    { tier:"Structural / Civil",    roles:[{ id:"ae_struct",        name:"Structural Engineer (PE)",     lens:"tech"  },{ id:"ae_civil",        name:"Civil Engineer (PE)",          lens:"tech"  }]},
+    { tier:"Drafting / Production", roles:[{ id:"ae_drafter",       name:"Drafter",                      lens:"tech"  }]},
+    { tier:"Construction Admin",    roles:[{ id:"ae_ca_lead",       name:"CA Lead",                      lens:"tech"  },{ id:"ae_rfi_coord",    name:"RFI Coordinator",              lens:"tech"  },{ id:"ae_field_eng",     name:"Field Engineer",               lens:"tech"  }]},
+  ],
+  rigger: [
+    { tier:"Management",            roles:[{ id:"rig_pm",           name:"Rigging PM",                   lens:"pm"    },{ id:"rig_lift_dir",    name:"Lift Director",                lens:"pm"    },{ id:"rig_eng",          name:"Rigging Engineer (Pick Plans)", lens:"tech"  }]},
+    { tier:"Field Leadership",      roles:[{ id:"rig_super",        name:"Rigging Superintendent",       lens:"field" },{ id:"rig_foreman",     name:"Rigging Foreman",              lens:"field" }]},
+    { tier:"Crane & Crew",          roles:[{ id:"rig_crane_op",     name:"Crane Operator (NCCCO)",       lens:"field" },{ id:"rig_crane_op_jr", name:"Junior Crane Operator",        lens:"field" },{ id:"rig_signal",       name:"Signal Person",                lens:"field" },{ id:"rig_rigger_lead",name:"Lead Rigger",lens:"field"},{ id:"rig_rigger",name:"Rigger",lens:"field"},{ id:"rig_oiler",name:"Crane Oiler",lens:"field"}]},
+    { tier:"Transport",             roles:[{ id:"rig_truck_driver", name:"Heavy Haul Driver (CDL-A)",    lens:"field" },{ id:"rig_dispatch",    name:"Transport Dispatcher",         lens:"pm"    }]},
+    { tier:"Safety & Quality",      roles:[{ id:"rig_safety_mgr",  name:"Rigging Safety Manager",       lens:"safety"},{ id:"rig_safety_off",  name:"Site Safety Officer",          lens:"safety"},{ id:"rig_inspector",    name:"Crane / Rigging Inspector",    lens:"safety"}]},
+  ],
+  builder: [
+    { tier:"Executive",             roles:[{ id:"bld_proj_exec",    name:"Project Executive",            lens:"exec"  },{ id:"bld_vp_ops",      name:"VP Operations",                lens:"exec"  }]},
+    { tier:"Project Management",    roles:[{ id:"bld_sr_pm",        name:"Senior PM",                    lens:"pm"    },{ id:"bld_pm",          name:"Project Manager",              lens:"pm"    },{ id:"bld_apm",          name:"Assistant PM",                 lens:"pm"    },{ id:"bld_eng",     name:"Project Engineer",  lens:"tech" }]},
+    { tier:"Field Leadership",      roles:[{ id:"bld_super",        name:"Superintendent",               lens:"field" },{ id:"bld_asst_super",  name:"Assistant Super",              lens:"field" },{ id:"bld_gen_foreman",  name:"General Foreman",              lens:"field" },{ id:"bld_concrete_foreman",name:"Concrete Foreman",lens:"field"},{ id:"bld_steel_foreman",name:"Steel Foreman",lens:"field"}]},
+    { tier:"Crew",                  roles:[{ id:"bld_carpenter",    name:"Carpenter",                    lens:"field" },{ id:"bld_ironworker",  name:"Ironworker",                   lens:"field" },{ id:"bld_finisher",     name:"Concrete Finisher",            lens:"field" },{ id:"bld_laborer",name:"Laborer",           lens:"field"}]},
+    { tier:"Safety & Quality",      roles:[{ id:"bld_safety_mgr",  name:"Safety Manager",               lens:"safety"},{ id:"bld_qaqc",        name:"QA/QC",                        lens:"safety"}]},
+    { tier:"Controls",              roles:[{ id:"bld_scheduler",    name:"Scheduler",                    lens:"pm"    },{ id:"bld_estimator",   name:"Estimator",                    lens:"sales" }]},
+  ],
+  security: [
+    { tier:"Management",            roles:[{ id:"sec_pm",           name:"Security PM",                  lens:"pm"    },{ id:"sec_eng_mgr",     name:"Engineering Manager",          lens:"tech"  }]},
+    { tier:"Engineering",           roles:[{ id:"sec_design",       name:"Security Designer",            lens:"tech"  },{ id:"sec_sys_eng",     name:"Systems Engineer",             lens:"tech"  },{ id:"sec_prog",         name:"Access Control Programmer",    lens:"tech"  },{ id:"sec_cctv_eng",name:"CCTV / Video Engineer",lens:"tech"}]},
+    { tier:"Field",                 roles:[{ id:"sec_lead_tech",    name:"Lead Security Technician",     lens:"field" },{ id:"sec_tech",        name:"Security Technician",          lens:"field" },{ id:"sec_install",      name:"Low-Voltage Installer",        lens:"field" },{ id:"sec_app",     name:"Apprentice",        lens:"field"}]},
+    { tier:"Operations",            roles:[{ id:"sec_console_mgr",  name:"SOC / Console Manager",        lens:"safety"},{ id:"sec_console_op",  name:"Console Operator",             lens:"safety"},{ id:"sec_guard_super",  name:"Guard Force Supervisor",       lens:"safety"}]},
+    { tier:"Quality",               roles:[{ id:"sec_qaqc",         name:"QA/QC",                        lens:"safety"},{ id:"sec_safety",      name:"Safety Officer",               lens:"safety"}]},
+  ],
+  fire: [
+    { tier:"Management",            roles:[{ id:"fa_pm",            name:"Fire Alarm PM",                lens:"pm"    },{ id:"fa_eng_mgr",      name:"Engineering Manager",          lens:"tech"  }]},
+    { tier:"Engineering",           roles:[{ id:"fa_design_eng",    name:"Fire Protection Engineer (PE)",lens:"tech"  },{ id:"fa_designer",     name:"Fire Alarm Designer (NICET IV)",lens:"tech" },{ id:"fa_supp_eng",      name:"Suppression Designer",         lens:"tech"  }]},
+    { tier:"Field",                 roles:[{ id:"fa_super",         name:"Fire Alarm Superintendent",    lens:"field" },{ id:"fa_lead_tech",    name:"Lead Technician (NICET III)",  lens:"field" },{ id:"fa_tech",          name:"Fire Alarm Technician (NICET II)",lens:"field"},{ id:"fa_install",name:"Installer",lens:"field"},{ id:"fa_pipe_fitter",name:"Sprinkler Pipefitter",lens:"field"}]},
+    { tier:"Inspection & Test",     roles:[{ id:"fa_test_lead",     name:"Test & Inspection Lead",       lens:"cx"    },{ id:"fa_inspector",    name:"NFPA-72 Inspector",            lens:"cx"    }]},
+    { tier:"Quality",               roles:[{ id:"fa_qaqc",          name:"QA/QC",                        lens:"safety"},{ id:"fa_safety",       name:"Safety Officer",               lens:"safety"}]},
+  ],
+  staffing: [
+    { tier:"Leadership",            roles:[{ id:"st_owner",         name:"Owner / Branch Manager",       lens:"exec"  }]},
+    { tier:"Sales",                 roles:[{ id:"st_acct_mgr",      name:"Account Manager",              lens:"sales" },{ id:"st_biz_dev",      name:"Business Development Rep",     lens:"sales" }]},
+    { tier:"Recruiting",            roles:[{ id:"st_recr_mgr",      name:"Recruiting Manager",           lens:"pm"    },{ id:"st_recruiter",    name:"Recruiter",                    lens:"pm"    },{ id:"st_sourcer",       name:"Sourcer",                      lens:"pm"    }]},
+    { tier:"Operations",            roles:[{ id:"st_ops_mgr",       name:"Operations Manager",           lens:"pm"    },{ id:"st_payroll",      name:"Payroll / Onboarding",         lens:"warr"  },{ id:"st_compliance",    name:"Compliance Officer",           lens:"safety"}]},
+    { tier:"Field",                 roles:[{ id:"st_field_rep",     name:"Field Representative",         lens:"field" }]},
+  ],
+  integrator: [
+    { tier:"Executive",             roles:[{ id:"int_principal",    name:"Principal / Owner",            lens:"exec"  },{ id:"int_vp_eng",      name:"VP Engineering",               lens:"exec"  }]},
+    { tier:"Project Management",    roles:[{ id:"int_sr_pm",        name:"Senior PM",                    lens:"pm"    },{ id:"int_pm",          name:"Project Manager",              lens:"pm"    },{ id:"int_apm",          name:"Assistant PM",                 lens:"pm"    },{ id:"int_coord",   name:"Project Coordinator", lens:"pm"  }]},
+    { tier:"Engineering",           roles:[{ id:"int_eng_mgr",      name:"Engineering Manager",          lens:"tech"  },{ id:"int_sr_ctrl_eng", name:"Senior Controls Engineer",     lens:"tech"  },{ id:"int_ctrl_eng",     name:"Controls Engineer",            lens:"tech"  },{ id:"int_prog",    name:"PLC / DDC Programmer",lens:"tech"},{ id:"int_scada_eng",name:"SCADA Engineer",lens:"tech"},{ id:"int_graphics",name:"Graphics / HMI Designer",lens:"tech"},{ id:"int_net_eng",name:"Network Engineer",lens:"tech"}]},
+    { tier:"Factory / Shop",        roles:[{ id:"int_shop_mgr",     name:"Shop Manager",                 lens:"pm"    },{ id:"int_panel_lead",  name:"Panel Build Lead",             lens:"field" },{ id:"int_panel_tech",   name:"Panel Build Technician",       lens:"field" },{ id:"int_wireman",lens:"field",name:"Wireman"},{ id:"int_qc_factory",name:"Factory QC Inspector",lens:"safety"}]},
+    { tier:"Field Service",         roles:[{ id:"int_lead_field",   name:"Lead Field Technician",        lens:"field" },{ id:"int_field_tech",  name:"Field Technician",             lens:"field" },{ id:"int_startup_eng",  name:"Startup Engineer",             lens:"cx"    },{ id:"int_cx_eng",  name:"Integrator Cx Engineer",lens:"cx"}]},
+    { tier:"Sales & Estimating",    roles:[{ id:"int_sales",        name:"Sales Engineer",               lens:"sales" },{ id:"int_estimator",   name:"Estimator",                    lens:"sales" }]},
+    { tier:"Safety & Quality",      roles:[{ id:"int_safety_mgr",  name:"Safety Manager",               lens:"safety"},{ id:"int_qaqc_mgr",    name:"QA/QC Manager",                lens:"safety"}]},
+    { tier:"Warranty & Service",    roles:[{ id:"int_warranty",     name:"Warranty / Service Coordinator",lens:"warr" },{ id:"int_remote_ops",  name:"Remote Ops Specialist",        lens:"warr"  }]},
+  ],
+  controls: [
+    { tier:"Management",            roles:[{ id:"ct_pm",            name:"Controls PM",                  lens:"pm"    },{ id:"ct_apm",          name:"Assistant PM",                 lens:"pm"    },{ id:"ct_eng_mgr",       name:"Engineering Manager",          lens:"tech"  }]},
+    { tier:"Engineering",           roles:[{ id:"ct_sr_ctrl_eng",   name:"Senior Controls Engineer",     lens:"tech"  },{ id:"ct_ctrl_eng",     name:"Controls Engineer",            lens:"tech"  },{ id:"ct_bms_prog",      name:"BMS Programmer (Niagara/Metasys)",lens:"tech"},{ id:"ct_plc_prog",name:"PLC Programmer",lens:"tech"},{ id:"ct_graphics",name:"Graphics / HMI Designer",lens:"tech"},{ id:"ct_net_eng",name:"Network Engineer",lens:"tech"}]},
+    { tier:"Field",                 roles:[{ id:"ct_super",         name:"Controls Superintendent",      lens:"field" },{ id:"ct_foreman",      name:"Controls Foreman",             lens:"field" },{ id:"ct_lead_tech",     name:"Lead Controls Technician",     lens:"field" },{ id:"ct_tech",     name:"Controls Technician", lens:"field"},{ id:"ct_app",name:"Controls Apprentice",lens:"field"}]},
+    { tier:"Commissioning",         roles:[{ id:"ct_startup_eng",   name:"Startup Engineer",             lens:"cx"    },{ id:"ct_cx_eng",       name:"Cx Engineer",                  lens:"cx"    }]},
+    { tier:"Quality",               roles:[{ id:"ct_qaqc",          name:"QA/QC",                        lens:"safety"},{ id:"ct_safety",       name:"Safety Officer",               lens:"safety"}]},
+  ],
+  lowvoltage: [
+    { tier:"Management",            roles:[{ id:"lv_pm",            name:"Low-Voltage PM",               lens:"pm"    },{ id:"lv_apm",          name:"Assistant PM",                 lens:"pm"    },{ id:"lv_estimator",     name:"Estimator",                    lens:"sales" }]},
+    { tier:"Engineering / Design",  roles:[{ id:"lv_designer",      name:"LV Designer (BICSI RCDD)",     lens:"tech"  },{ id:"lv_eng",          name:"LV Engineer",                  lens:"tech"  }]},
+    { tier:"Field",                 roles:[{ id:"lv_super",         name:"Cabling Superintendent",       lens:"field" },{ id:"lv_foreman",      name:"Cabling Foreman",              lens:"field" },{ id:"lv_lead_tech",     name:"Lead Cabling Technician",      lens:"field" },{ id:"lv_fiber_tech",name:"Fiber Technician",lens:"field"},{ id:"lv_copper_tech",name:"Copper / Structured Cabling Tech",lens:"field"},{ id:"lv_tester",name:"Cable Tester / Certifier",lens:"field"},{ id:"lv_app",name:"Cabling Apprentice",lens:"field"}]},
+    { tier:"Quality",               roles:[{ id:"lv_qaqc",          name:"QA/QC",                        lens:"safety"},{ id:"lv_safety",       name:"Safety Officer",               lens:"safety"}]},
+  ],
+  mechanical: [
+    { tier:"Management",            roles:[{ id:"mc_pm",            name:"Mechanical PM",                lens:"pm"    },{ id:"mc_apm",          name:"Assistant PM",                 lens:"pm"    },{ id:"mc_eng",           name:"Mechanical Engineer",          lens:"tech"  },{ id:"mc_estimator",name:"Mechanical Estimator",lens:"sales"}]},
+    { tier:"Field Leadership",      roles:[{ id:"mc_super",         name:"Mechanical Superintendent",    lens:"field" },{ id:"mc_gen_foreman",  name:"Mechanical General Foreman",   lens:"field" },{ id:"mc_foreman",       name:"Mechanical Foreman",           lens:"field" }]},
+    { tier:"Trades",                roles:[{ id:"mc_pipefitter",    name:"Pipefitter",                   lens:"field" },{ id:"mc_journey_pf",   name:"Journeyman Pipefitter",        lens:"field" },{ id:"mc_sheet_metal",   name:"Sheet Metal Worker",           lens:"field" },{ id:"mc_journey_sm",name:"Journeyman Sheet Metal",lens:"field"},{ id:"mc_hvac_tech",name:"HVAC Installer",lens:"field"},{ id:"mc_welder",name:"Welder (Pipe/Sanitary)",lens:"field"},{ id:"mc_app",name:"Mechanical Apprentice",lens:"field"}]},
+    { tier:"Quality & Safety",      roles:[{ id:"mc_qaqc",          name:"QA/QC",                        lens:"safety"},{ id:"mc_safety",       name:"Mechanical Safety Officer",    lens:"safety"}]},
+  ],
+  customer_const: [
+    { tier:"Executive",             roles:[{ id:"cc_vp_const",      name:"VP Construction",              lens:"exec"  },{ id:"cc_dir_const",    name:"Director of Construction",     lens:"exec"  },{ id:"cc_dc_prog_dir",   name:"DC Program Director",          lens:"exec"  }]},
+    { tier:"Construction Program",  roles:[{ id:"cc_prog_dir",      name:"Program Director",             lens:"exec"  },{ id:"cc_sr_const_pm",  name:"Senior Construction PM",       lens:"pm"    },{ id:"cc_const_pm",      name:"Construction PM",              lens:"pm"    },{ id:"cc_const_coord",name:"Construction Coordinator",lens:"pm"},{ id:"cc_owner_rep",name:"Owner Rep",lens:"pm"}]},
+    { tier:"Technical Oversight",   roles:[{ id:"cc_mep_pm",        name:"Owner MEP PM",                 lens:"pm"    },{ id:"cc_mep_eng",      name:"Owner MEP Engineer",           lens:"tech"  },{ id:"cc_const_qaqc",    name:"Construction QA/QC",           lens:"safety"},{ id:"cc_ehs",name:"EHS Manager",lens:"safety"}]},
+    { tier:"Business",              roles:[{ id:"cc_procure",       name:"Construction Procurement",     lens:"sales" },{ id:"cc_contracts",    name:"Contracts Administrator",      lens:"exec"  },{ id:"cc_finance",       name:"Construction Finance",         lens:"exec"  }]},
+  ],
+  operations: [
+    { tier:"OEM Leadership",        roles:[{ id:"ops_oem_dir_proj", name:"Director of Projects (OEM)",   lens:"exec"  },{ id:"ops_oem_dir_fs",  name:"Director of Field Service (OEM)",lens:"exec"},{ id:"ops_oem_vp_ops",   name:"VP Operations (OEM)",          lens:"exec"  },{ id:"ops_oem_vp_eng",name:"VP Engineering (OEM)",lens:"exec"}]},
+    { tier:"GC Leadership",         roles:[{ id:"ops_gc_vp_ops",    name:"VP Operations (GC)",           lens:"exec"  },{ id:"ops_gc_vp_precon",name:"VP Preconstruction (GC)",      lens:"exec"  }]},
+    { tier:"CxA Leadership",        roles:[{ id:"ops_cxa_dir_cx",   name:"Director of Commissioning (CxA)",lens:"exec"}]},
+    { tier:"Sales",                 roles:[{ id:"ops_sales_dir",    name:"Sales Director",               lens:"sales" },{ id:"ops_sr_acct_sales_mgr",name:"Senior Account Sales Manager",lens:"sales"},{ id:"ops_sales_mgr",name:"Sales Manager",lens:"sales"},{ id:"ops_acct_mgr",name:"Account Manager",lens:"sales"},{ id:"ops_sales_rep",name:"Sales Rep",lens:"sales"},{ id:"ops_sales_eng",name:"Sales Engineer",lens:"sales"},{ id:"ops_sol_eng",name:"Solution Engineer",lens:"sales"}]},
+    { tier:"Estimating",            roles:[{ id:"ops_estimator",    name:"Estimator",                    lens:"sales" }]},
+    { tier:"Finance & Project Ctrl",roles:[{ id:"ops_finance_mgr",  name:"Finance Manager",              lens:"exec"  },{ id:"ops_proj_ctrl_analyst",name:"Project Controls Analyst",lens:"pm"},{ id:"ops_payroll_spec",name:"Payroll Specialist",lens:"warr"}]},
+    { tier:"HR & Training",         roles:[{ id:"ops_hr_mgr",       name:"HR Manager",                   lens:"warr"  },{ id:"ops_recruiter",   name:"Recruiter",                    lens:"pm"    },{ id:"ops_training_coord",name:"Training Coordinator",lens:"pm"}]},
+    { tier:"Contracts & Procurement",roles:[{ id:"ops_contracts_admin",name:"Contracts Administrator",  lens:"exec"  },{ id:"ops_procure_mgr", name:"Procurement Manager",          lens:"sales" }]},
+  ],
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+// getRoleMeta — looks up role metadata from ROLE_LIBRARY by role ID string.
+// Returns { id, name, lens, tier, companyType } or null if not found.
+// Falls back to platform roles (SUPERADMIN / PLATFORM_ADMIN).
+// ────────────────────────────────────────────────────────────────────────────
+export function getRoleMeta(roleId) {
+  if (!roleId) return null;
+  for (const [companyType, tiers] of Object.entries(ROLE_LIBRARY)) {
+    for (const tierObj of tiers) {
+      for (const role of tierObj.roles) {
+        if (role.id === roleId) {
+          return { ...role, tier: tierObj.tier, companyType };
+        }
+      }
+    }
+  }
+  if (roleId === "SUPERADMIN")    return { id: roleId, name: "Super Admin",    lens: "exec", tier: "Platform", companyType: "platform" };
+  if (roleId === "PLATFORM_ADMIN") return { id: roleId, name: "Platform Admin", lens: "exec", tier: "Platform", companyType: "platform" };
+  return null;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// getLensNavItems — quick-access nav items for a given lens.
+// Paths map to existing app routes.
+// ────────────────────────────────────────────────────────────────────────────
+export function getLensNavItems(lensId) {
+  const map = {
+    exec:   [{ title:"Portfolio",          path:"/Portfolio"               },{ title:"P&L / Finance",      path:"/Finance/Dashboard"       },{ title:"Executive Dashboard", path:"/Executive/Dashboard"    },{ title:"KPIs",                path:"/KPIs"                    }],
+    pm:     [{ title:"Schedule",           path:"/Schedule"                },{ title:"RFIs",               path:"/RFI/List"                },{ title:"Milestones",          path:"/ScheduleMilestones/List" },{ title:"Issues",              path:"/Issues/List"             }],
+    field:  [{ title:"My Tasks",           path:"/Tasks/List"              },{ title:"Daily Reports",      path:"/DailyReports"            },{ title:"Field Reports",       path:"/FieldReports"            }],
+    tech:   [{ title:"Submittals",         path:"/Submittals/List"         },{ title:"Documents",          path:"/Document/List"           },{ title:"RFIs",                path:"/RFI/List"                }],
+    sales:  [{ title:"Leads",             path:"/CRM/Leads/List"          },{ title:"Deals",              path:"/CRM/Deals/List"          },{ title:"Contacts",            path:"/CRM/Contacts/List"       }],
+    safety: [{ title:"Incidents",          path:"/Safety/Incidents"        },{ title:"Audits",             path:"/Safety/Audits"           },{ title:"NCRs",                path:"/QAQC/NCRs"               },{ title:"JHAs / Permits",      path:"/Safety/Reports"          }],
+    warr:   [{ title:"Warranty / RMA",     path:"/RMA"                     },{ title:"Parts & Assets",     path:"/Assets/List"             }],
+    cx:     [{ title:"Commissioning",      path:"/Commissioning"           },{ title:"Test Results",       path:"/TestResults"             }],
+  };
+  return map[lensId] || [];
+}
+
 export const sidebarItems = [
   // ─── Dashboards ─────────────────────────────────────────────────────
   {
@@ -558,6 +774,24 @@ export const sidebarItems = [
         type: "link",
         path: "/MyAssignments",
         roles: [ROLES.FSE, ROLES.ASP, ROLES.SUPERADMIN, ROLES.PLATFORM_ADMIN],
+      },
+      {
+        title: "Phases",
+        type: "link",
+        path: "/Phases/List",
+        roles: union(EXEC_ROLES, PM_ROLES, PLATFORM, [ROLES.GC_SCHEDULER]),
+      },
+      {
+        title: "Schedule Milestones",
+        type: "link",
+        path: "/ScheduleMilestones/List",
+        roles: union(EXEC_ROLES, PM_ROLES, PLATFORM, [ROLES.GC_SCHEDULER]),
+      },
+      {
+        title: "Phase & Milestone Wizard",
+        type: "link",
+        path: "/ScheduleMilestones/Wizard",
+        roles: union(EXEC_ROLES, PM_ROLES, PLATFORM, [ROLES.GC_SCHEDULER]),
       },
     ],
   },

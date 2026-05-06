@@ -35,19 +35,95 @@ import {
   selectSubscription,
 } from "../../../services/Subscriptions";
 // ── Data ──────────────────────────────────────────────────────────────────────
-
+// customer, gc, oem, trade, cxa, ae, integrator, rigger, builder, security, fire, staffing, controls, lowvoltage, mechanical, operations, customer_const.
 const COMPANY_TYPES = [
   { id: "customer", n: "Customer", d: "I own / pay for the DC", group: "core" },
   { id: "gc", n: "General Contractor", d: "We build DCs", group: "core" },
-  { id: "oem", n: "OEM / Manufacturer", d: "We supply equipment", group: "core" },
-  { id: "trade", n: "Trade Contractor", d: "Electrical, mechanical", group: "core" },
-  { id: "cxa", n: "Cx Agent Firm", d: "3rd-party commissioning", group: "core" },
-  { id: "arch", n: "Architecture / Engineering", d: "Design firm, MEP engineering", group: "specialist" },
-  { id: "rig", n: "Rigging", d: "Heavy lift + transport", group: "specialist" },
-  { id: "bld", n: "Builder", d: "Shell + interior build", group: "specialist" },
-  { id: "sec", n: "Security", d: "Access, CCTV, guarding", group: "specialist" },
-  { id: "fire", n: "Fire Alarm", d: "Detection + suppression", group: "specialist" },
-  { id: "staff", n: "Staffing Agency", d: "Supply DC workers", group: "service" },
+  {
+    id: "oem",
+    n: "OEM / Manufacturer",
+    d: "We supply equipment",
+    group: "core",
+  },
+  {
+    id: "trade",
+    n: "Trade Contractor",
+    d: "Electrical, mechanical",
+    group: "core",
+  },
+  {
+    id: "cxa",
+    n: "Cx Agent Firm",
+    d: "3rd-party commissioning",
+    group: "core",
+  },
+  {
+    id: "ae",
+    n: "Architecture / Engineering",
+    d: "Design firm, MEP engineering",
+    group: "specialist",
+  },
+  {
+    id: "integrator",
+    n: "Integrator",
+    d: "Systems integration",
+    group: "specialist",
+  },
+  {
+    id: "rigger",
+    n: "Rigging",
+    d: "Heavy lift + transport",
+    group: "specialist",
+  },
+  {
+    id: "builder",
+    n: "Builder",
+    d: "Shell + interior build",
+    group: "specialist",
+  },
+  {
+    id: "security",
+    n: "Security",
+    d: "Access, CCTV, guarding",
+    group: "specialist",
+  },
+  {
+    id: "fire",
+    n: "Fire Alarm",
+    d: "Detection + suppression",
+    group: "specialist",
+  },
+  {
+    id: "staffing",
+    n: "Staffing Agency",
+    d: "Supply DC workers",
+    group: "service",
+  },
+  { id: "controls", n: "Controls", d: "BAS / BMS controls", group: "service" },
+  {
+    id: "lowvoltage",
+    n: "Low Voltage",
+    d: "Structured cabling, AV",
+    group: "service",
+  },
+  {
+    id: "mechanical",
+    n: "Mechanical",
+    d: "HVAC, plumbing, piping",
+    group: "service",
+  },
+  {
+    id: "operations",
+    n: "Operations",
+    d: "DC ops + facility management",
+    group: "service",
+  },
+  {
+    id: "customer_const",
+    n: "Customer (Construction)",
+    d: "Owner managing a build-out",
+    group: "core",
+  },
 ];
 
 const COMPANY_SIZES = [
@@ -5584,15 +5660,13 @@ export default function RegisterPage() {
     if (step !== 4) return;
     const fetchRoles = async () => {
       try {
-        const sid =
-          sessionId || sessionStorage.getItem("cxcontrol_session_id") || "";
-        const data = await GetSetupRoles(sid);
+        const data = await GetSetupRoles(wizard.companyType);
         const roles = data?.roles || data || [];
         setApiRoles(roles);
         const qtys = {};
         roles.forEach((role) => {
           const key = role.roleKey || role.id || String(role.name);
-          qtys[key] = role.defaultQty ?? 1;
+          qtys[key] = role.defaultCount ?? 1;
         });
         setRoleQtys(qtys);
       } catch {
@@ -5783,7 +5857,6 @@ export default function RegisterPage() {
   };
 
   const s = STEPS[step];
-
 
   return (
     <div
