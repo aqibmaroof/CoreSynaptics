@@ -213,7 +213,7 @@ const Sidebar = () => {
       <img src={config?.h_line} className="px-4 mt-2 mb-4" alt="" />
 
       {/* ── Navigation ────────────────────────────────────────── */}
-      <ul className="list-none m-0 p-0 mb-15">
+      <ul className="list-none m-0 p-0 mb-2">
         {visibleItems.map((item, index) => {
           const parentActive = isParentActive(item);
           const isOpen = openIndex === index;
@@ -320,7 +320,7 @@ const Sidebar = () => {
           const lensItems = getLensNavItems(roleMeta.lens);
           if (!lens || !lensItems.length) return null;
           return (
-            <div className="mb-2">
+            <div className="ml-2 mb-5">
               <div className="px-7 pt-3 pb-1">
                 <p
                   className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}

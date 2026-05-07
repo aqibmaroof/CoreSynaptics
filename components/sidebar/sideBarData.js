@@ -4777,7 +4777,7 @@ export const sidebarItems = [
     roles: union(EXEC_ROLES, PM_ROLES, QAQC_ROLES, PLATFORM),
     submenu: [
       {
-        title: "Teams",
+        title: "Team",
         type: "link",
         path: "/Teams/List",
         roles: union(
@@ -4787,6 +4787,8 @@ export const sidebarItems = [
           PLATFORM,
           ROLES?.GC_PROJ_EXEC,
           ROLES?.GC_PROJ_ENG,
+          ROLES?.AE_PRINCIPAL,
+          union(EXEC_ROLES, PM_ROLES, QAQC_ROLES, PLATFORM),
         ),
       },
       {
@@ -4805,6 +4807,8 @@ export const sidebarItems = [
           ROLES?.CUSTOMER_EXEC,
           ROLES?.GC_PROJ_EXEC,
           ROLES?.GC_PROJ_ENG,
+          ROLES?.AE_PRINCIPAL,
+          union(EXEC_ROLES, PM_ROLES, QAQC_ROLES, PLATFORM),
         ]),
       },
     ],
