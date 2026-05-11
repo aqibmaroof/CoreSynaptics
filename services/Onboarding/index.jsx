@@ -14,8 +14,10 @@ export const createOnboardingSession = (companyName) =>
 
 /**
  * Step 2 — Request a presigned S3 PUT URL for the logo.
- * Returns { uploadUrl, fileUrl, s3Key }.
- * fileUrl is the permanent public URL — store this as logoUrl.
+ * Returns { uploadUrl, s3Key, expiresIn }.
+ * Store s3Key for later submission — never use it as an image src directly.
+ * To preview the uploaded image, call getOnboardingSession() which returns
+ * presigned viewUrl values for each confirmed asset.
  */
 export const getOnboardingUploadUrl = (payload) =>
   sendRequest({
@@ -24,6 +26,18 @@ export const getOnboardingUploadUrl = (payload) =>
     data: payload,
     // payload shape:
     // { sessionId, fileName, fileType, assetType: "logo", fileSize }
+  });
+
+/**
+ * Fetch session state including presigned view URLs for all uploaded assets.
+ * Returns { sessionId, companyName, step, expiresAt, assets[] }.
+ * Each asset has { assetType, fileName, viewUrl, expiresIn, confirmed }.
+ * viewUrl is a short-lived presigned GET URL (30 min) — use it directly as <img src>.
+ */
+export const getOnboardingSession = (sessionId) =>
+  sendRequest({
+    method: "GET",
+    url: `/onboarding/session/${sessionId}`,
   });
 
 /**

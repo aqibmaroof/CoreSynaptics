@@ -27,6 +27,7 @@ import {
 import {
   confirmOnboardingUpload,
   createOnboardingSession,
+  getOnboardingSession,
   getOnboardingUploadUrl,
   putFileToS3,
 } from "../../../services/Onboarding";
@@ -4266,8 +4267,8 @@ function StepBrand({ w, u, sessionId }) {
         } catch {}
       }
 
-      // Get presigned S3 PUT URL
-      const { uploadUrl, fileUrl, s3Key } = await getOnboardingUploadUrl({
+      // Get presigned S3 PUT URL — backend returns s3Key (never a bare URL)
+      const { uploadUrl, s3Key } = await getOnboardingUploadUrl({
         sessionId: sid,
         fileName: file.name,
         fileType: file.type,
@@ -4279,12 +4280,15 @@ function StepBrand({ w, u, sessionId }) {
       setUploadStep("uploading");
       await putFileToS3(uploadUrl, file, (pct) => setUploadProgress(pct));
 
-      // Step 4 — confirm upload with the backend
+      // Step 4 — confirm upload, then fetch a fresh presigned view URL for preview
       setUploadStep("confirming");
-      await confirmOnboardingUpload(sessionId, s3Key);
+      await confirmOnboardingUpload(sid, s3Key);
+      const session = await getOnboardingSession(sid);
+      const logoAsset = session?.assets?.find((a) => a.assetType === "logo");
 
       u({
-        logoUrl: fileUrl,
+        logoS3Key: s3Key,
+        logoViewUrl: logoAsset?.viewUrl ?? "",
         logoUploaded: true,
         logoFileName: file.name,
         logoFileSize: `${(file.size / 1024).toFixed(0)} KB`,
@@ -4300,7 +4304,8 @@ function StepBrand({ w, u, sessionId }) {
   const handleRemoveLogo = (e) => {
     e.stopPropagation();
     u({
-      logoUrl: "",
+      logoS3Key: "",
+      logoViewUrl: "",
       logoUploaded: false,
       logoFileName: "",
       logoFileSize: "",
@@ -4446,9 +4451,9 @@ function StepBrand({ w, u, sessionId }) {
                 gap: 12,
               }}
             >
-              {w.logoUrl && !w.logoUrl.startsWith("data:") ? (
+              {w.logoViewUrl ? (
                 <img
-                  src={w.logoUrl}
+                  src={w.logoViewUrl}
                   alt="Logo preview"
                   style={{
                     width: 38,
@@ -5417,7 +5422,8 @@ const DEFAULT_WIZARD = {
     BLUEBEAM: false,
   },
   ai: { CHATGPT: true, CLAUDE: true, GEMINI: false, LLAMA: false },
-  logoUrl: "",
+  logoS3Key: "",
+  logoViewUrl: "",
   logoUploaded: false,
   logoFileName: "",
   logoFileSize: "",
@@ -5533,7 +5539,11 @@ export default function RegisterPage() {
         if (data.equipment?.equipment)
           patch.equipment = data.equipment.equipment;
         if (data.brand) {
-          patch.logoUrl = data.brand.logoUrl ?? wizard.logoUrl;
+          // backend returns a presigned viewUrl as logoUrl — use it for rendering only
+          if (data.brand.logoUrl) {
+            patch.logoViewUrl = data.brand.logoUrl;
+            patch.logoUploaded = true;
+          }
           patch.primaryColor = data.brand.primaryColor ?? wizard.primaryColor;
           patch.googleEarth = data.brand.googleEarth ?? wizard.googleEarth;
         }
@@ -5695,7 +5705,7 @@ export default function RegisterPage() {
       } else if (step === 5) {
         await SaveBrand({
           sessionId: sid,
-          logoUrl: wizard.logoUrl,
+          ...(wizard.logoS3Key ? { logoS3Key: wizard.logoS3Key } : {}),
           primaryColor: wizard.primaryColor,
           googleEarth: wizard.googleEarth,
         });
