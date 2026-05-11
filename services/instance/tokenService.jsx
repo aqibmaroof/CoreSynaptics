@@ -24,6 +24,9 @@ export const setOrganization = ({ organization }) => {
 export const getUser = () =>
   typeof window !== "undefined" ? localStorage.getItem("user") : null;
 
+export const getOrganization = () =>
+  typeof window !== "undefined" ? localStorage.getItem("organization") : null;
+
 export const clearTokens = () => {
   if (typeof window === "undefined") return;
   localStorage.removeItem("accessToken");

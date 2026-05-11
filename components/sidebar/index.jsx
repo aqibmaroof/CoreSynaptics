@@ -15,9 +15,11 @@ import {
   getAccessToken,
   getUser,
   setUser,
+  setOrganization,
+  getOrganization,
 } from "@/services/instance/tokenService";
 import { getRoles } from "@/services/Roles";
-import { GetUser } from "@/services/auth";
+import { GetUser, GetOrganization } from "@/services/auth";
 
 const formatRole = (role) => {
   if (!role) return "User";
@@ -41,6 +43,7 @@ const Sidebar = () => {
   const [theme, setTheme] = useState("dark");
   const [currentUser, setCurrentUser] = useState(null);
   const [roleMeta, setRoleMeta] = useState(null);
+  const [orgData, setOrgData] = useState(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "dark";
@@ -60,6 +63,10 @@ const Sidebar = () => {
     setRoleMeta(getRoleMeta(roleId));
     setMounted(true);
 
+    // Hydrate org from cache immediately
+    const cachedOrg = getOrganization();
+    if (cachedOrg) setOrgData(JSON.parse(cachedOrg));
+
     getRolesList();
     if (accessToken) getUserFromApi();
   }, []);
@@ -74,7 +81,11 @@ const Sidebar = () => {
   }, [pathname, visibleItems]);
 
   const getUserFromApi = async () => {
-    const userResponse = await GetUser();
+    const [userResponse, orgResponse] = await Promise.all([
+      GetUser(),
+      GetOrganization().catch(() => null),
+    ]);
+
     setUser({ user: userResponse });
     setCurrentUser(userResponse);
     const roleId = userResponse?.activeRole?.name || userResponse?.platformRole;
@@ -82,6 +93,11 @@ const Sidebar = () => {
     const items = getMenuByRole(roleId, modules);
     setVisibleItems(items);
     setRoleMeta(getRoleMeta(roleId));
+
+    if (orgResponse) {
+      setOrganization({ organization: orgResponse });
+      setOrgData(orgResponse);
+    }
   };
 
   const getRolesList = async () => {
@@ -135,11 +151,19 @@ const Sidebar = () => {
             <div className="flex gap-2.5 mb-2">
               <div className="relative shrink-0">
                 <div className="w-8 h-8 rounded-full overflow-hidden">
-                  <img
-                    src={config?.user_icon || "https://placehold.co/100x100"}
-                    className="w-full h-full object-cover"
-                    alt="user"
-                  />
+                  {orgData?.branding?.logoUrl ? (
+                    <img
+                      src={orgData.branding.logoUrl}
+                      className="w-full h-full object-cover"
+                      alt={orgData.name}
+                    />
+                  ) : (
+                    <img
+                      src={config?.user_icon || "https://placehold.co/100x100"}
+                      className="w-full h-full object-cover"
+                      alt="user"
+                    />
+                  )}
                 </div>
                 <span className="absolute bottom-5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
               </div>
@@ -152,7 +176,7 @@ const Sidebar = () => {
                 <p
                   className={`text-[10px] truncate leading-tight ${isDark ? "text-slate-400" : "text-slate-500"}`}
                 >
-                  {currentUser?.organizationName || ""}
+                  {orgData?.name || currentUser?.organizationName || ""}
                 </p>
               </div>
             </div>

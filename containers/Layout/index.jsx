@@ -2,7 +2,14 @@
 "use client";
 import Sidebar from "../../components/sidebar";
 import { FaBell, FaMoon, FaSun } from "react-icons/fa";
-import { FiPower, FiSearch, FiSettings, FiUser } from "react-icons/fi";
+import {
+  FiBriefcase,
+  FiChevronDown,
+  FiPower,
+  FiSearch,
+  FiSettings,
+  FiUser,
+} from "react-icons/fi";
 import config from "../../config";
 import { useEffect, useState } from "react";
 import {
@@ -33,6 +40,13 @@ const PAGE_TITLES = {
   "/QAQC/Dashboard": "QA/QC Dashboard",
 };
 
+// Mock companies for account/company switcher (replace with API when available)
+const COMPANIES = [
+  { id: 1, name: "Apex Contractors", role: "GC Admin" },
+  { id: 2, name: "OEM Solutions Inc.", role: "OEM PM" },
+  { id: 3, name: "BuildRight Corp", role: "Superintendent" },
+];
+
 // Quick-nav tabs shown on main dashboard
 const DASH_TABS = [
   { label: "Issues", path: "/Issues/List" },
@@ -47,7 +61,9 @@ const Layout = ({ children }) => {
   const params = useParams();
   const [search, setSearch] = useState("");
   const [theme, setTheme] = useState("dark");
+  const [activeCompanyId, setActiveCompanyId] = useState(COMPANIES[0].id);
   const user = JSON.parse(getUser());
+  const activeCompany = COMPANIES.find((c) => c.id === activeCompanyId) ?? COMPANIES[0];
 
   const pageTitle =
     PAGE_TITLES[pathname] ??
@@ -187,6 +203,98 @@ const Layout = ({ children }) => {
                         : "bg-slate-100 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-sky-400"
                     }`}
                   />
+                </div>
+
+                {/* Company switcher */}
+                <div className="dropdown dropdown-end hidden md:block">
+                  <label
+                    tabIndex={0}
+                    className={`flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium cursor-pointer border transition-all select-none ${
+                      isDark
+                        ? "bg-slate-800 border-slate-700 text-slate-200 hover:border-cyan-700"
+                        : "bg-slate-100 border-slate-200 text-slate-800 hover:border-sky-400"
+                    }`}
+                  >
+                    <FiBriefcase
+                      className="text-base shrink-0"
+                      style={{ color: "var(--rf-accent)" }}
+                    />
+                    <span className="max-w-[120px] truncate">
+                      {activeCompany.name}
+                    </span>
+                    <FiChevronDown
+                      className="text-xs shrink-0 opacity-50"
+                    />
+                  </label>
+
+                  <ul
+                    tabIndex={0}
+                    className="mt-3 z-[50] p-2 shadow-xl menu menu-sm dropdown-content rounded-xl w-60"
+                    style={{
+                      background: "var(--rf-bg2)",
+                      border: "1px solid var(--rf-border2)",
+                    }}
+                  >
+                    <li className="px-2 pb-1 pointer-events-none">
+                      <span
+                        className="text-[10px] uppercase tracking-widest font-semibold"
+                        style={{ color: "var(--rf-txt3)" }}
+                      >
+                        Switch Company
+                      </span>
+                    </li>
+                    {COMPANIES.map((company) => {
+                      const isActive = company.id === activeCompanyId;
+                      return (
+                        <li
+                          key={company.id}
+                          onClick={() => setActiveCompanyId(company.id)}
+                        >
+                          <a
+                            className={`flex items-center gap-3 rounded-lg ${
+                              isActive
+                                ? isDark
+                                  ? "bg-cyan-900/20 text-cyan-400"
+                                  : "bg-sky-100 text-sky-700"
+                                : ""
+                            }`}
+                            style={{
+                              color: isActive ? undefined : "var(--rf-txt)",
+                            }}
+                          >
+                            <span
+                              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold"
+                              style={{
+                                background: "color-mix(in srgb, var(--rf-accent) 15%, transparent)",
+                                color: "var(--rf-accent)",
+                              }}
+                            >
+                              {company.name.charAt(0)}
+                            </span>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="truncate font-medium text-[13px]">
+                                {company.name}
+                              </span>
+                              <span
+                                className="text-[10px] truncate"
+                                style={{ color: "var(--rf-txt3)" }}
+                              >
+                                {company.role}
+                              </span>
+                            </div>
+                            {isActive && (
+                              <span
+                                className="text-xs shrink-0"
+                                style={{ color: "var(--rf-accent)" }}
+                              >
+                                ✓
+                              </span>
+                            )}
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
 
                 {/* Separator */}

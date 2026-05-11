@@ -4502,9 +4502,11 @@ export const sidebarItems = [
           EXEC_ROLES,
           PM_ROLES,
           SUPERINTENDENT_ROLES,
+          ROLES?.GC_PROJ_EXEC,
           FINANCE_ROLES,
           PLATFORM,
           [ROLES.FSE, ROLES.ASP],
+          ALL,
         ),
       },
       {
@@ -5323,13 +5325,13 @@ export function getMenuByRole(role, accessibleModules) {
   return sidebarItems
     .filter((item) => {
       const titleKey = (item.title || "").toLowerCase();
-      // 1. Role gate
-      // if (item.roles && !item.roles.includes(role)) return false;
+
       // 2. QAQC gate
       if (qaqcUser && !QAQC_ALLOWED_SECTIONS.has(titleKey)) return false;
       // 3. Module gate — skip when no module list provided
       if (allowedSections && !allowedSections.has(titleKey)) return false;
-
+      // 1. Role gate
+      // if (item.roles && !item.roles.includes(role)) return false;  
       return true;
     })
     .map((item) => ({
