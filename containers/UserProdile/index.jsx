@@ -6,35 +6,73 @@ import { ChangePassword } from "../../services/auth";
 import { getUser, getOrganization } from "../../services/instance/tokenService";
 
 const COMPANY_ROLE_LABELS = {
-  gc: "General Contractor", oem: "OEM / Manufacturer", customer: "Owner / Customer",
-  trade: "Trade Contractor", cxa: "Commissioning Authority", ae: "Architect & Engineer",
-  integrator: "Systems Integrator", rigger: "Rigger", builder: "Builder",
-  security: "Security", fire: "Fire Protection", staffing: "Staffing",
-  controls: "Controls", lowvoltage: "Low Voltage", mechanical: "Mechanical",
-  operations: "Operations", customer_const: "Construction Owner",
+  gc: "General Contractor",
+  oem: "OEM / Manufacturer",
+  customer: "Owner / Customer",
+  trade: "Trade Contractor",
+  cxa: "Commissioning Authority",
+  ae: "Architect & Engineer",
+  integrator: "Systems Integrator",
+  rigger: "Rigger",
+  builder: "Builder",
+  security: "Security",
+  fire: "Fire Protection",
+  staffing: "Staffing",
+  controls: "Controls",
+  lowvoltage: "Low Voltage",
+  mechanical: "Mechanical",
+  operations: "Operations",
+  customer_const: "Construction Owner",
 };
-const COMPANY_SIZE_LABELS = { small: "Starter", med: "Growth", medium: "Professional", ent: "Enterprise" };
+const COMPANY_SIZE_LABELS = {
+  small: "Starter",
+  med: "Growth",
+  medium: "Professional",
+  ent: "Enterprise",
+};
 const DC_TYPE_LABELS = {
-  ai: "AI / GPU-Dense", hyp: "Hyperscale", colo: "Colocation", ent: "Enterprise",
-  edg: "Edge", hpc: "HPC", cry: "Cryptocurrency", gov: "Government / Secure",
-  bro: "Broadcast", res: "Research", mod: "Modular", fin: "Financial / Low-Latency",
+  ai: "AI / GPU-Dense",
+  hyp: "Hyperscale",
+  colo: "Colocation",
+  ent: "Enterprise",
+  edg: "Edge",
+  hpc: "HPC",
+  cry: "Cryptocurrency",
+  gov: "Government / Secure",
+  bro: "Broadcast",
+  res: "Research",
+  mod: "Modular",
+  fin: "Financial / Low-Latency",
 };
 const UPTIME_TIER_LABELS = {
-  t1: "Tier I — Basic", t2: "Tier II — Redundant",
-  t3: "Tier III — Concurrently Maintainable", t4: "Tier IV — Fault Tolerant",
+  t1: "Tier I — Basic",
+  t2: "Tier II — Redundant",
+  t3: "Tier III — Concurrently Maintainable",
+  t4: "Tier IV — Fault Tolerant",
 };
 const FACILITY_SCALE_LABELS = {
-  s1: "Small (< 1 MW)", s2: "Medium (1–10 MW)", s3: "Large (10–100 MW)", s4: "Hyperscale (> 100 MW)",
+  s1: "Small (< 1 MW)",
+  s2: "Medium (1–10 MW)",
+  s3: "Large (10–100 MW)",
+  s4: "Hyperscale (> 100 MW)",
 };
 const COOLING_TYPE_LABELS = {
-  air: "Air-Cooled", rdhx: "Rear-Door Heat Exchanger", dlc: "Direct Liquid Cooling", imm: "Immersion Cooling",
+  air: "Air-Cooled",
+  rdhx: "Rear-Door Heat Exchanger",
+  dlc: "Direct Liquid Cooling",
+  imm: "Immersion Cooling",
 };
 const POWER_REDUNDANCY_LABELS = {
-  n: "N (No Redundancy)", n1: "N+1", "2n": "2N (Fully Redundant)", "2n1": "2N+1",
+  n: "N (No Redundancy)",
+  n1: "N+1",
+  "2n": "2N (Fully Redundant)",
+  "2n1": "2N+1",
 };
 const PROCUREMENT_OWNER_LABELS = {
-  OFCI: "Owner-Furnished / Contractor-Installed", CFCI: "Contractor-Furnished / Contractor-Installed",
-  CUSTOMER: "Customer", CONTRACTOR: "Contractor",
+  OFCI: "Owner-Furnished / Contractor-Installed",
+  CFCI: "Contractor-Furnished / Contractor-Installed",
+  CUSTOMER: "Customer",
+  CONTRACTOR: "Contractor",
 };
 
 export default function ProfilePage() {
@@ -87,7 +125,11 @@ export default function ProfilePage() {
         newPassword: pwForm.newPassword,
       });
       setPwSuccess(true);
-      setPwForm({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+      setPwForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmNewPassword: "",
+      });
     } catch (err) {
       setPwError(err?.response?.data?.message ?? "Password update failed.");
     } finally {
@@ -100,25 +142,38 @@ export default function ProfilePage() {
       {/* ── Hero Card ─────────────────────────────────────────── */}
       <div
         className="rounded-2xl p-6 flex flex-wrap items-center gap-5"
-        style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border)" }}
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border)",
+        }}
       >
-        <div
-          className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0"
-          style={{
-            background:
-              "color-mix(in srgb, var(--rf-accent) 18%, transparent)",
-            color: "var(--rf-accent)",
-          }}
-        >
-          {initials}
-        </div>
+        {org?.branding?.logoUrl ? (
+          <img
+            src={org?.branding?.logoUrl}
+            alt={`${org.name} logo`}
+            className="w-20 h-20 rounded-2xl object-center shrink-0"
+            style={{ border: "1px solid var(--rf-border)" }}
+          />
+        ) : (
+          <div
+            className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0"
+            style={{
+              background:
+                "color-mix(in srgb, var(--rf-accent) 18%, transparent)",
+              color: "var(--rf-accent)",
+            }}
+          >
+            {initials}
+          </div>
+        )}
 
         <div className="flex-1 min-w-0">
           <h1
             className="text-2xl font-bold truncate"
             style={{ color: "var(--rf-txt)" }}
           >
-            {user.firstName} {user.lastName}
+            {user.firstName}
+            {user.lastName}
           </h1>
           <p
             className="text-sm mt-0.5 truncate"
@@ -127,10 +182,7 @@ export default function ProfilePage() {
             {user.email}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            <StatusPill
-              label={user.status}
-              active={user.status === "ACTIVE"}
-            />
+            <StatusPill label={user.status} active={user.status === "ACTIVE"} />
             <span
               className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
               style={{
@@ -161,7 +213,10 @@ export default function ProfilePage() {
           >
             Plan
           </p>
-          <p className="text-lg font-bold" style={{ color: "var(--rf-accent)" }}>
+          <p
+            className="text-lg font-bold"
+            style={{ color: "var(--rf-accent)" }}
+          >
             {plan?.displayName}
           </p>
           <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
@@ -173,7 +228,10 @@ export default function ProfilePage() {
       {/* ── Tabs ──────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-1 p-1 rounded-xl w-fit"
-        style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border)" }}
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border)",
+        }}
       >
         {["profile", "organization", "permissions", "security"].map((t) => (
           <button
@@ -243,10 +301,7 @@ export default function ProfilePage() {
               <InfoField label="Tier" value={`Tier ${plan?.tier}`} />
               <InfoField label="Plan Name" value={plan?.name} />
             </div>
-            <p
-              className="text-xs mb-2"
-              style={{ color: "var(--rf-txt3)" }}
-            >
+            <p className="text-xs mb-2" style={{ color: "var(--rf-txt3)" }}>
               Module Access
             </p>
             <div className="flex flex-wrap gap-2">
@@ -271,17 +326,19 @@ export default function ProfilePage() {
       )}
 
       {/* ── Organization Tab ──────────────────────────────────── */}
-      {tab === "organization" && (
-        org ? (
+      {tab === "organization" &&
+        (org ? (
           <>
             {/* Setup status banner */}
             {org.setupStatus !== "COMPLETE" && (
               <div
                 className="flex items-center gap-2 p-3 rounded-xl text-sm"
                 style={{
-                  background: "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+                  background:
+                    "color-mix(in srgb, var(--rf-red) 12%, transparent)",
                   color: "var(--rf-red)",
-                  border: "1px solid color-mix(in srgb, var(--rf-red) 25%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--rf-red) 25%, transparent)",
                 }}
               >
                 <FiAlertCircle className="shrink-0" />
@@ -294,28 +351,39 @@ export default function ProfilePage() {
             {/* Identity */}
             <Section title="Organization Identity">
               <div className="flex items-center gap-4 mb-5">
-                {org.branding?.logoUrl ? (
+                {org?.branding?.logoUrl ? (
                   <img
-                    src={org.branding.logoUrl}
+                    src={org?.branding?.logoUrl}
                     alt={`${org.name} logo`}
-                    className="w-16 h-16 rounded-xl object-cover shrink-0"
+                    className="w-16 h-16 rounded-xl object-center shrink-0"
                     style={{ border: "1px solid var(--rf-border)" }}
                   />
                 ) : (
                   <div
                     className="w-16 h-16 rounded-xl flex items-center justify-center text-xl font-bold shrink-0"
                     style={{
-                      background: "color-mix(in srgb, var(--rf-accent) 18%, transparent)",
+                      background:
+                        "color-mix(in srgb, var(--rf-accent) 18%, transparent)",
                       color: "var(--rf-accent)",
                     }}
                   >
-                    {org.name?.[0]?.toUpperCase() ?? "O"}
+                    {user?.firstName?.[0]?.toUpperCase() ?? "O"}
+                    {user?.lastName?.[0]?.toUpperCase() ?? "O"}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-lg font-bold truncate" style={{ color: "var(--rf-txt)" }}>{org.name}</p>
+                  <p
+                    className="text-lg font-bold truncate uppercase"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    {user?.firstName?.toUpperCase()}
+                    {user?.lastName?.toUpperCase()}
+                  </p>
                   {org.subdomain && (
-                    <p className="text-xs mt-0.5" style={{ color: "var(--rf-txt3)" }}>
+                    <p
+                      className="text-xs mt-0.5"
+                      style={{ color: "var(--rf-txt3)" }}
+                    >
                       {org.subdomain}.app.cx-control.com
                     </p>
                   )}
@@ -323,20 +391,43 @@ export default function ProfilePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InfoField label="Slug" value={org.slug} />
-                {org.subdomain && <InfoField label="Subdomain" value={org.subdomain} />}
-                {org.companyEmail && <InfoField label="Company Email" value={org.companyEmail} icon={<FiMail />} />}
+                {org.subdomain && (
+                  <InfoField label="Subdomain" value={org.subdomain} />
+                )}
+                {org.companyEmail && (
+                  <InfoField
+                    label="Company Email"
+                    value={org.companyEmail}
+                    icon={<FiMail />}
+                  />
+                )}
                 <InfoField
                   label="Status"
                   value={org.status}
-                  valueStyle={{ color: org.status === "ACTIVE" ? "var(--rf-green)" : "var(--rf-red)", fontWeight: 600 }}
+                  valueStyle={{
+                    color:
+                      org.status === "ACTIVE"
+                        ? "var(--rf-green)"
+                        : "var(--rf-red)",
+                    fontWeight: 600,
+                  }}
                 />
                 <InfoField
                   label="Setup Status"
                   value={org.setupStatus}
-                  valueStyle={{ color: org.setupStatus === "COMPLETE" ? "var(--rf-green)" : "var(--rf-red)", fontWeight: 600 }}
+                  valueStyle={{
+                    color:
+                      org.setupStatus === "COMPLETE"
+                        ? "var(--rf-green)"
+                        : "var(--rf-red)",
+                    fontWeight: 600,
+                  }}
                 />
                 {org.setupCompletedAt && (
-                  <InfoField label="Setup Completed" value={new Date(org.setupCompletedAt).toLocaleDateString()} />
+                  <InfoField
+                    label="Setup Completed"
+                    value={new Date(org.setupCompletedAt).toLocaleDateString()}
+                  />
                 )}
               </div>
             </Section>
@@ -354,7 +445,9 @@ export default function ProfilePage() {
                     value={`${COMPANY_SIZE_LABELS[org.companySize] ?? org.companySize}${org.pricingAmount != null ? ` · $${org.pricingAmount.toLocaleString()}/mo` : ""}`}
                   />
                 )}
-                {org.pricingTier && <InfoField label="Pricing Tier" value={org.pricingTier} />}
+                {org.pricingTier && (
+                  <InfoField label="Pricing Tier" value={org.pricingTier} />
+                )}
               </div>
             </Section>
 
@@ -362,8 +455,16 @@ export default function ProfilePage() {
             {org.scopeConfig && (
               <Section title="Scope Configuration">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoField label="Multi-Site (Multi-DC)" value={org.scopeConfig.multiDC ? "Enabled" : "Disabled"} />
-                  <InfoField label="Default Connected Mode" value={org.scopeConfig.defaultConnected ? "Enabled" : "Disabled"} />
+                  <InfoField
+                    label="Multi-Site (Multi-DC)"
+                    value={org.scopeConfig.multiDC ? "Enabled" : "Disabled"}
+                  />
+                  <InfoField
+                    label="Default Connected Mode"
+                    value={
+                      org.scopeConfig.defaultConnected ? "Enabled" : "Disabled"
+                    }
+                  />
                 </div>
               </Section>
             )}
@@ -376,17 +477,24 @@ export default function ProfilePage() {
                     <div
                       key={f.id}
                       className="rounded-xl p-4"
-                      style={{ background: "var(--rf-bg)", border: "1px solid var(--rf-border)" }}
+                      style={{
+                        background: "var(--rf-bg)",
+                        border: "1px solid var(--rf-border)",
+                      }}
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <p className="text-sm font-semibold" style={{ color: "var(--rf-txt)" }}>
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: "var(--rf-txt)" }}
+                        >
                           {f.name ?? DC_TYPE_LABELS[f.dcType] ?? f.dcType}
                         </p>
                         {f.isPrimary && (
                           <span
                             className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
                             style={{
-                              background: "color-mix(in srgb, var(--rf-accent) 15%, transparent)",
+                              background:
+                                "color-mix(in srgb, var(--rf-accent) 15%, transparent)",
                               color: "var(--rf-accent)",
                             }}
                           >
@@ -395,11 +503,36 @@ export default function ProfilePage() {
                         )}
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        <InfoField label="Type" value={DC_TYPE_LABELS[f.dcType] ?? f.dcType} />
-                        <InfoField label="Uptime Tier" value={UPTIME_TIER_LABELS[f.uptimeTier] ?? f.uptimeTier} />
-                        <InfoField label="Scale" value={FACILITY_SCALE_LABELS[f.facilityScale] ?? f.facilityScale} />
-                        <InfoField label="Cooling" value={COOLING_TYPE_LABELS[f.coolingType] ?? f.coolingType} />
-                        <InfoField label="Power Redundancy" value={POWER_REDUNDANCY_LABELS[f.powerRedundancy] ?? f.powerRedundancy} />
+                        <InfoField
+                          label="Type"
+                          value={DC_TYPE_LABELS[f.dcType] ?? f.dcType}
+                        />
+                        <InfoField
+                          label="Uptime Tier"
+                          value={
+                            UPTIME_TIER_LABELS[f.uptimeTier] ?? f.uptimeTier
+                          }
+                        />
+                        <InfoField
+                          label="Scale"
+                          value={
+                            FACILITY_SCALE_LABELS[f.facilityScale] ??
+                            f.facilityScale
+                          }
+                        />
+                        <InfoField
+                          label="Cooling"
+                          value={
+                            COOLING_TYPE_LABELS[f.coolingType] ?? f.coolingType
+                          }
+                        />
+                        <InfoField
+                          label="Power Redundancy"
+                          value={
+                            POWER_REDUNDANCY_LABELS[f.powerRedundancy] ??
+                            f.powerRedundancy
+                          }
+                        />
                       </div>
                     </div>
                   ))}
@@ -409,12 +542,23 @@ export default function ProfilePage() {
 
             {/* Equipment Catalog */}
             {org.equipment?.length > 0 && (
-              <Section title={`Equipment Catalog (${org.equipment.length} classes)`}>
+              <Section
+                title={`Equipment Catalog (${org.equipment.length} classes)`}
+              >
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr style={{ borderBottom: "1px solid var(--rf-border)" }}>
-                        {["Code", "Asset Class", "Manufacturer", "Qty", "Lead Time", "Procurement"].map((h) => (
+                      <tr
+                        style={{ borderBottom: "1px solid var(--rf-border)" }}
+                      >
+                        {[
+                          "Code",
+                          "Asset Class",
+                          "Manufacturer",
+                          "Qty",
+                          "Lead Time",
+                          "Procurement",
+                        ].map((h) => (
                           <th
                             key={h}
                             className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider"
@@ -427,23 +571,51 @@ export default function ProfilePage() {
                     </thead>
                     <tbody>
                       {org.equipment.map((e) => (
-                        <tr key={e.id} style={{ borderBottom: "1px solid var(--rf-border)" }}>
+                        <tr
+                          key={e.id}
+                          style={{ borderBottom: "1px solid var(--rf-border)" }}
+                        >
                           <td className="py-2.5 px-3">
                             <span
                               className="font-mono text-xs px-1.5 py-0.5 rounded"
-                              style={{ background: "var(--rf-bg2)", color: "var(--rf-accent)" }}
+                              style={{
+                                background: "var(--rf-bg2)",
+                                color: "var(--rf-accent)",
+                              }}
                             >
                               {e.assetCode}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 text-xs font-medium" style={{ color: "var(--rf-txt)" }}>{e.assetClass}</td>
-                          <td className="py-2.5 px-3 text-xs" style={{ color: "var(--rf-txt2)" }}>{e.manufacturer ?? "—"}</td>
-                          <td className="py-2.5 px-3 text-xs" style={{ color: "var(--rf-txt)" }}>{e.quantity}</td>
-                          <td className="py-2.5 px-3 text-xs" style={{ color: "var(--rf-txt2)" }}>
+                          <td
+                            className="py-2.5 px-3 text-xs font-medium"
+                            style={{ color: "var(--rf-txt)" }}
+                          >
+                            {e.assetClass}
+                          </td>
+                          <td
+                            className="py-2.5 px-3 text-xs"
+                            style={{ color: "var(--rf-txt2)" }}
+                          >
+                            {e.manufacturer ?? "—"}
+                          </td>
+                          <td
+                            className="py-2.5 px-3 text-xs"
+                            style={{ color: "var(--rf-txt)" }}
+                          >
+                            {e.quantity}
+                          </td>
+                          <td
+                            className="py-2.5 px-3 text-xs"
+                            style={{ color: "var(--rf-txt2)" }}
+                          >
                             {e.leadWeeks != null ? `${e.leadWeeks}w` : "—"}
                           </td>
-                          <td className="py-2.5 px-3 text-xs" style={{ color: "var(--rf-txt2)" }}>
-                            {PROCUREMENT_OWNER_LABELS[e.procurementOwner] ?? e.procurementOwner}
+                          <td
+                            className="py-2.5 px-3 text-xs"
+                            style={{ color: "var(--rf-txt2)" }}
+                          >
+                            {PROCUREMENT_OWNER_LABELS[e.procurementOwner] ??
+                              e.procurementOwner}
                           </td>
                         </tr>
                       ))}
@@ -460,17 +632,29 @@ export default function ProfilePage() {
                   {org.branding.primaryColor && (
                     <div
                       className="rounded-xl p-3"
-                      style={{ background: "var(--rf-bg)", border: "1px solid var(--rf-border)" }}
+                      style={{
+                        background: "var(--rf-bg)",
+                        border: "1px solid var(--rf-border)",
+                      }}
                     >
-                      <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--rf-txt3)" }}>
+                      <p
+                        className="text-[10px] uppercase tracking-wider mb-2"
+                        style={{ color: "var(--rf-txt3)" }}
+                      >
                         Primary Color
                       </p>
                       <div className="flex items-center gap-2">
                         <div
                           className="w-6 h-6 rounded-md shrink-0"
-                          style={{ background: org.branding.primaryColor, border: "1px solid var(--rf-border)" }}
+                          style={{
+                            background: org.branding.primaryColor,
+                            border: "1px solid var(--rf-border)",
+                          }}
                         />
-                        <span className="text-sm font-mono font-medium" style={{ color: "var(--rf-txt)" }}>
+                        <span
+                          className="text-sm font-mono font-medium"
+                          style={{ color: "var(--rf-txt)" }}
+                        >
                           {org.branding.primaryColor}
                         </span>
                       </div>
@@ -487,11 +671,11 @@ export default function ProfilePage() {
         ) : (
           <Section title="Organization">
             <p className="text-sm" style={{ color: "var(--rf-txt3)" }}>
-              Organization details not available. They load automatically when the app initializes.
+              Organization details not available. They load automatically when
+              the app initializes.
             </p>
           </Section>
-        )
-      )}
+        ))}
 
       {/* ── Permissions Tab ───────────────────────────────────── */}
       {tab === "permissions" && (
@@ -512,7 +696,7 @@ export default function ProfilePage() {
                       >
                         {h}
                       </th>
-                    )
+                    ),
                   )}
                 </tr>
               </thead>
@@ -667,7 +851,10 @@ function Section({ title, subtitle, children }) {
   return (
     <div
       className="rounded-2xl p-6"
-      style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border)" }}
+      style={{
+        background: "var(--rf-bg2)",
+        border: "1px solid var(--rf-border)",
+      }}
     >
       <div className="mb-5">
         <h2
@@ -709,9 +896,7 @@ function InfoField({ label, value, icon, valueStyle = {} }) {
         className="text-sm font-medium flex items-center gap-1.5"
         style={{ color: "var(--rf-txt)", ...valueStyle }}
       >
-        {icon && (
-          <span style={{ color: "var(--rf-txt3)" }}>{icon}</span>
-        )}
+        {icon && <span style={{ color: "var(--rf-txt3)" }}>{icon}</span>}
         {value || "—"}
       </p>
     </div>

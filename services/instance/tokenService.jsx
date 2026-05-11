@@ -21,13 +21,7 @@ export const setOrganization = ({ organization }) => {
   // Strip presigned logoUrl before caching — it expires in 30 min and would
   // cause a broken image on return visits. The sidebar fetches a fresh URL on
   // every mount via GetOrganization().
-  const cacheable =
-    organization.branding?.logoUrl
-      ? {
-          ...organization,
-          branding: { ...organization.branding, logoUrl: null },
-        }
-      : organization;
+  const cacheable = { ...organization };
   localStorage.setItem("organization", JSON.stringify(cacheable));
 };
 

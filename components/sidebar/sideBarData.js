@@ -4244,6 +4244,12 @@ export const sidebarItems = [
         path: "/Risk",
         roles: ALL,
       },
+      {
+        title: "Announcements",
+        type: "link",
+        path: "/Announcements",
+        roles: ALL,
+      },
     ],
   },
 
