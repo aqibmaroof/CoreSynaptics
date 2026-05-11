@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  getMenuByRole,
+  sidebarItems,
   getRoleMeta,
   getLensNavItems,
   LENSES,
@@ -44,6 +44,7 @@ const Sidebar = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [roleMeta, setRoleMeta] = useState(null);
   const [orgData, setOrgData] = useState(null);
+  const user = JSON.parse(getUser());
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "dark";
@@ -52,23 +53,18 @@ const Sidebar = () => {
   }, []);
 
   useEffect(() => {
-    const user = JSON.parse(getUser());
     const accessToken = getAccessToken();
     setCurrentUser(user);
 
     const roleId = user?.activeRole?.name || user?.platformRole;
-    const modules = extractModules(user);
-    const items = getMenuByRole(roleId, modules);
-    setVisibleItems(items);
+    setVisibleItems(sidebarItems);
     setRoleMeta(getRoleMeta(roleId));
     setMounted(true);
 
     // Hydrate org from cache immediately
-    const cachedOrg = getOrganization();
-    if (cachedOrg) setOrgData(JSON.parse(cachedOrg));
 
     getRolesList();
-    if (accessToken) getUserFromApi();
+    getUserFromApi();
   }, []);
 
   // Auto-open the parent whose submenu contains the current pathname
@@ -85,18 +81,17 @@ const Sidebar = () => {
       GetUser(),
       GetOrganization().catch(() => null),
     ]);
+    if (orgResponse && userResponse) {
+      setUser({ user: userResponse });
+      setCurrentUser(userResponse);
+      const roleId =
+        userResponse?.activeRole?.name || userResponse?.platformRole;
+      setVisibleItems(sidebarItems);
+      setRoleMeta(getRoleMeta(roleId));
 
-    setUser({ user: userResponse });
-    setCurrentUser(userResponse);
-    const roleId = userResponse?.activeRole?.name || userResponse?.platformRole;
-    const modules = extractModules(userResponse);
-    const items = getMenuByRole(roleId, modules);
-    setVisibleItems(items);
-    setRoleMeta(getRoleMeta(roleId));
-
-    if (orgResponse) {
       setOrganization({ organization: orgResponse });
       setOrgData(orgResponse);
+      console.log("updated")
     }
   };
 
@@ -131,13 +126,26 @@ const Sidebar = () => {
     <aside className="w-[280px] m-3 py-2 transition-colors bg-transparent rounded-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
       {/* ── Logo + Role badge ─────────────────────────────────── */}
       <div className="px-4 pt-5 pb-3">
-        <div className="flex items-center justify-between mb-4">
+        <a href="/" className="flex items-center gap-5 mb-4">
           <img
-            src={isDark ? config?.brand : config?.darkBrand}
-            className="w-48 h-auto"
+            src={
+              orgData?.branding?.logoUrl
+                ? orgData?.branding?.logoUrl
+                : isDark
+                  ? config?.brand
+                  : config?.darkBrand
+            }
+            className={`${orgData?.branding?.logoUrl ? "w-14 h-14 object-center rounded-full" : "w-48 h-auto rounded-none"}`}
             alt="brand"
           />
-        </div>
+          <p
+            className={`${isDark ? "text-slate-200" : "text-slate-800"} font-bold`}
+          >
+            {orgData?.branding?.logoUrl
+              ? user?.firstName + "" + user?.lastName
+              : null}
+          </p>
+        </a>
 
         {currentUser && (
           <div
@@ -171,7 +179,8 @@ const Sidebar = () => {
                 <p
                   className={`text-xs font-semibold truncate leading-tight ${isDark ? "text-slate-100" : "text-slate-800"}`}
                 >
-                  {currentUser?.firstName} {currentUser?.lastName}
+                  {currentUser?.firstName}
+                  {currentUser?.lastName}
                 </p>
                 <p
                   className={`text-[10px] truncate leading-tight ${isDark ? "text-slate-400" : "text-slate-500"}`}

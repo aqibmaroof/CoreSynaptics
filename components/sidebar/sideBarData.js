@@ -4075,7 +4075,13 @@ export const sidebarItems = [
         title: "Executive Dashboard",
         type: "link",
         path: "/Executive/Dashboard",
-        roles: [ROLES.EXECUTIVE, ROLES.SUPERADMIN, ROLES.PLATFORM_ADMIN],
+        roles: ALL,
+      },
+      {
+        title: "Cx Score",
+        type: "link",
+        path: "/CxScore",
+        roles: ALL,
       },
     ],
   },
@@ -4187,13 +4193,56 @@ export const sidebarItems = [
         title: "Communications",
         type: "link",
         path: "/Communications",
-        roles: union(
-          EXEC_ROLES,
-          PM_ROLES,
-          SUPERINTENDENT_ROLES,
-          SAFETY_QA_ROLES,
-          PLATFORM,
-        ),
+        roles: ALL,
+      },
+      // ── CxControl variants (HTML prototype UI) ─────────────────────────
+      {
+        title: "Issues (CxControl)",
+        type: "link",
+        path: "/CxIssues",
+        roles: ALL,
+      },
+      {
+        title: "Site Access · 2-stage (CxControl)",
+        type: "link",
+        path: "/CxTARF",
+        roles: ALL,
+      },
+      {
+        title: "Announcements (CxControl)",
+        type: "link",
+        path: "/CxAnnouncements",
+        roles: ALL,
+      },
+    ],
+  },
+
+  // ─── CxControl · Commissioning ─────────────────────────────────────
+  {
+    title: "CxControl · Commissioning",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Commissioning/Tests",
+    type: "link",
+    roles: ALL,
+    submenu: [
+      {
+        title: "Commissioning Tests",
+        type: "link",
+        path: "/Commissioning/Tests",
+        roles: ALL,
+      },
+      {
+        title: "PSSR Inspections",
+        type: "link",
+        path: "/PSSR",
+        roles: ALL,
+      },
+      {
+        title: "Risk Register",
+        type: "link",
+        path: "/Risk",
+        roles: ALL,
       },
     ],
   },

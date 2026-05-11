@@ -26,9 +26,22 @@ export const deleteTARF = async (id) => {
   return sendRequest({ url: `/tarf/${id}`, method: "DELETE" });
 };
 
-/** Approve a TARF — sets approved=true, approved_by, approved_at */
+/**
+ * GC approve (first leg of the two-stage funnel).
+ * Transitions PENDING_GC → PENDING_CUSTOMER. Endpoint name preserved for
+ * backwards compatibility; semantics narrowed to GC review only.
+ */
 export const approveTARF = async (id) => {
   return sendRequest({ url: `/tarf/${id}/approve`, method: "POST" });
+};
+
+/**
+ * Customer approve (second leg of the two-stage funnel).
+ * Transitions PENDING_CUSTOMER → APPROVED. Site sign-in becomes permitted
+ * once safety orientation is also complete.
+ */
+export const customerApproveTARF = async (id) => {
+  return sendRequest({ url: `/tarf/${id}/customer-approve`, method: "POST" });
 };
 
 /** Reject a TARF with a reason */
@@ -60,4 +73,28 @@ export const getExpiredAccess = async (params = {}) => {
 /** Get sign-in / sign-out history for a TARF entry */
 export const getSignLogs = async (id) => {
   return sendRequest({ url: `/tarf/${id}/sign-logs`, method: "GET" });
+};
+
+// ─── Two-stage funnel constants (PR4) ────────────────────────────────────────
+
+export const TARF_APPROVAL_STAGES = [
+  "PENDING_GC",        // initial — awaiting GC review
+  "PENDING_CUSTOMER",  // GC approved; awaiting customer
+  "APPROVED",          // both approved; sign-in permitted
+  "REJECTED",          // terminal
+];
+
+export const TARF_STAGE_LABELS = {
+  PENDING_GC: "Awaiting GC",
+  PENDING_CUSTOMER: "Awaiting Customer",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};
+
+/** Tailwind classes for funnel stage chips. */
+export const TARF_STAGE_COLORS = {
+  PENDING_GC: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  PENDING_CUSTOMER: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  APPROVED: "bg-green-500/20 text-green-300 border-green-500/30",
+  REJECTED: "bg-red-500/20 text-red-300 border-red-500/30",
 };

@@ -60,7 +60,7 @@ const Layout = ({ children }) => {
   const pathname = usePathname();
   const params = useParams();
   const [search, setSearch] = useState("");
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState("light");
   const [activeCompanyId, setActiveCompanyId] = useState(COMPANIES[0].id);
   const user = JSON.parse(getUser());
   const activeCompany = COMPANIES.find((c) => c.id === activeCompanyId) ?? COMPANIES[0];
@@ -74,7 +74,7 @@ const Layout = ({ children }) => {
   const isDashboard = pathname === "/" || pathname === "/OEM/Dashboard";
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || "dark";
+    const savedTheme = localStorage.getItem("theme") || "light";
     setTheme(savedTheme);
     document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);

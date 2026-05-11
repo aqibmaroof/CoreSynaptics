@@ -67,3 +67,36 @@ export const assignIssue = async (id, payload) => {
 export const verifyAndCloseIssue = async (id, payload) => {
   return sendRequest({ url: `/issues/${id}/verify-close`, method: "POST", data: payload });
 };
+
+/**
+ * Issue.kind discriminator (PR3). Each kind reuses the standard
+ * NEW → IN_PROGRESS → READY_FOR_VERIFICATION → CLOSED lifecycle but adds
+ * creation-time invariants enforced server-side.
+ */
+export const ISSUE_KINDS = [
+  "GENERAL",       // default — generic issue
+  "HOLD_POINT",    // requires assignedToCompanyId
+  "WITNESS_POINT", // assignment optional
+  "PUNCH_LIST",    // pre-handover punch (PSSR auto-creates these)
+  "NCR",           // requires non-empty description
+  "SNAG",          // late-stage closeout
+];
+
+export const ISSUE_KIND_LABELS = {
+  GENERAL: "General",
+  HOLD_POINT: "Hold Point",
+  WITNESS_POINT: "Witness Point",
+  PUNCH_LIST: "Punch List",
+  NCR: "NCR",
+  SNAG: "Snag",
+};
+
+/** Tailwind classes per kind for chip rendering. */
+export const ISSUE_KIND_COLORS = {
+  GENERAL: "bg-slate-700/60 text-slate-300 border-slate-600/50",
+  HOLD_POINT: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  WITNESS_POINT: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  PUNCH_LIST: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  NCR: "bg-red-500/20 text-red-300 border-red-500/30",
+  SNAG: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+};

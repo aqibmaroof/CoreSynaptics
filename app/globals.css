@@ -1,5 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap");
+/* CxControl font set — Inter (700/800 added) + JetBrains Mono. Must precede
+   non-@import rules per CSS spec; the appended cx-* design-system block at the
+   end of this file references these families. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @plugin "daisyui";
 /* @import "./requiredflow.css"; */
@@ -2020,3 +2024,583 @@ html {
     grid-template-columns: 32px 1fr;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CxControl design system — Cobalt + Citrine palette
+   Source: cxcontrol_v2.html :root tokens.
+   This block is the GLOBAL default skin for the app. It defines:
+     · palette CSS vars (cx-*)
+     · base body font + smoothing
+     · helper component classes (.cx-* + plain class names matching the HTML)
+   Existing rf-* containers continue to work because the rf-* color tokens
+   are remapped to the cx palette below.
+   The Inter + JetBrains Mono @import is at the top of this file (CSS spec
+   requires @import before any non-@import rule).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* CxControl Cobalt + Citrine palette */
+  --cx-bg:           #ffffff;
+  --cx-bg-app:       #f8fafc;
+  --cx-bg-soft:      #f1f5f9;
+  --cx-surface:      #ffffff;
+  --cx-border:       #e5e7eb;
+  --cx-border-strong:#cbd5e1;
+  --cx-text:         #0f172a;
+  --cx-text-soft:    #475569;
+  --cx-text-muted:   #94a3b8;
+  --cx-text-dim:     #cbd5e1;
+  --cx-brand:        #1e40af;     /* cobalt — main brand */
+  --cx-brand-h:      #1e3a8a;
+  --cx-brand-soft:   #dbeafe;
+  --cx-brand-fade:   #eff6ff;
+  --cx-accent:       #f59e0b;     /* citrine */
+  --cx-accent-h:     #d97706;
+  --cx-accent-soft:  #fef3c7;
+  --cx-green:        #16a34a;
+  --cx-green-soft:   #dcfce7;
+  --cx-red:          #dc2626;
+  --cx-red-soft:     #fee2e2;
+  --cx-purple:       #7c3aed;
+  --cx-purple-soft:  #ede9fe;
+  --cx-teal:         #0d9488;
+  --cx-teal-soft:    #ccfbf1;
+
+  /* Remap the existing rf-* tokens to the cx palette so legacy containers
+     using var(--rf-bg) etc. automatically pick up the new look. */
+  --rf-bg:    var(--cx-bg-app);
+  --rf-bg2:   var(--cx-surface);
+  --rf-bg3:   var(--cx-bg-soft);
+  --rf-bg4:   var(--cx-bg-soft);
+  --rf-bg5:   var(--cx-bg-soft);
+  --rf-txt:   var(--cx-text);
+  --rf-txt2:  var(--cx-text-soft);
+  --rf-txt3:  var(--cx-text-muted);
+  --rf-accent:  var(--cx-brand);
+  --rf-accent2: var(--cx-brand-h);
+  --rf-green:   var(--cx-green);
+  --rf-green2:  #15803d;
+  --rf-red:     var(--cx-red);
+  --rf-red2:    #991b1b;
+}
+
+/* Default theme = light/cx (was dark navy before). The data-theme="light"
+   block higher up in this file defined a different light scheme; this block
+   is appended later, so its --rf-* values override it via cascade specificity
+   when [data-theme="light"] is set. We mirror them here for the no-attr case. */
+:root[data-theme="light"] {
+  --rf-bg:    var(--cx-bg-app);
+  --rf-bg2:   var(--cx-surface);
+  --rf-bg3:   var(--cx-bg-soft);
+  --rf-bg4:   var(--cx-bg-soft);
+  --rf-bg5:   var(--cx-bg-soft);
+  --rf-txt:   var(--cx-text);
+  --rf-txt2:  var(--cx-text-soft);
+  --rf-txt3:  var(--cx-text-muted);
+  --rf-accent:  var(--cx-brand);
+  --rf-accent2: var(--cx-brand-h);
+  --rf-green:   var(--cx-green);
+  --rf-green2:  #15803d;
+  --rf-red:     var(--cx-red);
+  --rf-red2:    #991b1b;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--cx-bg-app);
+  color: var(--cx-text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mono helpers */
+.cx-mono, .mono {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+}
+.cx-kicker, .kicker {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cx-text-muted);
+}
+
+/* ── Buttons (mirrors HTML .btn-*) ──────────────────────────────────────── */
+.cx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.cx-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.cx-btn-pri   { background: var(--cx-brand);    color: #fff; }
+.cx-btn-pri:hover:not(:disabled)   { background: var(--cx-brand-h); }
+.cx-btn-amber { background: var(--cx-accent);   color: #fff; }
+.cx-btn-amber:hover:not(:disabled) { background: var(--cx-accent-h); }
+.cx-btn-ghost { background: var(--cx-bg);       color: var(--cx-text); border-color: var(--cx-border-strong); }
+.cx-btn-ghost:hover:not(:disabled) { background: var(--cx-bg-soft); border-color: var(--cx-text-muted); }
+.cx-btn-soft  { background: var(--cx-brand-fade); color: var(--cx-brand-h); border: 1px solid var(--cx-brand-soft); }
+.cx-btn-soft:hover:not(:disabled)  { background: var(--cx-brand-soft); }
+.cx-btn-sm    { padding: 5px 10px; font-size: 12px; }
+.cx-btn-xs    { padding: 3px 8px;  font-size: 11px; }
+.cx-btn-danger { background: var(--cx-red); color: #fff; }
+.cx-btn-danger:hover:not(:disabled) { background: #b91c1c; }
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
+.cx-card {
+  background: var(--cx-surface);
+  border: 1px solid var(--cx-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.cx-card-h {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--cx-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cx-card-h h3 { font-size: 15px; font-weight: 600; }
+.cx-card-b { padding: 18px; }
+
+/* ── KPI tile ───────────────────────────────────────────────────────────── */
+.cx-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.cx-kpi {
+  background: var(--cx-bg);
+  border: 1px solid var(--cx-border);
+  padding: 16px 18px;
+  border-radius: 10px;
+}
+.cx-kpi .lbl { font-size: 12px; color: var(--cx-text-muted); font-weight: 500; }
+.cx-kpi .val { font-size: 28px; font-weight: 700; margin-top: 6px; line-height: 1; letter-spacing: -0.02em; }
+.cx-kpi .delta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--cx-text-muted); margin-top: 8px; }
+.cx-kpi .delta.up   { color: var(--cx-green); }
+.cx-kpi .delta.down { color: var(--cx-red); }
+.cx-kpi.brand { border-top: 3px solid var(--cx-brand); }
+.cx-kpi.amber { border-top: 3px solid var(--cx-accent); }
+.cx-kpi.green { border-top: 3px solid var(--cx-green); }
+.cx-kpi.red   { border-top: 3px solid var(--cx-red); }
+
+/* ── Tags ───────────────────────────────────────────────────────────────── */
+.cx-tag {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.cx-tag.brand   { background: var(--cx-brand-soft);  color: var(--cx-brand-h); }
+.cx-tag.amber   { background: var(--cx-accent-soft); color: #92400e; }
+.cx-tag.green   { background: var(--cx-green-soft);  color: #166534; }
+.cx-tag.red     { background: var(--cx-red-soft);    color: #991b1b; }
+.cx-tag.purple  { background: var(--cx-purple-soft); color: #5b21b6; }
+.cx-tag.teal    { background: var(--cx-teal-soft);   color: #0f766e; }
+.cx-tag.gray    { background: var(--cx-bg-soft);     color: var(--cx-text-soft); }
+
+/* ── Table (mirrors HTML .tbl) ──────────────────────────────────────────── */
+.cx-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cx-tbl th {
+  background: var(--cx-bg-soft);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--cx-text-soft);
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--cx-border);
+  text-transform: uppercase;
+}
+.cx-tbl td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--cx-border);
+}
+.cx-tbl tbody tr:hover td { background: var(--cx-bg-soft); cursor: pointer; }
+.cx-tbl tbody tr:last-child td { border-bottom: none; }
+
+/* ── Phase bar (commissioning L1-L5 visualization) ──────────────────────── */
+.cx-phase-bar {
+  display: flex;
+  height: 32px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--cx-border);
+}
+.cx-phase-bar > div {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  border-right: 1px solid var(--cx-border);
+}
+.cx-phase-bar > div:last-child { border-right: none; }
+.cx-phase-bar .done   { background: var(--cx-brand);  color: #fff; }
+.cx-phase-bar .active { background: var(--cx-accent); color: #fff; }
+.cx-phase-bar .todo   { background: var(--cx-bg-soft); color: var(--cx-text-muted); }
+
+/* ── Tabs (HTML .tabs) ──────────────────────────────────────────────────── */
+.cx-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.cx-tab {
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--cx-surface);
+  color: var(--cx-text-soft);
+  border: 1px solid var(--cx-border);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cx-tab:hover { color: var(--cx-text); border-color: var(--cx-border-strong); }
+.cx-tab.active { background: var(--cx-brand); color: #fff; border-color: var(--cx-brand); }
+.cx-tab .count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  background: var(--cx-bg-soft);
+  color: var(--cx-text-muted);
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.cx-tab.active .count { background: rgba(255,255,255,0.22); color: #fff; }
+.cx-tab .count.amber  { background: var(--cx-accent); color: #fff; }
+.cx-tab .count.red    { background: var(--cx-red); color: #fff; }
+
+/* ── Page chrome ────────────────────────────────────────────────────────── */
+.cx-page { max-width: 1280px; margin: 0 auto; padding: 28px 32px; }
+.cx-page-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.cx-page-h h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--cx-text);
+}
+.cx-page-h .sub {
+  font-size: 14px;
+  color: var(--cx-text-soft);
+  margin-top: 6px;
+  max-width: 720px;
+  line-height: 1.55;
+}
+.cx-page-h .actions { display: flex; gap: 8px; flex-shrink: 0; }
+.cx-callout {
+  background: var(--cx-brand-fade);
+  border: 1px solid var(--cx-brand-soft);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--cx-brand-h);
+  line-height: 1.55;
+}
+.cx-callout.amber {
+  background: var(--cx-accent-soft);
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+/* ── Top bar (mirrors HTML .topbar) ─────────────────────────────────────── */
+.cx-topbar {
+  background: var(--cx-bg);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  border-bottom: 1px solid var(--cx-border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.cx-tb-logo { display: flex; align-items: center; gap: 10px; }
+.cx-tb-logo .mark {
+  width: 30px; height: 30px;
+  background: var(--cx-brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 6px;
+}
+.cx-tb-logo .name { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; color: var(--cx-text); }
+.cx-tb-divider { width: 1px; height: 24px; background: var(--cx-border); }
+
+.cx-tb-search {
+  flex: 1;
+  max-width: 480px;
+  position: relative;
+}
+.cx-tb-search input {
+  width: 100%;
+  padding: 7px 12px 7px 32px;
+  border: 1px solid var(--cx-border);
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--cx-bg-soft);
+  outline: none;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  color: var(--cx-text);
+  font-family: inherit;
+}
+.cx-tb-search input:focus {
+  border-color: var(--cx-brand);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--cx-brand-soft);
+}
+
+.cx-tb-user { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.cx-tb-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cx-text-soft);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+  background: transparent;
+  border: 0;
+}
+.cx-tb-icon:hover { background: var(--cx-bg-soft); color: var(--cx-text); }
+.cx-tb-bell-dot {
+  position: absolute;
+  top: 7px; right: 9px;
+  width: 8px; height: 8px;
+  background: var(--cx-accent);
+  border: 2px solid var(--cx-bg);
+  border-radius: 50%;
+}
+.cx-tb-badge {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 10px 5px 5px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  background: transparent;
+  border: 0;
+}
+.cx-tb-badge:hover { background: var(--cx-bg-soft); }
+.cx-tb-av {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--cx-brand);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 11px;
+}
+.cx-tb-info { line-height: 1.2; text-align: left; }
+.cx-tb-info .nm { font-size: 12px; font-weight: 600; color: var(--cx-text); }
+.cx-tb-info .rl { font-size: 11px; color: var(--cx-text-muted); }
+
+/* ── Sidebar (mirrors HTML .sidebar) ────────────────────────────────────── */
+.cx-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: calc(100vh - 56px);
+  background: var(--cx-bg-app);
+}
+.cx-sidebar {
+  background: var(--cx-bg);
+  border-right: 1px solid var(--cx-border);
+  padding: 16px 12px;
+  overflow-y: auto;
+  height: calc(100vh - 56px);
+  position: sticky;
+  top: 56px;
+}
+.cx-side-section { margin-bottom: 18px; }
+.cx-side-section .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--cx-text-muted);
+  text-transform: uppercase;
+  padding: 0 12px 8px;
+}
+.cx-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--cx-text-soft);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  text-decoration: none;
+  font-family: inherit;
+}
+.cx-nav-item:hover { background: var(--cx-bg-soft); color: var(--cx-text); }
+.cx-nav-item.active {
+  background: var(--cx-brand-soft);
+  color: var(--cx-brand-h);
+  font-weight: 600;
+}
+.cx-nav-item .ic {
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cx-nav-item .nav-badge {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  background: var(--cx-bg-soft);
+  color: var(--cx-text-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.cx-nav-item.active .nav-badge { background: var(--cx-brand); color: #fff; }
+.cx-nav-item .nav-badge.amber { background: var(--cx-accent); color: #fff; }
+.cx-nav-item .nav-badge.red   { background: var(--cx-red);    color: #fff; }
+
+/* ── You-panel ──────────────────────────────────────────────────────────── */
+.cx-you {
+  margin: 4px 4px 16px;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--cx-brand-fade), var(--cx-brand-soft));
+  border: 1px solid var(--cx-brand-soft);
+  border-radius: 10px;
+}
+.cx-you .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--cx-brand);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.cx-you .name { font-size: 14px; font-weight: 700; color: var(--cx-text); }
+.cx-you .role { font-size: 11px; color: var(--cx-text-soft); margin-top: 2px; }
+
+/* ── Common form controls ──────────────────────────────────────────────── */
+.cx-input, .cx-select, .cx-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--cx-border);
+  border-radius: 8px;
+  background: var(--cx-surface);
+  color: var(--cx-text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cx-input:focus, .cx-select:focus, .cx-textarea:focus {
+  border-color: var(--cx-brand);
+  box-shadow: 0 0 0 3px var(--cx-brand-soft);
+}
+.cx-textarea { min-height: 70px; resize: vertical; }
+.cx-label {
+  display: block;
+  font-size: 11px;
+  color: var(--cx-text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+/* ── Modal ──────────────────────────────────────────────────────────────── */
+.cx-modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.cx-modal {
+  background: var(--cx-surface);
+  border-radius: 12px;
+  width: 540px;
+  max-width: 100%;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+  overflow: hidden;
+}
+.cx-modal-h {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--cx-border);
+  font-weight: 700;
+  font-size: 15px;
+}
+.cx-modal-b { padding: 20px; display: grid; gap: 12px; }
+.cx-modal-f {
+  padding: 12px 20px;
+  border-top: 1px solid var(--cx-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--cx-bg-soft);
+}
+
+/* ── Toast ──────────────────────────────────────────────────────────────── */
+.cx-toast {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--cx-brand);
+  color: #fff;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  cursor: pointer;
+  max-width: 480px;
+}
+.cx-toast.error { background: var(--cx-red); }
+.cx-toast.amber { background: var(--cx-accent); color: #fff; }
