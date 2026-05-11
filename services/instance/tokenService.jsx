@@ -17,8 +17,11 @@ export const setUser = ({ user }) => {
 
 export const setOrganization = ({ organization }) => {
   if (typeof window === "undefined") return;
-  organization &&
-    localStorage.setItem("organization", JSON.stringify(organization));
+  if (!organization) return;
+  // Strip presigned logoUrl before caching — it expires in 30 min and would
+  // cause a broken image on return visits. The sidebar fetches a fresh URL on
+  // every mount via GetOrganization().
+  localStorage.setItem("organization", JSON.stringify(cacheable));
 };
 
 export const getUser = () =>
