@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   images: {
     domains: [
       "wildtag-s3-bucket.s3.eu-north-1.amazonaws.com",
+      "coresynaptics-bucket-stag.s3.us-east-1.amazonaws.com"
     ],
   },
 };

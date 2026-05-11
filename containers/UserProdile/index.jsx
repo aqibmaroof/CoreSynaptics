@@ -1,485 +1,786 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { FiAlertCircle, FiCheck, FiMail } from "react-icons/fi";
 import { ChangePassword } from "../../services/auth";
+import { getUser, getOrganization } from "../../services/instance/tokenService";
+
+const COMPANY_ROLE_LABELS = {
+  gc: "General Contractor", oem: "OEM / Manufacturer", customer: "Owner / Customer",
+  trade: "Trade Contractor", cxa: "Commissioning Authority", ae: "Architect & Engineer",
+  integrator: "Systems Integrator", rigger: "Rigger", builder: "Builder",
+  security: "Security", fire: "Fire Protection", staffing: "Staffing",
+  controls: "Controls", lowvoltage: "Low Voltage", mechanical: "Mechanical",
+  operations: "Operations", customer_const: "Construction Owner",
+};
+const COMPANY_SIZE_LABELS = { small: "Starter", med: "Growth", medium: "Professional", ent: "Enterprise" };
+const DC_TYPE_LABELS = {
+  ai: "AI / GPU-Dense", hyp: "Hyperscale", colo: "Colocation", ent: "Enterprise",
+  edg: "Edge", hpc: "HPC", cry: "Cryptocurrency", gov: "Government / Secure",
+  bro: "Broadcast", res: "Research", mod: "Modular", fin: "Financial / Low-Latency",
+};
+const UPTIME_TIER_LABELS = {
+  t1: "Tier I — Basic", t2: "Tier II — Redundant",
+  t3: "Tier III — Concurrently Maintainable", t4: "Tier IV — Fault Tolerant",
+};
+const FACILITY_SCALE_LABELS = {
+  s1: "Small (< 1 MW)", s2: "Medium (1–10 MW)", s3: "Large (10–100 MW)", s4: "Hyperscale (> 100 MW)",
+};
+const COOLING_TYPE_LABELS = {
+  air: "Air-Cooled", rdhx: "Rear-Door Heat Exchanger", dlc: "Direct Liquid Cooling", imm: "Immersion Cooling",
+};
+const POWER_REDUNDANCY_LABELS = {
+  n: "N (No Redundancy)", n1: "N+1", "2n": "2N (Fully Redundant)", "2n1": "2N+1",
+};
+const PROCUREMENT_OWNER_LABELS = {
+  OFCI: "Owner-Furnished / Contractor-Installed", CFCI: "Contractor-Furnished / Contractor-Installed",
+  CUSTOMER: "Customer", CONTRACTOR: "Contractor",
+};
 
 export default function ProfilePage() {
-  const [formData, setFormData] = useState({
-    storeName: "John Doe",
-    phone: "+(123) 456-7890",
-    storeEmail: "johndoe@gmail.com",
-    senderEmail: "johndoe@gmail.com",
-    businessName: "",
-    country: "United States",
-    address: "",
-    apartment: "",
-    city: "",
-    state: "",
-    pinCode: "",
-    timezone: "(GMT-12:00) International Date Line West",
-    unitSystem: "Metric",
-    weightUnit: "Kilograms",
-    currency: "Store currency",
-    prefix: "#",
-    suffix: "",
+  const [user, setUser] = useState(null);
+  const [org, setOrg] = useState(null);
+  const [tab, setTab] = useState("profile");
+
+  const [pwForm, setPwForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmNewPassword: "",
   });
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
 
-  const [passwordFormData, setPasswordFormData] = useState({
-    currentPassword: "current_password",
-    newPassword: "new_secure_password",
-    confirmNewPassword: "new_secure_password",
-  });
+  useEffect(() => {
+    const raw = getUser();
+    if (raw) setUser(JSON.parse(raw));
 
-  const handlePasswordChange = (e) => {
-    setPasswordFormData({
-      ...passwordFormData,
-      [e.target.name]: e.target.value,
-    });
-  };
+    const rawOrg = getOrganization();
+    if (rawOrg) setOrg(JSON.parse(rawOrg));
+  }, []);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  if (!user) return null;
 
-  const handleSave = () => {
-    console.log("Saving changes...", formData);
-    // Add your save logic here
-  };
+  const initials =
+    `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase();
+  const plan = user.subscriptionPlan;
+  const role = user.activeRole;
 
-  const handleDiscard = () => {
-    console.log("Discarding changes...");
-    // Add your discard logic here
-  };
+  const handlePwChange = (e) =>
+    setPwForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
-  const UpdatePassword = async () => {
+  const handleUpdatePassword = async () => {
+    setPwError("");
+    setPwSuccess(false);
+    if (pwForm.newPassword !== pwForm.confirmNewPassword) {
+      setPwError("New passwords do not match.");
+      return;
+    }
+    if (pwForm.newPassword.length < 6) {
+      setPwError("Password must be at least 6 characters.");
+      return;
+    }
+    setPwLoading(true);
     try {
-      const payload = {
-        currentPassword: passwordFormData.currentPassword,
-        newPassword: passwordFormData.newPassword,
-      };
-      const response = await ChangePassword(payload);
-      console.log(response);
-    } catch (error) {
-      console.log(error);
+      await ChangePassword({
+        currentPassword: pwForm.currentPassword,
+        newPassword: pwForm.newPassword,
+      });
+      setPwSuccess(true);
+      setPwForm({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+    } catch (err) {
+      setPwError(err?.response?.data?.message ?? "Password update failed.");
+    } finally {
+      setPwLoading(false);
     }
   };
+
   return (
-    <div className="min-h-screen p-6">
-      <style jsx>{`
-        select {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%239ca3af' strokeLinecap='round' strokeLinejoin='round' strokeWidth='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
-          background-position: right 0.75rem center;
-          background-repeat: no-repeat;
-          background-size: 1.25em 1.25em;
-          padding-right: 2.5rem;
-        }
-      `}</style>
-
-      <div className=" mx-auto space-y-6">
-        {/* Profile Section */}
-        <div className="bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-2xl p-6">
-          <h2 className="text-white text-xl font-semibold mb-6">Profile</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Store Name */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Store Name
-              </label>
-              <input
-                type="text"
-                name="storeName"
-                value={formData.storeName}
-                onChange={handleChange}
-                placeholder="John Doe"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy border border-gray-600 rounded-xl px-4 py-3 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">Phone</label>
-              <input
-                type="text"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+(123) 456-7890"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-
-            {/* Store contact email */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Store contact email
-              </label>
-              <input
-                type="email"
-                name="storeEmail"
-                value={formData.storeEmail}
-                onChange={handleChange}
-                placeholder="johndoe@gmail.com"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-
-            {/* Sender email */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Sender email
-              </label>
-              <input
-                type="email"
-                name="senderEmail"
-                value={formData.senderEmail}
-                onChange={handleChange}
-                placeholder="johndoe@gmail.com"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* Warning Alert */}
-          <div className="mt-6 bg-[#4a3b2a] border-l-4 border-[#f59e0b] rounded-xl p-4 flex items-start gap-3">
-            <div className="bg-[#f59e0b] rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg
-                className="w-4 h-4 text-white"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <p className="text-[#f59e0b] text-sm">
-              Confirm that you have access to {formData.senderEmail} in sender
-              email settings.
-            </p>
-          </div>
+    <div className="p-6 mx-auto space-y-5">
+      {/* ── Hero Card ─────────────────────────────────────────── */}
+      <div
+        className="rounded-2xl p-6 flex flex-wrap items-center gap-5"
+        style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border)" }}
+      >
+        <div
+          className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0"
+          style={{
+            background:
+              "color-mix(in srgb, var(--rf-accent) 18%, transparent)",
+            color: "var(--rf-accent)",
+          }}
+        >
+          {initials}
         </div>
 
-        <div className="bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-2xl p-6">
-          <h2 className="text-white text-xl font-semibold mb-6">
-            Pasword Change
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Store Name */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Current Password
-              </label>
-              <input
-                type="password"
-                name="currentPassword"
-                value={formData.currentPassword}
-                onChange={handlePasswordChange}
-                placeholder="Enter current password"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy border border-gray-600 rounded-xl px-4 py-3 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-
-            {/* Sender email */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                New Password
-              </label>
-              <input
-                type="password"
-                name="newPassword"
-                value={formData.newPassword}
-                onChange={handlePasswordChange}
-                placeholder="Enter new password"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-300 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* Warning Alert */}
-          <div className="mt-6 ">
-            <button
-              className="btn btn-info btn-outline"
-              onClick={() => UpdatePassword()}
-            >
-              Update Password
-            </button>
-          </div>
-        </div>
-
-        {/* Billing Information Section */}
-        <div className="bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-2xl p-6">
-          <h2 className="text-white text-xl font-semibold mb-6">
-            Billing information
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Legal business name */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Legal business name
-              </label>
-              <input
-                type="text"
-                name="businessName"
-                value={formData.businessName}
-                onChange={handleChange}
-                placeholder="Business name"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-
-            {/* Country/region */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Country/region
-              </label>
-              <select
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 focus:outline-none focus:border-gray-500 appearance-none cursor-pointer transition-colors"
-              >
-                <option>United States</option>
-                <option>Canada</option>
-                <option>United Kingdom</option>
-                <option>Australia</option>
-              </select>
-            </div>
-
-            {/* Address */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Address
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                placeholder="Address"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-
-            {/* Apartment, suite, etc. */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Apartment, suite, etc.
-              </label>
-              <input
-                type="text"
-                name="apartment"
-                value={formData.apartment}
-                onChange={handleChange}
-                placeholder="Apartment, suite, etc."
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* City, State, PIN Code Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-            {/* City */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">City</label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                placeholder="City"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-
-            {/* State */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">State</label>
-              <input
-                type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                placeholder="State"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-
-            {/* PIN Code */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                PIN Code
-              </label>
-              <input
-                type="text"
-                name="pinCode"
-                value={formData.pinCode}
-                onChange={handleChange}
-                placeholder="PIN Code"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Time zone and units of measurement Section */}
-        <div className="bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl p-6">
-          <h2 className="text-white text-xl font-semibold mb-2">
-            Time zone and units of measurement
-          </h2>
-          <p className="text-gray-400 text-sm mb-6">
-            Used to calculate product prices, shipping weighs, and order times.
-          </p>
-
-          {/* Time zone */}
-          <div className="mb-6">
-            <label className="block text-gray-400 text-sm mb-2">
-              Time zone
-            </label>
-            <select
-              name="timezone"
-              value={formData.timezone}
-              onChange={handleChange}
-              className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 focus:outline-none focus:border-gray-500 appearance-none cursor-pointer transition-colors"
-            >
-              <option>(GMT-12:00) International Date Line West</option>
-              <option>(GMT-11:00) Midway Island, Samoa</option>
-              <option>(GMT-10:00) Hawaii</option>
-              <option>(GMT-09:00) Alaska</option>
-              <option>(GMT-08:00) Pacific Time (US & Canada)</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Unit system */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Unit system
-              </label>
-              <select
-                name="unitSystem"
-                value={formData.unitSystem}
-                onChange={handleChange}
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 focus:outline-none focus:border-gray-500 appearance-none cursor-pointer transition-colors"
-              >
-                <option>Metric</option>
-                <option>Imperial</option>
-              </select>
-            </div>
-
-            {/* Default weight unit */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">
-                Default weight unit
-              </label>
-              <select
-                name="weightUnit"
-                value={formData.weightUnit}
-                onChange={handleChange}
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 focus:outline-none focus:border-gray-500 appearance-none cursor-pointer transition-colors"
-              >
-                <option>Kilograms</option>
-                <option>Pounds</option>
-                <option>Ounces</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Store currency Section */}
-        <div className="bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl p-6">
-          <h2 className="text-white text-xl font-semibold mb-2">
-            Store currency
-          </h2>
-          <p className="text-gray-400 text-sm mb-6">
-            The currency your products are sold in.
-          </p>
-
-          {/* Store currency */}
-          <div>
-            <label className="block text-gray-400 text-sm mb-2">
-              Store currency
-            </label>
-            <select
-              name="currency"
-              value={formData.currency}
-              onChange={handleChange}
-              className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 focus:outline-none focus:border-gray-500 appearance-none cursor-pointer transition-colors"
-            >
-              <option>Store currency</option>
-              <option>USD - US Dollar</option>
-              <option>EUR - Euro</option>
-              <option>GBP - British Pound</option>
-              <option>JPY - Japanese Yen</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Order id format Section */}
-        <div className="bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl p-6">
-          <h2 className="text-white text-xl font-semibold mb-2">
-            Order id format
-          </h2>
-          <p className="text-gray-400 text-sm mb-6">
-            Shown on the Orders page, customer pages, and customer order
-            notifications to identify orders.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Prefix */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">Prefix</label>
-              <input
-                type="text"
-                name="prefix"
-                value={formData.prefix}
-                onChange={handleChange}
-                placeholder="#"
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-
-            {/* Suffix */}
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">Suffix</label>
-              <input
-                type="text"
-                name="suffix"
-                value={formData.suffix}
-                onChange={handleChange}
-                className="w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy rounded-xl px-4 py-3 text-gray-400 placeholder-gray-500 focus:outline-none focus:border-gray-500 transition-colors"
-              />
-            </div>
-          </div>
-
-          <p className="text-gray-400 text-sm mt-4">
-            Your order ID will appear as #1001, #1002, #1003 ...
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-4">
-          <button
-            onClick={handleDiscard}
-            className="px-6 py-3 bg-base-100 text-gray-300 rounded-xl hover:bg-[#4a5066] transition-colors font-medium"
+        <div className="flex-1 min-w-0">
+          <h1
+            className="text-2xl font-bold truncate"
+            style={{ color: "var(--rf-txt)" }}
           >
-            Discard
-          </button>
-          <button
-            onClick={handleSave}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 px-6 py-3  font-medium"
+            {user.firstName} {user.lastName}
+          </h1>
+          <p
+            className="text-sm mt-0.5 truncate"
+            style={{ color: "var(--rf-txt2)" }}
           >
-            Save Changes
-          </button>
+            {user.email}
+          </p>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <StatusPill
+              label={user.status}
+              active={user.status === "ACTIVE"}
+            />
+            <span
+              className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+              style={{
+                background:
+                  "color-mix(in srgb, var(--rf-accent) 12%, transparent)",
+                color: "var(--rf-accent)",
+              }}
+            >
+              {user.organizationType}
+            </span>
+            <span
+              className="text-xs font-medium px-2.5 py-0.5 rounded-full capitalize"
+              style={{
+                background: "var(--rf-bg)",
+                color: "var(--rf-txt2)",
+                border: "1px solid var(--rf-border2)",
+              }}
+            >
+              {role?.description ?? role?.name?.replace(/_/g, " ")}
+            </span>
+          </div>
+        </div>
+
+        <div className="shrink-0 text-right hidden md:block">
+          <p
+            className="text-[10px] uppercase tracking-widest mb-1"
+            style={{ color: "var(--rf-txt3)" }}
+          >
+            Plan
+          </p>
+          <p className="text-lg font-bold" style={{ color: "var(--rf-accent)" }}>
+            {plan?.displayName}
+          </p>
+          <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+            Tier {plan?.tier}
+          </p>
         </div>
       </div>
+
+      {/* ── Tabs ──────────────────────────────────────────────── */}
+      <div
+        className="flex items-center gap-1 p-1 rounded-xl w-fit"
+        style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border)" }}
+      >
+        {["profile", "organization", "permissions", "security"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className="px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all"
+            style={
+              tab === t
+                ? { background: "var(--rf-accent)", color: "#fff" }
+                : { color: "var(--rf-txt2)" }
+            }
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Profile Tab ───────────────────────────────────────── */}
+      {tab === "profile" && (
+        <>
+          {/* Identity */}
+          <Section title="Identity">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoField label="First Name" value={user.firstName} />
+              <InfoField label="Last Name" value={user.lastName} />
+              <InfoField label="Email" value={user.email} icon={<FiMail />} />
+              <InfoField
+                label="Account Status"
+                value={user.status}
+                valueStyle={{
+                  color:
+                    user.status === "ACTIVE"
+                      ? "var(--rf-green)"
+                      : "var(--rf-red)",
+                  fontWeight: 600,
+                }}
+              />
+            </div>
+          </Section>
+
+          {/* Organization */}
+          <Section title="Organization">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoField
+                label="Organization Name"
+                value={user.organizationName}
+              />
+              <InfoField
+                label="Organization Type"
+                value={user.organizationType}
+              />
+              <InfoField
+                label="Organization Status"
+                value={user.organizationStatus}
+              />
+              <InfoField
+                label="Platform User"
+                value={user.isPlatformUser ? "Yes" : "No"}
+              />
+            </div>
+          </Section>
+
+          {/* Subscription */}
+          <Section title="Subscription Plan">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <InfoField label="Plan" value={plan?.displayName} />
+              <InfoField label="Tier" value={`Tier ${plan?.tier}`} />
+              <InfoField label="Plan Name" value={plan?.name} />
+            </div>
+            <p
+              className="text-xs mb-2"
+              style={{ color: "var(--rf-txt3)" }}
+            >
+              Module Access
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {plan?.moduleAccess?.map((mod) => (
+                <span
+                  key={mod}
+                  className="text-xs px-2.5 py-1 rounded-lg font-medium capitalize"
+                  style={{
+                    background:
+                      "color-mix(in srgb, var(--rf-accent) 12%, transparent)",
+                    color: "var(--rf-accent)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--rf-accent) 25%, transparent)",
+                  }}
+                >
+                  {mod}
+                </span>
+              ))}
+            </div>
+          </Section>
+        </>
+      )}
+
+      {/* ── Organization Tab ──────────────────────────────────── */}
+      {tab === "organization" && (
+        org ? (
+          <>
+            {/* Setup status banner */}
+            {org.setupStatus !== "COMPLETE" && (
+              <div
+                className="flex items-center gap-2 p-3 rounded-xl text-sm"
+                style={{
+                  background: "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+                  color: "var(--rf-red)",
+                  border: "1px solid color-mix(in srgb, var(--rf-red) 25%, transparent)",
+                }}
+              >
+                <FiAlertCircle className="shrink-0" />
+                {org.setupStatus === "PENDING"
+                  ? "Organization setup has not been started. Complete the setup wizard to unlock all features."
+                  : "Organization setup is incomplete. Resume the setup wizard to finish configuration."}
+              </div>
+            )}
+
+            {/* Identity */}
+            <Section title="Organization Identity">
+              <div className="flex items-center gap-4 mb-5">
+                {org.branding?.logoUrl ? (
+                  <img
+                    src={org.branding.logoUrl}
+                    alt={`${org.name} logo`}
+                    className="w-16 h-16 rounded-xl object-cover shrink-0"
+                    style={{ border: "1px solid var(--rf-border)" }}
+                  />
+                ) : (
+                  <div
+                    className="w-16 h-16 rounded-xl flex items-center justify-center text-xl font-bold shrink-0"
+                    style={{
+                      background: "color-mix(in srgb, var(--rf-accent) 18%, transparent)",
+                      color: "var(--rf-accent)",
+                    }}
+                  >
+                    {org.name?.[0]?.toUpperCase() ?? "O"}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-lg font-bold truncate" style={{ color: "var(--rf-txt)" }}>{org.name}</p>
+                  {org.subdomain && (
+                    <p className="text-xs mt-0.5" style={{ color: "var(--rf-txt3)" }}>
+                      {org.subdomain}.app.cx-control.com
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoField label="Slug" value={org.slug} />
+                {org.subdomain && <InfoField label="Subdomain" value={org.subdomain} />}
+                {org.companyEmail && <InfoField label="Company Email" value={org.companyEmail} icon={<FiMail />} />}
+                <InfoField
+                  label="Status"
+                  value={org.status}
+                  valueStyle={{ color: org.status === "ACTIVE" ? "var(--rf-green)" : "var(--rf-red)", fontWeight: 600 }}
+                />
+                <InfoField
+                  label="Setup Status"
+                  value={org.setupStatus}
+                  valueStyle={{ color: org.setupStatus === "COMPLETE" ? "var(--rf-green)" : "var(--rf-red)", fontWeight: 600 }}
+                />
+                {org.setupCompletedAt && (
+                  <InfoField label="Setup Completed" value={new Date(org.setupCompletedAt).toLocaleDateString()} />
+                )}
+              </div>
+            </Section>
+
+            {/* Classification & Plan */}
+            <Section title="Classification & Plan">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoField
+                  label="Company Type"
+                  value={COMPANY_ROLE_LABELS[org.companyRole ?? ""] ?? org.type}
+                />
+                {org.companySize && (
+                  <InfoField
+                    label="Plan"
+                    value={`${COMPANY_SIZE_LABELS[org.companySize] ?? org.companySize}${org.pricingAmount != null ? ` · $${org.pricingAmount.toLocaleString()}/mo` : ""}`}
+                  />
+                )}
+                {org.pricingTier && <InfoField label="Pricing Tier" value={org.pricingTier} />}
+              </div>
+            </Section>
+
+            {/* Scope Config */}
+            {org.scopeConfig && (
+              <Section title="Scope Configuration">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InfoField label="Multi-Site (Multi-DC)" value={org.scopeConfig.multiDC ? "Enabled" : "Disabled"} />
+                  <InfoField label="Default Connected Mode" value={org.scopeConfig.defaultConnected ? "Enabled" : "Disabled"} />
+                </div>
+              </Section>
+            )}
+
+            {/* Facilities */}
+            {org.facilities?.length > 0 && (
+              <Section title={`Facilities (${org.facilities.length})`}>
+                <div className="space-y-4">
+                  {org.facilities.map((f) => (
+                    <div
+                      key={f.id}
+                      className="rounded-xl p-4"
+                      style={{ background: "var(--rf-bg)", border: "1px solid var(--rf-border)" }}
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <p className="text-sm font-semibold" style={{ color: "var(--rf-txt)" }}>
+                          {f.name ?? DC_TYPE_LABELS[f.dcType] ?? f.dcType}
+                        </p>
+                        {f.isPrimary && (
+                          <span
+                            className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                            style={{
+                              background: "color-mix(in srgb, var(--rf-accent) 15%, transparent)",
+                              color: "var(--rf-accent)",
+                            }}
+                          >
+                            Primary
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <InfoField label="Type" value={DC_TYPE_LABELS[f.dcType] ?? f.dcType} />
+                        <InfoField label="Uptime Tier" value={UPTIME_TIER_LABELS[f.uptimeTier] ?? f.uptimeTier} />
+                        <InfoField label="Scale" value={FACILITY_SCALE_LABELS[f.facilityScale] ?? f.facilityScale} />
+                        <InfoField label="Cooling" value={COOLING_TYPE_LABELS[f.coolingType] ?? f.coolingType} />
+                        <InfoField label="Power Redundancy" value={POWER_REDUNDANCY_LABELS[f.powerRedundancy] ?? f.powerRedundancy} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {/* Equipment Catalog */}
+            {org.equipment?.length > 0 && (
+              <Section title={`Equipment Catalog (${org.equipment.length} classes)`}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--rf-border)" }}>
+                        {["Code", "Asset Class", "Manufacturer", "Qty", "Lead Time", "Procurement"].map((h) => (
+                          <th
+                            key={h}
+                            className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider"
+                            style={{ color: "var(--rf-txt3)" }}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {org.equipment.map((e) => (
+                        <tr key={e.id} style={{ borderBottom: "1px solid var(--rf-border)" }}>
+                          <td className="py-2.5 px-3">
+                            <span
+                              className="font-mono text-xs px-1.5 py-0.5 rounded"
+                              style={{ background: "var(--rf-bg2)", color: "var(--rf-accent)" }}
+                            >
+                              {e.assetCode}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-xs font-medium" style={{ color: "var(--rf-txt)" }}>{e.assetClass}</td>
+                          <td className="py-2.5 px-3 text-xs" style={{ color: "var(--rf-txt2)" }}>{e.manufacturer ?? "—"}</td>
+                          <td className="py-2.5 px-3 text-xs" style={{ color: "var(--rf-txt)" }}>{e.quantity}</td>
+                          <td className="py-2.5 px-3 text-xs" style={{ color: "var(--rf-txt2)" }}>
+                            {e.leadWeeks != null ? `${e.leadWeeks}w` : "—"}
+                          </td>
+                          <td className="py-2.5 px-3 text-xs" style={{ color: "var(--rf-txt2)" }}>
+                            {PROCUREMENT_OWNER_LABELS[e.procurementOwner] ?? e.procurementOwner}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Section>
+            )}
+
+            {/* Branding */}
+            {org.branding && (
+              <Section title="Branding">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {org.branding.primaryColor && (
+                    <div
+                      className="rounded-xl p-3"
+                      style={{ background: "var(--rf-bg)", border: "1px solid var(--rf-border)" }}
+                    >
+                      <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: "var(--rf-txt3)" }}>
+                        Primary Color
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-6 h-6 rounded-md shrink-0"
+                          style={{ background: org.branding.primaryColor, border: "1px solid var(--rf-border)" }}
+                        />
+                        <span className="text-sm font-mono font-medium" style={{ color: "var(--rf-txt)" }}>
+                          {org.branding.primaryColor}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <InfoField
+                    label="Google Earth Add-on"
+                    value={org.branding.googleEarth ? "Enabled" : "Disabled"}
+                  />
+                </div>
+              </Section>
+            )}
+          </>
+        ) : (
+          <Section title="Organization">
+            <p className="text-sm" style={{ color: "var(--rf-txt3)" }}>
+              Organization details not available. They load automatically when the app initializes.
+            </p>
+          </Section>
+        )
+      )}
+
+      {/* ── Permissions Tab ───────────────────────────────────── */}
+      {tab === "permissions" && (
+        <Section
+          title={role?.description ?? "Role Permissions"}
+          subtitle={`Role: ${role?.name?.replace(/_/g, " ")}`}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--rf-border)" }}>
+                  {["Module", "Display Name", "Permission", "Actions"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="text-left py-2 px-3 text-[10px] font-semibold uppercase tracking-wider"
+                        style={{ color: "var(--rf-txt3)" }}
+                      >
+                        {h}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {role?.permissions?.map((perm) => (
+                  <tr
+                    key={perm.moduleKey}
+                    style={{ borderBottom: "1px solid var(--rf-border)" }}
+                  >
+                    <td className="py-2.5 px-3">
+                      <span
+                        className="font-medium capitalize text-xs"
+                        style={{ color: "var(--rf-txt)" }}
+                      >
+                        {perm.orgLabel}
+                      </span>
+                    </td>
+                    <td
+                      className="py-2.5 px-3 text-xs"
+                      style={{ color: "var(--rf-txt2)" }}
+                    >
+                      {perm.displayName}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <PermBadge level={perm.permissionLevel} />
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex flex-wrap gap-1">
+                        {perm.allowedActions.map((a) => (
+                          <span
+                            key={a}
+                            className="text-[10px] px-1.5 py-0.5 rounded capitalize font-medium"
+                            style={{
+                              background: "var(--rf-bg)",
+                              color: "var(--rf-txt3)",
+                              border: "1px solid var(--rf-border2)",
+                            }}
+                          >
+                            {a}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Accessible modules summary */}
+          <div className="mt-6">
+            <p
+              className="text-xs mb-2 font-semibold uppercase tracking-wider"
+              style={{ color: "var(--rf-txt3)" }}
+            >
+              All Accessible Modules
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {user.accessibleModules?.map((mod) => (
+                <span
+                  key={mod}
+                  className="text-xs px-2.5 py-1 rounded-lg font-medium capitalize"
+                  style={{
+                    background: "var(--rf-bg)",
+                    color: "var(--rf-txt2)",
+                    border: "1px solid var(--rf-border)",
+                  }}
+                >
+                  {mod}
+                </span>
+              ))}
+            </div>
+          </div>
+        </Section>
+      )}
+
+      {/* ── Security Tab ──────────────────────────────────────── */}
+      {tab === "security" && (
+        <Section title="Change Password">
+          <div className="max-w-md space-y-4">
+            <PwField
+              label="Current Password"
+              name="currentPassword"
+              value={pwForm.currentPassword}
+              onChange={handlePwChange}
+            />
+            <PwField
+              label="New Password"
+              name="newPassword"
+              value={pwForm.newPassword}
+              onChange={handlePwChange}
+            />
+            <PwField
+              label="Confirm New Password"
+              name="confirmNewPassword"
+              value={pwForm.confirmNewPassword}
+              onChange={handlePwChange}
+            />
+
+            {pwError && (
+              <div
+                className="flex items-center gap-2 p-3 rounded-xl text-sm"
+                style={{
+                  background:
+                    "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+                  color: "var(--rf-red)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--rf-red) 25%, transparent)",
+                }}
+              >
+                <FiAlertCircle className="shrink-0" /> {pwError}
+              </div>
+            )}
+
+            {pwSuccess && (
+              <div
+                className="flex items-center gap-2 p-3 rounded-xl text-sm"
+                style={{
+                  background:
+                    "color-mix(in srgb, var(--rf-green) 12%, transparent)",
+                  color: "var(--rf-green)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--rf-green) 25%, transparent)",
+                }}
+              >
+                <FiCheck className="shrink-0" /> Password updated successfully.
+              </div>
+            )}
+
+            <button
+              onClick={handleUpdatePassword}
+              disabled={pwLoading}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: "var(--rf-accent)",
+                color: "#fff",
+                opacity: pwLoading ? 0.7 : 1,
+              }}
+            >
+              {pwLoading ? "Updating…" : "Update Password"}
+            </button>
+          </div>
+        </Section>
+      )}
     </div>
+  );
+}
+
+// ── Sub-components ───────────────────────────────────────────────
+
+function Section({ title, subtitle, children }) {
+  return (
+    <div
+      className="rounded-2xl p-6"
+      style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border)" }}
+    >
+      <div className="mb-5">
+        <h2
+          className="text-base font-semibold"
+          style={{ color: "var(--rf-txt)" }}
+        >
+          {title}
+        </h2>
+        {subtitle && (
+          <p
+            className="text-xs capitalize mt-0.5"
+            style={{ color: "var(--rf-txt3)" }}
+          >
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function InfoField({ label, value, icon, valueStyle = {} }) {
+  return (
+    <div
+      className="rounded-xl p-3"
+      style={{
+        background: "var(--rf-bg)",
+        border: "1px solid var(--rf-border)",
+      }}
+    >
+      <p
+        className="text-[10px] uppercase tracking-wider mb-1"
+        style={{ color: "var(--rf-txt3)" }}
+      >
+        {label}
+      </p>
+      <p
+        className="text-sm font-medium flex items-center gap-1.5"
+        style={{ color: "var(--rf-txt)", ...valueStyle }}
+      >
+        {icon && (
+          <span style={{ color: "var(--rf-txt3)" }}>{icon}</span>
+        )}
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
+function PwField({ label, name, value, onChange }) {
+  return (
+    <div>
+      <label
+        className="block text-xs font-medium mb-1.5"
+        style={{ color: "var(--rf-txt2)" }}
+      >
+        {label}
+      </label>
+      <input
+        type="password"
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full rounded-xl px-4 py-2.5 text-sm outline-none transition-all"
+        style={{
+          background: "var(--rf-bg)",
+          border: "1px solid var(--rf-border)",
+          color: "var(--rf-txt)",
+        }}
+      />
+    </div>
+  );
+}
+
+function StatusPill({ label, active }) {
+  return (
+    <span
+      className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+      style={{
+        background: active
+          ? "color-mix(in srgb, var(--rf-green) 15%, transparent)"
+          : "color-mix(in srgb, var(--rf-red) 15%, transparent)",
+        color: active ? "var(--rf-green)" : "var(--rf-red)",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function PermBadge({ level }) {
+  const map = {
+    approve: {
+      bg: "color-mix(in srgb, var(--rf-green) 15%, transparent)",
+      color: "var(--rf-green)",
+    },
+    edit: {
+      bg: "color-mix(in srgb, var(--rf-accent) 15%, transparent)",
+      color: "var(--rf-accent)",
+    },
+    view: {
+      bg: "color-mix(in srgb, var(--rf-txt3) 15%, transparent)",
+      color: "var(--rf-txt3)",
+    },
+  };
+  const s = map[level] ?? map.view;
+  return (
+    <span
+      className="text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize"
+      style={{ background: s.bg, color: s.color }}
+    >
+      {level}
+    </span>
   );
 }

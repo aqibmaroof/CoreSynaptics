@@ -1,3789 +1,3133 @@
 "use client";
-import { FaCircle, FaTrash } from "react-icons/fa";
-import { FaPencil } from "react-icons/fa6";
-import { FiMessageCircle, FiStar } from "react-icons/fi";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
-  AddTeamsToProjects,
-  AddUsersToProjects,
-  DeleteProjects,
-  DeleteTeamsToProjects,
-  DeleteUsersToProjects,
-  getProjects,
-  GetProjectsById,
-  UpdateProjects,
-} from "@/services/Projects";
-import { getUsers } from "@/services/Users";
-import CircularProgress from "@/Utils/CustomProgress";
-import {
-  DeleteSite,
-  GetSiteById,
-  GetSites,
-  UpdateSite,
-} from "@/services/Sites";
-import {
-  DeleteZone,
-  GetZoneById,
-  GetZones,
-  UpdateZone,
-} from "@/services/Zones";
-import {
-  DeleteEquipment,
-  GetEquipmentById,
-  GetEquipments,
-  UpdateEquipment,
-} from "@/services/Equipment";
-import {
-  CreateTask,
-  getAllTasks,
-  updateTask,
-  DeleteTask,
-} from "@/services/Tasks";
-import {
-  createSubTask,
-  getSubTasksByTaskId,
-  updateSubTaskByTaskId,
-  deleteSubTaskByTaskId,
-} from "@/services/SubTasks";
-import { getTeams } from "@/services/Teams";
-import MultiSelectDropdown from "@/components/MultiSelectDropDown";
+  getCxProjectById,
+  updateCxProject,
+  updateCxProjectStatus,
+  getCxProjectAssets,
+  createCxProjectAsset,
+  updateCxProjectAsset,
+  deleteCxProjectAsset,
+  getCxProjectZones,
+  createCxProjectZone,
+  updateCxProjectZone,
+  deleteCxProjectZone,
+  getCxProjectStakeholders,
+  createCxProjectStakeholder,
+  updateCxProjectStakeholder,
+  deleteCxProjectStakeholder,
+  createCxProjectCompliance,
+  updateCxProjectCompliance,
+  deleteCxProjectCompliance,
+  getCxProjectMobilization,
+  createCxProjectMobilizationItem,
+  updateCxProjectMobilizationItem,
+  deleteCxProjectMobilizationItem,
+  getCxProjectWorkflows,
+  createCxProjectWorkflow,
+  updateCxProjectWorkflow,
+  deleteCxProjectWorkflow,
+  getCxProjectSops,
+  createCxProjectSop,
+  updateCxProjectSop,
+  deleteCxProjectSop,
+  getCxProjectPartners,
+  createCxProjectPartner,
+  updateCxProjectPartner,
+  deleteCxProjectPartner,
+  getCxProjectMembers,
+  addCxProjectMember,
+  removeCxProjectMember,
+} from "@/services/CxProjects";
 
-const CapitalizeText = (text) => {
-  return text
-    .replace(/([A-Z])/g, " $1") // insert space before each uppercase letter
-    .replace(/\b\w/g, (char) => char.toUpperCase()) // capitalize first letter of each word
-    .trim(); // remove any leading space
-};
+// ── Constants ────────────────────────────────────────────────────────────────
 
-const formatToDatetimeLocal = (isoString) => {
-  if (!isoString) return "";
-  return isoString.slice(0, 16); // "2026-03-07T18:41"
-};
-
-const tasks = [
-  {
-    id: 1,
-    taskName: "Finalize Project Proposal",
-    project: "Website Redesign",
-    estimation: "01 Nov - 7 Nov 2026",
-    priority: "Urgent",
-    progress: "80%",
-    assignee: [
-      {
-        id: 1,
-        name: "Rainer Brown",
-        email: "Rainerbrown@mail.com",
-        avatar: "/images/assignee1.jpg",
-        bgColor: "bg-purple-500/20",
-      },
-      {
-        id: 2,
-        name: "Conny Rany",
-        email: "connyrany@mail.com",
-        avatar: "/images/assignee2.jpg",
-        bgColor: "bg-emerald-500/20",
-      },
-      {
-        id: 3,
-        name: "Armin Falcon",
-        email: "arfalcon@mail.com",
-        avatar: "/images/assignee3.jpg",
-        bgColor: "bg-gray-500/20",
-      },
-    ],
-  },
-  // {
-  //   id: 2,
-  //   taskName: "Finalize Project Proposal",
-  //   project: "Website Redesign",
-  //   estimation: "01 Nov - 7 Nov 2026",
-  //   priority: "Urgent",
-  //   progress: "80%",
-  //   assignee: [
-  //     {
-  //       id: 1,
-  //       name: "Rainer Brown",
-  //       email: "Rainerbrown@mail.com",
-  //       avatar: "/images/assignee1.jpg",
-  //       bgColor: "bg-purple-500/20",
-  //     },
-  //     {
-  //       id: 2,
-  //       name: "Conny Rany",
-  //       email: "connyrany@mail.com",
-  //       avatar: "/images/assignee2.jpg",
-  //       bgColor: "bg-emerald-500/20",
-  //     },
-  //     {
-  //       id: 3,
-  //       name: "Armin Falcon",
-  //       email: "arfalcon@mail.com",
-  //       avatar: "/images/assignee3.jpg",
-  //       bgColor: "bg-gray-500/20",
-  //     },
-  //   ],
-  // },
+const TABS = [
+  "Overview",
+  "Assets",
+  "Zones",
+  "Stakeholders",
+  "Compliance",
+  "Mobilization",
+  "Workflows",
+  "SOPs",
+  "Partners",
+  "Members",
 ];
-export default function KanbanBoard() {
-  const router = useRouter();
-  const params = useParams();
-  const { type, id, subId } = params;
-  const [message, setMessage] = useState({ type: "", text: "" });
-  const [users, setUsers] = useState([]);
-  const [view, setView] = useState("list");
-  const [activeView, setActiveView] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sites, setSites] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [zones, setZones] = useState([]);
-  const [equipments, setEquipments] = useState([]);
 
-  // Task and Sub-Task
-  const [tasksList, setTasksList] = useState([]);
-  const [subtasksList, setSubtasksList] = useState([]);
-  const [selectedTask, setSelectedTask] = useState(null); // clicked task for subtask creation
-  const [taskForm, setTaskForm] = useState({ name: "", description: "" });
-  const [editingTask, setEditingTask] = useState(null); // task being edited
-  const [editingSubtask, setEditingSubtask] = useState(null); // subtask being edited
-  const [teams, setTeams] = useState([]);
+const MOB_STEP_KEYS = [
+  "mob_site",
+  "mob_ppe",
+  "mob_supplies",
+  "mob_trailer",
+  "mob_house",
+  "mob_tools",
+];
 
-  const [editTaskForm, setEditTaskForm] = useState({
-    name: "",
-    description: "",
-    status: "PENDING",
-  });
-  const [editSubtaskForm, setEditSubtaskForm] = useState({
-    name: "",
-    description: "",
-    status: "PENDING",
-  });
-  const [subtaskInputs, setSubtaskInputs] = useState([
-    { name: "", description: "" },
-  ]);
-  const [taskLoading, setTaskLoading] = useState(false);
+const STATUS_OPTIONS = ["ACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"];
 
-  const [form, setForm] = useState({
-    // Project fields
-    name: "",
-    description: "",
-    startDate: "",
-    endDate: "",
-    timezone: "",
-    address: "",
-    contractValue: null,
-    clientName: "",
-    assignee: [],
-    team: [],
-    projectType: "",
-    // Site fields
-    location: "",
-    status: "",
-    safetyStatus: "",
-    permitStatus: "",
-    // Zone fields
-    zoneType: "",
-    capacity: "",
-    coolingType: "",
-    // Equipment fields
-    serialNumber: "",
-    equipmentType: "",
-    lifecyclePhase: "",
-    certificationReq: "",
-  });
+const PROCUREMENT_STATUSES = [
+  "NOT_ORDERED",
+  "ORDERED",
+  "IN_TRANSIT",
+  "RECEIVED",
+  "INSTALLED",
+  "COMMISSIONED",
+];
 
-  const isSite = type === "Project";
-  const isProject = type === "Site";
-  const isZone = type === "Projects";
-  const isEquipment = type === "Zone";
+const ZONE_TYPES = ["PUBLIC", "CREW", "RESTRICTED", "SECURE"];
+const STAKEHOLDER_TIERS = [
+  "EXEC_SPONSOR",
+  "DECISION_MAKER",
+  "INFLUENCER",
+  "KEEP_INFORMED",
+];
+const COMPLIANCE_TYPES = ["PERMIT", "INSURANCE", "WORKER_CERTIFICATION"];
+const COMPLIANCE_STATUSES = ["VALID", "EXPIRING", "EXPIRED", "MISSING"];
 
-  useEffect(() => {
-    if (id) {
-      getProjectDetails();
-      fetchTasks();
-    }
-    if (isSite) {
-      getUsersList();
-      getSites();
-      setActiveView("Sites");
-    }
-    if (isProject) {
-      getProjectList();
-      setActiveView("Projects");
-    }
-    if (isZone) {
-      getZones();
-      setActiveView("Zones");
-    }
-    if (isEquipment) {
-      getEquipments();
-      setActiveView("Assets");
-    }
-    if (tasksList.length > 0) {
-      fetchSubtasks();
-    }
-    GetAllTeams();
-  }, [id, tasksList.length]);
+// ── Helper components ─────────────────────────────────────────────────────────
 
-  // Separate effect: fetch subtasks once tasksList is populated
+function LoadingRows({ cols = 4 }) {
+  return Array.from({ length: 3 }).map((_, i) => (
+    <tr key={i}>
+      {Array.from({ length: cols }).map((__, j) => (
+        <td key={j} style={{ padding: "10px 12px" }}>
+          <div
+            style={{
+              height: 14,
+              borderRadius: 6,
+              background: "var(--rf-bg2)",
+              animation: "pulse 1.5s ease-in-out infinite",
+              width: j === 0 ? "60%" : "80%",
+            }}
+          />
+        </td>
+      ))}
+    </tr>
+  ));
+}
 
-  const fetchTasks = async () => {
-    try {
-      // Build query param based on current type
-      const params = {};
-      if (type === "Project") params.projectId = id;
-      else if (type === "Projects") params.subProjectId = id;
-      else if (type === "Site") params.siteId = id;
-      else if (type === "Zone") params.zoneId = id;
-      else if (type === "Equipment") params.equipmentId = id;
-
-      const res = await getAllTasks(params);
-      setTasksList(res || []);
-    } catch (error) {
-      console.log("Error fetching tasks:", error);
-    }
-  };
-
-  const fetchSubtasks = async (taskId = null) => {
-    try {
-      if (taskId) {
-        // Fetch subtasks for a specific task
-        const res = await getSubTasksByTaskId(taskId);
-        setSubtasksList((prev) => {
-          // Merge: remove old subtasks for this taskId, add new ones
-          const others = prev.filter((s) => s.taskId !== taskId);
-          return [...others, ...(res || [])];
-        });
-      } else {
-        // Fetch subtasks for ALL tasks in tasksList
-        const allSubs = [];
-        for (const task of tasksList) {
-          try {
-            const res = await getSubTasksByTaskId(task.id);
-            allSubs.push(...(res || []));
-          } catch (_) {}
-        }
-        setSubtasksList(allSubs);
-      }
-    } catch (error) {
-      console.log("Error fetching subtasks:", error);
-    }
-  };
-
-  const createTask = async () => {
-    if (!taskForm.name) {
-      setMessage({ type: "error", text: "Task name is required" });
-      return;
-    }
-    setTaskLoading(true);
-    try {
-      // Build payload with only the relevant ID for the current type
-      const payload = {
-        name: taskForm.name,
-        description: taskForm.description,
-        ...(type === "Project" && { projectId: id }),
-        ...(type === "Projects" && { subProjectId: id }),
-        ...(type === "Site" && { siteId: id }),
-        ...(type === "Zone" && { zoneId: id }),
-        ...(type === "Equipment" && { equipmentId: id }),
-      };
-
-      await CreateTask(payload);
-      setMessage({ type: "success", text: "Task created successfully! 🚀" });
-      setTaskForm({ name: "", description: "" });
-      setSubtaskInputs([{ name: "", description: "" }]);
-      setSelectedTask(null);
-      await fetchTasks();
-      document.getElementById("my_modal_4").close();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: `Error creating task: ${error?.message}`,
-      });
-    } finally {
-      setTaskLoading(false);
-    }
-  };
-
-  const createSubtask = async () => {
-    if (!selectedTask) {
-      setMessage({
-        type: "error",
-        text: "Please select a task first to add subtasks",
-      });
-      return;
-    }
-    const validSubtasks = subtaskInputs.filter((s) => s.name);
-    if (!validSubtasks.length) {
-      setMessage({
-        type: "error",
-        text: "At least one subtask name is required",
-      });
-      return;
-    }
-    setTaskLoading(true);
-    try {
-      for (const subtask of validSubtasks) {
-        await createSubTask(selectedTask.id, {
-          name: subtask.name,
-          description: subtask.description,
-        });
-      }
-      setMessage({
-        type: "success",
-        text: "Subtasks created successfully! 🚀",
-      });
-      setSubtaskInputs([{ name: "", description: "" }]);
-      await fetchSubtasks(selectedTask.id);
-      document.getElementById("my_modal_4").close();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: `Error creating subtask: ${error?.message}`,
-      });
-    } finally {
-      setTaskLoading(false);
-    }
-  };
-
-  const GetAllTeams = async () => {
-    try {
-      const res = await getTeams();
-      setTeams(res);
-    } catch (error) {
-      console.error("error Fetching data", error.message);
-    }
-  };
-  const deleteTask = async (e, taskId) => {
-    e.stopPropagation();
-    e.preventDefault();
-    try {
-      await DeleteTask(taskId);
-      setMessage({ type: "success", text: "Task deleted successfully!" });
-      // Also clear subtasks for this task from local state
-      setSubtasksList((prev) => prev.filter((s) => s.taskId !== taskId));
-      await fetchTasks();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: `Error deleting task: ${error?.message}`,
-      });
-    }
-  };
-
-  const deleteSubtask = async (e, taskId, subtaskId) => {
-    e.stopPropagation();
-    e.preventDefault();
-    try {
-      await deleteSubTaskByTaskId(taskId, subtaskId);
-      setMessage({ type: "success", text: "Subtask deleted successfully!" });
-      setSubtasksList((prev) => prev.filter((s) => s.id !== subtaskId));
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: `Error deleting subtask: ${error?.message}`,
-      });
-    }
-  };
-
-  const handleUpdateTask = async () => {
-    if (!editingTask) return;
-    setTaskLoading(true);
-    try {
-      await updateTask(editingTask.id, editTaskForm);
-      setMessage({ type: "success", text: "Task updated successfully! 🚀" });
-      setEditingTask(null);
-      await fetchTasks();
-      document.getElementById("edit_task_modal").close();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: `Error updating task: ${error?.message}`,
-      });
-    } finally {
-      setTaskLoading(false);
-    }
-  };
-
-  const handleUpdateSubtask = async () => {
-    if (!editingSubtask) return;
-    setTaskLoading(true);
-    try {
-      await updateSubTaskByTaskId(
-        editingSubtask.taskId,
-        editingSubtask.id,
-        editSubtaskForm,
-      );
-      setMessage({ type: "success", text: "Subtask updated successfully! 🚀" });
-      setEditingSubtask(null);
-      await fetchSubtasks(editingSubtask.taskId);
-      document.getElementById("edit_subtask_modal").close();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: `Error updating subtask: ${error?.message}`,
-      });
-    } finally {
-      setTaskLoading(false);
-    }
-  };
-
-  const getUsersList = async () => {
-    try {
-      const res = await getUsers();
-      setUsers(res);
-    } catch (error) {
-      console.log("error fetching users : ", error);
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const updateProject = async (e) => {
-    e.preventDefault();
-    try {
-      // ── PROJECT ──
-      if (type === "Project" || type === "Projects") {
-        const payload = {
-          name: form?.name,
-          description: form?.description,
-          startDate: form?.startDate,
-          endDate: form?.endDate,
-          timezone: form?.timezone,
-          address: form?.address,
-          metadata: {
-            contractValue: form?.contractValue,
-            clientName: form?.clientName,
-          },
-        };
-        const requiredFields = [
-          "name",
-          "description",
-          "startDate",
-          "endDate",
-          "timezone",
-          "address",
-        ];
-        for (const field of requiredFields) {
-          if (!payload[field]) {
-            setMessage({
-              type: "error",
-              text: `Missing value for field: ${CapitalizeText(field)}`,
-            });
-            return;
-          }
-        }
-        await UpdateProjects(id, payload);
-        setMessage({
-          type: "success",
-          text: "Project Updated successfully! 🚀",
-        });
-      }
-
-      // ── SITE ──
-      else if (type === "Site") {
-        const payload = {
-          name: form?.name,
-          location: form?.location,
-          status: form?.status,
-          safetyStatus: form?.safetyStatus,
-          permitStatus: form?.permitStatus,
-        };
-        const requiredFields = ["name", "location"];
-        for (const field of requiredFields) {
-          if (!payload[field]) {
-            setMessage({
-              type: "error",
-              text: `Missing value for field: ${CapitalizeText(field)}`,
-            });
-            return;
-          }
-        }
-        await UpdateSite(subId, id, payload); // subId = projectId, id = siteId
-        setMessage({ type: "success", text: "Site Updated successfully! 🚀" });
-      }
-
-      // ── ZONE ──
-      else if (type === "Zone") {
-        const payload = {
-          name: form?.name,
-          type: form?.zoneType,
-          metadata: {
-            capacity: form?.capacity,
-            coolingType: form?.coolingType,
-          },
-        };
-        const requiredFields = ["name"];
-        for (const field of requiredFields) {
-          if (!payload[field]) {
-            setMessage({
-              type: "error",
-              text: `Missing value for field: ${CapitalizeText(field)}`,
-            });
-            return;
-          }
-        }
-        await UpdateZone(subId, id, payload); // subId = siteId, id = zoneId
-        setMessage({ type: "success", text: "Zone Updated successfully! 🚀" });
-      }
-
-      // ── EQUIPMENT ──
-      else if (type === "Equipment") {
-        const payload = {
-          name: form?.name,
-          serialNumber: form?.serialNumber,
-          type: form?.equipmentType,
-          status: form?.status,
-          lifecyclePhase: form?.lifecyclePhase,
-          certificationReq: form?.certificationReq,
-        };
-        const requiredFields = ["name", "serialNumber"];
-        for (const field of requiredFields) {
-          if (!payload[field]) {
-            setMessage({
-              type: "error",
-              text: `Missing value for field: ${CapitalizeText(field)}`,
-            });
-            return;
-          }
-        }
-        await UpdateEquipment(subId, id, payload); // subId = projectId, id = equipmentId
-        setMessage({
-          type: "success",
-          text: "Equipment Updated successfully! 🚀",
-        });
-      }
-
-      setTimeout(() => router.back(), 2000);
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: `Error updating: ${error?.message}` || "Error updating.",
-      });
-    }
-  };
-
-  const getProjectDetails = async () => {
-    try {
-      // type === "Project" means we're viewing a Project → fetch by project id
-      if (type === "Project" || type === "Projects") {
-        const res = await GetProjectsById(id);
-        setForm({
-          name: res?.name || "",
-          description: res?.description || "",
-          startDate: formatToDatetimeLocal(res?.startDate),
-          endDate: formatToDatetimeLocal(res?.endDate),
-          timezone: res?.timezone || "",
-          address: res?.address || "",
-          contractValue: res?.metadata?.contractValue || null,
-          clientName: res?.metadata?.clientName || "",
-          assignee: res?.assignedUsers || [],
-          team: res?.team?.id ? [res?.team] : [],
-          projectType: res?.projectType || "",
-          // reset other fields
-          location: "",
-          status: "",
-          safetyStatus: "",
-          permitStatus: "",
-          zoneType: "",
-          serialNumber: "",
-          equipmentType: "",
-          lifecyclePhase: "",
-          certificationReq: "",
-          coolingType: "",
-          capacity: "",
-        });
-      }
-
-      // type === "Zones" means we're viewing a Zone → subId = siteId, id = zoneId
-      else if (type === "Zone") {
-        const res = await GetZoneById(id, subId);
-        setForm({
-          name: res?.name || "",
-          zoneType: res?.type || "",
-          coolingType: res.metadata?.coolingType,
-          capacity: res.metadata?.capacity,
-          // reset others
-          description: "",
-          startDate: "",
-          endDate: "",
-          timezone: "",
-          address: "",
-          contractValue: null,
-          clientName: "",
-          assignee: [],
-          projectType: "",
-          location: "",
-          status: "",
-          safetyStatus: "",
-          permitStatus: "",
-          serialNumber: "",
-          equipmentType: "",
-          lifecyclePhase: "",
-          certificationReq: "",
-        });
-      }
-
-      // type === "Equipment" means we're viewing Equipment → subId = projectId, id = equipmentId
-      else if (type === "Equipment") {
-        const res = await GetEquipmentById(subId, id);
-        setForm({
-          name: res?.name || "",
-          serialNumber: res?.serialNumber || "",
-          equipmentType: res?.type || "",
-          status: res?.status || "",
-          lifecyclePhase: res?.lifecyclePhase || "",
-          certificationReq: res?.certificationReq || "",
-          // reset others
-          description: "",
-          startDate: "",
-          endDate: "",
-          timezone: "",
-          address: "",
-          contractValue: null,
-          clientName: "",
-          assignee: [],
-          projectType: "",
-          location: "",
-          safetyStatus: "",
-          permitStatus: "",
-          zoneType: "",
-          coolingType: "",
-          capacity: "",
-        });
-      }
-
-      // type Site
-      else if (type === "Site") {
-        const res = await GetSiteById(subId, id);
-        setForm({
-          name: res?.name || "",
-          location: res?.location || "",
-          status: res?.status || "",
-          safetyStatus: res?.safetyStatus || "",
-          permitStatus: res?.permitStatus || "",
-          // reset others
-          description: "",
-          startDate: "",
-          endDate: "",
-          timezone: "",
-          address: "",
-          contractValue: null,
-          clientName: "",
-          assignee: [],
-          projectType: "",
-          zoneType: "",
-          serialNumber: "",
-          equipmentType: "",
-          lifecyclePhase: "",
-          certificationReq: "",
-          coolingType: "",
-          capacity: "",
-        });
-      }
-    } catch (error) {
-      console.log(`Error fetching details`, error);
-    }
-  };
-
-  const DeleteUserFromProject = async (ItemId) => {
-    try {
-      await DeleteUsersToProjects(id, ItemId);
-
-      setMessage({
-        type: "success",
-        text: "User Deleted from Project successfully! 🚀",
-      });
-      getProjectDetails();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text:
-          `Error Deleting User From Project : ${error?.message}` ||
-          "Error Deleting User From Project.",
-      });
-    }
-  };
-
-  const handleAssignProject = async (item) => {
-    try {
-      setForm({
-        ...form,
-        assignee: [...(form.assignee || []), item], // ✅ update UI
-        assigneeId: item.id,
-      });
-
-      const payload = {
-        userId: item.id, // ✅ FIXED
-        siteId: null,
-      };
-
-      const requiredFields = ["userId"];
-
-      for (const field of requiredFields) {
-        const value = payload[field];
-        if (!value) {
-          setMessage({
-            type: "error",
-            text: `Missing value for field: ${field}`,
-          });
-          return;
-        }
-      }
-
-      await AddUsersToProjects(id, payload);
-
-      setMessage({
-        type: "success",
-        text: "Project Assigned to user successfully! 🚀",
-      });
-      getProjectDetails();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text:
-          `Error assigning User To Project : ${error?.message}` ||
-          "Error assigning User To Project.",
-      });
-    }
-  };
-
-  const DeleteTeamFromProject = async (ItemId) => {
-    try {
-      await DeleteTeamsToProjects(id, ItemId);
-
-      setMessage({
-        type: "success",
-        text: "Team Deleted from Project successfully! 🚀",
-      });
-      getProjectDetails();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text:
-          `Error Deleting Team From Project  : ${error?.message}` ||
-          "Error Deleting Team From Project.",
-      });
-    }
-  };
-
-  const handleAssignTeamToProject = async (item) => {
-    try {
-      setForm({
-        ...form,
-        team: [...(form.team || []), item?.id], // ✅ update UI
-      });
-
-      const payload = {
-        teamId: item.id, // ✅ FIXED
-      };
-
-      const requiredFields = ["teamId"];
-
-      for (const field of requiredFields) {
-        const value = payload[field];
-        if (!value) {
-          setMessage({
-            type: "error",
-            text: `Missing value for field: ${field}`,
-          });
-          return;
-        }
-      }
-
-      await AddTeamsToProjects(id, payload);
-
-      setMessage({
-        type: "success",
-        text: "Project Assigned to team successfully! 🚀",
-      });
-      getProjectDetails();
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text:
-          `Error assigning Project To Team : ${error?.message}` ||
-          "Error assigning Project To Team.",
-      });
-    }
-  };
-
-  const getSites = async () => {
-    try {
-      const res = await GetSites(id);
-      setSites(res);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const getProjectList = async () => {
-    try {
-      const res = await getProjects({
-        limit: 100,
-        page: 1,
-        parentSiteId: id,
-      });
-      setProjects(res?.projects || []);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const getZones = async () => {
-    try {
-      const res = await GetZones(id);
-      setZones(res);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const getEquipments = async () => {
-    try {
-      const res = await GetEquipments(id);
-      setEquipments(res);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const deleteFunction = async (e, deleteType, siteId) => {
-    e.stopPropagation();
-    e.preventDefault();
-    try {
-      if (deleteType === "Sites") {
-        await DeleteSite(id, siteId);
-      } else if (deleteType === "Projects") {
-        await DeleteProjects(siteId);
-      } else if (deleteType === "Zones") {
-        await DeleteZone(id, siteId);
-      } else if (deleteType === "Assets") {
-        await DeleteEquipment(id, siteId);
-      }
-      if (deleteType === "Sites") {
-        getSites();
-      } else if (deleteType === "Projects") {
-        getProjectList();
-      } else if (deleteType === "Zones") {
-        getZones();
-      } else if (deleteType === "Assets") {
-        getEquipments();
-      }
-      setMessage({
-        type: "success",
-        text: `${deleteType === "Sites" ? "Site" : deleteType === "Projects" ? "Sub Project" : deleteType === "Zones" ? "Zone" : deleteType === "Assets" ? "Asset" : ""} Deleted Successfully !`,
-      });
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error.message,
-      });
-    }
-  };
+function EmptyState({ message = "No records found." }) {
   return (
-    <div className="min-h-screen font-gilroy p-6 text-white">
-      <div className="w-full flex items-center justtify-between gap-5">
-        <h1 className="font-bold text-2xl text-white">
-          {form?.name ? form?.name : "Delta Developers"}
-        </h1>
+    <div
+      style={{
+        padding: "40px 20px",
+        textAlign: "center",
+        color: "var(--rf-txt2)",
+        fontSize: 14,
+      }}
+    >
+      <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
+      {message}
+    </div>
+  );
+}
 
-        <div className="flex items-center gap-5 ml-auto">
-          {/* Status Messages */}
-          {message.text && (
-            <div
-              className={` px-3 py-2 rounded-lg text-sm animate-fade-in ${
-                message.type === "success"
-                  ? "bg-green-900/30 text-green-400 border border-green-500/30"
-                  : "bg-red-900/30 text-red-400 border border-red-500/30"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
-          <button
-            onClick={(e) => updateProject(e)}
-            className="ml-auto bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white font-[510] py-2 px-4 border-none rounded-xl transition-all cursor-pointer w-50"
+function ErrorBanner({ error }) {
+  if (!error) return null;
+  return (
+    <div
+      style={{
+        background: "var(--rf-red-soft, #fee2e2)",
+        color: "var(--crimson, #dc2626)",
+        padding: "10px 14px",
+        borderRadius: 8,
+        fontSize: 13,
+        marginBottom: 12,
+      }}
+    >
+      {error}
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const map = {
+    ACTIVE: {
+      bg: "var(--emerald-soft, #d1fae5)",
+      color: "var(--emerald, #059669)",
+    },
+    ON_HOLD: {
+      bg: "var(--amber-soft, #fef3c7)",
+      color: "var(--amber, #d97706)",
+    },
+    COMPLETED: {
+      bg: "var(--electric-soft, #dbeafe)",
+      color: "var(--electric, #2563eb)",
+    },
+    ARCHIVED: {
+      bg: "var(--stone-dark, #f3f4f6)",
+      color: "var(--smoke, #6b7280)",
+    },
+    VALID: {
+      bg: "var(--emerald-soft, #d1fae5)",
+      color: "var(--emerald, #059669)",
+    },
+    EXPIRING: {
+      bg: "var(--amber-soft, #fef3c7)",
+      color: "var(--amber, #d97706)",
+    },
+    EXPIRED: {
+      bg: "var(--rf-red-soft, #fee2e2)",
+      color: "var(--crimson, #dc2626)",
+    },
+    MISSING: {
+      bg: "var(--stone-dark, #f3f4f6)",
+      color: "var(--smoke, #6b7280)",
+    },
+  };
+  const s = map[status] || map.ARCHIVED;
+  return (
+    <span
+      style={{
+        ...s,
+        padding: "2px 10px",
+        borderRadius: 20,
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: "0.04em",
+        display: "inline-block",
+      }}
+    >
+      {status?.replace(/_/g, " ")}
+    </span>
+  );
+}
+
+function InfoGrid({ items }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+        gap: 16,
+        marginBottom: 20,
+      }}
+    >
+      {items.map(({ label, value }) => (
+        <div
+          key={label}
+          style={{
+            background: "var(--rf-bg2)",
+            borderRadius: 10,
+            padding: "12px 16px",
+            border: "1px solid var(--rf-border)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--rf-txt2)",
+              marginBottom: 4,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
           >
-            {type === "Zone"
-              ? "Update Zone"
-              : type === "Equipment"
-                ? "Update Equipment"
-                : type === "Projects"
-                  ? "Update Sub Project"
-                  : type === "Site"
-                    ? "Update Site "
-                    : "Update Project"}
+            {label}
+          </div>
+          <div
+            style={{ fontSize: 14, color: "var(--rf-txt)", fontWeight: 500 }}
+          >
+            {value || "—"}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SectionTitle({ children }) {
+  return (
+    <div
+      style={{
+        fontSize: 13,
+        fontWeight: 700,
+        color: "var(--rf-txt2)",
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        marginBottom: 10,
+        marginTop: 24,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Table({ headers, children }) {
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table
+        style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}
+      >
+        <thead>
+          <tr style={{ background: "var(--rf-bg2)" }}>
+            {headers.map((h) => (
+              <th
+                key={h}
+                style={{
+                  padding: "10px 12px",
+                  textAlign: "left",
+                  color: "var(--rf-txt2)",
+                  fontWeight: 600,
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  borderBottom: "1px solid var(--rf-border)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  );
+}
+
+function Tr({ children, even }) {
+  return (
+    <tr
+      style={{
+        background: even ? "var(--rf-bg2)" : "transparent",
+        transition: "background 0.15s",
+      }}
+    >
+      {children}
+    </tr>
+  );
+}
+
+function Td({ children }) {
+  return (
+    <td
+      style={{
+        padding: "10px 12px",
+        color: "var(--rf-txt)",
+        borderBottom: "1px solid var(--rf-border)",
+        verticalAlign: "middle",
+      }}
+    >
+      {children}
+    </td>
+  );
+}
+
+function ActionBtn({ onClick, danger, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: danger ? "var(--rf-red-soft, #fee2e2)" : "var(--rf-bg2)",
+        color: danger ? "var(--crimson, #dc2626)" : "var(--rf-txt)",
+        border: "1px solid var(--rf-border)",
+        borderRadius: 6,
+        padding: "4px 10px",
+        fontSize: 12,
+        cursor: "pointer",
+        marginLeft: 4,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const inputSt = {
+  width: "100%",
+  padding: "10px 14px",
+  borderRadius: 8,
+  border: "1.5px solid var(--rf-border)",
+  background: "var(--rf-bg2)",
+  color: "var(--rf-txt)",
+  fontSize: 13,
+  outline: "none",
+  boxSizing: "border-box",
+  fontFamily: "inherit",
+  transition: "border-color 0.15s",
+};
+
+function Modal({ title, subtitle, onClose, children }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 9999,
+        padding: 16,
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          background: "var(--rf-bg)",
+          border: "1px solid var(--rf-border)",
+          borderRadius: 16,
+          minWidth: 480,
+          maxWidth: "94vw",
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.3)",
+          overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            padding: "18px 24px 16px",
+            borderBottom: "1px solid var(--rf-border)",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+            background: "var(--rf-bg2)",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 700,
+                color: "var(--rf-txt)",
+                lineHeight: 1.3,
+              }}
+            >
+              {title}
+            </div>
+            {subtitle && (
+              <div
+                style={{ fontSize: 12, color: "var(--rf-txt2)", marginTop: 3 }}
+              >
+                {subtitle}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "var(--rf-bg)",
+              border: "1px solid var(--rf-border)",
+              borderRadius: 8,
+              width: 32,
+              height: 32,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "var(--rf-txt2)",
+              fontSize: 16,
+              flexShrink: 0,
+            }}
+          >
+            ✕
           </button>
         </div>
-      </div>
-      <div className="w-250 font-gilroy mt-6 mb-6 text-[#A0AEC0]">
-        {/* ── Common: Name ── */}
-        <div className="flex justify-left gap-28 items-center">
-          <h2>Name:</h2>
-          <input
-            className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-            type="text"
-            name="name"
-            value={form?.name}
-            onChange={handleChange}
-            placeholder="Name"
-          />
+        {/* Body */}
+        <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+          {children}
         </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* ── PROJECT & SITE fields ── */}
-        {(type === "Project" || type === "Projects") && (
-          <>
-            <div className="flex items-center justify-left gap-19 mt-3">
-              <span className="text-slate-400">Description:</span>
-              <input
-                type="text"
-                placeholder="Project Description"
-                name="description"
-                value={form?.description}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-20 items-center mt-3">
-              <h2>Start Date:</h2>
-              <input
-                type="datetime-local"
-                name="startDate"
-                value={form?.startDate}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-22 items-center mt-3">
-              <h2>End Date:</h2>
-              <input
-                type="datetime-local"
-                name="endDate"
-                value={form?.endDate}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-20 items-center mt-3">
-              <h2>Time Zone:</h2>
-              <input
-                type="text"
-                placeholder="Time Zone"
-                name="timezone"
-                value={form?.timezone}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-24 items-center mt-3">
-              <h2>Address:</h2>
-              <input
-                type="text"
-                placeholder="Address"
-                name="address"
-                value={form?.address}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-11 items-center mt-3">
-              <h2>Contract Value:</h2>
-              <input
-                type="text"
-                placeholder="Contract Value"
-                name="contractValue"
-                value={form?.contractValue}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-16 items-center mt-3">
-              <h2>Client Name:</h2>
-              <input
-                type="text"
-                placeholder="Client Name"
-                name="clientName"
-                value={form?.clientName}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-9 items-center mt-3">
-              <h2 className="w-30">Project Type:</h2>
-              <select
-                onChange={(e) =>
-                  setForm({ ...form, projectType: e.target.value })
-                }
-                value={form?.projectType}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
-              >
-                <option value="">Select Project Type</option>
-                {[
-                  { name: "ZONE" },
-                  { name: "ASSETS" },
-                  { name: "SITE" },
-                  { name: "OTHERS" },
-                ].map((item, index) => (
-                  <option value={item.name} key={index}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <MultiSelectDropdown
-              label="Assign Users"
-              options={users}
-              selected={form?.assignee || []}
-              setSelected={handleAssignProject}
-              deleteUser={DeleteUserFromProject}
-            />
-            <MultiSelectDropdown
-              label="Assign Team"
-              options={teams}
-              selected={form?.team || []}
-              setSelected={handleAssignTeamToProject}
-              deleteUser={DeleteTeamFromProject}
-              setMessage={setMessage}
-            />
-          </>
-        )}
+function ModalFooter({ onClose, onSave, saveLabel = "Save", saving }) {
+  return (
+    <div
+      style={{
+        padding: "34px 0px 20px 0px",
+        // borderTop: "1px solid var(--rf-border)",
+        display: "flex",
+        justifyContent: "flex-end",
+        gap: 10,
+        // background: "var(--rf-bg2)",
+      }}
+    >
+      <button
+        onClick={onClose}
+        style={{
+          padding: "9px 20px",
+          borderRadius: 8,
+          border: "1.5px solid var(--rf-border)",
+          background: "transparent",
+          color: "var(--rf-txt2)",
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        Cancel
+      </button>
+      <button
+        onClick={onSave}
+        disabled={saving}
+        style={{
+          padding: "9px 22px",
+          borderRadius: 8,
+          border: "none",
+          background: "var(--rf-accent, var(--electric, #3b82f6))",
+          color: "#fff",
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: saving ? "not-allowed" : "pointer",
+          opacity: saving ? 0.65 : 1,
+          fontFamily: "inherit",
+        }}
+      >
+        {saving ? "Saving…" : saveLabel}
+      </button>
+    </div>
+  );
+}
 
-        {/* ── SITE fields ── */}
-        {type === "Site" && (
-          <>
-            <div className="flex justify-left gap-24 items-center mt-3">
-              <h2>Location:</h2>
-              <input
-                type="text"
-                placeholder="Location"
-                name="location"
-                value={form?.location}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-9 items-center mt-3">
-              <h2 className="w-30">Status:</h2>
-              <select
-                name="status"
-                value={form?.status}
-                onChange={handleChange}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
-              >
-                <option value="NOT_READY">NOT_READY</option>
-                <option value="READY">READY</option>
-                <option value="ACTIVE">ACTIVE</option>
-              </select>
-            </div>
-            <div className="flex justify-left gap-9 items-center mt-3">
-              <h2 className="w-30">Safety Status:</h2>
-              <select
-                name="safetyStatus"
-                value={form?.safetyStatus}
-                onChange={handleChange}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
-              >
-                <option value="PENDING">PENDING</option>
-                <option value="APPROVED">APPROVED</option>
-                <option value="REJECTED">REJECTED</option>
-              </select>
-            </div>
-            <div className="flex justify-left gap-9 items-center mt-3">
-              <h2 className="w-30">Permit Status:</h2>
-              <select
-                name="permitStatus"
-                value={form?.permitStatus}
-                onChange={handleChange}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
-              >
-                <option value="PENDING">PENDING</option>
-                <option value="APPROVED">APPROVED</option>
-                <option value="REJECTED">REJECTED</option>
-              </select>
-            </div>
-          </>
-        )}
+function FormGrid({ cols = 2, children }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gap: "14px 20px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
-        {/* ── ZONE fields ── */}
-        {type === "Zone" && (
-          <>
-            <div className="flex justify-left gap-28 items-center mt-3">
-              <h2>Zone Type:</h2>
-              <input
-                type="text"
-                placeholder="Zone Type"
-                name="zoneType"
-                value={form?.zoneType}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-28 items-center mt-3">
-              <h2>Zone Capacity:</h2>
-              <input
-                type="text"
-                placeholder="Zone Capacity"
-                name="capacity"
-                value={form?.capacity}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-28 items-center mt-3">
-              <h2>Zone Cooling Type:</h2>
-              <input
-                type="text"
-                placeholder="Cooling Type"
-                name="coolingType"
-                value={form?.coolingType}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-          </>
+function FormField({ label, required, hint, full, children }) {
+  return (
+    <div style={{ gridColumn: full ? "1 / -1" : undefined, marginBottom: 0 }}>
+      <label
+        style={{
+          display: "block",
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--rf-txt2)",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          marginBottom: 6,
+        }}
+      >
+        {label}
+        {required && (
+          <span style={{ color: "var(--crimson, #dc2626)", marginLeft: 3 }}>
+            *
+          </span>
         )}
+      </label>
+      {children}
+      {hint && (
+        <div style={{ fontSize: 11, color: "var(--rf-txt2)", marginTop: 4 }}>
+          {hint}
+        </div>
+      )}
+    </div>
+  );
+}
 
-        {/* ── EQUIPMENT fields ── */}
-        {type === "Equipment" && (
-          <>
-            <div className="flex justify-left gap-20 items-center mt-3">
-              <h2>Serial Number:</h2>
-              <input
-                type="text"
-                placeholder="Serial Number"
-                name="serialNumber"
-                value={form?.serialNumber}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-24 items-center mt-3">
-              <h2>Type:</h2>
-              <input
-                type="text"
-                placeholder="Equipment Type"
-                name="equipmentType"
-                value={form?.equipmentType}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-9 items-center mt-3">
-              <h2 className="w-30">Status:</h2>
-              <select
-                name="status"
-                value={form?.status}
-                onChange={handleChange}
-                className="select border-none shadow-none bg-[#12153d] w-80 text-white focus:outline-none h-10 text-sm"
-              >
-                <option value="ORDERED">ORDERED</option>
-                <option value="MANUFACTURING">MANUFACTURING</option>
-                <option value="FAT">FAT</option>
-                <option value="SHIPPED">SHIPPED</option>
-                <option value="INSTALLED">INSTALLED</option>
-                <option value="COMMISSIONED">COMMISSIONED</option>
-              </select>
-            </div>
-            <div className="flex justify-left gap-18 items-center mt-3">
-              <h2>Lifecycle Phase:</h2>
-              <input
-                type="text"
-                placeholder="Lifecycle Phase"
-                name="lifecyclePhase"
-                value={form?.lifecyclePhase}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-            <div className="flex justify-left gap-14 items-center mt-3">
-              <h2>Certification Req:</h2>
-              <input
-                type="text"
-                placeholder="Certification Requirement"
-                name="certificationReq"
-                value={form?.certificationReq}
-                onChange={handleChange}
-                className="bg-neutral-secondary-medium font-[600] text-heading text-[18px] text-[#656A80] placeholder:text-body outline-none border-none"
-              />
-            </div>
-          </>
-        )}
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function ProjectDetails() {
+  const params = useParams();
+  const router = useRouter();
+  const projectId = params?.id;
+
+  const [activeTab, setActiveTab] = useState("Overview");
+  const [toast, setToast] = useState({ type: "", text: "" });
+
+  // Overview
+  const [project, setProject] = useState(null);
+  const [projectLoading, setProjectLoading] = useState(true);
+  const [projectError, setProjectError] = useState(null);
+  const [editingProject, setEditingProject] = useState(false);
+  const [editForm, setEditForm] = useState({});
+
+  // Assets
+  const [assets, setAssets] = useState([]);
+  const [assetsLoading, setAssetsLoading] = useState(false);
+  const [assetsError, setAssetsError] = useState(null);
+  const [assetsFetched, setAssetsFetched] = useState(false);
+  const [assetModal, setAssetModal] = useState(null); // null | 'add' | row
+  const [assetForm, setAssetForm] = useState({});
+
+  // Zones
+  const [zones, setZones] = useState([]);
+  const [zonesLoading, setZonesLoading] = useState(false);
+  const [zonesError, setZonesError] = useState(null);
+  const [zonesFetched, setZonesFetched] = useState(false);
+  const [zoneModal, setZoneModal] = useState(null);
+  const [zoneForm, setZoneForm] = useState({});
+
+  // Stakeholders
+  const [stakeholders, setStakeholders] = useState([]);
+  const [stakeholdersLoading, setStakeholdersLoading] = useState(false);
+  const [stakeholdersError, setStakeholdersError] = useState(null);
+  const [stakeholdersFetched, setStakeholdersFetched] = useState(false);
+  const [stakeholderModal, setStakeholderModal] = useState(null);
+  const [stakeholderForm, setStakeholderForm] = useState({});
+
+  // Compliance
+  const [compliance, setCompliance] = useState([]);
+  const [complianceLoading, setComplianceLoading] = useState(false);
+  const [complianceError, setComplianceError] = useState(null);
+  const [complianceFetched, setComplianceFetched] = useState(false);
+  const [complianceModal, setComplianceModal] = useState(null);
+  const [complianceForm, setComplianceForm] = useState({});
+
+  // Mobilization
+  const [mobilization, setMobilization] = useState([]);
+  const [mobilizationLoading, setMobilizationLoading] = useState(false);
+  const [mobilizationError, setMobilizationError] = useState(null);
+  const [mobilizationFetched, setMobilizationFetched] = useState(false);
+  const [mobStepFilter, setMobStepFilter] = useState("");
+  const [mobModal, setMobModal] = useState(null);
+  const [mobForm, setMobForm] = useState({});
+
+  // Workflows
+  const [workflows, setWorkflows] = useState([]);
+  const [workflowsLoading, setWorkflowsLoading] = useState(false);
+  const [workflowsError, setWorkflowsError] = useState(null);
+  const [workflowsFetched, setWorkflowsFetched] = useState(false);
+  const [workflowModal, setWorkflowModal] = useState(null);
+  const [workflowForm, setWorkflowForm] = useState({});
+
+  // SOPs
+  const [sops, setSops] = useState([]);
+  const [sopsLoading, setSopsLoading] = useState(false);
+  const [sopsError, setSopsError] = useState(null);
+  const [sopsFetched, setSopsFetched] = useState(false);
+  const [sopModal, setSopModal] = useState(null);
+  const [sopForm, setSopForm] = useState({});
+
+  // Partners
+  const [partners, setPartners] = useState([]);
+  const [partnersLoading, setPartnersLoading] = useState(false);
+  const [partnersError, setPartnersError] = useState(null);
+  const [partnersFetched, setPartnersFetched] = useState(false);
+  const [partnerModal, setPartnerModal] = useState(null);
+  const [partnerForm, setPartnerForm] = useState({});
+
+  // Members
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState(null);
+  const [membersFetched, setMembersFetched] = useState(false);
+  const [memberModal, setMemberModal] = useState(null);
+  const [memberForm, setMemberForm] = useState({});
+
+  // ── Toast helper ──────────────────────────────────────────────────────────
+  const showToast = (type, text) => {
+    setToast({ type, text });
+    setTimeout(() => setToast({ type: "", text: "" }), 4000);
+  };
+
+  // ── Load project overview on mount ───────────────────────────────────────
+  useEffect(() => {
+    if (!projectId) return;
+    loadProject();
+  }, [projectId]);
+
+  const loadProject = async () => {
+    setProjectLoading(true);
+    setProjectError(null);
+    try {
+      const res = await getCxProjectById(projectId);
+      setProject(res);
+      setEditForm({
+        projectName: res.projectName || "",
+        customer: res.customer || "",
+        contractNumber: res.contractNumber || "",
+        siteAddress: res.siteAddress || "",
+        startDate: res.startDate || "",
+        projectType: res.projectType || "",
+      });
+    } catch (e) {
+      setProjectError(e?.message || "Failed to load project.");
+    } finally {
+      setProjectLoading(false);
+    }
+  };
+
+  // ── Tab-activated lazy loaders ────────────────────────────────────────────
+  useEffect(() => {
+    if (!projectId) return;
+    if (activeTab === "Assets" && !assetsFetched) loadAssets();
+    if (activeTab === "Zones" && !zonesFetched) loadZones();
+    if (activeTab === "Stakeholders" && !stakeholdersFetched)
+      loadStakeholders();
+    if (activeTab === "Compliance" && !complianceFetched) loadCompliance();
+    if (activeTab === "Mobilization" && !mobilizationFetched)
+      loadMobilization();
+    if (activeTab === "Workflows" && !workflowsFetched) loadWorkflows();
+    if (activeTab === "SOPs" && !sopsFetched) loadSops();
+    if (activeTab === "Partners" && !partnersFetched) loadPartners();
+    if (activeTab === "Members" && !membersFetched) loadMembers();
+  }, [activeTab, projectId]);
+
+  const loadAssets = async () => {
+    setAssetsLoading(true);
+    setAssetsError(null);
+    try {
+      const res = await getCxProjectAssets(projectId);
+      setAssets(res.data || res || []);
+      setAssetsFetched(true);
+    } catch (e) {
+      setAssetsError(e?.message || "Failed to load assets.");
+    } finally {
+      setAssetsLoading(false);
+    }
+  };
+
+  const loadZones = async () => {
+    setZonesLoading(true);
+    setZonesError(null);
+    try {
+      const res = await getCxProjectZones(projectId);
+      setZones(res.data || res || []);
+      setZonesFetched(true);
+    } catch (e) {
+      setZonesError(e?.message || "Failed to load zones.");
+    } finally {
+      setZonesLoading(false);
+    }
+  };
+
+  const loadStakeholders = async () => {
+    setStakeholdersLoading(true);
+    setStakeholdersError(null);
+    try {
+      const res = await getCxProjectStakeholders(projectId);
+      setStakeholders(res.data || res || []);
+      setStakeholdersFetched(true);
+    } catch (e) {
+      setStakeholdersError(e?.message || "Failed to load stakeholders.");
+    } finally {
+      setStakeholdersLoading(false);
+    }
+  };
+
+  const loadCompliance = async () => {
+    setComplianceLoading(true);
+    setComplianceError(null);
+    try {
+      const p = await getCxProjectById(projectId);
+      setCompliance(p.compliance || []);
+      setComplianceFetched(true);
+    } catch (e) {
+      setComplianceError(e?.message || "Failed to load compliance.");
+    } finally {
+      setComplianceLoading(false);
+    }
+  };
+
+  const loadMobilization = async (stepKey = "") => {
+    setMobilizationLoading(true);
+    setMobilizationError(null);
+    try {
+      const params = stepKey ? { stepKey } : {};
+      const res = await getCxProjectMobilization(projectId, params);
+      setMobilization(res.data || res || []);
+      setMobilizationFetched(true);
+    } catch (e) {
+      setMobilizationError(e?.message || "Failed to load mobilization.");
+    } finally {
+      setMobilizationLoading(false);
+    }
+  };
+
+  const loadWorkflows = async () => {
+    setWorkflowsLoading(true);
+    setWorkflowsError(null);
+    try {
+      const res = await getCxProjectWorkflows(projectId);
+      setWorkflows(Array.isArray(res) ? res : res.data || []);
+      setWorkflowsFetched(true);
+    } catch (e) {
+      setWorkflowsError(e?.message || "Failed to load workflows.");
+    } finally {
+      setWorkflowsLoading(false);
+    }
+  };
+
+  const loadSops = async () => {
+    setSopsLoading(true);
+    setSopsError(null);
+    try {
+      const res = await getCxProjectSops(projectId);
+      setSops(Array.isArray(res) ? res : res.data || []);
+      setSopsFetched(true);
+    } catch (e) {
+      setSopsError(e?.message || "Failed to load SOPs.");
+    } finally {
+      setSopsLoading(false);
+    }
+  };
+
+  const loadPartners = async () => {
+    setPartnersLoading(true);
+    setPartnersError(null);
+    try {
+      const res = await getCxProjectPartners(projectId);
+      setPartners(Array.isArray(res) ? res : res.data || []);
+      setPartnersFetched(true);
+    } catch (e) {
+      setPartnersError(e?.message || "Failed to load partners.");
+    } finally {
+      setPartnersLoading(false);
+    }
+  };
+
+  const loadMembers = async () => {
+    setMembersLoading(true);
+    setMembersError(null);
+    try {
+      const res = await getCxProjectMembers(projectId);
+      setMembers(Array.isArray(res) ? res : res.data || []);
+      setMembersFetched(true);
+    } catch (e) {
+      setMembersError(e?.message || "Failed to load members.");
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  // ── Mobilization filter ───────────────────────────────────────────────────
+  const handleMobFilter = (key) => {
+    const next = mobStepFilter === key ? "" : key;
+    setMobStepFilter(next);
+    setMobilizationFetched(false);
+    loadMobilization(next);
+  };
+
+  // ── Overview save ─────────────────────────────────────────────────────────
+  const saveProject = async () => {
+    try {
+      await updateCxProject(projectId, editForm);
+      await loadProject();
+      setEditingProject(false);
+      showToast("success", "Project updated.");
+    } catch (e) {
+      showToast("error", e?.message || "Failed to update project.");
+    }
+  };
+
+  const changeStatus = async (status) => {
+    try {
+      await updateCxProjectStatus(projectId, status);
+      await loadProject();
+      showToast("success", `Status changed to ${status}.`);
+    } catch (e) {
+      showToast("error", e?.message || "Failed to change status.");
+    }
+  };
+
+  // ── CRUD helpers (generic pattern) ───────────────────────────────────────
+  const handleDeleteConfirm = (label, onConfirm) => {
+    if (window.confirm(`Delete this ${label}?`)) onConfirm();
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  const tabBarStyle = {
+    display: "flex",
+    gap: 6,
+    overflowX: "auto",
+    padding: "0 0 12px 0",
+    marginBottom: 20,
+    borderBottom: "1px solid var(--rf-border)",
+  };
+
+  const tabStyle = (active) => ({
+    padding: "7px 16px",
+    borderRadius: 20,
+    fontSize: 13,
+    fontWeight: active ? 700 : 500,
+    cursor: "pointer",
+    border: "none",
+    background: active ? "var(--rf-accent, var(--electric))" : "var(--rf-bg2)",
+    color: active ? "#fff" : "var(--rf-txt2)",
+    whiteSpace: "nowrap",
+    transition: "all 0.15s",
+  });
+
+  const containerStyle = {
+    padding: "28px 32px",
+    background: "var(--rf-bg)",
+    minHeight: "100vh",
+    color: "var(--rf-txt)",
+    fontFamily: "var(--wfont, sans-serif)",
+  };
+
+  const cardStyle = {
+    background: "var(--rf-bg2)",
+    border: "1px solid var(--rf-border)",
+    borderRadius: 12,
+    padding: "20px 24px",
+    marginBottom: 20,
+  };
+
+  return (
+    <div style={containerStyle}>
+      {/* Page header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          marginBottom: 24,
+        }}
+      >
+        <button
+          onClick={() => router.back()}
+          style={{
+            background: "var(--rf-bg2)",
+            border: "1px solid var(--rf-border)",
+            borderRadius: 8,
+            padding: "6px 12px",
+            cursor: "pointer",
+            color: "var(--rf-txt2)",
+            fontSize: 13,
+          }}
+        >
+          ← Back
+        </button>
+        <h1
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            margin: 0,
+            color: "var(--rf-txt)",
+          }}
+        >
+          {project?.projectName || "Project Details"}
+        </h1>
+        {project?.status && <StatusBadge status={project.status} />}
       </div>
 
-      {/* Task Views */}
-      <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
-        {type !== "Equipment" && (
-          <div className="flex items-center gap-4 mb-5">
-            <h1 className="text-white ml-4 text-2xl font-bold">View</h1>
+      {/* Toast */}
+      {toast.text && (
+        <div
+          style={{
+            background:
+              toast.type === "success"
+                ? "var(--emerald-soft, #d1fae5)"
+                : "var(--rf-red-soft, #fee2e2)",
+            color:
+              toast.type === "success"
+                ? "var(--emerald, #059669)"
+                : "var(--crimson, #dc2626)",
+            padding: "10px 16px",
+            borderRadius: 8,
+            marginBottom: 16,
+            fontSize: 13,
+            fontWeight: 500,
+          }}
+        >
+          {toast.text}
+        </div>
+      )}
 
-            {type === "Project" ? (
-              <button
-                onClick={() => setActiveView("Sites")}
-                className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
-              >
-                <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Sites" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
-                >
-                  Sites
-                </span>
-              </button>
-            ) : type === "Site" ? (
-              <button
-                onClick={() => setActiveView("Projects")}
-                className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
-              >
-                <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Projects" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
-                >
-                  Sub Projects
-                </span>
-              </button>
-            ) : type === "Projects" ? (
-              <button
-                onClick={() => setActiveView("Zones")}
-                className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
-              >
-                <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Zones" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
-                >
-                  Zones
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setActiveView("Assets")}
-                className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
-              >
-                <span
-                  className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "Assets" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
-                >
-                  Assets
-                </span>
-              </button>
-            )}
-            {/* List view button */}
-            <button
-              onClick={() => setActiveView("task")}
-              className="font-[500] w-[max-content] text-white border-3 cursor-pointer border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
-            >
-              <span
-                className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${activeView === "task" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
-              >
-                <img src="/images/list.png" alt="Vector" className="h-3 w-3" />
-                Tasks
-              </span>
-            </button>
+      {/* Tab bar */}
+      <div style={tabBarStyle}>
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            style={tabStyle(activeTab === tab)}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
-            {/* calendar view button */}
-          </div>
-        )}
-        {activeView === "task" ? (
-          <>
-            <div className="flex items-center justify-between mb-8">
-              {/* <div className="flex items-center gap-4">
-                <h1 className="text-white ml-4 text-2xl font-bold">
-                  Task Views
-                </h1>
+      {/* ── OVERVIEW ──────────────────────────────────────────────────────── */}
+      {activeTab === "Overview" && (
+        <div>
+          {projectError && <ErrorBanner error={projectError} />}
+          {projectLoading ? (
+            <div style={{ color: "var(--rf-txt2)", fontSize: 14 }}>
+              Loading project…
+            </div>
+          ) : project ? (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  marginBottom: 20,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
                 <button
-                  onClick={() => setView("list")}
-                  className="font-[500] w-[max-content] text-white border-3 cursor-pointer border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
+                  className="btn rf-btn rf-btn-primary"
+                  onClick={() => setEditingProject(!editingProject)}
                 >
-                  <span
-                    className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${view === "list" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
-                  >
-                    <img
-                      src="/images/list.png"
-                      alt="Vector"
-                      className="h-3 w-3"
-                    />
-                    List
-                  </span>
+                  {editingProject ? "Cancel" : "Update Project"}
                 </button>
-
-                <button
-                  onClick={() => setView("kanban")}
-                  className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
-                >
-                  <span
-                    className={`h-8 ww-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${view === "kanban" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
+                <div className="flex items-center justify-end gap-4">
+                  <p>Change Project Status</p>
+                  <select
+                    className="input input-select input-field"
+                    style={{ width: "auto", padding: "6px 12px" }}
+                    value={project.status}
+                    onChange={(e) => changeStatus(e.target.value)}
                   >
-                    <img
-                      src="/images/kanban.png"
-                      alt="Vector"
-                      className="h-3 w-3"
-                    />
-                    Kanban
-                  </span>
-                </button>
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s.replace(/_/g, " ")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-                <button
-                  onClick={() => setView("calender")}
-                  className="font-[500] w-[max-content] text-white cursor-pointer border-3 border-white/[0.04] border-t-white/[0.1] rounded-3xl  transition-all"
-                >
-                  <span
-                    className={`h-8 w-[max-content] px-4 flex items-center justify-center rounded-3xl flex flex-row gap-2 items-center ${view === "calender" ? "bg-gradient-to-r from-[#3C71F0] to-[#1C3B80]" : "bg-transparent"}`}
+              {editingProject ? (
+                <div style={{ ...cardStyle, marginBottom: 20 }}>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      marginBottom: 16,
+                      fontSize: 15,
+                      color: "var(--rf-txt)",
+                    }}
                   >
-                    <img
-                      src="/images/calender.png"
-                      alt="Vector"
-                      className="h-3 w-3"
-                    />
-                    Calender
-                  </span>
-                </button>
-
-              </div> */}
-              {/* Add new button */}
-              <div className="flex items-center justify-end ml-auto gap-5">
-                <button
-                  onClick={() => {
-                    document.getElementById("my_modal_4").showModal();
-                    setSelectedTask(null);
-                    setTaskForm({ name: "", description: "" });
-                    setSubtaskInputs([{ name: "", description: "" }]);
-                  }}
-                  className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
-                >
-                  <div className="flex flex-row gap-2">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    Edit Project Details
+                  </div>
+                  <FormGrid cols={2}>
+                    {[
+                      {
+                        key: "projectName",
+                        label: "Project Name",
+                        required: true,
+                      },
+                      {
+                        key: "customer",
+                        label: "Customer / Client",
+                        required: true,
+                      },
+                      { key: "contractNumber", label: "Contract Number" },
+                      { key: "siteAddress", label: "Site Address" },
+                      { key: "startDate", label: "Start Date", type: "date" },
+                      { key: "projectType", label: "Project Type" },
+                    ].map(({ key, label, type, required }) => (
+                      <FormField key={key} label={label} required={required}>
+                        <input
+                          style={inputSt}
+                          type={type || "text"}
+                          value={editForm[key] || ""}
+                          onChange={(e) =>
+                            setEditForm((f) => ({
+                              ...f,
+                              [key]: e.target.value,
+                            }))
+                          }
+                        />
+                      </FormField>
+                    ))}
+                  </FormGrid>
+                  <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                    <button
+                      onClick={saveProject}
+                      style={{
+                        padding: "9px 22px",
+                        borderRadius: 8,
+                        border: "none",
+                        background:
+                          "var(--rf-accent, var(--electric, #3b82f6))",
+                        color: "#fff",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4 "
-                      />
-                    </svg>
-                    <span>Add New Task</span>
+                      Save Changes
+                    </button>
+                    <button
+                      onClick={() => setEditingProject(false)}
+                      style={{
+                        padding: "9px 20px",
+                        borderRadius: 8,
+                        border: "1.5px solid var(--rf-border)",
+                        background: "transparent",
+                        color: "var(--rf-txt2)",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      Cancel
+                    </button>
                   </div>
-                </button>
+                </div>
+              ) : null}
 
-                <button className="flex items-center justify-center gap-2 text-white text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
-                  <span className="text-gray-100 text-sm">Sort by</span>
-                  Top
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            {/* Filters and Search */}
-            <div className="flex items-center gap-4 mb-6 ml-4">
-              {/* Search Input */}
-              <div className="flex-1 relative">
-                <svg
-                  className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              <SectionTitle>Project Info</SectionTitle>
+              <InfoGrid
+                items={[
+                  { label: "Project Name", value: project.projectName },
+                  { label: "Customer", value: project.customer },
+                  { label: "Contract #", value: project.contractNumber },
+                  { label: "Site Address", value: project.siteAddress },
+                  {
+                    label: "Start Date",
+                    value: project.startDate
+                      ? new Date(project.startDate).toLocaleDateString()
+                      : null,
+                  },
+                  { label: "Project Type", value: project.projectType },
+                  { label: "Status", value: project.status },
+                ]}
+              />
+
+              {project.schedule && (
+                <>
+                  <SectionTitle>Schedule</SectionTitle>
+                  <InfoGrid
+                    items={[
+                      { label: "Crew Size", value: project.schedule.crewSize },
+                      {
+                        label: "Duration (days)",
+                        value: project.schedule.duration,
+                      },
+                      {
+                        label: "Trailers",
+                        value: project.schedule.trailerCount,
+                      },
+                      {
+                        label: "Data Halls",
+                        value: project.schedule.numDataHalls,
+                      },
+                      {
+                        label: "Forecast Window",
+                        value: project.schedule.forecastWindow,
+                      },
+                    ]}
                   />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search Task"
-                  className="w-full bg-transparent text-white placeholder-gray-500 pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-                />
-              </div>
-
-              {/* Dropdown Filters */}
-              <select className="bg-transparent text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
-                <option>Assignee</option>
-                <option>All Projects</option>
-              </select>
-
-              <select className="bg-transparent text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance pr-10 hover:border-white/20 transition-colors">
-                <option>Date</option>
-                <option>Urgent</option>
-              </select>
-
-              {/* Action Buttons */}
-              <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5"
-                  />
-                </svg>
-              </button>
-
-              <button className="bg-transparent text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z"
-                  />
-                </svg>
-              </button>
-
-              <button className="bg-[#facc15] text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20">
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
-                  />
-                </svg>
-              </button>
-            </div>
-            {view === "list" ? (
-              <>
-                {/* To do */}
-                <div className="flex w-full bg-gradient-to-b from-[#00377e] from-5% via-[#11163b]/10 via-20% to-[#11163b]/10 to-10% border-3 border-white/[0.03] border-t-white/[0.09] font-gilroy py-6 px-3 mt-8 rounded-3xl card">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex flex-row items-center gap-2">
-                      <FaCircle className="text-[#4D81E7]" />
-                      <span className="text-xl font-semibold">Tasks</span>
-                      <span className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#4D81E7] text-white flex items-center justify-center text-xs">
-                        {tasksList.length}
-                      </span>
-                    </div>
-                  </div>
-
-                  {tasksList.length === 0 ? (
-                    <div className="text-center text-gray-400 py-8">
-                      No tasks yet. Click &quot;Add new Task&quot; to create one.
-                    </div>
-                  ) : (
-                    tasksList.map((task) => (
+                  {project.schedule.phases?.length > 0 && (
+                    <>
                       <div
-                        key={task.id}
-                        className="mt-3 rounded-xl border border-white/10 hover:border-white/20 transition-all"
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 13,
+                          marginBottom: 8,
+                          color: "var(--rf-txt2)",
+                        }}
                       >
-                        {/* Task Row */}
-                        <div
-                          className="flex items-center justify-between w-full p-3 cursor-pointer hover:bg-white/5 rounded-t-xl"
-                          onClick={() => {
-                            setSelectedTask(
-                              selectedTask?.id === task.id ? null : task,
-                            );
-                            setSubtaskInputs([{ name: "", description: "" }]);
-                          }}
-                        >
-                          <div className="flex items-center gap-3 flex-1">
-                            <FaCircle className="text-[#4D81E7] text-[8px] shrink-0" />
-                            <span className="text-white text-sm font-medium">
-                              {task.name}
-                            </span>
-                            {task.description && (
-                              <span className="text-gray-500 text-xs hidden md:block">
-                                {task.description}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 ml-4">
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full shrink-0 ${
-                                task.status === "PENDING"
-                                  ? "bg-yellow-500/20 text-yellow-400"
-                                  : task.status === "IN_PROGRESS"
-                                    ? "bg-blue-500/20 text-blue-400"
-                                    : "bg-green-500/20 text-green-400"
-                              }`}
-                            >
-                              {task.status}
-                            </span>
-                            <span className="text-gray-500 text-xs shrink-0">
-                              {
-                                subtasksList.filter((s) => s.taskId === task.id)
-                                  .length
-                              }{" "}
-                              subtasks
-                            </span>
-                            {/* Edit Task */}
-                            <button
-                              className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingTask(task);
-                                setEditTaskForm({
-                                  name: task.name,
-                                  description: task.description || "",
-                                  status: task.status,
-                                });
-                                document
-                                  .getElementById("edit_task_modal")
-                                  .showModal();
-                              }}
-                            >
-                              <FaPencil className="text-xs" />
-                            </button>
-                            {/* Delete Task */}
-                            <button
-                              className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
-                              onClick={(e) => deleteTask(e, task.id)}
-                            >
-                              <FaTrash className="text-xs" />
-                            </button>
-                            {/* Add Subtask */}
-                            <button
-                              className="text-xs border border-white/10 hover:border-blue-400 text-gray-400 hover:text-blue-400 px-2 py-1 rounded-lg transition-colors shrink-0"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTask(task);
-                                setSubtaskInputs([
-                                  { name: "", description: "" },
-                                ]);
-                                document
-                                  .getElementById("my_modal_4")
-                                  .showModal();
-                              }}
-                            >
-                              + Subtask
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Subtasks for this task */}
-                        {subtasksList.filter((s) => s.taskId === task.id)
-                          .length > 0 && (
-                          <div className="border-t border-white/5 px-4 py-2">
-                            {subtasksList
-                              .filter((s) => s.taskId === task.id)
-                              .map((sub) => (
-                                <div
-                                  key={sub.id}
-                                  className="flex items-center justify-between py-1.5 pl-4 border-l border-white/10 ml-2"
-                                >
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <span className="text-gray-400 text-xs">
-                                      •
-                                    </span>
-                                    <span className="text-gray-300 text-xs">
-                                      {sub.name}
-                                    </span>
-                                    {sub.description && (
-                                      <span className="text-gray-600 text-xs hidden md:block">
-                                        {sub.description}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span
-                                      className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                        sub.status === "PENDING"
-                                          ? "bg-yellow-500/20 text-yellow-400"
-                                          : sub.status === "IN_PROGRESS"
-                                            ? "bg-blue-500/20 text-blue-400"
-                                            : "bg-green-500/20 text-green-400"
-                                      }`}
-                                    >
-                                      {sub.status}
-                                    </span>
-                                    {/* Edit Subtask */}
-                                    <button
-                                      className="p-1 text-gray-500 hover:text-blue-400 transition-colors"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setEditingSubtask(sub);
-                                        setEditSubtaskForm({
-                                          name: sub.name,
-                                          description: sub.description || "",
-                                          status: sub.status,
-                                        });
-                                        document
-                                          .getElementById("edit_subtask_modal")
-                                          .showModal();
-                                      }}
-                                    >
-                                      <FaPencil className="text-[10px]" />
-                                    </button>
-                                    {/* Delete Subtask */}
-                                    <button
-                                      className="p-1 text-gray-500 hover:text-red-400 transition-colors"
-                                      onClick={(e) =>
-                                        deleteSubtask(e, sub.taskId, sub.id)
-                                      }
-                                    >
-                                      <FaTrash className="text-[10px]" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
+                        Phases
                       </div>
-                    ))
+                      <Table headers={["Phase", "Start", "End"]}>
+                        {project.schedule.phases.map((ph, i) => (
+                          <Tr key={i} even={i % 2 === 0}>
+                            <Td>{ph.name}</Td>
+                            <Td>
+                              {ph.startDate
+                                ? new Date(ph.startDate).toLocaleDateString()
+                                : "—"}
+                            </Td>
+                            <Td>
+                              {ph.endDate
+                                ? new Date(ph.endDate).toLocaleDateString()
+                                : "—"}
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Table>
+                    </>
                   )}
-                </div>
-              </>
-            ) : view === "kanban" ? (
-              <div className="flex flex-row gap-2">
-                {/* To do */}
-                <div className="flex w-85 shadow-inner shadow-blue-500 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
-                  <div className="flex justify-between flex-col">
-                    <div className="flex flex-row items-center justify-between gap-2">
-                      <div className="flex flex-row items-center justify-between gap-2">
-                        <FaCircle className="text-[#4D81E7]" />
-                        <span className="text-xl font-semibold">To Do</span>
+                  {project.schedule.milestones?.length > 0 && (
+                    <>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 13,
+                          margin: "16px 0 8px",
+                          color: "var(--rf-txt2)",
+                        }}
+                      >
+                        Milestones
                       </div>
-                    </div>
-                  </div>
-                  <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] px-3 font-gilroy p-4 mt-8 rounded-3xl card">
-                    <div className="flex items-center gap-2 justify-between">
-                      <div className="flex gap-2  ">
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#00E691] bg-[#C6FFEA]">
-                          Internal
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#F1C21B] bg-[#FFFBEB]">
-                          Marketing
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#DD4347] bg-[#FFEFEF]">
-                          Urgent
-                        </button>
-                      </div>
-                      <div>
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-base text-white mt-3">
-                      Monthly Product Discussion
-                    </div>
-                    <div className="flex  items-center justify-between text-sm mt-4 text-[#72748A]">
-                      <div className="flex gap-2 text-xs text-[#72748A]">
-                        <img src="/images/calendar.svg" alt="calendar" />
-                        <span>Due Date 24 Jan 2023</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <img src="/images/checklist.svg" alt="Checklist" />
-                        4/12
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[#72748A] text-sm">
-                      {/* Image icons */}
-                      <div>
-                        {tasks.map((task, index) => (
-                          <tr
-                            key={task.id}
-                            className=" transition-colors cursor-pointer"
-                            onClick={() =>
-                              router.push(`/Profile/Managers/${task.id}`)
-                            }
-                          >
-                            <td className="flex items-center py-4 text-gray-400">
-                              {task.assignee.map((item, index) => (
-                                <div
-                                  key={index}
-                                  className={`avatar 
-                                ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
-                                >
-                                  <div className="w-[40px] h-[40px] rounded-full ">
-                                    <img
-                                      src={item.avatar}
-                                      alt={`User ${index}`}
-                                      className="w-[40px] h-[40px] rounded-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          </tr>
+                      <Table
+                        headers={["Milestone", "Date", "Type", "Critical"]}
+                      >
+                        {project.schedule.milestones.map((m, i) => (
+                          <Tr key={i} even={i % 2 === 0}>
+                            <Td>{m.name}</Td>
+                            <Td>
+                              {m.date
+                                ? new Date(m.date).toLocaleDateString()
+                                : "—"}
+                            </Td>
+                            <Td>{m.type}</Td>
+                            <Td>{m.critical ? "Yes" : "No"}</Td>
+                          </Tr>
                         ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img
-                              src="/images/attachments.svg"
-                              alt="Attachments"
-                            />
-                            <p>8</p>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img src="/images/comments.svg" alt="Comments" />
-                            <p>15</p>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                      </Table>
+                    </>
+                  )}
+                </>
+              )}
 
-                  <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] px-2 font-gilroy p-4 mt-2 rounded-3xl card">
-                    <div className="flex items-center gap-2 justify-between">
-                      <div className="flex gap-2  ">
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#00E691] bg-[#C6FFEA]">
-                          Internal
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#0075FF] bg-[#D2E7FF]">
-                          Normal
-                        </button>
-                      </div>
-                      <div>
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-base text-white mt-3">
-                      Update New Social Media Posts
-                    </div>
-                    <div className="flex  items-center justify-between text-sm mt-4 text-[#72748A]">
-                      <div className="flex gap-2 text-xs text-[#72748A]">
-                        <img src="/images/calendar.svg" alt="calendar" />
-                        <span>Due Date 24 Jan 2023</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <img src="/images/checklist.svg" alt="Checklist" />
-                        4/12
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[#72748A] text-sm">
-                      {/* Image icons */}
-                      <div>
-                        {tasks.map((task, index) => (
-                          <tr
-                            key={task.id}
-                            className=" transition-colors cursor-pointer"
-                            onClick={() =>
-                              router.push(`/Profile/Managers/${task.id}`)
-                            }
-                          >
-                            <td className="flex items-center py-4 text-gray-400">
-                              {task.assignee.map((item, index) => (
-                                <div
-                                  key={index}
-                                  className={`avatar 
-                                ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
-                                >
-                                  <div className="w-[40px] h-[40px] rounded-full ">
-                                    <img
-                                      src={item.avatar}
-                                      alt={`User ${index}`}
-                                      className="w-[40px] h-[40px] rounded-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          </tr>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img
-                              src="/images/attachments.svg"
-                              alt="Attachments"
-                            />
-                            <p>8</p>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img src="/images/comments.svg" alt="Comments" />
-                            <p>15</p>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              {project.financials && (
+                <>
+                  <SectionTitle>Financials</SectionTitle>
+                  <InfoGrid
+                    items={[
+                      {
+                        label: "Contract Value",
+                        value:
+                          project.financials.contractValue != null
+                            ? `$${project.financials.contractValue.toLocaleString()}`
+                            : null,
+                      },
+                      {
+                        label: "Labor Budget",
+                        value:
+                          project.financials.laborBudget != null
+                            ? `$${project.financials.laborBudget.toLocaleString()}`
+                            : null,
+                      },
+                      {
+                        label: "Equipment Budget",
+                        value:
+                          project.financials.equipmentBudget != null
+                            ? `$${project.financials.equipmentBudget.toLocaleString()}`
+                            : null,
+                      },
+                      {
+                        label: "Retainage",
+                        value:
+                          project.financials.retainage != null
+                            ? `${project.financials.retainage}%`
+                            : null,
+                      },
+                      {
+                        label: "Payment Terms",
+                        value: project.financials.paymentTerms,
+                      },
+                    ]}
+                  />
+                </>
+              )}
 
-                  <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] px-3 font-gilroy p-4 mt-2 rounded-3xl card">
-                    <div className="flex items-center gap-2 justify-between">
-                      <div className="flex gap-2  ">
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#FF6637] bg-[#FFD6CA]">
-                          External
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#F1C21B] bg-[#FFFBEB]">
-                          Marketing
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#DD4347] bg-[#FFEFEF]">
-                          Urgent
-                        </button>
-                      </div>
-                      <div>
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-base text-white mt-3">
-                      Monthly Product Discussion
-                    </div>
-                    <div className="flex  items-center justify-between text-sm mt-4 text-[#72748A]">
-                      <div className="flex gap-2 text-xs text-[#72748A]">
-                        <img src="/images/calendar.svg" alt="calendar" />
-                        <span>Due Date 24 Jan 2023</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <img src="/images/checklist.svg" alt="Checklist" />
-                        4/12
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[#72748A] text-sm">
-                      {/* Image icons */}
-                      <div>
-                        {tasks.map((task, index) => (
-                          <tr
-                            key={task.id}
-                            className=" transition-colors cursor-pointer"
-                            onClick={() =>
-                              router.push(`/Profile/Managers/${task.id}`)
-                            }
-                          >
-                            <td className="flex items-center py-4 text-gray-400">
-                              {task.assignee.map((item, index) => (
-                                <div
-                                  key={index}
-                                  className={`avatar 
-                                ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
-                                >
-                                  <div className="w-[40px] h-[40px] rounded-full ">
-                                    <img
-                                      src={item.avatar}
-                                      alt={`User ${index}`}
-                                      className="w-[40px] h-[40px] rounded-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          </tr>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img
-                              src="/images/attachments.svg"
-                              alt="Attachments"
-                            />
-                            <p>8</p>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img src="/images/comments.svg" alt="Comments" />
-                            <p>15</p>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* In Progress */}
-                <div className="flex w-85 shadow-inner shadow-yellow-500 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
-                  <div className="flex justify-between flex-col">
-                    <div className="flex flex-row items-center justify-between gap-2">
-                      <div className="flex flex-row items-center justify-between gap-2">
-                        <FaCircle className="text-[#EFBA47]" />
-                        <span className="text-xl font-semibold">
-                          In Progress
-                        </span>
-                        <button className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#EFBA47] text-white">
-                          4
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] px-3 font-gilroy p-4 mt-8 rounded-3xl card">
-                    <div className="flex items-center gap-2 justify-between">
-                      <div className="flex gap-2  ">
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#00E691] bg-[#C6FFEA]">
-                          Internal
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#F1C21B] bg-[#FFFBEB]">
-                          Marketing
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#DD4347] bg-[#FFEFEF]">
-                          Urgent
-                        </button>
-                      </div>
-                      <div>
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-base text-white mt-3">
-                      Monthly Product Discussion
-                    </div>
-                    <div className="flex  items-center justify-between text-sm mt-4 text-[#72748A]">
-                      <div className="flex gap-2 text-xs text-[#72748A]">
-                        <img src="/images/calendar.svg" alt="calendar" />
-                        <span>Due Date 24 Jan 2023</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <img src="/images/checklist.svg" alt="Checklist" />
-                        4/12
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[#72748A] text-sm">
-                      {/* Image icons */}
-                      <div>
-                        {tasks.map((task, index) => (
-                          <tr
-                            key={task.id}
-                            className=" transition-colors cursor-pointer"
-                            onClick={() =>
-                              router.push(`/Profile/Managers/${task.id}`)
-                            }
-                          >
-                            <td className="flex items-center py-4 text-gray-400">
-                              {task.assignee.map((item, index) => (
-                                <div
-                                  key={index}
-                                  className={`avatar 
-                                ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
-                                >
-                                  <div className="w-[40px] h-[40px] rounded-full ">
-                                    <img
-                                      src={item.avatar}
-                                      alt={`User ${index}`}
-                                      className="w-[40px] h-[40px] rounded-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          </tr>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img
-                              src="/images/attachments.svg"
-                              alt="Attachments"
-                            />
-                            <p>8</p>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img src="/images/comments.svg" alt="Comments" />
-                            <p>15</p>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] px-2 font-gilroy p-4 mt-2 rounded-3xl card">
-                    <div className="flex items-center gap-2 justify-between">
-                      <div className="flex gap-2  ">
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#00E691] bg-[#C6FFEA]">
-                          Internal
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#0075FF] bg-[#D2E7FF]">
-                          Normal
-                        </button>
-                      </div>
-                      <div>
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-base text-white mt-3">
-                      Update New Social Media Posts
-                    </div>
-                    <div className="flex  items-center justify-between text-sm mt-4 text-[#72748A]">
-                      <div className="flex gap-2 text-xs text-[#72748A]">
-                        <img src="/images/calendar.svg" alt="calendar" />
-                        <span>Due Date 24 Jan 2023</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <img src="/images/checklist.svg" alt="Checklist" />
-                        4/12
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[#72748A] text-sm">
-                      {/* Image icons */}
-                      <div>
-                        {tasks.map((task, index) => (
-                          <tr
-                            key={task.id}
-                            className=" transition-colors cursor-pointer"
-                            onClick={() =>
-                              router.push(`/Profile/Managers/${task.id}`)
-                            }
-                          >
-                            <td className="flex items-center py-4 text-gray-400">
-                              {task.assignee.map((item, index) => (
-                                <div
-                                  key={index}
-                                  className={`avatar 
-                                ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
-                                >
-                                  <div className="w-[40px] h-[40px] rounded-full ">
-                                    <img
-                                      src={item.avatar}
-                                      alt={`User ${index}`}
-                                      className="w-[40px] h-[40px] rounded-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          </tr>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img
-                              src="/images/attachments.svg"
-                              alt="Attachments"
-                            />
-                            <p>8</p>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img src="/images/comments.svg" alt="Comments" />
-                            <p>15</p>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* In Reviews */}
-                <div className="flex w-85 shadow-inner shadow-orange-500 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
-                  <div className="flex justify-between flex-col">
-                    <div className="flex flex-row items-center justify-between gap-2">
-                      <div className="flex flex-row items-center justify-between gap-2">
-                        <FaCircle className="text-[#E7844D]" />
-                        <span className="text-xl font-semibold">
-                          In Reviews
-                        </span>
-                        <button className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#E7844D] text-white">
-                          4
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] px-3 font-gilroy p-4 mt-8 rounded-3xl card">
-                    <div className="flex items-center gap-2 justify-between">
-                      <div className="flex gap-2  ">
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#00E691] bg-[#C6FFEA]">
-                          Internal
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#F1C21B] bg-[#FFFBEB]">
-                          Marketing
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#DD4347] bg-[#FFEFEF]">
-                          Urgent
-                        </button>
-                      </div>
-                      <div>
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-base text-white mt-3">
-                      Monthly Product Discussion
-                    </div>
-                    <div className="flex  items-center justify-between text-sm mt-4 text-[#72748A]">
-                      <div className="flex gap-2 text-xs text-[#72748A]">
-                        <img src="/images/calendar.svg" alt="calendar" />
-                        <span>Due Date 24 Jan 2023</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <img src="/images/checklist.svg" alt="Checklist" />
-                        4/12
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[#72748A] text-sm">
-                      {/* Image icons */}
-                      <div>
-                        {tasks.map((task, index) => (
-                          <tr
-                            key={task.id}
-                            className=" transition-colors cursor-pointer"
-                            onClick={() =>
-                              router.push(`/Profile/Managers/${task.id}`)
-                            }
-                          >
-                            <td className="flex items-center py-4 text-gray-400">
-                              {task.assignee.map((item, index) => (
-                                <div
-                                  key={index}
-                                  className={`avatar 
-                                ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
-                                >
-                                  <div className="w-[40px] h-[40px] rounded-full ">
-                                    <img
-                                      src={item.avatar}
-                                      alt={`User ${index}`}
-                                      className="w-[40px] h-[40px] rounded-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          </tr>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img
-                              src="/images/attachments.svg"
-                              alt="Attachments"
-                            />
-                            <p>8</p>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img src="/images/comments.svg" alt="Comments" />
-                            <p>15</p>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] px-2 font-gilroy p-4 mt-2 rounded-3xl card">
-                    <div className="flex items-center gap-2 justify-between">
-                      <div className="flex gap-2  ">
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#00E691] bg-[#C6FFEA]">
-                          Internal
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#0075FF] bg-[#D2E7FF]">
-                          Normal
-                        </button>
-                      </div>
-                      <div>
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-base text-white mt-3">
-                      Update New Social Media Posts
-                    </div>
-                    <div className="flex  items-center justify-between text-sm mt-4 text-[#72748A]">
-                      <div className="flex gap-2 text-xs text-[#72748A]">
-                        <img src="/images/calendar.svg" alt="calendar" />
-                        <span>Due Date 24 Jan 2023</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <img src="/images/checklist.svg" alt="Checklist" />
-                        4/12
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[#72748A] text-sm">
-                      {/* Image icons */}
-                      <div>
-                        {tasks.map((task, index) => (
-                          <tr
-                            key={task.id}
-                            className=" transition-colors cursor-pointer"
-                            onClick={() =>
-                              router.push(`/Profile/Managers/${task.id}`)
-                            }
-                          >
-                            <td className="flex items-center py-4 text-gray-400">
-                              {task.assignee.map((item, index) => (
-                                <div
-                                  key={index}
-                                  className={`avatar 
-                                ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
-                                >
-                                  <div className="w-[40px] h-[40px] rounded-full ">
-                                    <img
-                                      src={item.avatar}
-                                      alt={`User ${index}`}
-                                      className="w-[40px] h-[40px] rounded-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          </tr>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img
-                              src="/images/attachments.svg"
-                              alt="Attachments"
-                            />
-                            <p>8</p>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img src="/images/comments.svg" alt="Comments" />
-                            <p>15</p>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] px-2 font-gilroy p-4 mt-2 rounded-3xl card">
-                    <div className="flex items-center gap-2 justify-between">
-                      <div className="flex gap-2  ">
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#00E691] bg-[#C6FFEA]">
-                          Internal
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#0075FF] bg-[#D2E7FF]">
-                          Normal
-                        </button>
-                      </div>
-                      <div>
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-base text-white mt-3">
-                      Update New Social Media Posts
-                    </div>
-                    <div className="flex  items-center justify-between text-sm mt-4 text-[#72748A]">
-                      <div className="flex gap-2 text-xs text-[#72748A]">
-                        <img src="/images/calendar.svg" alt="calendar" />
-                        <span>Due Date 24 Jan 2023</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <img src="/images/checklist.svg" alt="Checklist" />
-                        4/12
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[#72748A] text-sm">
-                      {/* Image icons */}
-                      <div>
-                        {tasks.map((task, index) => (
-                          <tr
-                            key={task.id}
-                            className=" transition-colors cursor-pointer"
-                            onClick={() =>
-                              router.push(`/Profile/Managers/${task.id}`)
-                            }
-                          >
-                            <td className="flex items-center py-4 text-gray-400">
-                              {task.assignee.map((item, index) => (
-                                <div
-                                  key={index}
-                                  className={`avatar 
-                                ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
-                                >
-                                  <div className="w-[40px] h-[40px] rounded-full ">
-                                    <img
-                                      src={item.avatar}
-                                      alt={`User ${index}`}
-                                      className="w-[40px] h-[40px] rounded-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          </tr>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img
-                              src="/images/attachments.svg"
-                              alt="Attachments"
-                            />
-                            <p>8</p>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img src="/images/comments.svg" alt="Comments" />
-                            <p>15</p>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* Completed */}
-                <div className="flex w-85 shadow-inner shadow-green-500 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-6 mt-8 rounded-3xl card">
-                  <div className="flex justify-between flex-col">
-                    <div className="flex flex-row items-center justify-between gap-2">
-                      <div className="flex flex-row items-center justify-between gap-2">
-                        <FaCircle className="text-[#00E691]" />
-                        <span className="text-xl font-semibold">Completed</span>
-                        <button className="h-6 w-6 rounded-sm font-semibold border border-[#E5E5EC] bg-[#00E691] text-white">
-                          4
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex w-full bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] px-3 font-gilroy p-4 mt-8 rounded-3xl card">
-                    <div className="flex items-center gap-2 justify-between">
-                      <div className="flex gap-2  ">
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#00E691] bg-[#C6FFEA]">
-                          Internal
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#F1C21B] bg-[#FFFBEB]">
-                          Marketing
-                        </button>
-                        <button className="px-2 py-1 text-xs font-medium rounded-3xl text-[#DD4347] bg-[#FFEFEF]">
-                          Urgent
-                        </button>
-                      </div>
-                      <div>
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="text-base text-white mt-3">
-                      Monthly Product Discussion
-                    </div>
-                    <div className="flex  items-center justify-between text-sm mt-4 text-[#72748A]">
-                      <div className="flex gap-2 text-xs text-[#72748A]">
-                        <img src="/images/calendar.svg" alt="calendar" />
-                        <span>Due Date 24 Jan 2023</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <img src="/images/checklist.svg" alt="Checklist" />
-                        4/12
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between text-[#72748A] text-sm">
-                      {/* Image icons */}
-                      <div>
-                        {tasks.map((task, index) => (
-                          <tr
-                            key={task.id}
-                            className=" transition-colors cursor-pointer"
-                            onClick={() =>
-                              router.push(`/Profile/Managers/${task.id}`)
-                            }
-                          >
-                            <td className="flex items-center py-4 text-gray-400">
-                              {task.assignee.map((item, index) => (
-                                <div
-                                  key={index}
-                                  className={`avatar 
-                                ${index !== 0 ? "-ml-5" : ""} 
-                                transition-transform duration-300 z-${task.assignee.length - index}`}
-                                >
-                                  <div className="w-[40px] h-[40px] rounded-full ">
-                                    <img
-                                      src={item.avatar}
-                                      alt={`User ${index}`}
-                                      className="w-[40px] h-[40px] rounded-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </td>
-                          </tr>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img
-                              src="/images/attachments.svg"
-                              alt="Attachments"
-                            />
-                            <p>8</p>
-                          </span>
-                        </div>
-                        <div>
-                          <span className="flex flex-row gap-1">
-                            <img src="/images/comments.svg" alt="Comments" />
-                            <p>15</p>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              {project.safetyPlan && (
+                <>
+                  <SectionTitle>Safety Plan</SectionTitle>
+                  <InfoGrid
+                    items={[
+                      {
+                        label: "Safety Manager",
+                        value: project.safetyPlan.safetyManager,
+                      },
+                      {
+                        label: "PPE Required",
+                        value: project.safetyPlan.ppeRequired,
+                      },
+                      {
+                        label: "OSHA 30 Required",
+                        value:
+                          project.safetyPlan.osha30Required != null
+                            ? project.safetyPlan.osha30Required
+                              ? "Yes"
+                              : "No"
+                            : null,
+                      },
+                      {
+                        label: "OSHA 10 Required",
+                        value:
+                          project.safetyPlan.osha10Required != null
+                            ? project.safetyPlan.osha10Required
+                              ? "Yes"
+                              : "No"
+                            : null,
+                      },
+                    ]}
+                  />
+                </>
+              )}
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {/* ── ASSETS ────────────────────────────────────────────────────────── */}
+      {activeTab === "Assets" && (
+        <div>
+          <ErrorBanner error={assetsError} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Assets</span>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={() => {
+                setAssetForm({
+                  procurementStatus: "NOT_ORDERED",
+                  procurementOwner: "OFCI",
+                });
+                setAssetModal("add");
+              }}
+            >
+              + Add Asset
+            </button>
+          </div>
+          <Table
+            headers={[
+              "Abbr",
+              "Name",
+              "Type",
+              "Qty",
+              "Owner",
+              "Procurement Status",
+              "Actions",
+            ]}
+          >
+            {assetsLoading ? (
+              <LoadingRows cols={7} />
+            ) : assets.length === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <EmptyState message="No assets yet." />
+                </td>
+              </tr>
             ) : (
-              <>
-                {/* calnedar view */}
-                <div className=" ml-4">
-                  <hr className="h-px  bg-[#656A80] border-0"></hr>
-                  <div className="flex items-center justify-between mx-14 mt-4">
-                    <h1 className="text-lg ">
-                      MON <span className="font-medium">15</span>
-                    </h1>
-                    <h1 className="text-lg ">
-                      TUE <span className="font-medium">16</span>
-                    </h1>
-                    <h1 className="text-lg ">
-                      WED <span className="font-medium">17</span>
-                    </h1>
-                    <h1 className="text-lg ">
-                      THU <span className="font-medium">18</span>
-                    </h1>
-                    <h1 className="text-lg ">
-                      FRI <span className="font-medium">19</span>
-                    </h1>
-                    <h1 className="text-lg ">
-                      SAT <span className="font-medium">20</span>
-                    </h1>
-                    <h1 className="text-lg ">
-                      SUN <span className="font-medium">21</span>
-                    </h1>
-                  </div>
-                  <hr className="h-px bg-[#656A80] border-0 mt-4"></hr>
-                  {/* cards */}
-                  <div className="absolute ml-10 mt-20 flex w-70 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-3  rounded-3xl card">
-                    <div className="flex flex-col  justify-between">
-                      <div className="flex items-center justify-between ">
-                        <h2 className="font-medium text-sm font-geist">
-                          Conduct Client Meeting
-                        </h2>
-                        <div className="flex flex-col">
-                          <CircularProgress value={60} label="Progress" />
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-[#A0AEC0]">
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z"
-                          />
-                        </svg>
-                        <span>Nov 12, 2024</span>
-                        <svg
-                          className="w-5 h-5 ml-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
-                          />
-                        </svg>
-                        <span>12</span>
-                      </div>
-
-                      <div className="flex gap-2 mt-2 items-center ">
-                        <button className="px-2 py-1 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#44444A] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#44444A]" />
-                          <span className="text-sm font-semibold">Todo</span>
-                        </button>
-                        <button className="px-2 py-1 mr-3 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#C65468] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#C65468]" />
-                          <span className="text-sm font-semibold">Urgent</span>
-                        </button>
-                        <div className="flex ml-6">
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3"></button>
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3 -ml-4"></button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute ml-110 mt-20 flex w-75 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-3  rounded-3xl card">
-                    <div className="flex flex-col  justify-between">
-                      <div className="flex items-center justify-between ">
-                        <h2 className="font-medium text-sm font-geist">
-                          Finalize Project Proposal
-                        </h2>
-                        <CircularProgress value={60} label="Progress" />
-                      </div>
-                      <div className="flex items-center gap-2 text-[#A0AEC0]">
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z"
-                          />
-                        </svg>
-                        <span>Nov 12, 2024</span>
-                        <svg
-                          className="w-5 h-5 ml-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
-                          />
-                        </svg>
-                        <span>12</span>
-                      </div>
-
-                      <div className="flex gap-2 mt-2 items-center ">
-                        <button className="px-2 py-1 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#4D81E7] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#4D81E7]" />
-                          <span className="text-sm font-semibold">
-                            Inprogress
-                          </span>
-                        </button>
-                        <button className="px-2 py-1 mr-3 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#E7844D] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#E7844D]" />
-                          <span className="text-sm font-semibold">Normal</span>
-                        </button>
-                        <div className="flex ml-3">
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3"></button>
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3 -ml-4"></button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute ml-55 mt-80 flex w-75 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-3 rounded-3xl card">
-                    <div className="flex flex-col  justify-between">
-                      <div className="flex items-center justify-between ">
-                        <h2 className="font-medium text-sm font-geist">
-                          Write Email Copy
-                        </h2>
-                        <div className="flex flex-col">
-                          <CircularProgress value={60} label="Progress" />
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-[#A0AEC0]">
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z"
-                          />
-                        </svg>
-                        <span>Nov 12, 2024</span>
-                        <svg
-                          className="w-5 h-5 ml-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
-                          />
-                        </svg>
-                        <span>12</span>
-                      </div>
-
-                      <div className="flex gap-2 mt-2 items-center ">
-                        <button className="px-2 py-1 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#44444A] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#44444A]" />
-                          <span className="text-sm font-semibold">Todo</span>
-                        </button>
-                        <button className="px-2 py-1 mr-3 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#C65468] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#C65468]" />
-                          <span className="text-sm font-semibold">Urgent</span>
-                        </button>
-                        <div className="flex ml-10">
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3"></button>
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3 -ml-4"></button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute ml-160 mt-80 flex w-75 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-3 rounded-3xl card">
-                    <div className="flex flex-col  justify-between">
-                      <div className="flex items-center justify-between ">
-                        <h2 className="font-medium text-sm font-geist">
-                          Write Email Copy
-                        </h2>
-                        <CircularProgress value={60} label="Progress" />
-                      </div>
-                      <div className="flex items-center gap-2 text-[#A0AEC0]">
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z"
-                          />
-                        </svg>
-                        <span>Nov 12, 2024</span>
-                        <svg
-                          className="w-5 h-5 ml-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
-                          />
-                        </svg>
-                        <span>12</span>
-                      </div>
-
-                      <div className="flex gap-2 mt-2 items-center ">
-                        <button className="px-2 py-1 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#44444A] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#44444A]" />
-                          <span className="text-sm font-semibold">Todo</span>
-                        </button>
-                        <button className="px-2 py-1 mr-3 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#C65468] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#C65468]" />
-                          <span className="text-sm font-semibold">Urgent</span>
-                        </button>
-                        <div className="flex ml-10">
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3"></button>
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3 -ml-4"></button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute ml-2 flex w-75 mt-140 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-3  rounded-3xl card">
-                    <div className="flex flex-col  justify-between">
-                      <div className="flex items-center justify-between ">
-                        <h2 className="font-medium text-sm font-geist">
-                          Finalize Project Proposal
-                        </h2>
-                        <CircularProgress value={60} label="Progress" />
-                      </div>
-                      <div className="flex items-center gap-2 text-[#A0AEC0]">
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z"
-                          />
-                        </svg>
-                        <span>Nov 12, 2024</span>
-                        <svg
-                          className="w-5 h-5 ml-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
-                          />
-                        </svg>
-                        <span>12</span>
-                      </div>
-
-                      <div className="flex gap-2 mt-2 items-center ">
-                        <button className="px-2 py-1 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#4D81E7] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#4D81E7]" />
-                          <span className="text-sm font-semibold">
-                            Inprogress
-                          </span>
-                        </button>
-                        <button className="px-2 py-1 mr-3 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#E7844D] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#E7844D]" />
-                          <span className="text-sm font-semibold">Normal</span>
-                        </button>
-                        <div className="flex ml-3">
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3"></button>
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3 -ml-4"></button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute ml-110 flex w-85 mt-140 bg-gradient-to-r from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09]  font-gilroy p-3  rounded-3xl card">
-                    <div className="flex flex-col  justify-between">
-                      <div className="flex items-center justify-between ">
-                        <h2 className="font-medium text-sm font-geist">
-                          Conduct Client Meeting
-                        </h2>
-                        <CircularProgress value={100} label="Progress" />
-                      </div>
-                      <div className="flex items-center gap-2 text-[#A0AEC0]">
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z"
-                          />
-                        </svg>
-                        <span>Nov 12, 2024</span>
-                        <svg
-                          className="w-5 h-5 ml-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
-                          />
-                        </svg>
-                        <span>12</span>
-                      </div>
-
-                      <div className="flex gap-2 mt-2 items-center ">
-                        <button className="px-2 py-1 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#00E691] bg-[#FEF6F5]">
-                          <FaCircle className="text-[#00E691]" />
-                          <span className="text-sm font-semibold">
-                            Completed
-                          </span>
-                        </button>
-                        <button className="px-2 py-1 mr-3 gap-2 text-xs flex items-center justify-between font-medium rounded-3xl text-[#C65468] bg-[#E0F7EC]">
-                          <FaCircle className="text-[#C65468]" />
-                          <span className="text-sm font-semibold">Urgent</span>
-                        </button>
-                        <div className="flex ml-10">
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3"></button>
-                          <button className="w-8 h-8 rounded-full bg-[#D9D9D9] border-3 -ml-4"></button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Vertical lines */}
-                  <div className="flex items-center justify-between mx-8">
-                    <div className="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
-                    <div className="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
-                    <div className="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
-                    <div className="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
-                    <div className="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
-                    <div className="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
-                    <div className="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
-                    <div className="inline-block h-[850px] min-h-[1em] w-0.5 self-stretch bg-white/10 mt-4"></div>
-                  </div>
-                </div>
-              </>
+              assets.map((a, i) => (
+                <Tr key={a.id} even={i % 2 === 0}>
+                  <Td>
+                    <span
+                      style={{
+                        fontFamily: "var(--wfont-mono, monospace)",
+                        fontSize: 12,
+                      }}
+                    >
+                      {a.abbr}
+                    </span>
+                  </Td>
+                  <Td>{a.name}</Td>
+                  <Td>{a.assetType}</Td>
+                  <Td>{a.quantity}</Td>
+                  <Td>{a.procurementOwner}</Td>
+                  <Td>
+                    <StatusBadge status={a.procurementStatus} />
+                  </Td>
+                  <Td>
+                    <ActionBtn
+                      onClick={() => {
+                        setAssetForm({ ...a });
+                        setAssetModal(a);
+                      }}
+                    >
+                      Edit
+                    </ActionBtn>
+                    <ActionBtn
+                      danger
+                      onClick={() =>
+                        handleDeleteConfirm("asset", async () => {
+                          try {
+                            await deleteCxProjectAsset(projectId, a.id);
+                            setAssets((prev) =>
+                              prev.filter((x) => x.id !== a.id),
+                            );
+                            showToast("success", "Asset deleted.");
+                          } catch (e) {
+                            showToast("error", e?.message || "Delete failed.");
+                          }
+                        })
+                      }
+                    >
+                      Delete
+                    </ActionBtn>
+                  </Td>
+                </Tr>
+              ))
             )}
-          </>
-        ) : (
-          <>
-            {/* Header */}
-            <div className="flex flex-row md:flex-row gap-4 justify-between mb-8">
-              <h1 className="text-white mt-5 ml-4 text-xl md:text-3xl capitalize">
-                {activeView}
-              </h1>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">Sort by</span>
-                <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
-                  Newest
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
+          </Table>
 
-            {/* Filters and Search */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-2 mb-6 ml-4">
-              <div className="flex gap-2 w-full md:w-full">
-                {/* Search Input */}
-                <div className="w-full relative">
-                  <svg
-                    className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder={`Search ${activeView}`}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-[#0a1128] text-white placeholder-white pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-                  />
-                </div>
-
-                {/* Dropdown Filters */}
-                <select className="bg-[#0a1128] w-[max-content] text-white px-5  rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
-                  <option>Client</option>
-                  <option>All Projects</option>
-                  <option>Active Projects</option>
-                </select>
-              </div>
-              <div className="flex gap-2 w-full md:w-auto">
-                <select className="bg-[#0a1128] w-[max-content] text-white px-5 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
-                  <option>Last Modified</option>
-                  <option>Netherlands</option>
-                  <option>USA</option>
-                  <option>UK</option>
-                </select>
-
-                <select className="bg-[#0a1128] w-[max-content] text-white px-5 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none cursor-pointer appearance-none pr-10 hover:border-white/20 transition-colors">
-                  <option>Status</option>
-                  <option>Active</option>
-                  <option>In-active</option>
-                </select>
-
-                {/* Action Buttons */}
-                <button className="bg-[#0a1128] w-[max-content] flex items-center justify-center text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
-                </button>
-
-                <button className="bg-[#0a1128] w-[max-content] flex items-center justify-center text-white p-3.5 rounded-xl border border-white/10 hover:border-white/20 hover:bg-[#0f1629] transition-all">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                    />
-                  </svg>
-                </button>
-
-                <button
-                  onClick={() =>
-                    router.push(
-                      subId
-                        ? `/create-project/${type}/${activeView}/${id}/${subId}`
-                        : `/create-project/${type}/${activeView}/${id}`,
-                    )
+          {assetModal &&
+            (() => {
+              const saveAsset = async () => {
+                try {
+                  if (assetModal === "add") {
+                    const created = await createCxProjectAsset(
+                      projectId,
+                      assetForm,
+                    );
+                    setAssets((p) => [...p, created]);
+                  } else {
+                    const updated = await updateCxProjectAsset(
+                      projectId,
+                      assetModal.id,
+                      assetForm,
+                    );
+                    setAssets((p) =>
+                      p.map((x) => (x.id === assetModal.id ? updated : x)),
+                    );
                   }
-                  className="bg-[#F2F962] w-[max-content] flex items-center justify-center font-semibold capitalize text-[#0a1128] p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20 w-[max-content"
-                >
-                  Add {activeView}
-                </button>
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto ml-4">
-              {/* ── SITES TABLE ── */}
-              {activeView === "Sites" && (
-                <table className="w-full">
-                  <thead className="bg-[#080C26] rounded-2xl">
-                    <tr>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        #
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Name
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Safety Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Permit Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Location
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sites
-                      ?.filter((item) =>
-                        item?.name
-                          ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase()),
-                      )
-                      .map((item) => (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-white/5 transition-colors cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            router.push(
-                              `/ProjectDetails/Site/${item.id}/${id}`,
-                            );
-                          }}
-                        >
-                          <td className="py-4 px-4">
-                            <input
-                              type="checkbox"
-                              className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
-                            />
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
-                              <span className="text-white font-medium">
-                                {item.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">
-                              {item.safetyStatus}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">
-                              {item.permitStatus}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.location}
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
-                              <button
-                                className="p-2 cursor-pointer"
-                                onClick={(e) =>
-                                  deleteFunction(e, activeView, item?.id)
-                                }
-                              >
-                                <FaTrash className="text-white" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              )}
-
-              {/* ── PROJECTS TABLE ── */}
-              {activeView === "Projects" && (
-                <table className="w-full">
-                  <thead className="bg-[#080C26] rounded-2xl">
-                    <tr>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        #
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Name
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Project Type
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Start Date
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        End Date
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Address
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Assigned Users
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {projects
-                      ?.filter((item) =>
-                        item?.name
-                          ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase()),
-                      )
-                      .map((item) => (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-white/5 transition-colors cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            router.push(
-                              `/ProjectDetails/Projects/${item.id}/${id}`,
-                            );
-                          }}
-                        >
-                          <td className="py-4 px-4">
-                            <input
-                              type="checkbox"
-                              className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
-                            />
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500"></div>
-                              <span className="text-white font-medium">
-                                {item.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.projectCategory || item.projectType || "-"}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.startDate
-                              ? new Date(item.startDate).toLocaleDateString()
-                              : "-"}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.endDate
-                              ? new Date(item.endDate).toLocaleDateString()
-                              : "-"}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.address}
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex">
-                              {item.assignedUsers
-                                ?.slice(0, 3)
-                                .map((user, i) => (
-                                  <div
-                                    key={user.id}
-                                    className={`w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-xs text-white font-bold ${i !== 0 ? "-ml-2" : ""}`}
-                                  >
-                                    {user.firstName?.[0]}
-                                    {user.lastName?.[0]}
-                                  </div>
-                                ))}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
-                              <button
-                                className="p-2 cursor-pointer"
-                                onClick={(e) =>
-                                  deleteFunction(e, activeView, item?.id)
-                                }
-                              >
-                                <FaTrash className="text-white" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              )}
-
-              {/* ── ZONES TABLE ── */}
-              {activeView === "Zones" && (
-                <table className="w-full">
-                  <thead className="bg-[#080C26] rounded-2xl">
-                    <tr>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        #
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Name
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Type
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Site ID
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Created At
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {zones
-                      ?.filter((item) =>
-                        item?.name
-                          ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase()),
-                      )
-                      .map((item) => (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-white/5 transition-colors cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            router.push(
-                              `/ProjectDetails/Zone/${item.id}/${id}`,
-                            );
-                          }}
-                        >
-                          <td className="py-4 px-4">
-                            <input
-                              type="checkbox"
-                              className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
-                            />
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-teal-500"></div>
-                              <span className="text-white font-medium">
-                                {item.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.type}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400 text-xs">
-                            {item.siteId}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.createdAt
-                              ? new Date(item.createdAt).toLocaleDateString()
-                              : "-"}
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  className="p-2 cursor-pointer"
-                                  onClick={(e) =>
-                                    deleteFunction(e, activeView, item?.id)
-                                  }
-                                >
-                                  <FaTrash className="text-white" />
-                                </button>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              )}
-
-              {/* ── EQUIPMENT TABLE ── */}
-              {activeView === "Assets" && (
-                <table className="w-full">
-                  <thead className="bg-[#080C26] rounded-2xl">
-                    <tr>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        #
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Name
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Serial Number
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Type
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Status
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Lifecycle Phase
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Certification Req
-                      </th>
-                      <th className="text-left py-4 px-4 text-gray-400 font-medium text-sm">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {equipments
-                      ?.filter((item) =>
-                        item?.name
-                          ?.toLowerCase()
-                          .includes(searchTerm.toLowerCase()),
-                      )
-                      .map((item) => (
-                        <tr
-                          key={item.id}
-                          className="hover:bg-white/5 transition-colors cursor-pointer"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            router.push(
-                              `/ProjectDetails/Equipment/${item.id}/${id}`,
-                            );
-                          }}
-                        >
-                          <td className="py-4 px-4">
-                            <input
-                              type="checkbox"
-                              className="checkbox checkbox-sm border-gray-600 [--chkbg:#3b82f6]"
-                            />
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-red-500"></div>
-                              <span className="text-white font-medium">
-                                {item.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.serialNumber}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.type}
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="px-2 py-1 rounded-full text-xs bg-orange-500/20 text-orange-400">
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.lifecyclePhase}
-                          </td>
-                          <td className="py-4 px-4 text-gray-400">
-                            {item.certificationReq}
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  className="p-2 cursor-pointer"
-                                  onClick={(e) =>
-                                    deleteFunction(e, activeView, item?.id)
-                                  }
-                                >
-                                  <FaTrash className="text-white" />
-                                </button>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-      <dialog id="my_modal_4" className="modal items-start justify-center p-10">
-        <div className="modal-box pt-0 px-0 w-[1000px] max-h-[90vh] border border-[#656A80] backdrop-blur-2xl bg-[#0a1128] scrollbar-hide overflow-y-auto">
-          <div className="modal-action flex items-center justify-between pt-4 px-4">
-            <h3 className="font-bold text-lg text-white">
-              {selectedTask ? `Task: ${selectedTask.name}` : "New Task"}
-            </h3>
-            <form method="dialog" className="gap-2 flex">
-              {/* <button
-                type="button"
-                onClick={() => {
-                  setSelectedTask(null);
-                  setTaskForm({ name: "", description: "" });
-                  setSubtaskInputs([{ name: "", description: "" }]);
-                }}
-                className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]"
-              >
-                <img src="/images/maximize.svg" alt="Reset" />
-              </button> */}
-              <button
-                className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#FB5874]"
-                onClick={() => {
-                  setSelectedTask(null);
-                  setTaskForm({ name: "", description: "" });
-                }}
-              >
-                <img src="/images/close.svg" alt="Close" />
-              </button>
-            </form>
-          </div>
-          <hr className="w-full my-3 border-[#656A80]" />
-
-          {/* ── CREATE NEW TASK FORM (only when no task selected) ── */}
-          {!selectedTask && (
-            <div className="px-4 mt-4">
-              <h4 className="text-white font-semibold mb-3">Create New Task</h4>
-              <div className="mt-2">
-                <p className="text-gray-400 text-sm mb-1">Task Name *</p>
-                <input
-                  type="text"
-                  placeholder="Enter Task Name"
-                  value={taskForm.name}
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, name: e.target.value })
-                  }
-                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-                />
-              </div>
-              <div className="mt-4">
-                <p className="text-gray-400 text-sm mb-1">Task Description</p>
-                <textarea
-                  rows="2"
-                  placeholder="Enter Task Description"
-                  value={taskForm.description}
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, description: e.target.value })
-                  }
-                  className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ── CREATE SUBTASKS FORM (only when task selected) ── */}
-          {selectedTask && (
-            <div className="px-4 mt-4">
-              <h4 className="text-white font-semibold mb-3">
-                Add Subtasks to:{" "}
-                <span className="text-blue-400">{selectedTask.name}</span>
-              </h4>
-              {subtaskInputs.map((subtask, index) => (
-                <div
-                  key={index}
-                  className="mb-3 p-3 rounded-xl border border-white/10"
-                >
-                  <p className="text-gray-400 text-sm mb-1">
-                    Subtask {index + 1} Name *
-                  </p>
-                  <input
-                    type="text"
-                    placeholder="Enter Subtask Name"
-                    value={subtask.name}
-                    onChange={(e) => {
-                      const updated = [...subtaskInputs];
-                      updated[index].name = e.target.value;
-                      setSubtaskInputs(updated);
-                    }}
-                    className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors mb-2"
-                  />
-                  <p className="text-gray-400 text-sm mb-1">Description</p>
-                  <input
-                    type="text"
-                    placeholder="Enter Subtask Description"
-                    value={subtask.description}
-                    onChange={(e) => {
-                      const updated = [...subtaskInputs];
-                      updated[index].description = e.target.value;
-                      setSubtaskInputs(updated);
-                    }}
-                    className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-                  />
-                </div>
-              ))}
-              <button
-                onClick={() =>
-                  setSubtaskInputs([
-                    ...subtaskInputs,
-                    { name: "", description: "" },
-                  ])
+                  setAssetModal(null);
+                  showToast("success", "Asset saved.");
+                } catch (e) {
+                  showToast("error", e?.message || "Save failed.");
                 }
-                className="bg-gradient-to-r from-[#080C26] to-[#00E691] text-white p-2 px-4 mt-2 border-none rounded-xl transition-all"
-              >
-                <div className="flex flex-row gap-2 items-center">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  <span>Add Another Subtask</span>
-                </div>
-              </button>
-            </div>
-          )}
+              };
+              return (
+                <Modal
+                  title={assetModal === "add" ? "Add Asset" : "Edit Asset"}
+                  subtitle="Define the asset details and procurement tracking."
+                  onClose={() => setAssetModal(null)}
+                >
+                  <FormGrid cols={2}>
+                    <FormField label="Abbreviation" required>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. UPS-01"
+                        value={assetForm.abbr || ""}
+                        onChange={(e) =>
+                          setAssetForm((p) => ({ ...p, abbr: e.target.value }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Asset Name" required>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Uninterruptible Power Supply"
+                        value={assetForm.name || ""}
+                        onChange={(e) =>
+                          setAssetForm((p) => ({ ...p, name: e.target.value }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Asset Type" required>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. UPS, BATTERY, PDU"
+                        value={assetForm.assetType || ""}
+                        onChange={(e) =>
+                          setAssetForm((p) => ({
+                            ...p,
+                            assetType: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Quantity" required>
+                      <input
+                        style={inputSt}
+                        type="number"
+                        min={1}
+                        placeholder="1"
+                        value={assetForm.quantity || ""}
+                        onChange={(e) =>
+                          setAssetForm((p) => ({
+                            ...p,
+                            quantity: parseInt(e.target.value) || 1,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Procurement Owner" required>
+                      <select
+                        style={inputSt}
+                        value={assetForm.procurementOwner || "OFCI"}
+                        onChange={(e) =>
+                          setAssetForm((p) => ({
+                            ...p,
+                            procurementOwner: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="OFCI">
+                          OFCI — Owner Furnished, Contractor Installed
+                        </option>
+                        <option value="CFCI">
+                          CFCI — Contractor Furnished, Contractor Installed
+                        </option>
+                      </select>
+                    </FormField>
+                    <FormField label="Procurement Status">
+                      <select
+                        style={inputSt}
+                        value={assetForm.procurementStatus || "NOT_ORDERED"}
+                        onChange={(e) =>
+                          setAssetForm((p) => ({
+                            ...p,
+                            procurementStatus: e.target.value,
+                          }))
+                        }
+                      >
+                        {PROCUREMENT_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {s.replace(/_/g, " ")}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                  </FormGrid>
+                  <ModalFooter
+                    onClose={() => setAssetModal(null)}
+                    onSave={saveAsset}
+                    saveLabel={
+                      assetModal === "add" ? "Create Asset" : "Save Changes"
+                    }
+                  />
+                </Modal>
+              );
+            })()}
+        </div>
+      )}
 
-          <hr className="w-full mt-4 border-[#656A80]" />
-          <div className="flex items-center justify-between gap-2 mx-4 mt-4 mb-2">
-            {selectedTask && (
-              <button
-                onClick={() => {
-                  setSelectedTask(null);
-                  setSubtaskInputs([{ name: "", description: "" }]);
-                }}
-                className="text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                ← Back to Create Task
-              </button>
+      {/* ── ZONES ─────────────────────────────────────────────────────────── */}
+      {activeTab === "Zones" && (
+        <div>
+          <ErrorBanner error={zonesError} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Zones</span>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={() => {
+                setZoneForm({ zoneType: "PUBLIC" });
+                setZoneModal("add");
+              }}
+            >
+              + Add Zone
+            </button>
+          </div>
+          <Table
+            headers={["Name", "Zone Type", "Access Requirements", "Actions"]}
+          >
+            {zonesLoading ? (
+              <LoadingRows cols={4} />
+            ) : zones.length === 0 ? (
+              <tr>
+                <td colSpan={4}>
+                  <EmptyState message="No zones yet." />
+                </td>
+              </tr>
+            ) : (
+              zones.map((z, i) => (
+                <Tr key={z.id} even={i % 2 === 0}>
+                  <Td>{z.name}</Td>
+                  <Td>
+                    <StatusBadge status={z.zoneType} />
+                  </Td>
+                  <Td>{z.accessRequirements || "—"}</Td>
+                  <Td>
+                    <ActionBtn
+                      onClick={() => {
+                        setZoneForm({ ...z });
+                        setZoneModal(z);
+                      }}
+                    >
+                      Edit
+                    </ActionBtn>
+                    <ActionBtn
+                      danger
+                      onClick={() =>
+                        handleDeleteConfirm("zone", async () => {
+                          try {
+                            await deleteCxProjectZone(projectId, z.id);
+                            setZones((p) => p.filter((x) => x.id !== z.id));
+                            showToast("success", "Zone deleted.");
+                          } catch (e) {
+                            showToast("error", e?.message || "Delete failed.");
+                          }
+                        })
+                      }
+                    >
+                      Delete
+                    </ActionBtn>
+                  </Td>
+                </Tr>
+              ))
             )}
-            <div className="flex gap-2 ml-auto">
+          </Table>
+
+          {zoneModal &&
+            (() => {
+              const saveZone = async () => {
+                try {
+                  if (zoneModal === "add") {
+                    const created = await createCxProjectZone(
+                      projectId,
+                      zoneForm,
+                    );
+                    setZones((p) => [...p, created]);
+                  } else {
+                    const updated = await updateCxProjectZone(
+                      projectId,
+                      zoneModal.id,
+                      zoneForm,
+                    );
+                    setZones((p) =>
+                      p.map((x) => (x.id === zoneModal.id ? updated : x)),
+                    );
+                  }
+                  setZoneModal(null);
+                  showToast("success", "Zone saved.");
+                } catch (e) {
+                  showToast("error", e?.message || "Save failed.");
+                }
+              };
+              return (
+                <Modal
+                  title={zoneModal === "add" ? "Add Zone" : "Edit Zone"}
+                  subtitle="Define a physical or logical zone and its access requirements."
+                  onClose={() => setZoneModal(null)}
+                >
+                  <FormGrid cols={2}>
+                    <FormField label="Zone Name" required>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Data Hall A"
+                        value={zoneForm.name || ""}
+                        onChange={(e) =>
+                          setZoneForm((p) => ({ ...p, name: e.target.value }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Zone Type" required>
+                      <select
+                        style={inputSt}
+                        value={zoneForm.zoneType || "PUBLIC"}
+                        onChange={(e) =>
+                          setZoneForm((p) => ({
+                            ...p,
+                            zoneType: e.target.value,
+                          }))
+                        }
+                      >
+                        {ZONE_TYPES.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label="Access Requirements" full>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Badge required, escort required for visitors"
+                        value={zoneForm.accessRequirements || ""}
+                        onChange={(e) =>
+                          setZoneForm((p) => ({
+                            ...p,
+                            accessRequirements: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                  </FormGrid>
+                  <ModalFooter
+                    onClose={() => setZoneModal(null)}
+                    onSave={saveZone}
+                    saveLabel={
+                      zoneModal === "add" ? "Create Zone" : "Save Changes"
+                    }
+                  />
+                </Modal>
+              );
+            })()}
+        </div>
+      )}
+
+      {/* ── STAKEHOLDERS ──────────────────────────────────────────────────── */}
+      {activeTab === "Stakeholders" && (
+        <div>
+          <ErrorBanner error={stakeholdersError} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Stakeholders</span>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={() => {
+                setStakeholderForm({ tier: "KEEP_INFORMED" });
+                setStakeholderModal("add");
+              }}
+            >
+              + Add Stakeholder
+            </button>
+          </div>
+          <Table headers={["Name", "Tier", "Role", "Company", "Actions"]}>
+            {stakeholdersLoading ? (
+              <LoadingRows cols={5} />
+            ) : stakeholders.length === 0 ? (
+              <tr>
+                <td colSpan={5}>
+                  <EmptyState message="No stakeholders yet." />
+                </td>
+              </tr>
+            ) : (
+              stakeholders.map((s, i) => (
+                <Tr key={s.id} even={i % 2 === 0}>
+                  <Td>{s.name}</Td>
+                  <Td>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "var(--electric, #2563eb)",
+                      }}
+                    >
+                      {s.tier?.replace(/_/g, " ")}
+                    </span>
+                  </Td>
+                  <Td>{s.role || "—"}</Td>
+                  <Td>{s.company || "—"}</Td>
+                  <Td>
+                    <ActionBtn
+                      onClick={() => {
+                        setStakeholderForm({ ...s });
+                        setStakeholderModal(s);
+                      }}
+                    >
+                      Edit
+                    </ActionBtn>
+                    <ActionBtn
+                      danger
+                      onClick={() =>
+                        handleDeleteConfirm("stakeholder", async () => {
+                          try {
+                            await deleteCxProjectStakeholder(projectId, s.id);
+                            setStakeholders((p) =>
+                              p.filter((x) => x.id !== s.id),
+                            );
+                            showToast("success", "Stakeholder deleted.");
+                          } catch (e) {
+                            showToast("error", e?.message || "Delete failed.");
+                          }
+                        })
+                      }
+                    >
+                      Delete
+                    </ActionBtn>
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </Table>
+
+          {stakeholderModal &&
+            (() => {
+              const saveStakeholder = async () => {
+                try {
+                  if (stakeholderModal === "add") {
+                    const created = await createCxProjectStakeholder(
+                      projectId,
+                      stakeholderForm,
+                    );
+                    setStakeholders((p) => [...p, created]);
+                  } else {
+                    const updated = await updateCxProjectStakeholder(
+                      projectId,
+                      stakeholderModal.id,
+                      stakeholderForm,
+                    );
+                    setStakeholders((p) =>
+                      p.map((x) =>
+                        x.id === stakeholderModal.id ? updated : x,
+                      ),
+                    );
+                  }
+                  setStakeholderModal(null);
+                  showToast("success", "Stakeholder saved.");
+                } catch (e) {
+                  showToast("error", e?.message || "Save failed.");
+                }
+              };
+              return (
+                <Modal
+                  title={
+                    stakeholderModal === "add"
+                      ? "Add Stakeholder"
+                      : "Edit Stakeholder"
+                  }
+                  subtitle="Track key stakeholders and their engagement tier."
+                  onClose={() => setStakeholderModal(null)}
+                >
+                  <FormGrid cols={2}>
+                    <FormField label="Full Name" required>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Jane Smith"
+                        value={stakeholderForm.name || ""}
+                        onChange={(e) =>
+                          setStakeholderForm((p) => ({
+                            ...p,
+                            name: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Engagement Tier" required>
+                      <select
+                        style={inputSt}
+                        value={stakeholderForm.tier || "KEEP_INFORMED"}
+                        onChange={(e) =>
+                          setStakeholderForm((p) => ({
+                            ...p,
+                            tier: e.target.value,
+                          }))
+                        }
+                      >
+                        {STAKEHOLDER_TIERS.map((t) => (
+                          <option key={t} value={t}>
+                            {t.replace(/_/g, " ")}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label="Role / Title">
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. VP of Engineering"
+                        value={stakeholderForm.role || ""}
+                        onChange={(e) =>
+                          setStakeholderForm((p) => ({
+                            ...p,
+                            role: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Company">
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Acme Corp"
+                        value={stakeholderForm.company || ""}
+                        onChange={(e) =>
+                          setStakeholderForm((p) => ({
+                            ...p,
+                            company: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                  </FormGrid>
+                  <ModalFooter
+                    onClose={() => setStakeholderModal(null)}
+                    onSave={saveStakeholder}
+                    saveLabel={
+                      stakeholderModal === "add"
+                        ? "Add Stakeholder"
+                        : "Save Changes"
+                    }
+                  />
+                </Modal>
+              );
+            })()}
+        </div>
+      )}
+
+      {/* ── COMPLIANCE ────────────────────────────────────────────────────── */}
+      {activeTab === "Compliance" && (
+        <div>
+          <ErrorBanner error={complianceError} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Compliance</span>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={() => {
+                setComplianceForm({ recordType: "PERMIT", status: "VALID" });
+                setComplianceModal("add");
+              }}
+            >
+              + Add Record
+            </button>
+          </div>
+          <Table
+            headers={[
+              "Name",
+              "Type",
+              "Issuer",
+              "Status",
+              "Issued",
+              "Expires",
+              "Actions",
+            ]}
+          >
+            {complianceLoading ? (
+              <LoadingRows cols={7} />
+            ) : compliance.length === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <EmptyState message="No compliance records yet." />
+                </td>
+              </tr>
+            ) : (
+              compliance.map((c, i) => (
+                <Tr key={c.id} even={i % 2 === 0}>
+                  <Td>{c.name}</Td>
+                  <Td>
+                    <span style={{ fontSize: 11, fontWeight: 600 }}>
+                      {c.recordType?.replace(/_/g, " ")}
+                    </span>
+                  </Td>
+                  <Td>{c.issuer || "—"}</Td>
+                  <Td>
+                    <StatusBadge status={c.status} />
+                  </Td>
+                  <Td>
+                    {c.issuedAt
+                      ? new Date(c.issuedAt).toLocaleDateString()
+                      : "—"}
+                  </Td>
+                  <Td>
+                    {c.expiresAt
+                      ? new Date(c.expiresAt).toLocaleDateString()
+                      : "—"}
+                  </Td>
+                  <Td>
+                    <ActionBtn
+                      onClick={() => {
+                        setComplianceForm({ ...c });
+                        setComplianceModal(c);
+                      }}
+                    >
+                      Edit
+                    </ActionBtn>
+                    <ActionBtn
+                      danger
+                      onClick={() =>
+                        handleDeleteConfirm("compliance record", async () => {
+                          try {
+                            await deleteCxProjectCompliance(projectId, c.id);
+                            setCompliance((p) =>
+                              p.filter((x) => x.id !== c.id),
+                            );
+                            showToast("success", "Compliance record deleted.");
+                          } catch (e) {
+                            showToast("error", e?.message || "Delete failed.");
+                          }
+                        })
+                      }
+                    >
+                      Delete
+                    </ActionBtn>
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </Table>
+
+          {complianceModal &&
+            (() => {
+              const saveCompliance = async () => {
+                try {
+                  if (complianceModal === "add") {
+                    const created = await createCxProjectCompliance(
+                      projectId,
+                      complianceForm,
+                    );
+                    setCompliance((p) => [...p, created]);
+                  } else {
+                    const updated = await updateCxProjectCompliance(
+                      projectId,
+                      complianceModal.id,
+                      complianceForm,
+                    );
+                    setCompliance((p) =>
+                      p.map((x) => (x.id === complianceModal.id ? updated : x)),
+                    );
+                  }
+                  setComplianceModal(null);
+                  showToast("success", "Compliance record saved.");
+                } catch (e) {
+                  showToast("error", e?.message || "Save failed.");
+                }
+              };
+              return (
+                <Modal
+                  title={
+                    complianceModal === "add"
+                      ? "Add Compliance Record"
+                      : "Edit Compliance Record"
+                  }
+                  subtitle="Track permits, insurance, and worker certifications."
+                  onClose={() => setComplianceModal(null)}
+                >
+                  <FormGrid cols={2}>
+                    <FormField label="Record Name" required>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Electrical Permit #EP-2024"
+                        value={complianceForm.name || ""}
+                        onChange={(e) =>
+                          setComplianceForm((p) => ({
+                            ...p,
+                            name: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Record Type" required>
+                      <select
+                        style={inputSt}
+                        value={complianceForm.recordType || "PERMIT"}
+                        onChange={(e) =>
+                          setComplianceForm((p) => ({
+                            ...p,
+                            recordType: e.target.value,
+                          }))
+                        }
+                      >
+                        {COMPLIANCE_TYPES.map((t) => (
+                          <option key={t} value={t}>
+                            {t.replace(/_/g, " ")}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label="Issuing Authority">
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. City of Austin, OSHA"
+                        value={complianceForm.issuer || ""}
+                        onChange={(e) =>
+                          setComplianceForm((p) => ({
+                            ...p,
+                            issuer: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Status">
+                      <select
+                        style={inputSt}
+                        value={complianceForm.status || "VALID"}
+                        onChange={(e) =>
+                          setComplianceForm((p) => ({
+                            ...p,
+                            status: e.target.value,
+                          }))
+                        }
+                      >
+                        {COMPLIANCE_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label="Issue Date">
+                      <input
+                        style={inputSt}
+                        type="date"
+                        value={
+                          complianceForm.issuedAt
+                            ? complianceForm.issuedAt.slice(0, 10)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setComplianceForm((p) => ({
+                            ...p,
+                            issuedAt: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Expiry Date">
+                      <input
+                        style={inputSt}
+                        type="date"
+                        value={
+                          complianceForm.expiresAt
+                            ? complianceForm.expiresAt.slice(0, 10)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setComplianceForm((p) => ({
+                            ...p,
+                            expiresAt: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Coverage Details" full>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. General liability $2M, Workers comp"
+                        value={complianceForm.coverage || ""}
+                        onChange={(e) =>
+                          setComplianceForm((p) => ({
+                            ...p,
+                            coverage: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                  </FormGrid>
+                  <ModalFooter
+                    onClose={() => setComplianceModal(null)}
+                    onSave={saveCompliance}
+                    saveLabel={
+                      complianceModal === "add" ? "Add Record" : "Save Changes"
+                    }
+                  />
+                </Modal>
+              );
+            })()}
+        </div>
+      )}
+
+      {/* ── MOBILIZATION ──────────────────────────────────────────────────── */}
+      {activeTab === "Mobilization" && (
+        <div>
+          <ErrorBanner error={mobilizationError} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+              flexWrap: "wrap",
+              gap: 8,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Mobilization</span>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={() => {
+                setMobForm({
+                  stepKey: mobStepFilter || "mob_site",
+                  quantity: 1,
+                  unitCost: 0,
+                });
+                setMobModal("add");
+              }}
+            >
+              + Add Item
+            </button>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              flexWrap: "wrap",
+              marginBottom: 16,
+            }}
+          >
+            <button
+              style={{
+                padding: "5px 14px",
+                borderRadius: 20,
+                fontSize: 12,
+                border: "1px solid var(--rf-border)",
+                cursor: "pointer",
+                background: !mobStepFilter
+                  ? "var(--rf-accent, var(--electric))"
+                  : "var(--rf-bg2)",
+                color: !mobStepFilter ? "#fff" : "var(--rf-txt2)",
+              }}
+              onClick={() => {
+                setMobStepFilter("");
+                setMobilizationFetched(false);
+                loadMobilization("");
+              }}
+            >
+              All
+            </button>
+            {MOB_STEP_KEYS.map((k) => (
               <button
-                onClick={() => {
-                  document.getElementById("my_modal_4").close();
-                  setSelectedTask(null);
-                  setTaskForm({ name: "", description: "" });
+                key={k}
+                style={{
+                  padding: "5px 14px",
+                  borderRadius: 20,
+                  fontSize: 12,
+                  border: "1px solid var(--rf-border)",
+                  cursor: "pointer",
+                  background:
+                    mobStepFilter === k
+                      ? "var(--rf-accent, var(--electric))"
+                      : "var(--rf-bg2)",
+                  color: mobStepFilter === k ? "#fff" : "var(--rf-txt2)",
                 }}
-                className="btn backdrop-blur-md text-white p-3 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all"
+                onClick={() => handleMobFilter(k)}
               >
-                Cancel
+                {k.replace("mob_", "")}
               </button>
-              <button
-                onClick={selectedTask ? createSubtask : createTask}
-                disabled={taskLoading}
-                className="btn bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white px-6 border-2 border-white/[0.03] border-t-white/[0.09] rounded-2xl transition-all disabled:opacity-50"
-              >
-                {taskLoading
-                  ? "Saving..."
-                  : selectedTask
-                    ? "Save Subtasks"
-                    : "Create Task"}
-              </button>
-            </div>
+            ))}
           </div>
-        </div>
-      </dialog>
+          <Table
+            headers={[
+              "Name",
+              "Category",
+              "Step",
+              "Qty",
+              "Unit Cost",
+              "Vendor",
+              "RFQ",
+              "Delivery",
+              "Actions",
+            ]}
+          >
+            {mobilizationLoading ? (
+              <LoadingRows cols={9} />
+            ) : mobilization.length === 0 ? (
+              <tr>
+                <td colSpan={9}>
+                  <EmptyState message="No mobilization items." />
+                </td>
+              </tr>
+            ) : (
+              mobilization.map((m, i) => (
+                <Tr key={m.id} even={i % 2 === 0}>
+                  <Td>{m.name}</Td>
+                  <Td>{m.category}</Td>
+                  <Td>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "var(--electric)",
+                      }}
+                    >
+                      {m.stepKey}
+                    </span>
+                  </Td>
+                  <Td>{m.quantity}</Td>
+                  <Td>${(m.unitCost || 0).toLocaleString()}</Td>
+                  <Td>{m.vendor || "—"}</Td>
+                  <Td>{m.rfqStatus || "—"}</Td>
+                  <Td>
+                    {m.deliveryDate
+                      ? new Date(m.deliveryDate).toLocaleDateString()
+                      : "—"}
+                  </Td>
+                  <Td>
+                    <ActionBtn
+                      onClick={() => {
+                        setMobForm({ ...m });
+                        setMobModal(m);
+                      }}
+                    >
+                      Edit
+                    </ActionBtn>
+                    <ActionBtn
+                      danger
+                      onClick={() =>
+                        handleDeleteConfirm("mobilization item", async () => {
+                          try {
+                            await deleteCxProjectMobilizationItem(
+                              projectId,
+                              m.id,
+                            );
+                            setMobilization((p) =>
+                              p.filter((x) => x.id !== m.id),
+                            );
+                            showToast("success", "Item deleted.");
+                          } catch (e) {
+                            showToast("error", e?.message || "Delete failed.");
+                          }
+                        })
+                      }
+                    >
+                      Delete
+                    </ActionBtn>
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </Table>
 
-      {/* ── EDIT TASK MODAL ── */}
-      <dialog
-        id="edit_task_modal"
-        className="modal items-start justify-end p-4"
-      >
-        <div className="modal-box pt-0 px-0 w-[600px] border border-[#656A80] backdrop-blur-2xl bg-[#0a1128]">
-          <div className="modal-action flex items-center justify-between pt-4 px-4">
-            <h3 className="font-bold text-lg text-white">Edit Task</h3>
-            <form method="dialog">
-              <button className="size-9 rounded-xl flex items-center justify-center border border-white bg-[#FB5874]">
-                <img src="/images/close.svg" alt="Close" />
-              </button>
-            </form>
-          </div>
-          <hr className="w-full my-3 border-[#656A80]" />
-          <div className="px-4 pb-4">
-            <div className="mt-2">
-              <p className="text-gray-400 text-sm mb-1">Task Name *</p>
-              <input
-                type="text"
-                value={editTaskForm.name}
-                onChange={(e) =>
-                  setEditTaskForm({ ...editTaskForm, name: e.target.value })
+          {mobModal &&
+            (() => {
+              const saveMob = async () => {
+                try {
+                  if (mobModal === "add") {
+                    const created = await createCxProjectMobilizationItem(
+                      projectId,
+                      mobForm,
+                    );
+                    setMobilization((p) => [...p, created]);
+                  } else {
+                    const updated = await updateCxProjectMobilizationItem(
+                      projectId,
+                      mobModal.id,
+                      mobForm,
+                    );
+                    setMobilization((p) =>
+                      p.map((x) => (x.id === mobModal.id ? updated : x)),
+                    );
+                  }
+                  setMobModal(null);
+                  showToast("success", "Item saved.");
+                } catch (e) {
+                  showToast("error", e?.message || "Save failed.");
                 }
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-              />
-            </div>
-            <div className="mt-4">
-              <p className="text-gray-400 text-sm mb-1">Description</p>
-              <textarea
-                rows="2"
-                value={editTaskForm.description}
-                onChange={(e) =>
-                  setEditTaskForm({
-                    ...editTaskForm,
-                    description: e.target.value,
-                  })
-                }
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-              />
-            </div>
-            <div className="mt-4">
-              <p className="text-gray-400 text-sm mb-1">Status</p>
-              <select
-                value={editTaskForm.status}
-                onChange={(e) =>
-                  setEditTaskForm({ ...editTaskForm, status: e.target.value })
-                }
-                className="w-full bg-[#12153d] text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none"
-              >
-                <option value="PENDING">PENDING</option>
-                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                <option value="COMPLETED">COMPLETED</option>
-              </select>
-            </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <form method="dialog">
-                <button className="btn bg-transparent text-white border border-white/10 rounded-xl px-4">
-                  Cancel
-                </button>
-              </form>
-              <button
-                onClick={handleUpdateTask}
-                disabled={taskLoading}
-                className="btn bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white px-6 rounded-xl disabled:opacity-50"
-              >
-                {taskLoading ? "Saving..." : "Update Task"}
-              </button>
-            </div>
-          </div>
+              };
+              return (
+                <Modal
+                  title={
+                    mobModal === "add"
+                      ? "Add Mobilization Item"
+                      : "Edit Mobilization Item"
+                  }
+                  subtitle="Track equipment, supplies, and resources for site mobilization."
+                  onClose={() => setMobModal(null)}
+                >
+                  <FormGrid cols={2}>
+                    <FormField label="Step" required>
+                      <select
+                        style={inputSt}
+                        value={mobForm.stepKey || "mob_site"}
+                        onChange={(e) =>
+                          setMobForm((p) => ({ ...p, stepKey: e.target.value }))
+                        }
+                      >
+                        {MOB_STEP_KEYS.map((k) => (
+                          <option key={k} value={k}>
+                            {k.replace("mob_", "").charAt(0).toUpperCase() +
+                              k.replace("mob_", "").slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </FormField>
+                    <FormField label="Category" required>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Electrical, Safety, Tools"
+                        value={mobForm.category || ""}
+                        onChange={(e) =>
+                          setMobForm((p) => ({
+                            ...p,
+                            category: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Item Name" required full>
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Hard Hat, Generator, Cable Drum"
+                        value={mobForm.name || ""}
+                        onChange={(e) =>
+                          setMobForm((p) => ({ ...p, name: e.target.value }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Quantity" required>
+                      <input
+                        style={inputSt}
+                        type="number"
+                        min={1}
+                        placeholder="1"
+                        value={mobForm.quantity || ""}
+                        onChange={(e) =>
+                          setMobForm((p) => ({
+                            ...p,
+                            quantity: parseInt(e.target.value) || 1,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Unit Cost ($)" required>
+                      <input
+                        style={inputSt}
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        placeholder="0.00"
+                        value={mobForm.unitCost ?? ""}
+                        onChange={(e) =>
+                          setMobForm((p) => ({
+                            ...p,
+                            unitCost: parseFloat(e.target.value) || 0,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Vendor">
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Grainger, Fastenal"
+                        value={mobForm.vendor || ""}
+                        onChange={(e) =>
+                          setMobForm((p) => ({ ...p, vendor: e.target.value }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="RFQ Status">
+                      <input
+                        style={inputSt}
+                        placeholder="e.g. Pending, Submitted, Approved"
+                        value={mobForm.rfqStatus || ""}
+                        onChange={(e) =>
+                          setMobForm((p) => ({
+                            ...p,
+                            rfqStatus: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                    <FormField label="Expected Delivery">
+                      <input
+                        style={inputSt}
+                        type="date"
+                        value={
+                          mobForm.deliveryDate
+                            ? mobForm.deliveryDate.slice(0, 10)
+                            : ""
+                        }
+                        onChange={(e) =>
+                          setMobForm((p) => ({
+                            ...p,
+                            deliveryDate: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                  </FormGrid>
+                  <ModalFooter
+                    onClose={() => setMobModal(null)}
+                    onSave={saveMob}
+                    saveLabel={mobModal === "add" ? "Add Item" : "Save Changes"}
+                  />
+                </Modal>
+              );
+            })()}
         </div>
-      </dialog>
+      )}
 
-      {/* ── EDIT SUBTASK MODAL ── */}
-      <dialog
-        id="edit_subtask_modal"
-        className="modal items-start justify-end p-4"
-      >
-        <div className="modal-box pt-0 px-0 w-[600px] border border-[#656A80] backdrop-blur-2xl bg-[#0a1128]">
-          <div className="modal-action flex items-center justify-between pt-4 px-4">
-            <h3 className="font-bold text-lg text-white">Edit Subtask</h3>
-            <form method="dialog">
-              <button className="size-9 rounded-xl flex items-center justify-center border border-white bg-[#FB5874]">
-                <img src="/images/close.svg" alt="Close" />
-              </button>
-            </form>
+      {/* ── WORKFLOWS ─────────────────────────────────────────────────────── */}
+      {activeTab === "Workflows" && (
+        <div>
+          <ErrorBanner error={workflowsError} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Workflows</span>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={() => {
+                setWorkflowForm({ enabled: true });
+                setWorkflowModal("add");
+              }}
+            >
+              + Link Workflow
+            </button>
           </div>
-          <hr className="w-full my-3 border-[#656A80]" />
-          <div className="px-4 pb-4">
-            <div className="mt-2">
-              <p className="text-gray-400 text-sm mb-1">Subtask Name *</p>
-              <input
-                type="text"
-                value={editSubtaskForm.name}
-                onChange={(e) =>
-                  setEditSubtaskForm({
-                    ...editSubtaskForm,
-                    name: e.target.value,
-                  })
+          <Table
+            headers={["Workflow ID", "Enabled", "Custom Config", "Actions"]}
+          >
+            {workflowsLoading ? (
+              <LoadingRows cols={4} />
+            ) : workflows.length === 0 ? (
+              <tr>
+                <td colSpan={4}>
+                  <EmptyState message="No workflows linked." />
+                </td>
+              </tr>
+            ) : (
+              workflows.map((w, i) => (
+                <Tr key={w.id} even={i % 2 === 0}>
+                  <Td>
+                    <span
+                      style={{
+                        fontFamily: "var(--wfont-mono, monospace)",
+                        fontSize: 11,
+                      }}
+                    >
+                      {w.workflowId}
+                    </span>
+                  </Td>
+                  <Td>
+                    <button
+                      style={{
+                        background: w.enabled
+                          ? "var(--emerald-soft, #d1fae5)"
+                          : "var(--rf-bg2)",
+                        color: w.enabled
+                          ? "var(--emerald, #059669)"
+                          : "var(--rf-txt2)",
+                        border: "1px solid var(--rf-border)",
+                        borderRadius: 20,
+                        padding: "3px 12px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                      onClick={async () => {
+                        try {
+                          const updated = await updateCxProjectWorkflow(
+                            projectId,
+                            w.workflowId,
+                            { enabled: !w.enabled },
+                          );
+                          setWorkflows((p) =>
+                            p.map((x) => (x.id === w.id ? updated : x)),
+                          );
+                          showToast("success", "Workflow updated.");
+                        } catch (e) {
+                          showToast("error", e?.message || "Update failed.");
+                        }
+                      }}
+                    >
+                      {w.enabled ? "Enabled" : "Disabled"}
+                    </button>
+                  </Td>
+                  <Td>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: "var(--rf-txt2)",
+                        fontFamily: "var(--wfont-mono, monospace)",
+                      }}
+                    >
+                      {w.customConfig
+                        ? JSON.stringify(w.customConfig).slice(0, 40) + "…"
+                        : "—"}
+                    </span>
+                  </Td>
+                  <Td>
+                    <ActionBtn
+                      danger
+                      onClick={() =>
+                        handleDeleteConfirm("workflow", async () => {
+                          try {
+                            await deleteCxProjectWorkflow(
+                              projectId,
+                              w.workflowId,
+                            );
+                            setWorkflows((p) => p.filter((x) => x.id !== w.id));
+                            showToast("success", "Workflow removed.");
+                          } catch (e) {
+                            showToast("error", e?.message || "Remove failed.");
+                          }
+                        })
+                      }
+                    >
+                      Remove
+                    </ActionBtn>
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </Table>
+
+          {workflowModal &&
+            (() => {
+              const saveWorkflow = async () => {
+                try {
+                  const created = await createCxProjectWorkflow(
+                    projectId,
+                    workflowForm,
+                  );
+                  setWorkflows((p) => [...p, created]);
+                  setWorkflowModal(null);
+                  showToast("success", "Workflow linked.");
+                } catch (e) {
+                  showToast("error", e?.message || "Link failed.");
                 }
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-              />
-            </div>
-            <div className="mt-4">
-              <p className="text-gray-400 text-sm mb-1">Description</p>
-              <textarea
-                rows="2"
-                value={editSubtaskForm.description}
-                onChange={(e) =>
-                  setEditSubtaskForm({
-                    ...editSubtaskForm,
-                    description: e.target.value,
-                  })
-                }
-                className="w-full bg-transparent text-white placeholder-gray-500 pl-4 pr-2 py-3 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
-              />
-            </div>
-            <div className="mt-4">
-              <p className="text-gray-400 text-sm mb-1">Status</p>
-              <select
-                value={editSubtaskForm.status}
-                onChange={(e) =>
-                  setEditSubtaskForm({
-                    ...editSubtaskForm,
-                    status: e.target.value,
-                  })
-                }
-                className="w-full bg-[#12153d] text-white px-4 py-2.5 rounded-xl border border-white/10 focus:outline-none"
-              >
-                <option value="PENDING">PENDING</option>
-                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                <option value="COMPLETED">COMPLETED</option>
-              </select>
-            </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <form method="dialog">
-                <button className="btn bg-transparent text-white border border-white/10 rounded-xl px-4">
-                  Cancel
-                </button>
-              </form>
-              <button
-                onClick={handleUpdateSubtask}
-                disabled={taskLoading}
-                className="btn bg-gradient-to-r from-[#0075F8] to-[#00387A] text-white px-6 rounded-xl disabled:opacity-50"
-              >
-                {taskLoading ? "Saving..." : "Update Subtask"}
-              </button>
-            </div>
-          </div>
+              };
+              return (
+                <Modal
+                  title="Link Workflow"
+                  subtitle="Associate an existing org workflow with this project."
+                  onClose={() => setWorkflowModal(null)}
+                >
+                  <FormGrid cols={1}>
+                    <FormField
+                      label="Workflow ID"
+                      required
+                      hint="Enter the UUID of the workflow defined in your org settings."
+                    >
+                      <input
+                        style={inputSt}
+                        value={workflowForm.workflowId || ""}
+                        onChange={(e) =>
+                          setWorkflowForm((p) => ({
+                            ...p,
+                            workflowId: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                      />
+                    </FormField>
+                  </FormGrid>
+                  <ModalFooter
+                    onClose={() => setWorkflowModal(null)}
+                    onSave={saveWorkflow}
+                    saveLabel="Link Workflow"
+                  />
+                </Modal>
+              );
+            })()}
         </div>
-      </dialog>
+      )}
+
+      {/* ── SOPs ──────────────────────────────────────────────────────────── */}
+      {activeTab === "SOPs" && (
+        <div>
+          <ErrorBanner error={sopsError} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 16 }}>SOPs</span>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={() => {
+                setSopForm({ autoAttach: true });
+                setSopModal("add");
+              }}
+            >
+              + Link SOP
+            </button>
+          </div>
+          <Table
+            headers={["SOP ID", "Auto Attach", "Asset Mapping", "Actions"]}
+          >
+            {sopsLoading ? (
+              <LoadingRows cols={4} />
+            ) : sops.length === 0 ? (
+              <tr>
+                <td colSpan={4}>
+                  <EmptyState message="No SOPs linked." />
+                </td>
+              </tr>
+            ) : (
+              sops.map((s, i) => (
+                <Tr key={s.id} even={i % 2 === 0}>
+                  <Td>
+                    <span
+                      style={{
+                        fontFamily: "var(--wfont-mono, monospace)",
+                        fontSize: 11,
+                      }}
+                    >
+                      {s.sopId}
+                    </span>
+                  </Td>
+                  <Td>
+                    <button
+                      style={{
+                        background: s.autoAttach
+                          ? "var(--emerald-soft, #d1fae5)"
+                          : "var(--rf-bg2)",
+                        color: s.autoAttach
+                          ? "var(--emerald, #059669)"
+                          : "var(--rf-txt2)",
+                        border: "1px solid var(--rf-border)",
+                        borderRadius: 20,
+                        padding: "3px 12px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                      onClick={async () => {
+                        try {
+                          const updated = await updateCxProjectSop(
+                            projectId,
+                            s.sopId,
+                            { autoAttach: !s.autoAttach },
+                          );
+                          setSops((p) =>
+                            p.map((x) => (x.id === s.id ? updated : x)),
+                          );
+                          showToast("success", "SOP updated.");
+                        } catch (e) {
+                          showToast("error", e?.message || "Update failed.");
+                        }
+                      }}
+                    >
+                      {s.autoAttach ? "Auto" : "Manual"}
+                    </button>
+                  </Td>
+                  <Td>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: "var(--rf-txt2)",
+                        fontFamily: "var(--wfont-mono, monospace)",
+                      }}
+                    >
+                      {s.assetMapping
+                        ? JSON.stringify(s.assetMapping).slice(0, 40) + "…"
+                        : "—"}
+                    </span>
+                  </Td>
+                  <Td>
+                    <ActionBtn
+                      danger
+                      onClick={() =>
+                        handleDeleteConfirm("SOP", async () => {
+                          try {
+                            await deleteCxProjectSop(projectId, s.sopId);
+                            setSops((p) => p.filter((x) => x.id !== s.id));
+                            showToast("success", "SOP removed.");
+                          } catch (e) {
+                            showToast("error", e?.message || "Remove failed.");
+                          }
+                        })
+                      }
+                    >
+                      Remove
+                    </ActionBtn>
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </Table>
+
+          {sopModal &&
+            (() => {
+              const saveSop = async () => {
+                try {
+                  const created = await createCxProjectSop(projectId, sopForm);
+                  setSops((p) => [...p, created]);
+                  setSopModal(null);
+                  showToast("success", "SOP linked.");
+                } catch (e) {
+                  showToast("error", e?.message || "Link failed.");
+                }
+              };
+              return (
+                <Modal
+                  title="Link Standard Operating Procedure"
+                  subtitle="Attach an org SOP to this project for field team guidance."
+                  onClose={() => setSopModal(null)}
+                >
+                  <FormGrid cols={2}>
+                    <FormField
+                      label="SOP ID"
+                      required
+                      hint="UUID of the SOP in your org library."
+                      full
+                    >
+                      <input
+                        style={inputSt}
+                        value={sopForm.sopId || ""}
+                        onChange={(e) =>
+                          setSopForm((p) => ({ ...p, sopId: e.target.value }))
+                        }
+                        placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                      />
+                    </FormField>
+                    <FormField
+                      label="Auto Attach to Assets"
+                      hint="Automatically attach this SOP to matching assets."
+                    >
+                      <select
+                        style={inputSt}
+                        value={sopForm.autoAttach ? "true" : "false"}
+                        onChange={(e) =>
+                          setSopForm((p) => ({
+                            ...p,
+                            autoAttach: e.target.value === "true",
+                          }))
+                        }
+                      >
+                        <option value="true">Yes — auto attach</option>
+                        <option value="false">No — manual only</option>
+                      </select>
+                    </FormField>
+                  </FormGrid>
+                  <ModalFooter
+                    onClose={() => setSopModal(null)}
+                    onSave={saveSop}
+                    saveLabel="Link SOP"
+                  />
+                </Modal>
+              );
+            })()}
+        </div>
+      )}
+
+      {/* ── PARTNERS ──────────────────────────────────────────────────────── */}
+      {activeTab === "Partners" && (
+        <div>
+          <ErrorBanner error={partnersError} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Partners</span>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={() => {
+                setPartnerForm({});
+                setPartnerModal("add");
+              }}
+            >
+              + Add Partner
+            </button>
+          </div>
+          <Table headers={["Partner ID", "Role", "Scope", "Actions"]}>
+            {partnersLoading ? (
+              <LoadingRows cols={4} />
+            ) : partners.length === 0 ? (
+              <tr>
+                <td colSpan={4}>
+                  <EmptyState message="No partners linked." />
+                </td>
+              </tr>
+            ) : (
+              partners.map((p, i) => (
+                <Tr key={p.id} even={i % 2 === 0}>
+                  <Td>
+                    <span
+                      style={{
+                        fontFamily: "var(--wfont-mono, monospace)",
+                        fontSize: 11,
+                      }}
+                    >
+                      {p.partnerId}
+                    </span>
+                  </Td>
+                  <Td>{p.role || "—"}</Td>
+                  <Td>{p.scope || "—"}</Td>
+                  <Td>
+                    <ActionBtn
+                      onClick={() => {
+                        setPartnerForm({ ...p });
+                        setPartnerModal(p);
+                      }}
+                    >
+                      Edit
+                    </ActionBtn>
+                    <ActionBtn
+                      danger
+                      onClick={() =>
+                        handleDeleteConfirm("partner", async () => {
+                          try {
+                            await deleteCxProjectPartner(
+                              projectId,
+                              p.partnerId,
+                            );
+                            setPartners((prev) =>
+                              prev.filter((x) => x.id !== p.id),
+                            );
+                            showToast("success", "Partner removed.");
+                          } catch (e) {
+                            showToast("error", e?.message || "Remove failed.");
+                          }
+                        })
+                      }
+                    >
+                      Remove
+                    </ActionBtn>
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </Table>
+
+          {partnerModal &&
+            (() => {
+              const savePartner = async () => {
+                try {
+                  if (partnerModal === "add") {
+                    const created = await createCxProjectPartner(
+                      projectId,
+                      partnerForm,
+                    );
+                    setPartners((p) => [...p, created]);
+                  } else {
+                    const updated = await updateCxProjectPartner(
+                      projectId,
+                      partnerModal.partnerId,
+                      { role: partnerForm.role, scope: partnerForm.scope },
+                    );
+                    setPartners((p) =>
+                      p.map((x) => (x.id === partnerModal.id ? updated : x)),
+                    );
+                  }
+                  setPartnerModal(null);
+                  showToast("success", "Partner saved.");
+                } catch (e) {
+                  showToast("error", e?.message || "Save failed.");
+                }
+              };
+              return (
+                <Modal
+                  title={
+                    partnerModal === "add" ? "Add Partner" : "Edit Partner"
+                  }
+                  subtitle="Link a partner company and define their role and scope on this project."
+                  onClose={() => setPartnerModal(null)}
+                >
+                  <FormGrid cols={partnerModal === "add" ? 1 : 2}>
+                    {partnerModal === "add" && (
+                      <FormField
+                        label="Partner ID"
+                        required
+                        hint="UUID of the partner company in your org directory."
+                        full
+                      >
+                        <input
+                          style={inputSt}
+                          value={partnerForm.partnerId || ""}
+                          onChange={(e) =>
+                            setPartnerForm((p) => ({
+                              ...p,
+                              partnerId: e.target.value,
+                            }))
+                          }
+                          placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                        />
+                      </FormField>
+                    )}
+                    <FormField label="Role">
+                      <input
+                        style={inputSt}
+                        value={partnerForm.role || ""}
+                        onChange={(e) =>
+                          setPartnerForm((p) => ({
+                            ...p,
+                            role: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. GC, TRADE, OEM"
+                      />
+                    </FormField>
+                    <FormField label="Scope of Work">
+                      <input
+                        style={inputSt}
+                        value={partnerForm.scope || ""}
+                        onChange={(e) =>
+                          setPartnerForm((p) => ({
+                            ...p,
+                            scope: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Electrical testing and commissioning"
+                      />
+                    </FormField>
+                  </FormGrid>
+                  <ModalFooter
+                    onClose={() => setPartnerModal(null)}
+                    onSave={savePartner}
+                    saveLabel={
+                      partnerModal === "add" ? "Add Partner" : "Save Changes"
+                    }
+                  />
+                </Modal>
+              );
+            })()}
+        </div>
+      )}
+
+      {/* ── MEMBERS ───────────────────────────────────────────────────────── */}
+      {activeTab === "Members" && (
+        <div>
+          <ErrorBanner error={membersError} />
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Team Members</span>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={() => {
+                setMemberForm({});
+                setMemberModal("add");
+              }}
+            >
+              + Add Member
+            </button>
+          </div>
+          <Table
+            headers={[
+              "User ID",
+              "Role",
+              "Assigned At",
+              "Expires At",
+              "Actions",
+            ]}
+          >
+            {membersLoading ? (
+              <LoadingRows cols={5} />
+            ) : members.length === 0 ? (
+              <tr>
+                <td colSpan={5}>
+                  <EmptyState message="No team members yet." />
+                </td>
+              </tr>
+            ) : (
+              members.map((m, i) => (
+                <Tr key={m.id} even={i % 2 === 0}>
+                  <Td>
+                    <span
+                      style={{
+                        fontFamily: "var(--wfont-mono, monospace)",
+                        fontSize: 11,
+                      }}
+                    >
+                      {m.userId}
+                    </span>
+                  </Td>
+                  <Td>{m.roleLabel || "—"}</Td>
+                  <Td>
+                    {m.assignedAt
+                      ? new Date(m.assignedAt).toLocaleDateString()
+                      : "—"}
+                  </Td>
+                  <Td>
+                    {m.expiresAt
+                      ? new Date(m.expiresAt).toLocaleDateString()
+                      : "—"}
+                  </Td>
+                  <Td>
+                    <ActionBtn
+                      danger
+                      onClick={() =>
+                        handleDeleteConfirm("member", async () => {
+                          try {
+                            await removeCxProjectMember(projectId, m.userId);
+                            setMembers((p) => p.filter((x) => x.id !== m.id));
+                            showToast("success", "Member removed.");
+                          } catch (e) {
+                            showToast("error", e?.message || "Remove failed.");
+                          }
+                        })
+                      }
+                    >
+                      Remove
+                    </ActionBtn>
+                  </Td>
+                </Tr>
+              ))
+            )}
+          </Table>
+
+          {memberModal &&
+            (() => {
+              const saveMember = async () => {
+                try {
+                  const created = await addCxProjectMember(
+                    projectId,
+                    memberForm,
+                  );
+                  setMembers((p) => [...p, created]);
+                  setMemberModal(null);
+                  showToast("success", "Member added.");
+                } catch (e) {
+                  showToast("error", e?.message || "Add failed.");
+                }
+              };
+              return (
+                <Modal
+                  title="Add Team Member"
+                  subtitle="Grant a user access to this project with an optional role and expiry."
+                  onClose={() => setMemberModal(null)}
+                >
+                  <FormGrid cols={2}>
+                    <FormField
+                      label="User ID"
+                      required
+                      hint="UUID of the user in your org."
+                      full
+                    >
+                      <input
+                        style={inputSt}
+                        value={memberForm.userId || ""}
+                        onChange={(e) =>
+                          setMemberForm((p) => ({
+                            ...p,
+                            userId: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                      />
+                    </FormField>
+                    <FormField label="Role / Title">
+                      <input
+                        style={inputSt}
+                        value={memberForm.roleLabel || ""}
+                        onChange={(e) =>
+                          setMemberForm((p) => ({
+                            ...p,
+                            roleLabel: e.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Project Manager, Site Lead"
+                      />
+                    </FormField>
+                    <FormField
+                      label="Access Expires (optional)"
+                      hint="Leave blank for permanent access."
+                    >
+                      <input
+                        style={inputSt}
+                        type="date"
+                        value={memberForm.expiresAt || ""}
+                        onChange={(e) =>
+                          setMemberForm((p) => ({
+                            ...p,
+                            expiresAt: e.target.value,
+                          }))
+                        }
+                      />
+                    </FormField>
+                  </FormGrid>
+                  <ModalFooter
+                    onClose={() => setMemberModal(null)}
+                    onSave={saveMember}
+                    saveLabel="Add Member"
+                  />
+                </Modal>
+              );
+            })()}
+        </div>
+      )}
     </div>
   );
 }

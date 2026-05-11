@@ -1,5 +1,4 @@
 import { FiArrowDown, FiArrowUp } from "react-icons/fi";
-import config from "../../../config";
 
 export default function WareHouseOverview({ user }) {
   return (

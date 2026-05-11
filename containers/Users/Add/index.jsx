@@ -29,7 +29,6 @@ export default function AddSubscription() {
   const getUsersDetails = async () => {
     try {
       const res = await GetUsersById(id);
-      console.log(res);
       setForm({
         email: res.email,
         firstName: res?.firstName,
@@ -69,15 +68,12 @@ export default function AddSubscription() {
     try {
       setLoading(true);
       if (id) {
-        console.log("id");
         await UpdateUsers(id, payload);
       } else {
-        console.log("no id");
         await CreateUsers(payload);
       }
       router.back();
     } catch (err) {
-      console.log(err);
       setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
@@ -187,7 +183,7 @@ export default function AddSubscription() {
                     className="bg-gradient-to-r from-[#093E7D] to-[#0075FF] rounded-none"
                     value={item?.id}
                   >
-                    {item?.name}
+                    {item?.description}
                   </option>
                 ))}
             </select>

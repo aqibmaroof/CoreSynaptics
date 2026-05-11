@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getMenuByRole } from "./sideBarData";
+import {
+  getMenuByRole,
+  getRoleMeta,
+  getLensNavItems,
+  LENSES,
+} from "./sideBarData";
 import { FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { usePathname, useRouter } from "next/navigation";
 import config from "../../config";
@@ -10,40 +15,89 @@ import {
   getAccessToken,
   getUser,
   setUser,
+  setOrganization,
+  getOrganization,
 } from "@/services/instance/tokenService";
 import { getRoles } from "@/services/Roles";
-import { GetUser } from "@/services/auth";
+import { GetUser, GetOrganization } from "@/services/auth";
+
+const formatRole = (role) => {
+  if (!role) return "User";
+  return role.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+// Each element of accessibleModules may be a plain string key or an object { key, ... }.
+const extractModules = (user) => {
+  const raw = user?.accessibleModules;
+  if (!Array.isArray(raw) || !raw.length) return [];
+  return raw.map((m) => (typeof m === "string" ? m : m?.key)).filter(Boolean);
+};
 
 const Sidebar = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [mounted, setMounted] = useState(false);         // ✅ mounted guard
-  const [visibleItems, setVisibleItems] = useState([]);  // ✅ start empty on server
+  const [mounted, setMounted] = useState(false);
+  const [visibleItems, setVisibleItems] = useState([]);
   const [openIndex, setOpenIndex] = useState(null);
-  const [activeSubIndex, setActiveSubIndex] = useState(null);
-  const [activeSubSubIndex, setActiveSubSubIndex] = useState(null);
+  const [theme, setTheme] = useState("dark");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [roleMeta, setRoleMeta] = useState(null);
+  const [orgData, setOrgData] = useState(null);
 
   useEffect(() => {
-    // ✅ All localStorage/auth logic runs only on client
-    const user = JSON.parse(getUser());
-    const accessToken = getAccessToken();
-
-    const items = getMenuByRole(
-      user?.activeRole?.name || user?.platformRole
-    );
-    setVisibleItems(items);
-    setMounted(true);
-
-    getRolesList();
-    if (accessToken) {
-      getUserFromApi();
-    }
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    setTheme(savedTheme);
+    document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);
 
+  useEffect(() => {
+    const user = JSON.parse(getUser());
+    const accessToken = getAccessToken();
+    setCurrentUser(user);
+
+    const roleId = user?.activeRole?.name || user?.platformRole;
+    const modules = extractModules(user);
+    const items = getMenuByRole(roleId, modules);
+    setVisibleItems(items);
+    setRoleMeta(getRoleMeta(roleId));
+    setMounted(true);
+
+    // Hydrate org from cache immediately
+    const cachedOrg = getOrganization();
+    if (cachedOrg) setOrgData(JSON.parse(cachedOrg));
+
+    getRolesList();
+    if (accessToken) getUserFromApi();
+  }, []);
+
+  // Auto-open the parent whose submenu contains the current pathname
+  useEffect(() => {
+    if (!visibleItems.length) return;
+    const activeParent = visibleItems.findIndex((item) =>
+      (item.submenu || []).some((sub) => sub.path === pathname),
+    );
+    if (activeParent !== -1) setOpenIndex(activeParent);
+  }, [pathname, visibleItems]);
+
   const getUserFromApi = async () => {
-    const userResponse = await GetUser();
+    const [userResponse, orgResponse] = await Promise.all([
+      GetUser(),
+      GetOrganization().catch(() => null),
+    ]);
+
     setUser({ user: userResponse });
+    setCurrentUser(userResponse);
+    const roleId = userResponse?.activeRole?.name || userResponse?.platformRole;
+    const modules = extractModules(userResponse);
+    const items = getMenuByRole(roleId, modules);
+    setVisibleItems(items);
+    setRoleMeta(getRoleMeta(roleId));
+
+    if (orgResponse) {
+      setOrganization({ organization: orgResponse });
+      setOrgData(orgResponse);
+    }
   };
 
   const getRolesList = async () => {
@@ -51,158 +105,317 @@ const Sidebar = () => {
       const res = await getRoles();
       localStorage.setItem("roles", JSON.stringify(res));
     } catch (error) {
-      console.log("Error Fetching Roles : ", error);
+      console.log("Error Fetching Roles:", error);
     }
   };
 
   const toggleSubmenu = (index) => {
     setOpenIndex(openIndex === index ? null : index);
-    setActiveSubIndex(null);
-    setActiveSubSubIndex(null);
   };
 
-  // ✅ Render nothing on server — avoids mismatch entirely
+  const isParentActive = (item) =>
+    item.submenu?.length > 0
+      ? item.submenu.some((sub) => sub.path === pathname)
+      : item.path === pathname;
+
   if (!mounted) return null;
 
+  const isDark = theme === "dark";
+  const roleLabel =
+    currentUser?.activeRole?.name ||
+    currentUser?.platformRole ||
+    currentUser?.role ||
+    "";
+
   return (
-    <aside className="w-[280px] m-3 py-2 transition-colors bg-gradient-to-b from-[#060B26F0] to-[#1A1F3700] rounded rounded-t-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
-      {/* LOGOS */}
-      <div className="sticky z-10 px-4 py-5">
-        <img src={config?.brand} className="w-55 h-auto m-auto dark:hidden" />
-        <img src={config?.brand} className="w-55 h-auto m-auto hidden dark:block" />
-      </div>
+    <aside className="w-[280px] m-3 py-2 transition-colors bg-transparent rounded-2xl duration-300 overflow-y-auto h-screen scrollbar-hide">
+      {/* ── Logo + Role badge ─────────────────────────────────── */}
+      <div className="px-4 pt-5 pb-3">
+        <div className="flex items-center justify-between mb-4">
+          <img
+            src={isDark ? config?.brand : config?.darkBrand}
+            className="w-48 h-auto"
+            alt="brand"
+          />
+        </div>
 
-      <img src={config?.h_line} className="px-4 mt-6" />
-
-      <ul className="list-none m-0 p-0 mt-8 mb-15">
-        {visibleItems?.map((item, index) => (
-          <li key={index}>
-            {item.category && (
-              <p className="text-[#DF5B30] px-4 mb-1">{item.category}</p>
-            )}
-
-            <div
-              className={`flex items-center py-5 w-[250px] mx-4 rounded-xl h-auto px-5 cursor-pointer text-white hover:text-[#fff] hover:bg-[url('/images/hover_background.png')] ${
-                pathname === item?.path ? "bg-[url('/images/hover_background.png')]" : ""
-              } bg-cover bg-center bg-no-repeat transition`}
-              onClick={() => {
-                if (item.submenu.length > 0) {
-                  toggleSubmenu(index);
-                } else if (item.title === "View Website" || item.title === "Support") {
-                  window.open(item.path, "_blank");
-                } else {
-                  router.push(item.path);
-                }
-              }}
-            >
-              <img
-                src={pathname === item?.path ? item?.iconActive : item.icon}
-                className={`mr-3 ${
-                  pathname === item?.path ? "bg-[#0075FF]" : "bg-[#1A1F37]"
-                } p-2 rounded-xl`}
-              />
-              <span className="flex-1 text-[14px]">{item.title}</span>
-              {item.submenu.length > 0 && (
-                <span className="text-xs">
-                  {openIndex === index ? <FaChevronDown /> : <FaChevronRight />}
-                </span>
-              )}
+        {currentUser && (
+          <div
+            className={`px-3 py-2.5 rounded-xl ${
+              isDark
+                ? "bg-slate-800/60 border border-slate-700/60"
+                : "bg-slate-100 border border-slate-200"
+            }`}
+          >
+            {/* User identity row */}
+            <div className="flex gap-2.5 mb-2">
+              <div className="relative shrink-0">
+                <div className="w-8 h-8 rounded-full overflow-hidden">
+                  {orgData?.branding?.logoUrl ? (
+                    <img
+                      src={orgData.branding.logoUrl}
+                      className="w-full h-full object-cover"
+                      alt={orgData.name}
+                    />
+                  ) : (
+                    <img
+                      src={config?.user_icon || "https://placehold.co/100x100"}
+                      className="w-full h-full object-cover"
+                      alt="user"
+                    />
+                  )}
+                </div>
+                <span className="absolute bottom-5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
+              </div>
+              <div className="min-w-0">
+                <p
+                  className={`text-xs font-semibold truncate leading-tight ${isDark ? "text-slate-100" : "text-slate-800"}`}
+                >
+                  {currentUser?.firstName} {currentUser?.lastName}
+                </p>
+                <p
+                  className={`text-[10px] truncate leading-tight ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                >
+                  {orgData?.name || currentUser?.organizationName || ""}
+                </p>
+              </div>
             </div>
 
-            {item.submenu.length > 0 && openIndex === index && (
-              <ul className={`list-none mt-1 ${item.title === "Orders" ? "pl-8" : "pl-10"}`}>
-                {item.submenu.map((sub, subIdx) => {
-                  if (sub.type === "link") {
-                    return (
-                      <li key={subIdx} className="py-1 w-full">
-                        <div className="flex items-center justify-start">
-                          <Link href={sub.path} className="cursor-pointer py-1 text-white hover:text-[#A9D18E] hover:underline">
-                            {sub.title}
-                          </Link>
-                          {sub.submenu && (
-                            <span className="text-xs mr-5 cursor-pointer">
-                              {activeSubSubIndex === subIdx ? (
-                                <FaChevronDown onClick={() => setActiveSubSubIndex(null)} />
-                              ) : (
-                                <FaChevronRight onClick={() => setActiveSubSubIndex(subIdx)} />
-                              )}
-                            </span>
-                          )}
-                        </div>
-                        {sub.submenu && activeSubSubIndex === subIdx && (
-                          <ul className="list-none pl-5 mt-1">
-                            {sub.submenu.map((subSub, subSubIdx) => (
-                              <li
-                                key={subSubIdx}
-                                className="cursor-pointer py-1 text-white hover:underline"
-                                onClick={() => router.push(subSub.path)}
-                              >
-                                {subSub.title}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
-                    );
-                  }
+            {/* Role card — shows library meta when available */}
+            {roleMeta ? (
+              <div
+                className={`rounded-lg px-2.5 py-2 mt-1 ${isDark ? "bg-slate-700/50" : "bg-white/60 border border-slate-200"}`}
+              >
+                <p
+                  className={`text-[9px] font-bold uppercase tracking-widest mb-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                >
+                  YOUR ROLE
+                </p>
+                <p
+                  className={`text-[10px] font-mono truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                >
+                  {roleMeta.id}
+                </p>
+                <p
+                  className={`text-xs font-semibold truncate leading-tight ${isDark ? "text-white" : "text-slate-800"}`}
+                >
+                  {roleMeta.name}
+                </p>
+                <p
+                  className={`text-[10px] truncate mb-1.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+                >
+                  {currentUser?.organizationName || roleMeta.companyType} ·{" "}
+                  {roleMeta.tier}
+                </p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider ${isDark ? "bg-slate-600 text-slate-300" : "bg-slate-200 text-slate-600"}`}
+                  >
+                    LENS · {roleMeta.lens}
+                  </span>
+                  {LENSES[roleMeta.lens] && (
+                    <span
+                      className={`text-[9px] truncate ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                    >
+                      {LENSES[roleMeta.lens].name}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : roleLabel ? (
+              <span
+                className={`text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wide inline-block mt-1 ${isDark ? "bg-cyan-950 text-cyan-400 border border-cyan-800" : "bg-sky-100 text-sky-700 border border-sky-200"}`}
+              >
+                {formatRole(roleLabel)}
+              </span>
+            ) : null}
+          </div>
+        )}
+      </div>
 
-                  if (sub.type === "text") {
-                    return (
-                      <li key={subIdx} onClick={() => setActiveSubIndex(subIdx)} className="mb-2 text-white font-medium text-[16px] cursor-pointer">
-                        <span className="mr-3">{item.icon}</span>
-                        <a href={sub.path} className={`no-underline hover:text-[#A9D18E] hover:underline ${subIdx === activeSubIndex ? "text-white" : ""}`}>
-                          {sub.title}
-                        </a>
-                      </li>
-                    );
-                  }
+      {/* Divider */}
+      <img src={config?.h_line} className="px-4 mt-2 mb-4" alt="" />
 
-                  if (sub.type === "status-group") {
+      {/* ── Navigation ────────────────────────────────────────── */}
+      <ul className="list-none m-0 p-0 mb-2">
+        {visibleItems.map((item, index) => {
+          const parentActive = isParentActive(item);
+          const isOpen = openIndex === index;
+
+          return (
+            <li key={index}>
+              {/* Parent row */}
+              <div
+                className={`flex items-center py-3 w-[250px] mx-4 rounded-xl h-auto px-4 cursor-pointer transition-all duration-150 ${
+                  parentActive
+                    ? isDark
+                      ? "bg-slate-700/70 border border-slate-600/60"
+                      : "bg-slate-200/80 border border-slate-300"
+                    : isDark
+                      ? "hover:bg-slate-700/40 border border-transparent"
+                      : "hover:bg-slate-200/60 border border-transparent"
+                }`}
+                onClick={() => {
+                  if (item.submenu?.length > 0) {
+                    toggleSubmenu(index);
+                  } else if (
+                    item.title === "View Website" ||
+                    item.title === "Support"
+                  ) {
+                    window.open(item.path, "_blank");
+                  } else {
+                    router.push(item.path);
+                  }
+                }}
+              >
+                <img
+                  src={parentActive ? item?.iconActive : item.icon}
+                  className={`mr-3 p-1.5 rounded-lg w-8 h-8 object-contain ${
+                    parentActive
+                      ? "bg-[#0075FF]"
+                      : isDark
+                        ? "bg-slate-800"
+                        : "bg-slate-200"
+                  }`}
+                  alt=""
+                />
+                <span
+                  className={`flex-1 text-[13px] font-medium ${
+                    parentActive
+                      ? isDark
+                        ? "text-white"
+                        : "text-slate-900"
+                      : isDark
+                        ? "text-slate-300"
+                        : "text-slate-700"
+                  }`}
+                >
+                  {item.title}
+                </span>
+                {item.submenu?.length > 0 && (
+                  <span
+                    className={`text-[10px] ${
+                      isDark ? "text-slate-500" : "text-slate-400"
+                    }`}
+                  >
+                    {isOpen ? <FaChevronDown /> : <FaChevronRight />}
+                  </span>
+                )}
+              </div>
+
+              {/* Submenu */}
+              {item.submenu?.length > 0 && isOpen && (
+                <ul className="list-none mt-1 pl-6 pr-4">
+                  {item.submenu.map((sub, subIdx) => {
+                    const subActive = sub.path === pathname;
                     return (
                       <li key={subIdx}>
-                        <ul className="list-none mt-0 p-0">
-                          {sub.statuses.map((status, sIdx) => (
-                            <li
-                              key={sIdx}
-                              className={`mb-4 px-3 py-1 rounded w-fit inline-block text-sm cursor-pointer ${
-                                status.color === "orange" ? "bg-[#fe5000] text-[#333]"
-                                : status.color === "teal" ? "bg-teal-500 text-white"
-                                : status.color === "pink" ? "bg-[#f9c2d1] text-[#900]"
-                                : status.color === "yellow" ? "bg-[#fef102] text-black"
-                                : ""
-                              }`}
-                              onClick={() => router.push(status.path)}
-                            >
-                              {status.title}
-                              <span className="font-bold ml-1">(0)</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <Link
+                          href={sub.path}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] transition-colors no-underline ${
+                            subActive
+                              ? isDark
+                                ? "bg-slate-700/60 text-white font-semibold"
+                                : "bg-slate-200 text-slate-900 font-semibold"
+                              : isDark
+                                ? "text-slate-400 hover:text-white hover:bg-slate-700/30"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                          }`}
+                        >
+                          {subActive && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#0075FF] shrink-0" />
+                          )}
+                          {sub.title}
+                        </Link>
                       </li>
                     );
-                  }
-
-                  return null;
-                })}
-              </ul>
-            )}
-          </li>
-        ))}
+                  })}
+                </ul>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
-      {/* NEED HELP CARD */}
-      <div className="text-white bg-[url('/images/needHelp.png')] bg-cover bg-center bg-no-repeat w-[220px] rounded-xl h-auto mx-auto mb-15 px-4 py-4">
-        <img src={config?.questionMark} />
-        <p className="mt-5 font-bold text-[14px]">Need help?</p>
-        <p className="mb-3 text-[12px]">Please check our docs</p>
-        <a
-          href="https://wildtag-s3-bucket.s3.eu-north-1.amazonaws.com/listing_temp/cmkx1vzt6000bty9h2n9r9tkw/1769546156716-ak18ne-Screenshot_1767712780406.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIASWMZRHANP4L6HG73%2F20260127%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20260127T203556Z&X-Amz-Expires=86400&X-Amz-Signature=c75c001f0930eed3accf779efbbf6688a642aff55938302d29f4dd9f58b8c102&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
-          target="_blank"
-          className="bg-linear-to-r cursor-pointer from-[#0A0E23B5] to-[#060B28BD] w-full p-3 rounded-xl flex items-center justify-center m-auto"
-        >
-          DOCUMENTATION
-        </a>
-      </div>
+      {/* ── Lens Quick-Nav ───────────────────────────────────── */}
+      {roleMeta &&
+        (() => {
+          const lens = LENSES[roleMeta.lens];
+          const lensItems = getLensNavItems(roleMeta.lens);
+          if (!lens || !lensItems.length) return null;
+          return (
+            <div className="ml-2 mb-5">
+              <div className="px-7 pt-3 pb-1">
+                <p
+                  className={`text-[10px] font-semibold uppercase tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}
+                >
+                  {lens.name}
+                </p>
+              </div>
+              <ul className="list-none m-0 p-0">
+                {lensItems.map((item, i) => {
+                  const isActive = pathname === item.path;
+                  return (
+                    <li key={i}>
+                      <Link
+                        href={item.path}
+                        className={`flex items-center gap-2 px-7 py-1.5 text-[13px] transition-colors no-underline ${
+                          isActive
+                            ? isDark
+                              ? "text-white font-semibold"
+                              : "text-slate-900 font-semibold"
+                            : isDark
+                              ? "text-slate-400 hover:text-white hover:bg-slate-700/30"
+                              : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                        }`}
+                      >
+                        {isActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#0075FF] shrink-0" />
+                        )}
+                        {item.title}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })()}
+
+      {/* ── Need Help Card ────────────────────────────────────── */}
+      {isDark ? (
+        <div className="text-white bg-[url('/images/needHelp.png')] bg-cover bg-center w-[220px] rounded-xl mx-auto mb-15 px-4 py-4">
+          <img src={config?.questionMark} alt="" />
+          <p className="mt-5 font-bold text-[14px]">Need help?</p>
+          <p className="mb-3 text-[12px] text-slate-300">
+            Please check our docs
+          </p>
+          <a
+            href="#"
+            target="_blank"
+            className="bg-gradient-to-r from-[#0A0E23B5] to-[#060B28BD] w-full p-3 rounded-xl flex items-center justify-center text-xs font-bold tracking-widest hover:opacity-80 transition-opacity"
+          >
+            DOCUMENTATION
+          </a>
+        </div>
+      ) : (
+        <div className="w-[220px] rounded-xl mx-auto mb-15 px-4 py-4 bg-slate-100 border border-slate-200">
+          <img src={config?.questionMark} alt="" />
+          <p className="mt-5 font-bold text-[14px] text-slate-800">
+            Need help?
+          </p>
+          <p className="mb-3 text-[12px] text-slate-500">
+            Please check our docs
+          </p>
+          <a
+            href="#"
+            target="_blank"
+            className="bg-slate-800 text-white w-full p-3 rounded-xl flex items-center justify-center text-xs font-bold tracking-widest hover:opacity-80 transition-opacity no-underline"
+          >
+            DOCUMENTATION
+          </a>
+        </div>
+      )}
     </aside>
   );
 };

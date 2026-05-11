@@ -13,9 +13,7 @@ export default function MultiSelectDropdown({
   const [open, setOpen] = useState(false);
 
   const handleSelect = (item) => {
-    console.log("selected , item ", selected, item);
     const exists = selected.find((s) => s.id === item.id);
-    console.log("exists : ", exists);
     if (label !== "Assign Teams") {
       if (!exists) {
         setSelected(item); // ✅ SEND SINGLE ITEM

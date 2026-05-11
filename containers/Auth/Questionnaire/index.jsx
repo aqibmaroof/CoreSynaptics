@@ -12,7 +12,7 @@ const LoginPage = () => {
   const searchParams = useSearchParams();
   const currentStep = searchParams.get("step");
   const [step, setStep] = useState(currentStep || 1);
-  console.log(step)
+
   return (
     <>
       {step === 1 ? (

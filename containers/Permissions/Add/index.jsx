@@ -49,7 +49,6 @@ export default function AddSubscription() {
   const getPermissionDetails = async () => {
     try {
       const res = await GetPermissionsById(id);
-      console.log(res);
       setForm({
         modules: res.module,
         resource: res?.resource,
@@ -89,7 +88,6 @@ export default function AddSubscription() {
       }
       router.back();
     } catch (err) {
-      console.log(err);
       setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);

@@ -1,10 +1,10 @@
-import Dashboard from "../../../containers/FSM/Dashboard";
+import FinanceDashboard from "@/containers/Finance/Dashboard";
 import Layout from "@/containers/Layout";
 
-export default function List() {
+export default function FinanceDashboardPage() {
   return (
     <Layout>
-      <Dashboard />
+      <FinanceDashboard />
     </Layout>
   );
 }

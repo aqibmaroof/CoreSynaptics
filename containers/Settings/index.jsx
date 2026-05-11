@@ -43,7 +43,6 @@ export default function ProjectManagerDashboard() {
   };
 
   const handleSave = () => {
-    console.log("Saving settings...", formData);
     alert("Settings saved successfully!");
   };
 

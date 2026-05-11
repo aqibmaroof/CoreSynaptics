@@ -2,7 +2,17 @@
 import CardWrapper from "@/components/CardWrapper";
 import DynamicChart from "@/components/common/Charts/DynamicChart";
 
+const isLight = () =>
+  typeof document !== "undefined" &&
+  document.documentElement.getAttribute("data-theme") === "light";
+
 export default function SalesOverview({ heading, description }) {
+  const light = isLight();
+  const labelColor = light ? "#3a5070" : "#b4beccff";
+  const axisColor  = light ? "#6b84a0" : "#8b96a5ff";
+  const gridColor  = light ? "#c5d2ea" : "#334155";
+  const tooltipTheme = light ? "light" : "dark";
+
   const ChartOptions = {
     series: [
       {
@@ -63,7 +73,7 @@ export default function SalesOverview({ heading, description }) {
       ],
       labels: {
         style: {
-          colors: "#b4beccff",
+          colors: labelColor,
           fontSize: "12px",
           fontWeight: 500,
         },
@@ -84,14 +94,14 @@ export default function SalesOverview({ heading, description }) {
           return val.toFixed(0);
         },
         style: {
-          colors: "#8b96a5ff",
+          colors: axisColor,
           fontSize: "12px",
           fontWeight: 500,
         },
       },
     },
     grid: {
-      borderColor: "#334155",
+      borderColor: gridColor,
       strokeDashArray: 4,
       xaxis: {
         lines: {
@@ -115,7 +125,7 @@ export default function SalesOverview({ heading, description }) {
     },
     tooltip: {
       enabled: true,
-      theme: "dark",
+      theme: tooltipTheme,
       style: {
         fontSize: "12px",
       },

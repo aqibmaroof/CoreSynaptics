@@ -26,7 +26,6 @@ export default function AddSubscription() {
   const getRolesDetails = async () => {
     try {
       const res = await GetRolesById(id);
-      console.log(res);
       setForm({
         name: res.name,
         description: res.description,
@@ -70,22 +69,18 @@ export default function AddSubscription() {
     try {
       setLoading(true);
       if (id) {
-        console.log("id");
         await UpdateRoles(id, payload);
       } else {
-        console.log("no id");
         await CreateRoles(payload);
       }
       router.back();
     } catch (err) {
-      console.log(err);
       setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
 
-  console.log("form : ", form);
   // ── Color accent helpers ───────────────────────────────────
 
   const accentBorder = "border-orange-400/40 focus:border-orange-400";

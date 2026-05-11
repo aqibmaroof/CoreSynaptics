@@ -10,7 +10,7 @@ const NeedSales = ({ step, setStep }) => {
       <div className="bg-[url('/images/login-illustration.png')] bg-cover bg-center bg-no-repeat w-full flex items-center justify-center"></div>
 
       {/* Right Side: Form */}
-      <div className="bg-[url('/images/mainBackground.png')] bg-cover bg-center bg-no-repeat flex flex-col justify-center w-full p-8 md:p-16 lg:p-12 xl:p-20">
+      <div className="flex flex-col justify-center w-full p-8 md:p-16 lg:p-12 xl:p-20" style={{ backgroundColor: "var(--rf-bg)" }}>
         <div className="flex items-center gap-2 mb-5">
           <img
             src={config?.brand}
@@ -25,7 +25,7 @@ const NeedSales = ({ step, setStep }) => {
         </div>
 
         <div className="mb-10 mt-18">
-          <h3 className="text-white text-4xl font-sora font-bold">
+          <h3 className="text-4xl font-sora font-bold" style={{ color: "var(--rf-txt)" }}>
             Customize Your Experience
           </h3>
           <h2 className="text-[#A0AEC0] mt-4">
@@ -41,7 +41,7 @@ const NeedSales = ({ step, setStep }) => {
         </div>
 
         <div>
-          <h3 className="text-white font-bold mt-4">Do you need sales?</h3>
+          <h3 className="font-bold mt-4" style={{ color: "var(--rf-txt)" }}>Do you need sales?</h3>
         </div>
         <div className="flex gap-4 mt-4">
           <button
