@@ -4195,6 +4195,12 @@ export const sidebarItems = [
           PLATFORM,
         ),
       },
+      {
+        title: "Announcements",
+        type: "link",
+        path: "/Announcements",
+        roles: ALL,
+      },
     ],
   },
 
