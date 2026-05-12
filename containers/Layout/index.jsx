@@ -11,10 +11,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   getAccessToken,
-  getUser,
   clearTokens,
+  setUser,
 } from "@/services/instance/tokenService";
-import { Logout } from "@/services/auth";
+import { GetUser, Logout } from "@/services/auth";
 
 // ─── Sidebar nav (mirrors HTML sidebar order) ────────────────────────────
 // Each section is a { label, items: [{ icon, title, href, badge?, badgeKind? }] }
@@ -156,7 +156,7 @@ const PHASE_STYLE = {
 export default function CxLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
-  const [user, setUser] = useState(null);
+  const [user, setLocalUser] = useState(null);
   const [activeOrg, setActiveOrg] = useState({
     name: "Active Project",
     code: "—",
@@ -167,18 +167,22 @@ export default function CxLayout({ children }) {
   const [projectOpen, setProjectOpen] = useState(false);
   const [activeProject, setActiveProject] = useState(PROJECTS[0]);
 
+  const fetchUser = async () => {
+    try {
+      const u = await GetUser();
+      setUser({ user: u });
+      if (u) setLocalUser(u);
+    } catch {
+      /* ignore */
+    }
+  };
   useEffect(() => {
     if (!getAccessToken()) {
       router.replace("/Auth/Login");
       return;
     }
-    try {
-      const u = JSON.parse(getUser() ?? "null");
-      if (u) setUser(u);
-    } catch {
-      /* ignore */
-    }
-  }, [router]);
+    fetchUser();
+  }, []);
 
   const initials = useMemo(() => {
     if (!user) return "U";
@@ -452,7 +456,7 @@ export default function CxLayout({ children }) {
                     : "Sign in"}
                 </div>
                 <div className="rl">
-                  {user?.role ?? user?.platformRole ?? ""}
+                  {user?.activeRole?.description ?? user?.platformRole ?? ""}
                 </div>
               </div>
               <span style={{ color: "var(--cx-text-muted)", fontSize: 10 }}>
@@ -517,7 +521,7 @@ export default function CxLayout({ children }) {
                 : "—"}
             </div>
             <div className="role">
-              {user?.role ?? user?.platformRole ?? "Operator"}
+              {user?.activeRole?.description ?? user?.platformRole ?? "Operator"}
             </div>
           </div>
 

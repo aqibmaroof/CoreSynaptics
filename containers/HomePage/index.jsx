@@ -2876,7 +2876,7 @@ const HomePage = () => {
                   color: "var(--rf-txt2)",
                 }}
               >
-                {(user?.activeRole?.name || user?.role || "User").replace(
+                {(user?.activeRole?.description || user?.role || "User").replace(
                   /_/g,
                   " ",
                 )}
