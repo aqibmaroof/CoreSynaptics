@@ -111,7 +111,7 @@ export default function CxScoreDashboard({ projectId }) {
           color: C.textMuted,
         }}
       >
-        Select a project to see its Cx Score.
+        Select a project to see its Commissioning Score.
       </div>
     );
   }
@@ -127,7 +127,7 @@ export default function CxScoreDashboard({ projectId }) {
           color: C.textMuted,
         }}
       >
-        Loading Cx Score…
+        Loading Commissioning Score…
       </div>
     );
   }
@@ -183,8 +183,10 @@ export default function CxScoreDashboard({ projectId }) {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}>
-            Cx Score · Executive Dashboard
+          <h1
+            style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}
+          >
+            Commissioning Score · Executive Dashboard
           </h1>
           <div style={{ fontSize: 13, color: C.textSoft, marginTop: 6 }}>
             Weighted composite score: 35% checklists + 30% tests + 25% asset
@@ -264,7 +266,11 @@ export default function CxScoreDashboard({ projectId }) {
             <Bar label="Checklists" pct={score.checklistScore} weight="0.35" />
             <Bar label="Test results" pct={score.testScore} weight="0.30" />
             <Bar label="Asset stage" pct={score.assetScore} weight="0.25" />
-            <Bar label="PSSR / inspections" pct={score.inspectionScore} weight="0.10" />
+            <Bar
+              label="PSSR / inspections"
+              pct={score.inspectionScore}
+              weight="0.10"
+            />
           </div>
         </div>
       </div>
@@ -454,16 +460,24 @@ function Sparkline({ data }) {
   const w = 720;
   const h = 80;
   const pad = 8;
-  const xs = data.map((_, i) => pad + (i * (w - 2 * pad)) / Math.max(1, data.length - 1));
+  const xs = data.map(
+    (_, i) => pad + (i * (w - 2 * pad)) / Math.max(1, data.length - 1),
+  );
   const ys = data.map((d) => {
     const v = d.overallScore ?? 0;
     return h - pad - (v / 100) * (h - 2 * pad);
   });
-  const path = xs.map((x, i) => `${i === 0 ? "M" : "L"} ${x} ${ys[i]}`).join(" ");
+  const path = xs
+    .map((x, i) => `${i === 0 ? "M" : "L"} ${x} ${ys[i]}`)
+    .join(" ");
   const last = data[data.length - 1];
   return (
     <div>
-      <svg width="100%" viewBox={`0 0 ${w} ${h + 24}`} style={{ display: "block" }}>
+      <svg
+        width="100%"
+        viewBox={`0 0 ${w} ${h + 24}`}
+        style={{ display: "block" }}
+      >
         {/* Y reference at 60 (D threshold) and 80 (B threshold) */}
         {[60, 80].map((y) => {
           const yp = h - pad - (y / 100) * (h - 2 * pad);

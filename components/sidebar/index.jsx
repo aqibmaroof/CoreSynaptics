@@ -91,7 +91,7 @@ const Sidebar = () => {
 
       setOrganization({ organization: orgResponse });
       setOrgData(orgResponse);
-      console.log("updated")
+      console.log("updated");
     }
   };
 
@@ -213,8 +213,10 @@ const Sidebar = () => {
                 <p
                   className={`text-[10px] truncate mb-1.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}
                 >
-                  {currentUser?.organizationName || roleMeta.companyType} ·{" "}
-                  {roleMeta.tier}
+                  <span className="uppercase">
+                    {currentUser?.organizationName || roleMeta.companyType}
+                  </span>{" "}
+                  · {roleMeta.tier}
                 </p>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span

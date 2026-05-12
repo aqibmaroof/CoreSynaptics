@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import CxLayout from "@/containers/CxLayout";
 import { getCxProjects } from "@/services/CxProjects";
+import { getUser } from "@/services/instance/tokenService";
 
 const C = {
   bg: "#f8fafc",
@@ -31,6 +32,7 @@ export default function CxScorePicker() {
 }
 
 function Picker() {
+  const user: any = JSON.parse(getUser() ?? "null");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -43,7 +45,7 @@ function Picker() {
     (getCxProjects as any)?.()
       .then((res: any) => {
         if (cancelled) return;
-        setItems(Array.isArray(res) ? res : res?.data ?? []);
+        setItems(Array.isArray(res) ? res : (res?.data ?? []));
       })
       .catch((e: any) => {
         if (!cancelled) setErr(e?.message ?? "Failed to load projects");
@@ -67,11 +69,19 @@ function Picker() {
       }}
     >
       <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}>
-        Cx Score · Pick a project
+        {user?.firstName}
+        {user?.lastName} · Pick a project
       </h1>
-      <div style={{ fontSize: 13, color: C.textSoft, marginTop: 6, marginBottom: 18 }}>
-        Pick a project to view its weighted commissioning health score
-        (35% checklists + 30% tests + 25% asset stage + 10% PSSRs).
+      <div
+        style={{
+          fontSize: 13,
+          color: C.textSoft,
+          marginTop: 6,
+          marginBottom: 18,
+        }}
+      >
+        Pick a project to view its weighted commissioning health score (35%
+        checklists + 30% tests + 25% asset stage + 10% PSSRs).
       </div>
 
       {loading && (

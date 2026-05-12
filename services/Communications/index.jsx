@@ -87,6 +87,24 @@ export const COMM_STATE_LABELS = {
   CLOSED: "Closed",
 };
 
+// ── Phase 4 PR-4: Communications governance ───────────────────────────────────
+
+/** Pending-review queue visible to the caller's GC org. */
+export const getReviewQueue = () =>
+  sendRequest({ url: "/communications/review-queue", method: "GET" });
+
+/** Badge count for the sidebar indicator. */
+export const getReviewQueueCount = () =>
+  sendRequest({ url: "/communications/me/review-queue-count", method: "GET" });
+
+/** Audit trail of every state transition for a communication. */
+export const getCommTimeline = (id) =>
+  sendRequest({ url: `/communications/${id}/timeline`, method: "GET" });
+
+/** Per-org acknowledgement (idempotent). note is optional. */
+export const ackCommByOrg = (id, note) =>
+  sendRequest({ url: `/communications/${id}/ack-by-org`, method: "POST", data: { note } });
+
 export const COMM_STATE_COLORS = {
   DRAFT: "bg-slate-700/60 text-slate-300 border-slate-600/50",
   INTERNAL: "bg-blue-500/20 text-blue-300 border-blue-500/30",

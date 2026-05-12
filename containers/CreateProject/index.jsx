@@ -173,7 +173,7 @@ const PROJECT_NATURE = [
   {
     id: "cx_only",
     name: "Commissioning only",
-    desc: "Cx scope, no install work",
+    desc: "scope, no install work",
     icon: (
       <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
         <rect
@@ -224,9 +224,9 @@ const STANDARD_PHASES = [
   },
   {
     id: "ph5",
-    name: "Cx & Testing",
+    name: "Commissioning & Testing",
     weeks: "2–4 wks",
-    desc: "Functional testing, ITAF, Cx reports",
+    desc: "Functional testing, ITAF, Commissioning reports",
   },
   {
     id: "ph6",
@@ -279,7 +279,7 @@ const AVAILABLE_PEOPLE = [
     id: "p5",
     name: "Jennifer Wu",
     initials: "JW",
-    role: "Cx Engineer",
+    role: "Commissioning Engineer",
     avail: "free",
     color: "#DC2626",
   },
@@ -303,7 +303,7 @@ const AVAILABLE_PEOPLE = [
     id: "p12",
     name: "Kevin Rodriguez",
     initials: "KR",
-    role: "Cx Engineer",
+    role: "Commissioning Engineer",
     avail: "free",
     color: "#0A2540",
   },
@@ -341,7 +341,7 @@ const ROLE_ASSIGNMENTS = [
   },
   { role: "Lead FSE", sub: "Field superintendent", ids: ["p3"] },
   {
-    role: "Cx Engineers",
+    role: "Commissioning Engineers",
     sub: "Testing & commissioning team",
     ids: ["p5", "p12"],
   },
@@ -457,7 +457,7 @@ const WORKFLOWS = [
   {
     id: "wf4",
     cat: "Cx",
-    name: "Cx Test Record",
+    name: "Commissioning Test Record",
     desc: "Test procedure → results → SUPPLY signature → final report",
     steps: [
       "Procedure selected",
@@ -482,12 +482,12 @@ const WORKFLOWS = [
     id: "wf6",
     cat: "Cx",
     name: "Punchlist Item",
-    desc: "Create → assign contractor → fix → Cx verify → close",
+    desc: "Create → assign contractor → fix → Commissioning verify → close",
     steps: [
       "Item created",
       "Contractor assigned",
       "Fixed",
-      "Cx verified",
+      "Commissioning verified",
       "Closed",
     ],
   },
@@ -569,8 +569,8 @@ const WORKFLOWS = [
     id: "wf15",
     cat: "Approvals",
     name: "Material Substitution",
-    desc: "Alt material proposed → Cx reviews → A/E approves → executed",
-    steps: ["Proposed", "Cx reviews", "A/E approves", "Executed"],
+    desc: "Alt material proposed → Commissioning reviews → A/E approves → executed",
+    steps: ["Proposed", "Commissioning reviews", "A/E approves", "Executed"],
   },
   {
     id: "wf16",
@@ -1469,8 +1469,13 @@ const DOC_CATEGORIES = [
   },
   {
     id: "dc5",
-    name: "Cx Documentation",
-    items: ["Cx plan", "Test procedures", "ITAF plan", "Final report"],
+    name: "Commissioning Documentation",
+    items: [
+      "Commissioning plan",
+      "Test procedures",
+      "ITAF plan",
+      "Final report",
+    ],
   },
 ];
 
@@ -1549,9 +1554,9 @@ const REPORTING_ITEMS = [
   },
   {
     id: "ri4",
-    name: "Cx Progress Tracker",
+    name: "Commissioning Progress Tracker",
     freq: "Weekly",
-    owner: "Cx Lead",
+    owner: "Commissioning Lead",
     auto: true,
   },
   {
@@ -1680,7 +1685,7 @@ function buildDefaultState() {
     step: 0,
     startMode: "",
     projectNature: "new_build",
-    projectName: "Delta DC3 Atlanta — Phase 2 Data Hall Cx",
+    projectName: "Delta DC3 Atlanta — Phase 2 Data Hall Commissioning",
     customer: "",
     customerId: "",
     contractNumber: "QTS-2026-DC3-002",
@@ -2806,7 +2811,7 @@ export default function ProjectWizard() {
             onChange={(e) =>
               upd((s) => ({ ...s, projectName: e.target.value }))
             }
-            placeholder="e.g. Delta DC3 Atlanta — Phase 2 Cx"
+            placeholder="e.g. Delta DC3 Atlanta — Phase 2 Commissioning"
           />
         </div>
         <div>
@@ -3021,8 +3026,8 @@ export default function ProjectWizard() {
           Scope of <em>work</em>
         </h1>
         <p className="step-sub">
-          For each asset, what are you delivering? Supply only, Cx only, or full
-          supply + commissioning?
+          For each asset, what are you delivering? Supply only, Commissioning
+          only, or full supply + commissioning?
         </p>
       </div>
       <div className="callout callout-blue">
@@ -6141,11 +6146,15 @@ export default function ProjectWizard() {
           </div>
         )}
 
-        {!isRootProjectForm && !loadingContext && (!context.orgType || !context.projectCategory) && (
-          <div className="mt-4 max-w-3xl rounded-xl border border-red-500/20 bg-red-900/20 px-4 py-3 text-sm text-red-300">
-            The frontend could not resolve organization or project-category context from the current session. Reload after login, or refresh the parent record before creating children.
-          </div>
-        )}
+        {!isRootProjectForm &&
+          !loadingContext &&
+          (!context.orgType || !context.projectCategory) && (
+            <div className="mt-4 max-w-3xl rounded-xl border border-red-500/20 bg-red-900/20 px-4 py-3 text-sm text-red-300">
+              The frontend could not resolve organization or project-category
+              context from the current session. Reload after login, or refresh
+              the parent record before creating children.
+            </div>
+          )}
       </div>
     );
   };
@@ -7132,9 +7141,9 @@ export default function ProjectWizard() {
       {/* Header */}
       <div className="wiz-top">
         <div className="wiz-brand">
-          <div className="brand-mark">Cx</div>
+          <div className="brand-mark">Commissioning</div>
           <div>
-            <div className="brand-name">CxControl</div>
+            <div className="brand-name">CommissioningControl</div>
             <div className="brand-sub">Project Kickoff Wizard</div>
           </div>
         </div>

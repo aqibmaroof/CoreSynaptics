@@ -1,10 +1,10 @@
-import Finance from "../../containers/Finance";
+import MyAssignments from "@/containers/MyAssignments";
 import Layout from "@/containers/Layout";
 
-export default function List() {
+export default function MyAssignmentsPage() {
   return (
     <Layout>
-      <Finance />
+      <MyAssignments />
     </Layout>
   );
 }

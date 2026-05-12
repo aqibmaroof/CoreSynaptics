@@ -54,7 +54,7 @@ const COMPANY_TYPES = [
   },
   {
     id: "cxa",
-    n: "Cx Agent Firm",
+    n: "Commissioning Agent Firm",
     d: "3rd-party commissioning",
     group: "core",
   },
@@ -3129,7 +3129,7 @@ function StepPartners({ w, u }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <Callout
         color="cyan"
-        title="Why CxControl beats Procore, CxAlloy, and P6"
+        title="Why CoreSynpatics beats Procore, CxAlloy, and P6"
       >
         No other platform lets Customer + GC + OEM + Trade + Cx Agent share the
         same live project data with scoped views.
@@ -3150,7 +3150,7 @@ function StepPartners({ w, u }) {
               title: "Connected Mode",
               sub: "Link partners on this project",
               body: "Invite your partners to see this one project. Everyone works on live scoped data.",
-              badge: "Recommended · what makes CxControl unique",
+              badge: "Recommended · what makes us unique",
             },
           ].map((m) => (
             <div
@@ -3599,7 +3599,7 @@ function StepStaffing({ w, u }) {
         color="teal"
         title="NEW · Staffing marketplace bridges the DC labor shortage"
       >
-        DC construction faces a massive skilled-labor shortage. CxControl
+        DC construction faces a massive skilled-labor shortage. CoreSynaptics
         connects you to DC-focused staffing agencies with real-time
         availability.
       </Callout>
@@ -4320,7 +4320,7 @@ function StepBrand({ w, u, sessionId }) {
         <SH
           kicker="Logo"
           title="Upload your company logo"
-          sub="Shown top-left in CxControl for every user on your team."
+          sub="Shown top-left in CoreSynaptics for every user on your team."
         />
         {/* Hidden file input */}
         <input
@@ -4927,7 +4927,7 @@ function StepReview({ w, u, showPwd, setShowPwd, apiReview }) {
                 fontWeight: 500,
               }}
             >
-              CxControl
+              CoreSynaptics
             </div>
             <div
               style={{

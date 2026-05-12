@@ -2,7 +2,7 @@ import "./globals.css";
 import "./dashboard-animations.css";
 
 export const metadata = {
-  title: "CoreSynaptics · CxControl",
+  title: "CoreSynaptics",
   description: "Commissioning ERP / Mission Control Dashboard",
 };
 

@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  getReviewQueue,
+  getReviewQueueCount,
+  getCommTimeline,
+  ackCommByOrg,
+  approveAndPublishCommunication,
+  rejectCommunication,
+} from "@/services/Communications";
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -80,9 +88,16 @@ const TABS = [
   { key: "all", label: "All visible", count: 9 },
   { key: "internal", label: "Internal", count: 0 },
   { key: "awaiting", label: "Awaiting my review", count: 3 },
+  { key: "review_queue", label: "Pending GC Review", count: 0 },
   { key: "published", label: "Published", count: 6 },
   { key: "my", label: "My posts", count: 3 },
 ];
+
+// ─── Escalation level label helper ────────────────────────────────────────────
+const escalationLabel = (level) =>
+  level > 0 ? `Level ${level} escalation` : "On time";
+const escalationColor = (level) =>
+  level >= 2 ? "var(--rf-red)" : level === 1 ? "var(--rf-yellow)" : "var(--rf-green)";
 
 const REVIEW_ACTIONS = [
   { key: "approve", icon: "✅", label: "Approve & publish project-wide" },
@@ -440,13 +455,128 @@ function PostCard({ post, reviewAction, onReviewSelect }) {
 
 // ─── Main container ───────────────────────────────────────────────────────────
 
+// ─── Review queue sub-component ──────────────────────────────────────────────
+
+function ReviewQueueTab({ rows, loading, onApprove, onReject }) {
+  if (loading)
+    return <div style={{ padding: "48px 24px", textAlign: "center", color: "var(--rf-txt3)", fontSize: 13 }}>Loading review queue...</div>;
+  if (!rows.length)
+    return <div style={{ padding: "48px 24px", textAlign: "center", color: "var(--rf-txt3)", fontSize: 13 }}>No communications pending GC review.</div>;
+
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead>
+          <tr style={{ borderBottom: "1px solid var(--rf-border)", background: "var(--rf-bg3)" }}>
+            {["Comm #", "Subject", "Type", "From", "Due", "Escalation", "Actions"].map((h) => (
+              <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "var(--rf-txt3)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.communicationId} style={{ borderBottom: "1px solid var(--rf-border)", transition: "background 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--rf-bg3)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+              <td style={{ padding: "11px 14px", fontWeight: 700, color: "var(--rf-accent)", whiteSpace: "nowrap" }}>{r.commNumber}</td>
+              <td style={{ padding: "11px 14px", color: "var(--rf-txt)", maxWidth: 240 }}>{r.subject}</td>
+              <td style={{ padding: "11px 14px", color: "var(--rf-txt3)", whiteSpace: "nowrap", fontSize: 11 }}>{r.commType}</td>
+              <td style={{ padding: "11px 14px", color: "var(--rf-txt2)", whiteSpace: "nowrap" }}>{r.fromCompanyCode}</td>
+              <td style={{ padding: "11px 14px", color: "var(--rf-txt3)", whiteSpace: "nowrap", fontSize: 12 }}>
+                {r.reviewDueAt ? new Date(r.reviewDueAt).toLocaleDateString() : "—"}
+              </td>
+              <td style={{ padding: "11px 14px", whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: escalationColor(r.escalationLevel) }}>
+                  {escalationLabel(r.escalationLevel)}
+                </span>
+              </td>
+              <td style={{ padding: "11px 14px" }}>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={() => onApprove(r.communicationId)}
+                    style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: "rgba(16,185,129,0.15)", color: "var(--rf-green)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    ✅ Approve
+                  </button>
+                  <button onClick={() => onReject(r.communicationId)}
+                    style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.12)", color: "var(--rf-red)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    ✖ Reject
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function AnnouncementsContainer() {
   const [activeTab, setActiveTab] = useState("all");
   const [reviewActions, setReviewActions] = useState({ 1: "approve" });
+  const [reviewQueue, setReviewQueue] = useState([]);
+  const [reviewQueueLoading, setReviewQueueLoading] = useState(false);
+  const [queueCount, setQueueCount] = useState(0);
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const cnt = await getReviewQueueCount();
+        setQueueCount(cnt?.count ?? 0);
+      } catch {}
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== "review_queue") return;
+    (async () => {
+      setReviewQueueLoading(true);
+      try {
+        const data = await getReviewQueue();
+        setReviewQueue(Array.isArray(data) ? data : []);
+      } catch {
+        setReviewQueue([]);
+      } finally {
+        setReviewQueueLoading(false);
+      }
+    })();
+  }, [activeTab]);
+
+  const handleApprove = async (commId) => {
+    try {
+      await approveAndPublishCommunication(commId);
+      setReviewQueue((prev) => prev.filter((r) => r.communicationId !== commId));
+      setQueueCount((c) => Math.max(0, c - 1));
+      setToast("Communication approved and published");
+      setTimeout(() => setToast(null), 2800);
+    } catch {
+      setToast("Failed to approve");
+      setTimeout(() => setToast(null), 2800);
+    }
+  };
+
+  const handleReject = async (commId) => {
+    const reason = window.prompt("Rejection reason (required):");
+    if (!reason?.trim()) return;
+    try {
+      await rejectCommunication(commId, { reason });
+      setReviewQueue((prev) => prev.filter((r) => r.communicationId !== commId));
+      setQueueCount((c) => Math.max(0, c - 1));
+      setToast("Communication rejected");
+      setTimeout(() => setToast(null), 2800);
+    } catch {
+      setToast("Failed to reject");
+      setTimeout(() => setToast(null), 2800);
+    }
+  };
 
   const handleReviewSelect = (postId, action) => {
     setReviewActions((prev) => ({ ...prev, [postId]: action }));
   };
+
+  const tabsWithCount = TABS.map((t) =>
+    t.key === "review_queue" ? { ...t, count: queueCount } : t
+  );
 
   return (
     <div
@@ -641,7 +771,7 @@ export default function AnnouncementsContainer() {
           flexWrap: "wrap",
         }}
       >
-        {TABS.map((tab) => {
+        {tabsWithCount.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
             <button
@@ -724,17 +854,35 @@ export default function AnnouncementsContainer() {
         </span>
       </div>
 
-      {/* ── Post cards ── */}
-      <div>
-        {MOCK_POSTS.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            reviewAction={reviewActions[post.id]}
-            onReviewSelect={handleReviewSelect}
+      {/* ── Review queue tab body ── */}
+      {activeTab === "review_queue" ? (
+        <div style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border)", borderRadius: 14, overflow: "hidden", marginTop: 16 }}>
+          <ReviewQueueTab
+            rows={reviewQueue}
+            loading={reviewQueueLoading}
+            onApprove={handleApprove}
+            onReject={handleReject}
           />
-        ))}
-      </div>
+        </div>
+      ) : (
+        /* ── Post cards ── */
+        <div>
+          {MOCK_POSTS.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              reviewAction={reviewActions[post.id]}
+              onReviewSelect={handleReviewSelect}
+            />
+          ))}
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 28, right: 28, zIndex: 2000, background: "var(--rf-bg2)", border: "1px solid var(--rf-green)", color: "var(--rf-green)", padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}>
+          ✓ {toast}
+        </div>
+      )}
     </div>
   );
 }

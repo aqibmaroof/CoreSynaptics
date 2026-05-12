@@ -26,7 +26,7 @@ const SECTIONS = [
     items: [
       { icon: "▤", title: "Dashboard", href: "/" },
       { icon: "✓", title: "My Work", href: "/MyAssignments" },
-      { icon: "✉", title: "Communications", href: "/CxAnnouncements" },
+      { icon: "✉", title: "Communications", href: "/Communications" },
     ],
   },
   {
@@ -37,13 +37,13 @@ const SECTIONS = [
       { icon: "⚙", title: "Equipment", href: "/Assets/List" },
       { icon: "⌚", title: "Schedule", href: "/Schedule" },
       { icon: "✦", title: "Site Access (TARF)", href: "/CxTARF" },
-      { icon: "⚠", title: "Issues", href: "/CxIssues" },
+      { icon: "⚠", title: "Issues", href: "/Issues/List" },
     ],
   },
   {
     label: "Commissioning · GC QA/QC",
     items: [
-      { icon: "≡", title: "Cx Score", href: "/CxScore" },
+      { icon: "≡", title: "Commissioning Score", href: "/CxScore" },
       { icon: "▣", title: "Test Results", href: "/Commissioning/Tests" },
       { icon: "✿", title: "PSSR Inspections", href: "/PSSR" },
       { icon: "▲", title: "Risk Register", href: "/Risk" },
@@ -90,7 +90,10 @@ export default function CxLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const [user, setUser] = useState(null);
-  const [activeOrg, setActiveOrg] = useState({ name: "Active Project", code: "—" });
+  const [activeOrg, setActiveOrg] = useState({
+    name: "Active Project",
+    code: "—",
+  });
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [menu, setMenu] = useState(false);
@@ -136,9 +139,13 @@ export default function CxLayout({ children }) {
     <>
       {/* ── Top bar ──────────────────────────────────────────────────── */}
       <header className="cx-topbar">
-        <Link href="/" className="cx-tb-logo" style={{ textDecoration: "none" }}>
+        <Link
+          href="/"
+          className="cx-tb-logo"
+          style={{ textDecoration: "none" }}
+        >
           <div className="mark">CX</div>
-          <span className="name">CxControl</span>
+          <span className="name">CoreSynaptics</span>
         </Link>
 
         <div className="cx-tb-divider" />
@@ -151,8 +158,12 @@ export default function CxLayout({ children }) {
           style={{ padding: "5px 12px" }}
         >
           <div style={{ lineHeight: 1.2, textAlign: "left" }}>
-            <div style={{ fontSize: 11, color: "var(--cx-text-muted)" }}>Project</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--cx-text)" }}>
+            <div style={{ fontSize: 11, color: "var(--cx-text-muted)" }}>
+              Project
+            </div>
+            <div
+              style={{ fontSize: 13, fontWeight: 600, color: "var(--cx-text)" }}
+            >
               {activeOrg.name}
             </div>
           </div>
@@ -194,9 +205,13 @@ export default function CxLayout({ children }) {
                       }`.trim() || user.email
                     : "Sign in"}
                 </div>
-                <div className="rl">{user?.role ?? user?.platformRole ?? ""}</div>
+                <div className="rl">
+                  {user?.role ?? user?.platformRole ?? ""}
+                </div>
               </div>
-              <span style={{ color: "var(--cx-text-muted)", fontSize: 10 }}>▾</span>
+              <span style={{ color: "var(--cx-text-muted)", fontSize: 10 }}>
+                ▾
+              </span>
             </button>
             {menu && (
               <div
@@ -263,13 +278,13 @@ export default function CxLayout({ children }) {
           {SECTIONS.map((sec) => (
             <div key={sec.label} className="cx-side-section">
               <div className="label">{sec.label}</div>
-              {sec.items.map((item) => {
+              {sec.items.map((item, index) => {
                 const active =
                   pathname === item.href ||
                   (item.href !== "/" && pathname.startsWith(item.href));
                 return (
-                  <Link
-                    key={item.href}
+                  <a
+                    key={index}
                     href={item.href}
                     className={`cx-nav-item${active ? " active" : ""}`}
                   >
@@ -284,7 +299,7 @@ export default function CxLayout({ children }) {
                         {item.badge}
                       </span>
                     ) : null}
-                  </Link>
+                  </a>
                 );
               })}
             </div>

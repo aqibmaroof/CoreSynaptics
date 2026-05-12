@@ -100,3 +100,68 @@ export const ISSUE_KIND_COLORS = {
   NCR: "bg-red-500/20 text-red-300 border-red-500/30",
   SNAG: "bg-orange-500/20 text-orange-300 border-orange-500/30",
 };
+
+// ── PR-A: NCR sub-status state machine ───────────────────────────────────────
+
+/** Ordered NCR inner lifecycle steps. */
+export const NCR_SUB_STATUSES = [
+  "DRAFT",
+  "UNDER_REVIEW",
+  "NCR_NUMBER_ASSIGNED",
+  "DISPOSITION_ISSUED",
+  "CAR_OPEN",
+  "READY_FOR_NCR_CLOSE",
+];
+
+export const NCR_SUB_STATUS_LABELS = {
+  DRAFT: "Draft",
+  UNDER_REVIEW: "Under Review",
+  NCR_NUMBER_ASSIGNED: "NCR # Assigned",
+  DISPOSITION_ISSUED: "Disposition Issued",
+  CAR_OPEN: "CAR Open",
+  READY_FOR_NCR_CLOSE: "Ready to Close",
+};
+
+/** Move NCR from DRAFT → UNDER_REVIEW */
+export const beginNcrReview = async (id) =>
+  sendRequest({ url: `/issues/${id}/ncr/begin-review`, method: "POST" });
+
+/** Assign NCR number: UNDER_REVIEW → NCR_NUMBER_ASSIGNED
+ *  payload: { ncrNumber: string }
+ */
+export const assignNcrNumber = async (id, payload) =>
+  sendRequest({ url: `/issues/${id}/ncr/assign-number`, method: "PATCH", data: payload });
+
+/** Record disposition: NCR_NUMBER_ASSIGNED → DISPOSITION_ISSUED
+ *  payload: { disposition: "USE_AS_IS"|"REWORK"|"REJECT"|"REPAIR", dispositionNote?: string }
+ */
+export const setDisposition = async (id, payload) =>
+  sendRequest({ url: `/issues/${id}/ncr/set-disposition`, method: "POST", data: payload });
+
+/** Issue CAR: DISPOSITION_ISSUED → CAR_OPEN
+ *  payload: { carNumber: string, carDueDate: ISO8601 }
+ */
+export const issueCar = async (id, payload) =>
+  sendRequest({ url: `/issues/${id}/ncr/issue-car`, method: "POST", data: payload });
+
+/** Mark CAR resolved, ready for final NCR close: CAR_OPEN → READY_FOR_NCR_CLOSE */
+export const readyNcrForVerification = async (id) =>
+  sendRequest({ url: `/issues/${id}/ncr/ready-close`, method: "POST" });
+
+// ── PR-A: Hold Point / Witness Point coordination ────────────────────────────
+
+/** Set or update scheduled inspection date.
+ *  payload: { scheduledAt: ISO8601 }
+ */
+export const updateHoldPointSchedule = async (id, payload) =>
+  sendRequest({ url: `/issues/${id}/hold-point/schedule`, method: "PATCH", data: payload });
+
+/** Send notification to notifyCompanyId that hold point is ready for inspection. */
+export const notifyHoldPoint = async (id) =>
+  sendRequest({ url: `/issues/${id}/hold-point/notify`, method: "POST" });
+
+/** Record inspection complete and release hold.
+ *  payload: { completedNote?: string }
+ */
+export const completeHoldPoint = async (id, payload = {}) =>
+  sendRequest({ url: `/issues/${id}/hold-point/complete`, method: "POST", data: payload });

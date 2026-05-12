@@ -1,460 +1,588 @@
-// containers/Layout/index.jsx
 "use client";
-import Sidebar from "../../components/sidebar";
-import { FaBell, FaMoon, FaSun } from "react-icons/fa";
+
+// CxLayout — application shell mirroring cxcontrol_v2.html exactly:
+//   · 56px sticky topbar with logo mark (CX), project picker, search, bell, avatar
+//   · 240px sticky left sidebar with section labels, nav items, badges
+//   · You-panel summarising the signed-in user
+// Uses the .cx-* helper classes defined in app/globals.css.
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  FiBriefcase,
-  FiChevronDown,
-  FiPower,
-  FiSearch,
-  FiSettings,
-  FiUser,
-} from "react-icons/fi";
-import config from "../../config";
-import { useEffect, useState } from "react";
-import {
-  clearTokens,
   getAccessToken,
-} from "../../services/instance/tokenService";
-import { useParams, usePathname, useRouter } from "next/navigation";
-import { getUser } from "../../services/instance/tokenService";
+  getUser,
+  clearTokens,
+} from "@/services/instance/tokenService";
 import { Logout } from "@/services/auth";
 
-// Map pathnames to page titles
-const PAGE_TITLES = {
-  "/": "Dashboard",
-  "/Managers/List": "Project Managers",
-  "/Warehouse/List": "Warehouse",
-  "/Sales/List": "Sales",
-  "/QA/QC": "QA / QC",
-  "/FSEs": "FSEs",
-  "/Safety": "Safety",
-  "/Settings": "Settings",
-  "/UserProfile": "My Profile",
-  "/CreateProject": "Create Project",
-  "/ProjectDetails": "Project Details",
-  "/Shipment/Dashboard": "Shipment",
-  "/OEM/Dashboard": "OEM Dashboard",
-  "/Dispatch/Dashboard": "FSM Dashboard",
-  "/Field/Dashboard": "Field Dashboard",
-  "/QAQC/Dashboard": "QA/QC Dashboard",
+// ─── Sidebar nav (mirrors HTML sidebar order) ────────────────────────────
+// Each section is a { label, items: [{ icon, title, href, badge?, badgeKind? }] }
+// Role gating is handled at the page level; Cx commissioning routes are
+// universally addressable but the action UIs surface what each user can act on.
+const SECTIONS = [
+  {
+    label: "Workspace",
+    items: [
+      { icon: "▤", title: "Dashboard", href: "/" },
+      { icon: "✓", title: "My Work", href: "/MyAssignments" },
+      { icon: "✉", title: "Announcements", href: "/Announcements" },
+      { icon: "✉", title: "Chat", href: "/Chat" },
+      { icon: "◑", title: "Portfolio", href: "/Portfolio" },
+      { icon: "✉", title: "Analytics", href: "/Analytics" },
+    ],
+  },
+  {
+    label: "Project",
+    items: [
+      { icon: "◳", title: "Overview", href: "/ProjectOverview" },
+      { icon: "▦", title: "Companies", href: "/Company/List" },
+      { icon: "⚙", title: "Equipment", href: "/Assets/List" },
+      { icon: "⌚", title: "Schedule", href: "/ScheduleMilestones/List" },
+      { icon: "✦", title: "Site Access (TARF)", href: "/CxTARF" },
+      { icon: "⚠", title: "Issues", href: "/Issues/List" },
+      { icon: "⛓", title: "Dependencies", href: "/Dependencies" },
+    ],
+  },
+  {
+    label: "Commissioning · GC QA/QC",
+    items: [
+      { icon: "≡", title: "Commissioning Score", href: "/CxScore" },
+      { icon: "▣", title: "Test Results", href: "/Commissioning/Tests" },
+      { icon: "✿", title: "PSSR Inspections", href: "/PSSR" },
+      { icon: "▲", title: "Risk Register", href: "/Risk" },
+      { icon: "◎", title: "Readiness", href: "/Readiness" },
+      { icon: "⇄", title: "Training Simulator", href: "/TrainingSim" },
+    ],
+  },
+  {
+    label: "Quality & Workflow",
+    items: [
+      { icon: "✓", title: "Checklists", href: "/Checklist/List" },
+      { icon: "❑", title: "RFIs", href: "/RFI/List" },
+      { icon: "⊟", title: "Submittals", href: "/Submittals/List" },
+      { icon: "⇄", title: "Change Requests", href: "/ChangeRequests" },
+    ],
+  },
+  {
+    label: "Field & Daily Ops",
+    items: [
+      { icon: "☰", title: "Tasks", href: "/Tasks/List" },
+      { icon: "📋", title: "Daily Reports", href: "/DailyReports" },
+      {
+        icon: "👥",
+        title: "Crew Dispatch",
+        href: "/CrewDispatch",
+      },
+      { icon: "📅", title: "Meetings", href: "/Meeting/List" },
+    ],
+  },
+  {
+    label: "Supply & Finance",
+    items: [
+      { icon: "📦", title: "Inventory", href: "/Inventory/Products/List" },
+      { icon: "🚚", title: "Shipments", href: "/Shipments/List" },
+      { icon: "$", title: "Finance", href: "/Finance/Billing" },
+    ],
+  },
+  {
+    label: "Admin",
+    items: [
+      { icon: "⚙", title: "Settings", href: "/Settings" },
+      { icon: "🛡", title: "Roles & Permissions", href: "/Roles/List" },
+      { icon: "👤", title: "Users", href: "/Users/List" },
+    ],
+  },
+];
+
+// ─── Project switcher data ────────────────────────────────────────────────
+const PROJECTS = [
+  {
+    id: "p1",
+    code: "MSFT-DC1",
+    name: "Microsoft Atlanta Expansion",
+    client: "Microsoft",
+    location: "Atlanta, GA",
+    phase: "L3",
+    pct: 64,
+  },
+  {
+    id: "p2",
+    code: "QTS-IRV-3",
+    name: "QTS Irving Phase 3",
+    client: "QTS Realty",
+    location: "Irving, TX",
+    phase: "L4",
+    pct: 88,
+  },
+  {
+    id: "p3",
+    code: "CRWV-CHI",
+    name: "CoreWeave Chicago Build",
+    client: "CoreWeave",
+    location: "Chicago, IL",
+    phase: "L2",
+    pct: 28,
+  },
+  {
+    id: "p4",
+    code: "CRS0-RN0",
+    name: "Crusoe Reno Pod-1",
+    client: "Crusoe",
+    location: "Reno, NV",
+    phase: "L3",
+    pct: 52,
+  },
+  {
+    id: "p5",
+    code: "GLXY-DAL",
+    name: "Galaxy Dallas Hyperscale",
+    client: "Galaxy",
+    location: "Dallas, TX",
+    phase: "L1",
+    pct: 8,
+  },
+];
+
+const PHASE_STYLE = {
+  L1: { bg: "rgba(239,68,68,0.18)", color: "#b91c1c" },
+  L2: { bg: "rgba(245,158,11,0.18)", color: "#b45309" },
+  L3: { bg: "rgba(34,197,94,0.18)", color: "#15803d" },
+  L4: { bg: "rgba(99,102,241,0.18)", color: "#4338ca" },
+  L5: { bg: "rgba(148,163,184,0.18)", color: "#475569" },
 };
 
-// Mock companies for account/company switcher (replace with API when available)
-const COMPANIES = [
-  { id: 1, name: "Apex Contractors", role: "GC Admin" },
-  { id: 2, name: "OEM Solutions Inc.", role: "OEM PM" },
-  { id: 3, name: "BuildRight Corp", role: "Superintendent" },
-];
-
-// Quick-nav tabs shown on main dashboard
-const DASH_TABS = [
-  { label: "Issues", path: "/Issues/List" },
-  { label: "Schedule", path: "/Shipment/Dashboard" },
-  { label: "OEM", path: "/OEM/Dashboard" },
-  { label: "Team", path: "/Teams/List" },
-];
-
-const Layout = ({ children }) => {
+// ─── Default export ──────────────────────────────────────────────────────
+export default function CxLayout({ children }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const params = useParams();
+  const pathname = usePathname() ?? "/";
+  const [user, setUser] = useState(null);
+  const [activeOrg, setActiveOrg] = useState({
+    name: "Active Project",
+    code: "—",
+  });
+  const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [theme, setTheme] = useState("light");
-  const [activeCompanyId, setActiveCompanyId] = useState(COMPANIES[0].id);
-  const user = JSON.parse(getUser());
-  const activeCompany = COMPANIES.find((c) => c.id === activeCompanyId) ?? COMPANIES[0];
-
-  const pageTitle =
-    PAGE_TITLES[pathname] ??
-    (pathname.startsWith("/Profile/Managers/")
-      ? "Project Manager Profile"
-      : "Dashboard");
-
-  const isDashboard = pathname === "/" || pathname === "/OEM/Dashboard";
+  const [menu, setMenu] = useState(false);
+  const [projectOpen, setProjectOpen] = useState(false);
+  const [activeProject, setActiveProject] = useState(PROJECTS[0]);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") || "light";
-    setTheme(savedTheme);
-    document.documentElement.setAttribute("data-theme", savedTheme);
-  }, []);
+    if (!getAccessToken()) {
+      router.replace("/Auth/Login");
+      return;
+    }
+    try {
+      const u = JSON.parse(getUser() ?? "null");
+      if (u) setUser(u);
+    } catch {
+      /* ignore */
+    }
+  }, [router]);
 
-  useEffect(() => {
-    if (!getAccessToken()) router.replace("/Auth/Login");
-  }, []);
+  const initials = useMemo(() => {
+    if (!user) return "U";
+    const first = user.firstName ?? user.first_name ?? "";
+    const last = user.lastName ?? user.last_name ?? "";
+    const seed = `${first} ${last}`.trim() || user.email || "User";
+    return seed
+      .split(/\s+/)
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  }, [user]);
 
   const handleLogout = async () => {
     try {
-      await Logout();
-      clearTokens();
-      router.push("/Auth/Login");
-    } catch (error) {
-      console.error("Logout failed:", error);
+      await Logout?.();
+    } catch {
+      /* ignore — proceed to clear tokens regardless */
     }
+    clearTokens();
+    router.replace("/Auth/Login");
   };
-
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
-    window.location.reload();
-  };
-
-  const isDark = theme === "dark";
 
   return (
-    <div
-      className="flex flex-col min-h-screen"
-      style={{ background: "var(--rf-bg)" }}
-    >
-      <div className="flex flex-1 overflow-hidden">
-        {/* ── Sidebar ─────────────────────────────────────────────── */}
-        <aside
-          className="w-74 shrink-0 overflow-y-auto h-screen scrollbar-hide"
-          style={{
-            background: "var(--rf-bg2)",
-            borderRight: "1px solid var(--rf-border)",
-          }}
+    <>
+      {/* ── Top bar ──────────────────────────────────────────────────── */}
+      <header className="cx-topbar">
+        <Link
+          href="/"
+          className="cx-tb-logo"
+          style={{ textDecoration: "none" }}
         >
-          <Sidebar />
-        </aside>
+          <div className="mark">CX</div>
+          <span className="name">CoreSynaptics</span>
+        </Link>
 
-        {/* ── Main Content ────────────────────────────────────────── */}
-        <main
-          className="flex-1 overflow-y-auto h-screen scrollbar-hide"
-          style={{ background: "var(--rf-bg)" }}
-        >
-          {/* ── Top Navigation Bar ──────────────────────────────── */}
-          <div className="sticky top-0 z-20 px-5 pt-3 pb-0">
-            <div
-              className="flex items-center justify-between gap-3 w-full py-2 px-4 rounded-xl"
+        <div className="cx-tb-divider" />
+
+        {/* ── Project switcher ─────────────────────────────────────── */}
+        <div style={{ position: "relative" }}>
+          <button
+            type="button"
+            className="cx-tb-badge"
+            title="Switch project"
+            onClick={() => setProjectOpen((v) => !v)}
+            style={{ padding: "5px 12px" }}
+          >
+            <div style={{ lineHeight: 1.2, textAlign: "left" }}>
+              <div style={{ fontSize: 11, color: "var(--cx-text-muted)" }}>
+                Project
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "var(--cx-text)",
+                  whiteSpace: "nowrap",
+                  maxWidth: 260,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {activeProject.code} · {activeProject.name}
+              </div>
+            </div>
+            <span
               style={{
-                background: "var(--rf-bg2)",
-                border: "1px solid var(--rf-border)",
-                color: "var(--rf-txt)",
+                color: "var(--cx-text-muted)",
+                fontSize: 11,
+                marginLeft: 4,
               }}
             >
-              {/* Left: Title + dashboard tabs */}
-              <div className="flex items-center gap-4 min-w-0">
-                {/* Back arrow for detail pages */}
-                {(pathname.startsWith("/Profile/Managers/") ||
-                  pathname === "/CreateProject" ||
-                  pathname === "/ProjectDetails") && (
-                  <button
-                    onClick={() => router.back()}
-                    className={`p-1.5 rounded-lg transition-colors ${
-                      isDark
-                        ? "hover:bg-slate-700 text-slate-300"
-                        : "hover:bg-slate-200 text-slate-600"
-                    }`}
-                  >
-                    ←
-                  </button>
-                )}
+              ▾
+            </span>
+          </button>
 
-                <h1
-                  className="text-xl font-bold whitespace-nowrap"
-                  style={{ color: "var(--rf-txt)" }}
+          {projectOpen && (
+            <>
+              {/* backdrop */}
+              <div
+                style={{ position: "fixed", inset: 0, zIndex: 55 }}
+                onClick={() => setProjectOpen(false)}
+              />
+
+              {/* dropdown panel */}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: "calc(100% + 6px)",
+                  background: "var(--cx-surface)",
+                  border: "1px solid var(--cx-border)",
+                  borderRadius: 10,
+                  minWidth: 340,
+                  boxShadow: "0 12px 32px rgba(0,0,0,0.15)",
+                  zIndex: 60,
+                  overflow: "hidden",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* header */}
+                <div
+                  style={{
+                    padding: "10px 16px 8px",
+                    borderBottom: "1px solid var(--cx-border)",
+                  }}
                 >
-                  {pageTitle}
-                </h1>
-
-                {/* Quick-nav tabs (shown on dashboard) */}
-                {isDashboard && (
-                  <nav className="hidden md:flex items-center gap-1 ml-2">
-                    {DASH_TABS.map((tab) => (
-                      <button
-                        key={tab.label}
-                        onClick={() => router.push(tab.path)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                          pathname === tab.path
-                            ? isDark
-                              ? "bg-cyan-900/50 text-cyan-400 border border-cyan-800"
-                              : "bg-sky-100 text-sky-700 border border-sky-200"
-                            : isDark
-                              ? "text-slate-400 hover:text-slate-200 hover:bg-slate-700/60"
-                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-200/70"
-                        }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </nav>
-                )}
-              </div>
-
-              {/* Right: Search + controls */}
-              <div className="flex items-center gap-3 ml-auto">
-                {/* Search */}
-                <div className="relative hidden md:block">
-                  <FiSearch
-                    className="absolute top-1/2 -translate-y-1/2 left-3 text-base pointer-events-none"
-                    style={{ color: "var(--rf-txt3)" }}
-                  />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search..."
-                    className={`text-sm pl-9 pr-4 h-9 w-56 rounded-lg outline-none transition-all focus:w-72 ${
-                      isDark
-                        ? "bg-slate-800 border border-slate-700 text-slate-200 placeholder:text-slate-500 focus:border-cyan-700"
-                        : "bg-slate-100 border border-slate-200 text-slate-800 placeholder:text-slate-400 focus:border-sky-400"
-                    }`}
-                  />
-                </div>
-
-                {/* Company switcher */}
-                <div className="dropdown dropdown-end hidden md:block">
-                  <label
-                    tabIndex={0}
-                    className={`flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium cursor-pointer border transition-all select-none ${
-                      isDark
-                        ? "bg-slate-800 border-slate-700 text-slate-200 hover:border-cyan-700"
-                        : "bg-slate-100 border-slate-200 text-slate-800 hover:border-sky-400"
-                    }`}
-                  >
-                    <FiBriefcase
-                      className="text-base shrink-0"
-                      style={{ color: "var(--rf-accent)" }}
-                    />
-                    <span className="max-w-[120px] truncate">
-                      {activeCompany.name}
-                    </span>
-                    <FiChevronDown
-                      className="text-xs shrink-0 opacity-50"
-                    />
-                  </label>
-
-                  <ul
-                    tabIndex={0}
-                    className="mt-3 z-[50] p-2 shadow-xl menu menu-sm dropdown-content rounded-xl w-60"
+                  <span
                     style={{
-                      background: "var(--rf-bg2)",
-                      border: "1px solid var(--rf-border2)",
+                      fontSize: 10,
+                      fontWeight: 800,
+                      color: "var(--cx-text-muted)",
+                      letterSpacing: "0.07em",
+                      textTransform: "uppercase",
                     }}
                   >
-                    <li className="px-2 pb-1 pointer-events-none">
-                      <span
-                        className="text-[10px] uppercase tracking-widest font-semibold"
-                        style={{ color: "var(--rf-txt3)" }}
+                    SWITCH PROJECT · {PROJECTS.length} ACTIVE
+                  </span>
+                </div>
+
+                {/* project rows */}
+                {PROJECTS.map((p) => {
+                  const ps = PHASE_STYLE[p.phase] || PHASE_STYLE.L1;
+                  const isActive = p.id === activeProject.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveProject(p);
+                        setProjectOpen(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        width: "100%",
+                        padding: "10px 16px",
+                        border: "none",
+                        cursor: "pointer",
+                        background: isActive
+                          ? "var(--cx-bg-soft)"
+                          : "transparent",
+                        textAlign: "left",
+                        transition: "background 0.12s",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive)
+                          e.currentTarget.style.background =
+                            "var(--cx-bg-soft)";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive)
+                          e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      {/* Phase badge */}
+                      <div
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 8,
+                          flexShrink: 0,
+                          background: ps.bg,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
                       >
-                        Switch Company
-                      </span>
-                    </li>
-                    {COMPANIES.map((company) => {
-                      const isActive = company.id === activeCompanyId;
-                      return (
-                        <li
-                          key={company.id}
-                          onClick={() => setActiveCompanyId(company.id)}
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 800,
+                            color: ps.color,
+                            letterSpacing: "0.02em",
+                          }}
                         >
-                          <a
-                            className={`flex items-center gap-3 rounded-lg ${
-                              isActive
-                                ? isDark
-                                  ? "bg-cyan-900/20 text-cyan-400"
-                                  : "bg-sky-100 text-sky-700"
-                                : ""
-                            }`}
-                            style={{
-                              color: isActive ? undefined : "var(--rf-txt)",
-                            }}
-                          >
-                            <span
-                              className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold"
-                              style={{
-                                background: "color-mix(in srgb, var(--rf-accent) 15%, transparent)",
-                                color: "var(--rf-accent)",
-                              }}
-                            >
-                              {company.name.charAt(0)}
-                            </span>
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <span className="truncate font-medium text-[13px]">
-                                {company.name}
-                              </span>
-                              <span
-                                className="text-[10px] truncate"
-                                style={{ color: "var(--rf-txt3)" }}
-                              >
-                                {company.role}
-                              </span>
-                            </div>
-                            {isActive && (
-                              <span
-                                className="text-xs shrink-0"
-                                style={{ color: "var(--rf-accent)" }}
-                              >
-                                ✓
-                              </span>
-                            )}
-                          </a>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-
-                {/* Separator */}
-                <span
-                  className="hidden md:block w-px h-6 rounded-full"
-                  style={{ background: "var(--rf-border2)" }}
-                />
-
-                {/* Theme toggle */}
-                <button
-                  onClick={toggleTheme}
-                  className={`p-2 rounded-lg transition-all text-base ${
-                    isDark
-                      ? "text-slate-400 hover:text-amber-400 hover:bg-slate-700/60"
-                      : "text-slate-500 hover:text-amber-600 hover:bg-slate-200/70"
-                  }`}
-                  aria-label="Toggle theme"
-                >
-                  {isDark ? <FaSun /> : <FaMoon />}
-                </button>
-
-                {/* Bell */}
-                <button
-                  className={`relative p-2 rounded-lg transition-all text-base ${
-                    isDark
-                      ? "text-slate-400 hover:text-white hover:bg-slate-700/60"
-                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-200/70"
-                  }`}
-                >
-                  <FaBell />
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-red-500" />
-                </button>
-
-                {/* Separator */}
-                <span
-                  className="w-px h-6 rounded-full"
-                  style={{ background: "var(--rf-border2)" }}
-                />
-
-                {/* User dropdown */}
-                <div className="dropdown dropdown-end">
-                  <label
-                    tabIndex={0}
-                    className="btn btn-ghost hover:shadow-none focus:shadow-none active:shadow-none hover:bg-transparent focus:bg-transparent active:bg-transparent hover:border-transparent focus:border-transparent active:border-transparent btn-circle avatar"
-                  >
-                    <div className="relative rounded-full flex items-center justify-center w-full">
-                      <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-offset-1 ring-offset-transparent ring-slate-600">
-                        <img
-                          src={
-                            config?.user_icon || "https://placehold.co/100x100"
-                          }
-                          className="w-full h-full object-cover"
-                          alt="user"
-                        />
+                          {p.phase}
+                        </span>
                       </div>
-                      <span className="absolute bottom-0.5 right-[7px] w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
-                    </div>
-                  </label>
 
-                  <ul
-                    tabIndex={0}
-                    className="mt-3 z-[1] p-2 shadow-xl menu menu-sm dropdown-content rounded-xl w-60"
-                    style={{
-                      background: "var(--rf-bg2)",
-                      border: "1px solid var(--rf-border2)",
-                    }}
-                  >
-                    {/* User info */}
-                    <li className="flex items-center gap-3 p-2 mb-1">
-                      <div className="relative shrink-0">
-                        <div className="w-11 h-11 rounded-full overflow-hidden">
-                          <img
-                            src={
-                              config?.user_icon ||
-                              "https://placehold.co/100x100"
-                            }
-                            className="w-full h-full object-cover"
-                            alt="user"
-                          />
+                      {/* Name + client/location */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: "var(--cx-text)",
+                            marginBottom: 1,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {p.name}
                         </div>
-                        <span className="absolute bottom-1 right-3 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "var(--cx-text-muted)",
+                          }}
+                        >
+                          {p.client} · {p.location}
+                        </div>
                       </div>
-                      <div className="flex flex-col text-left min-w-0">
-                        <span
-                          className="font-semibold text-[13px] truncate"
-                          style={{ color: "var(--rf-txt)" }}
+
+                      {/* Code + progress */}
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "var(--cx-text-muted)",
+                            fontFamily: "monospace",
+                            marginBottom: 1,
+                          }}
                         >
-                          {user?.firstName} {user?.lastName}
-                        </span>
-                        <span
-                          className="text-[11px] capitalize truncate"
-                          style={{ color: "var(--rf-txt2)" }}
+                          {p.code}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "var(--cx-text-muted)",
+                          }}
                         >
-                          {user?.organizationName?.replace(/_/g, " ") || ""}
-                        </span>
-                        <span
-                          className="text-[10px] capitalize truncate"
-                          style={{ color: "var(--rf-txt3)" }}
-                        >
-                          {user?.platformRole?.replace(/_/g, " ") ||
-                            user?.activeRole?.name?.replace(/_/g, " ")}
-                        </span>
+                          {p.pct}%
+                        </div>
                       </div>
-                    </li>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
 
-                    <div className="rf-divider my-0" />
+        <div className="cx-tb-search">
+          <input
+            type="text"
+            placeholder="Search projects, assets, RFIs, checklists…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setSearchOpen(true)}
+            onBlur={() => setTimeout(() => setSearchOpen(false), 120)}
+            style={{ paddingLeft: 12 }}
+          />
+        </div>
 
-                    <li>
-                      <a
-                        href="/UserProfile"
-                        className={`text-sm gap-3 mt-1 rounded-lg ${
-                          pathname === "/UserProfile"
-                            ? isDark
-                              ? "bg-cyan-900/20 text-cyan-400"
-                              : "bg-sky-100 text-sky-700"
-                            : ""
-                        }`}
-                        style={{ color: "var(--rf-txt)" }}
-                      >
-                        <FiUser className="text-base shrink-0" /> My Profile
-                      </a>
-                    </li>
-                    <li>
-                      <a
-                        href="/Settings"
-                        className={`text-sm gap-3 mb-1 rounded-lg ${
-                          pathname === "/Settings"
-                            ? isDark
-                              ? "bg-cyan-900/20 text-cyan-400"
-                              : "bg-sky-100 text-sky-700"
-                            : ""
-                        }`}
-                        style={{ color: "var(--rf-txt)" }}
-                      >
-                        <FiSettings className="text-base shrink-0" /> Settings
-                      </a>
-                    </li>
-
-                    <div className="rf-divider my-0" />
-
-                    <li onClick={handleLogout}>
-                      <a
-                        className="text-sm gap-3 rounded-lg"
-                        style={{ color: "var(--rf-red)" }}
-                      >
-                        <FiPower className="text-base shrink-0" /> Log Out
-                      </a>
-                    </li>
-                  </ul>
+        <div className="cx-tb-user">
+          <button type="button" className="cx-tb-icon" title="Help">
+            ?
+          </button>
+          <button type="button" className="cx-tb-icon" title="Notifications">
+            🔔
+            <span className="cx-tb-bell-dot" />
+          </button>
+          <div style={{ position: "relative" }}>
+            <button
+              type="button"
+              className="cx-tb-badge"
+              onClick={() => setMenu((v) => !v)}
+            >
+              <div className="cx-tb-av">{initials}</div>
+              <div className="cx-tb-info">
+                <div className="nm">
+                  {user
+                    ? `${user.firstName ?? user.first_name ?? ""} ${
+                        user.lastName ?? user.last_name ?? ""
+                      }`.trim() || user.email
+                    : "Sign in"}
+                </div>
+                <div className="rl">
+                  {user?.role ?? user?.platformRole ?? ""}
                 </div>
               </div>
+              <span style={{ color: "var(--cx-text-muted)", fontSize: 10 }}>
+                ▾
+              </span>
+            </button>
+            {menu && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: "calc(100% + 6px)",
+                  background: "var(--cx-surface)",
+                  border: "1px solid var(--cx-border)",
+                  borderRadius: 8,
+                  minWidth: 180,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                  zIndex: 60,
+                  padding: 6,
+                }}
+              >
+                <MenuItem
+                  onClick={() => {
+                    setMenu(false);
+                    router.push("/UserProfile");
+                  }}
+                >
+                  My profile
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setMenu(false);
+                    router.push("/Settings");
+                  }}
+                >
+                  Settings
+                </MenuItem>
+                <div
+                  style={{
+                    borderTop: "1px solid var(--cx-border)",
+                    margin: "4px 0",
+                  }}
+                />
+                <MenuItem onClick={handleLogout}>Sign out</MenuItem>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ── Body: 240px sidebar + main ────────────────────────────────── */}
+      <div className="cx-layout">
+        <aside className="cx-sidebar">
+          <div className="cx-you">
+            <div className="lbl">Signed in</div>
+            <div className="name">
+              {user
+                ? `${user.firstName ?? user.first_name ?? ""} ${
+                    user.lastName ?? user.last_name ?? ""
+                  }`.trim() || user.email
+                : "—"}
+            </div>
+            <div className="role">
+              {user?.role ?? user?.platformRole ?? "Operator"}
             </div>
           </div>
 
-          {/* Page content */}
-          <div className="pb-8">{children}</div>
-        </main>
-      </div>
-    </div>
-  );
-};
+          {SECTIONS.map((sec) => (
+            <div key={sec.label} className="cx-side-section">
+              <div className="label">{sec.label}</div>
+              {sec.items.map((item) => {
+                const active =
+                  pathname === item.href ||
+                  (item.href !== "/" && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`cx-nav-item${active ? " active" : ""}`}
+                  >
+                    <span className="ic">{item.icon}</span>
+                    <span style={{ flex: 1 }}>{item.title}</span>
+                    {item.badge ? (
+                      <span
+                        className={`nav-badge${
+                          item.badgeKind ? ` ${item.badgeKind}` : ""
+                        }`}
+                      >
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </aside>
 
-export default Layout;
+        <main style={{ overflowX: "hidden", minWidth: 0 }}>{children}</main>
+      </div>
+    </>
+  );
+}
+
+function MenuItem({ onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        padding: "8px 10px",
+        fontSize: 13,
+        color: "var(--cx-text)",
+        background: "transparent",
+        border: 0,
+        borderRadius: 6,
+        cursor: "pointer",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--cx-bg-soft)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+      }}
+    >
+      {children}
+    </button>
+  );
+}

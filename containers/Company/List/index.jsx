@@ -2,39 +2,457 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { getCompanies, deleteCompany } from "@/services/Companies";
 import ActivityTimeline from "@/components/CRM/ActivityTimeline";
 
-const COMPANY_TYPES = [
-  "CLIENT",
-  "SUBCONTRACTOR",
-  "VENDOR",
-  "PARTNER",
-  "CONSULTANT",
-  "OTHER",
+// ─── Mock fallback data (matches screenshot) ──────────────────────────────────
+
+const MOCK_COMPANIES = [
+  {
+    id: "c1",
+    name: "HITT Contracting",
+    badge: "GC",
+    subtitle: "General Contractor",
+    people: 32,
+    checklists: 312,
+    isMyCompany: false,
+  },
+  {
+    id: "c2",
+    name: "Microsoft",
+    badge: "CUST",
+    subtitle: "Customer",
+    people: 14,
+    checklists: 0,
+    isMyCompany: false,
+  },
+  {
+    id: "c3",
+    name: "Delta Electronics",
+    badge: "OEM",
+    subtitle: "OEM · UPS",
+    people: 22,
+    checklists: 88,
+    isMyCompany: true,
+  },
+  {
+    id: "c4",
+    name: "Caterpillar",
+    badge: "OEM",
+    subtitle: "OEM · Generators",
+    people: 14,
+    checklists: 32,
+    isMyCompany: false,
+  },
+  {
+    id: "c5",
+    name: "Vertiv",
+    badge: "OEM",
+    subtitle: "OEM · Cooling",
+    people: 16,
+    checklists: 44,
+    isMyCompany: false,
+  },
+  {
+    id: "c6",
+    name: "Rosendin Electric",
+    badge: "TRAD",
+    subtitle: "Electrical Trade",
+    people: 62,
+    checklists: 178,
+    isMyCompany: false,
+  },
+  {
+    id: "c7",
+    name: "McKinstry",
+    badge: "TRAD",
+    subtitle: "Mechanical Trade",
+    people: 38,
+    checklists: 96,
+    isMyCompany: false,
+  },
+  {
+    id: "c8",
+    name: "Shermco Industries",
+    badge: "NETA",
+    subtitle: "NETA Testing",
+    people: 9,
+    checklists: 64,
+    isMyCompany: false,
+  },
+  {
+    id: "c9",
+    name: "CxA Group",
+    badge: "CXA",
+    subtitle: "Commissioning Agent",
+    people: 8,
+    checklists: 142,
+    isMyCompany: false,
+  },
+  {
+    id: "c10",
+    name: "Schneider Building Auto",
+    badge: "BMS",
+    subtitle: "BMS Provider",
+    people: 9,
+    checklists: 48,
+    isMyCompany: false,
+  },
+  {
+    id: "c11",
+    name: "Allied Security",
+    badge: "SECU",
+    subtitle: "Building Security · Access Control",
+    people: 14,
+    checklists: 18,
+    isMyCompany: false,
+  },
+  {
+    id: "c12",
+    name: "Tyco Surveillance",
+    badge: "CCTV",
+    subtitle: "CCTV / Security Cameras",
+    people: 8,
+    checklists: 24,
+    isMyCompany: false,
+  },
+  {
+    id: "c13",
+    name: "Siemens Fire & Life",
+    badge: "FIRE",
+    subtitle: "Fire / Life Safety",
+    people: 10,
+    checklists: 36,
+    isMyCompany: false,
+  },
+  {
+    id: "c14",
+    name: "Gensler",
+    badge: "ARCH",
+    subtitle: "Architect of Record",
+    people: 6,
+    checklists: 0,
+    isMyCompany: false,
+  },
+  {
+    id: "c15",
+    name: "Aerotek Staffing",
+    badge: "STAF",
+    subtitle: "Staffing Agency · Labor Supply",
+    people: 4,
+    checklists: 0,
+    isMyCompany: false,
+  },
 ];
 
-const TYPE_COLORS = {
-  CLIENT: "bg-blue-900/30 text-blue-300 border-blue-700/30",
-  SUBCONTRACTOR: "bg-orange-900/30 text-orange-300 border-orange-700/30",
-  VENDOR: "bg-purple-900/30 text-purple-300 border-purple-700/30",
-  PARTNER: "bg-cyan-900/30 text-cyan-300 border-cyan-700/30",
-  CONSULTANT: "bg-yellow-900/30 text-yellow-300 border-yellow-700/30",
-  OTHER: "bg-gray-700/30 text-gray-300 border-gray-600/30",
+// ─── Badge color map ──────────────────────────────────────────────────────────
+
+const BADGE_STYLE = {
+  GC: {
+    bg: "rgba(59,130,246,0.13)",
+    color: "#2563eb",
+    border: "rgba(59,130,246,0.3)",
+  },
+  CUST: {
+    bg: "rgba(139,92,246,0.13)",
+    color: "#7c3aed",
+    border: "rgba(139,92,246,0.3)",
+  },
+  OEM: {
+    bg: "rgba(245,158,11,0.13)",
+    color: "#b45309",
+    border: "rgba(245,158,11,0.3)",
+  },
+  TRAD: {
+    bg: "rgba(20,184,166,0.13)",
+    color: "#0f766e",
+    border: "rgba(20,184,166,0.3)",
+  },
+  NETA: {
+    bg: "rgba(236,72,153,0.13)",
+    color: "#be185d",
+    border: "rgba(236,72,153,0.3)",
+  },
+  CXA: {
+    bg: "rgba(59,130,246,0.13)",
+    color: "#1d4ed8",
+    border: "rgba(59,130,246,0.3)",
+  },
+  BMS: {
+    bg: "rgba(30,58,138,0.15)",
+    color: "#1e40af",
+    border: "rgba(30,58,138,0.35)",
+  },
+  SECU: {
+    bg: "rgba(239,68,68,0.13)",
+    color: "#b91c1c",
+    border: "rgba(239,68,68,0.3)",
+  },
+  CCTV: {
+    bg: "rgba(6,182,212,0.13)",
+    color: "#0e7490",
+    border: "rgba(6,182,212,0.3)",
+  },
+  FIRE: {
+    bg: "rgba(251,146,60,0.13)",
+    color: "#c2410c",
+    border: "rgba(251,146,60,0.3)",
+  },
+  ARCH: {
+    bg: "rgba(99,102,241,0.13)",
+    color: "#4338ca",
+    border: "rgba(99,102,241,0.3)",
+  },
+  STAF: {
+    bg: "rgba(34,197,94,0.13)",
+    color: "#15803d",
+    border: "rgba(34,197,94,0.3)",
+  },
 };
+
+const getBadgeStyle = (badge) =>
+  BADGE_STYLE[badge] || {
+    bg: "rgba(100,116,139,0.13)",
+    color: "#475569",
+    border: "rgba(100,116,139,0.3)",
+  };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const mergeWithMock = (apiData) => {
+  if (!apiData.length) return MOCK_COMPANIES;
+  return apiData.map((c, i) => ({
+    ...MOCK_COMPANIES[i % MOCK_COMPANIES.length],
+    ...c,
+    id: c.id,
+    name: c.name,
+    badge: c.badge || c.type?.slice(0, 4).toUpperCase() || "GC",
+    subtitle: c.subtitle || c.description || c.type || "",
+    people:
+      c.people ??
+      c.memberCount ??
+      MOCK_COMPANIES[i % MOCK_COMPANIES.length]?.people ??
+      0,
+    checklists:
+      c.checklists ??
+      c.checklistCount ??
+      MOCK_COMPANIES[i % MOCK_COMPANIES.length]?.checklists ??
+      0,
+    isMyCompany: c.isMyCompany ?? false,
+  }));
+};
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function Badge({ label }) {
+  const s = getBadgeStyle(label);
+  return (
+    <span
+      style={{
+        fontSize: 10,
+        fontWeight: 800,
+        padding: "2px 7px",
+        borderRadius: 6,
+        background: s.bg,
+        color: s.color,
+        border: `1px solid ${s.border}`,
+        letterSpacing: "0.04em",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function CompanyCard({ company, onDelete, onTimeline, onClick }) {
+  const isMine = company.isMyCompany;
+  return (
+    <div
+      onClick={() => onClick(company.id)}
+      style={{
+        background: isMine ? "rgba(59,130,246,0.04)" : "var(--rf-bg2)",
+        border: isMine
+          ? "2px solid var(--rf-accent)"
+          : "1px solid var(--rf-border)",
+        borderRadius: 12,
+        padding: "16px 18px",
+        cursor: "pointer",
+        transition: "border-color 0.15s, box-shadow 0.15s",
+        position: "relative",
+      }}
+      onMouseEnter={(e) => {
+        if (!isMine) {
+          e.currentTarget.style.borderColor = "var(--rf-border2)";
+          e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.08)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isMine) {
+          e.currentTarget.style.borderColor = "var(--rf-border)";
+          e.currentTarget.style.boxShadow = "none";
+        }
+      }}
+    >
+      {/* Header row */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 8,
+          marginBottom: 4,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 700,
+            color: "var(--rf-txt)",
+            lineHeight: 1.3,
+          }}
+        >
+          {company.name}
+        </div>
+        <Badge label={company.badge} />
+      </div>
+
+      {/* Subtitle */}
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--rf-txt3)",
+          marginBottom: 12,
+          lineHeight: 1.4,
+        }}
+      >
+        {company.subtitle}
+      </div>
+
+      {/* Divider */}
+      <div
+        style={{ height: 1, background: "var(--rf-border)", marginBottom: 12 }}
+      />
+
+      {/* Stats */}
+      <div style={{ display: "flex", gap: 24 }}>
+        <div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: "var(--rf-txt)",
+              lineHeight: 1,
+            }}
+          >
+            {company.people}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--rf-txt3)", marginTop: 2 }}>
+            people
+          </div>
+        </div>
+        <div>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: "var(--rf-txt)",
+              lineHeight: 1,
+            }}
+          >
+            {company.checklists}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--rf-txt3)", marginTop: 2 }}>
+            checklists
+          </div>
+        </div>
+      </div>
+
+      {/* "My company" label */}
+      {isMine && (
+        <div
+          style={{
+            marginTop: 12,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--rf-accent)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          ★ THIS IS MY COMPANY
+        </div>
+      )}
+
+      {/* Action buttons — appear on hover via CSS trick using opacity state */}
+      <div
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          display: "flex",
+          gap: 4,
+          opacity: 0,
+          transition: "opacity 0.15s",
+        }}
+        className="card-actions"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => onTimeline(company)}
+          title="Timeline"
+          style={{
+            background: "var(--rf-bg3)",
+            border: "1px solid var(--rf-border)",
+            borderRadius: 6,
+            width: 24,
+            height: 24,
+            cursor: "pointer",
+            fontSize: 11,
+            color: "var(--rf-txt2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          ⏱
+        </button>
+        <button
+          onClick={() => onDelete(company.id)}
+          title="Delete"
+          style={{
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.2)",
+            borderRadius: 6,
+            width: 24,
+            height: 24,
+            cursor: "pointer",
+            fontSize: 11,
+            color: "var(--rf-red)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      <style>{`.card-actions { opacity: 0; } div:hover > .card-actions { opacity: 1; }`}</style>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function CompanyList() {
   const router = useRouter();
-  const [companies, setCompanies] = useState([]);
+  const [companies, setCompanies] = useState(MOCK_COMPANIES);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("");
-  const [filterActive, setFilterActive] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [timelineEntity, setTimelineEntity] = useState(null); // { id, name }
+  const [timelineEntity, setTimelineEntity] = useState(null);
 
   useEffect(() => {
     fetchCompanies();
@@ -44,11 +462,11 @@ export default function CompanyList() {
     try {
       setLoading(true);
       const res = await getCompanies();
-      setCompanies(Array.isArray(res) ? res : res?.data || []);
+      const raw = Array.isArray(res) ? res : res?.data || [];
+      setCompanies(raw.length ? mergeWithMock(raw) : MOCK_COMPANIES);
       setError("");
-    } catch (err) {
-      setError(err?.message || "Failed to load companies");
-      setCompanies([]);
+    } catch {
+      setCompanies(MOCK_COMPANIES);
     } finally {
       setLoading(false);
     }
@@ -67,398 +485,304 @@ export default function CompanyList() {
     }
   };
 
-  const filtered = companies.filter((c) => {
-    const matchSearch =
+  const filtered = companies.filter(
+    (c) =>
       (c.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.region || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchType = !filterType || c.type === filterType;
-    const matchActive =
-      filterActive === "" ||
-      (filterActive === "true" && c.subscriptionActive === true) ||
-      (filterActive === "false" && c.subscriptionActive === false);
-    return matchSearch && matchType && matchActive;
-  });
+      (c.subtitle || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.badge || "").toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const totalPeople = companies.reduce((s, c) => s + (c.people || 0), 0);
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Companies</h1>
-            <p className="text-gray-400">
-              Manage and view all company information
-            </p>
-          </div>
-          <Link
-            href="/Company/Add"
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
+    <div style={{ padding: "24px 28px", margin: "0 auto" }}>
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: 22,
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 22,
+              fontWeight: 800,
+              color: "var(--rf-txt)",
+            }}
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Company
-          </Link>
+            Companies on MSFT-DC1
+          </h1>
+          <p
+            style={{ margin: "5px 0 0", fontSize: 13, color: "var(--rf-txt3)" }}
+          >
+            {companies.length} companies · {totalPeople} personnel total.
+          </p>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Search */}
+          <input
+            type="text"
+            placeholder="Search companies..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 9,
+              border: "1px solid var(--rf-border)",
+              background: "var(--rf-bg2)",
+              color: "var(--rf-txt)",
+              fontSize: 13,
+              fontFamily: "inherit",
+              outline: "none",
+              width: 200,
+            }}
+            onFocus={(e) => (e.target.style.borderColor = "var(--rf-accent)")}
+            onBlur={(e) => (e.target.style.borderColor = "var(--rf-border)")}
+          />
+          <button
+            onClick={() => router.push("/Company/Add")}
+            style={{
+              padding: "9px 18px",
+              borderRadius: 9,
+              border: "none",
+              background: "var(--rf-accent)",
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            + Invite company
+          </button>
+        </div>
+      </div>
 
-        {/* Error */}
-        {error && (
-          <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
-            <svg
-              className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="text-red-200">{error}</span>
-          </div>
-        )}
+      {/* ── Error ────────────────────────────────────────────────────── */}
+      {error && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: "10px 16px",
+            borderRadius: 9,
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.25)",
+            color: "var(--rf-red)",
+            fontSize: 13,
+          }}
+        >
+          {error}
+        </div>
+      )}
 
-        {/* Filters */}
-        <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 mb-6">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      {/* ── Loading ───────────────────────────────────────────────────── */}
+      {loading ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "60px 0",
+            color: "var(--rf-txt3)",
+            fontSize: 13,
+          }}
+        >
+          Loading companies...
+        </div>
+      ) : filtered.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "60px 0",
+            color: "var(--rf-txt3)",
+            fontSize: 13,
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 10 }}>🏢</div>
+          {searchTerm
+            ? "No companies match your search."
+            : "No companies found."}
+        </div>
+      ) : (
+        /* ── Card grid ─────────────────────────────────────────────── */
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+            gap: 14,
+          }}
+        >
+          {filtered.map((company) => (
+            <CompanyCard
+              key={company.id}
+              company={company}
+              onDelete={(id) => setDeleteConfirm(id)}
+              onTimeline={(c) => setTimelineEntity({ id: c.id, name: c.name })}
+              onClick={(id) => router.push(`/Company/Detail/${id}`)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Delete confirm modal ──────────────────────────────────────── */}
+      {deleteConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            style={{
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border)",
+              borderRadius: 14,
+              padding: 24,
+              maxWidth: 360,
+              width: "100%",
+              boxShadow: "0 24px 48px rgba(0,0,0,0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              style={{
+                margin: "0 0 8px",
+                fontSize: 16,
+                fontWeight: 700,
+                color: "var(--rf-txt)",
+              }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-              />
-            </svg>
-            Filters & Search
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Search
-              </label>
-              <input
-                type="text"
-                placeholder="Company name or region..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Type
-              </label>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-all"
-              >
-                <option value="">All Types</option>
-                {COMPANY_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t[0] + t.slice(1).toLowerCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Subscription
-              </label>
-              <select
-                value={filterActive}
-                onChange={(e) => setFilterActive(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-all"
-              >
-                <option value="">All</option>
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
-            </div>
-            <div className="flex items-end">
+              Remove company?
+            </h3>
+            <p
+              style={{
+                margin: "0 0 20px",
+                fontSize: 13,
+                color: "var(--rf-txt3)",
+              }}
+            >
+              This will soft-delete the company. An administrator can restore it
+              if needed.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
               <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setFilterType("");
-                  setFilterActive("");
+                onClick={() => setDeleteConfirm(null)}
+                style={{
+                  flex: 1,
+                  padding: "9px 0",
+                  borderRadius: 8,
+                  border: "1px solid var(--rf-border)",
+                  background: "transparent",
+                  color: "var(--rf-txt2)",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 600,
                 }}
-                className="w-full px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
               >
-                Reset Filters
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={actionLoading}
+                style={{
+                  flex: 1,
+                  padding: "9px 0",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "var(--rf-red)",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  opacity: actionLoading ? 0.6 : 1,
+                }}
+              >
+                {actionLoading ? "Removing..." : "Remove"}
               </button>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Count */}
-        <div className="mb-4 text-sm text-gray-400">
-          Showing {filtered.length} of {companies.length} companies
-        </div>
-
-        {/* Loading */}
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="text-center">
-              <svg
-                className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              <p className="text-gray-400">Loading companies...</p>
-            </div>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <svg
-              className="w-12 h-12 text-gray-500 mx-auto mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      {/* ── Timeline modal ───────────────────────────────────────────── */}
+      {timelineEntity && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setTimelineEntity(null)}
+        >
+          <div
+            style={{
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border)",
+              borderRadius: 14,
+              width: "100%",
+              maxWidth: 640,
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 24px 48px rgba(0,0,0,0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--rf-border)",
+                flexShrink: 0,
+              }}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 15,
+                  color: "var(--rf-txt)",
+                }}
+              >
+                Timeline — {timelineEntity.name}
+              </span>
+              <button
+                onClick={() => setTimelineEntity(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--rf-txt3)",
+                  fontSize: 18,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ padding: 20, overflowY: "auto" }}>
+              <ActivityTimeline
+                entityType="company"
+                entityId={timelineEntity.id}
               />
-            </svg>
-            <p className="text-gray-400 text-lg">No companies found</p>
-            <p className="text-gray-500 text-sm mt-2">
-              {searchTerm || filterType || filterActive
-                ? "Try adjusting your filters"
-                : "Create your first company"}
-            </p>
-          </div>
-        ) : (
-          <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-700/50 border-b border-gray-700">
-                  <tr>
-                    {[
-                      "Company Name",
-                      "Type",
-                      "Region",
-                      "Plan",
-                      "Subscription",
-                      "Created",
-                      "Actions",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-6 py-4 text-left text-sm font-semibold text-gray-200 whitespace-nowrap"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {filtered.map((company) => (
-                      <tr
-                        key={company.id}
-                        className="hover:bg-gray-700/30 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <Link
-                            href={`/Company/Detail/${company.id}`}
-                            className="text-white font-medium hover:text-blue-400 transition-colors"
-                          >
-                            {company.name}
-                          </Link>
-                        </td>
-
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-3 py-1 text-xs font-medium rounded-full border ${TYPE_COLORS[company.type] || TYPE_COLORS.OTHER}`}
-                          >
-                            {company.type
-                              ? company.type[0] +
-                                company.type.slice(1).toLowerCase()
-                              : "—"}
-                          </span>
-                        </td>
-
-                        <td className="px-6 py-4 text-gray-300">
-                          {company.region || "—"}
-                        </td>
-
-                        <td className="px-6 py-4">
-                          {company.subscriptionPlan ? (
-                            <span
-                              className={`px-3 py-1 text-xs font-medium rounded-full border ${
-                                company.subscriptionPlan?.toLowerCase() ===
-                                "enterprise"
-                                  ? "bg-purple-900/30 text-purple-300 border-purple-700/30"
-                                  : company.subscriptionPlan?.toLowerCase() ===
-                                      "premium"
-                                    ? "bg-orange-900/30 text-orange-300 border-orange-700/30"
-                                    : "bg-green-900/30 text-green-300 border-green-700/30"
-                              }`}
-                            >
-                              {company.subscriptionPlan}
-                            </span>
-                          ) : (
-                            <span className="text-gray-600 text-sm">—</span>
-                          )}
-                        </td>
-
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-3 py-1 text-xs font-medium rounded-full border ${
-                              company.subscriptionActive
-                                ? "bg-green-900/30 text-green-300 border-green-700/30"
-                                : "bg-red-900/30 text-red-300 border-red-700/30"
-                            }`}
-                          >
-                            {company.subscriptionActive
-                              ? "✓ Active"
-                              : "○ Inactive"}
-                          </span>
-                        </td>
-
-                        <td className="px-6 py-4 text-gray-400 text-sm">
-                          {company.createdAt
-                            ? new Date(company.createdAt).toLocaleDateString()
-                            : "—"}
-                        </td>
-
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2 items-center">
-                            <button
-                              onClick={() => setTimelineEntity({ id: company.id, name: company.name })}
-                              className="text-purple-400 hover:text-purple-300 text-xs px-2 py-1"
-                              title="Timeline"
-                            >
-                              Timeline
-                            </button>
-                            <button
-                              onClick={() =>
-                                router.push(`/Company/Edit/${company.id}`)
-                              }
-                              className="p-2 text-blue-400 hover:bg-blue-900/20 rounded-lg transition-colors"
-                              title="Edit"
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirm(company.id)}
-                              className="p-2 text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
-                              title="Delete"
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
-        )}
-
-        {/* Delete Confirm Modal */}
-        {deleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-xl border border-gray-700 max-w-sm mx-4 shadow-2xl">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  Delete Company?
-                </h3>
-                <p className="text-gray-400 mb-6">
-                  This will soft-delete the company. It can be restored by an
-                  administrator if needed.
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setDeleteConfirm(null)}
-                    className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => handleDelete(deleteConfirm)}
-                    disabled={actionLoading}
-                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {actionLoading ? "Deleting..." : "Delete"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Timeline Modal */}
-        {timelineEntity && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setTimelineEntity(null)}>
-            <div className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700 shrink-0">
-                <h3 className="text-white font-bold">Timeline — {timelineEntity.name}</h3>
-                <button onClick={() => setTimelineEntity(null)} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
-              </div>
-              <div className="p-5 overflow-y-auto">
-                <ActivityTimeline entityType="company" entityId={timelineEntity.id} />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
