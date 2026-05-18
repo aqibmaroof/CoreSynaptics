@@ -6,6 +6,16 @@ import { getIssueById, updateIssue } from "@/services/Issues";
 import { getProjects } from "@/services/Projects";
 import { getCompanies } from "@/services/Companies";
 import { getUsers } from "@/services/Users";
+import RelatedSidebar from "@/components/RelatedSidebar";
+import CopilotPanel from "@/components/CopilotPanel";
+import WhyTab from "@/components/WhyTab";
+import EntityApprovals from "@/components/EntityApprovals";
+import LineageTab from "@/components/LineageTab";
+import ContextPanel from "@/components/ContextPanel";
+import EntityRecommendationsPanel from "@/components/EntityRecommendationsPanel";
+import FederatedBadge from "@/components/FederatedBadge";
+import ComplianceHoldBadge from "@/components/ComplianceHoldBadge";
+import NcrAgeBadge from "@/components/NcrAgeBadge";
 const fetchAssets = async () => [];
 
 const SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
@@ -79,6 +89,7 @@ export default function IssuesEdit() {
   const [message, setMessage] = useState(null);
   const [errors, setErrors] = useState({});
   const [issueStatus, setIssueStatus] = useState(null);
+  const [ncrAging, setNcrAging] = useState(null); // { threshold, ageDays } from server
 
   const [form, setForm] = useState({
     title: "",
@@ -110,6 +121,12 @@ export default function IssuesEdit() {
       .then((res) => {
         const d = res?.data ?? res;
         setIssueStatus(d.status);
+        if (d.ncrAgingThreshold) {
+          setNcrAging({
+            threshold: d.ncrAgingThreshold,
+            ageDays: d.ncrAgeDays ?? null,
+          });
+        }
         setForm({
           title: d.title ?? "",
           description: d.description ?? "",
@@ -492,6 +509,43 @@ export default function IssuesEdit() {
           </div>
         </form>
       </div>
+
+      {/* ── Phase 7+8 intelligence panels ──────────────────────────────── */}
+      {params?.id && (
+        <div
+          style={{
+            marginTop: 24,
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr",
+            gap: 16,
+          }}
+        >
+          <div style={{ display: "grid", gap: 16 }}>
+            <EntityApprovals entityType="Issue" entityId={params.id} />
+            <LineageTab entityType="Issue" entityId={params.id} />
+            <WhyTab subjectType="Issue" subjectId={params.id} />
+          </div>
+          <div style={{ display: "grid", gap: 16 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <FederatedBadge entityType="Issue" entityId={params.id} />
+              <ComplianceHoldBadge entityType="Issue" entityId={params.id} />
+              {ncrAging && (
+                <NcrAgeBadge
+                  threshold={ncrAging.threshold}
+                  ageDays={ncrAging.ageDays}
+                />
+              )}
+            </div>
+            <EntityRecommendationsPanel
+              entityType="Issue"
+              entityId={params.id}
+            />
+            <CopilotPanel entityType="Issue" entityId={params.id} />
+            <ContextPanel entityType="Issue" entityId={params.id} />
+            <RelatedSidebar entityType="Issue" entityId={params.id} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

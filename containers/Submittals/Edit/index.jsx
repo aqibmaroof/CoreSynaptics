@@ -2,6 +2,15 @@
 
 import { useState, useEffect } from "react";
 import SubmittalEditForm from "@/components/EditSubmittalsForm";
+import EntityApprovals from "@/components/EntityApprovals";
+import RelatedSidebar from "@/components/RelatedSidebar";
+import CopilotPanel from "@/components/CopilotPanel";
+import WhyTab from "@/components/WhyTab";
+import LineageTab from "@/components/LineageTab";
+import ContextPanel from "@/components/ContextPanel";
+import EntityRecommendationsPanel from "@/components/EntityRecommendationsPanel";
+import FederatedBadge from "@/components/FederatedBadge";
+import ComplianceHoldBadge from "@/components/ComplianceHoldBadge";
 import { updateSubmittal, getSubmittalById } from "@/services/Submittals";
 import { getProjects } from "@/services/Projects";
 import { getCompanies } from "@/services/Companies";
@@ -89,6 +98,45 @@ export default function EditSubmittalContainer() {
         companies={companies}
         users={users}
       />
+
+      {submittalId && (
+        <div
+          style={{
+            marginTop: 24,
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr",
+            gap: 16,
+          }}
+        >
+          <div style={{ display: "grid", gap: 16 }}>
+            <EntityApprovals
+              entityType="Submittal"
+              entityId={submittalId}
+              cxProjectId={initialData?.cxProjectId}
+            />
+            <LineageTab entityType="Submittal" entityId={submittalId} />
+            <WhyTab subjectType="Submittal" subjectId={submittalId} />
+          </div>
+          <div style={{ display: "grid", gap: 16 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <FederatedBadge entityType="Submittal" entityId={submittalId} />
+              <ComplianceHoldBadge
+                entityType="Submittal"
+                entityId={submittalId}
+                cxProjectId={initialData?.cxProjectId}
+              />
+            </div>
+            <EntityRecommendationsPanel
+              entityType="Submittal"
+              entityId={submittalId}
+              cxProjectId={initialData?.cxProjectId}
+            />
+            <CopilotPanel entityType="Submittal" entityId={submittalId} />
+            <ContextPanel entityType="Submittal" entityId={submittalId} />
+            <RelatedSidebar entityType="Submittal" entityId={submittalId} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

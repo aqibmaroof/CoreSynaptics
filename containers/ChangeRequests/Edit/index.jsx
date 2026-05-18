@@ -8,6 +8,9 @@ import {
   reviewChangeRequest,
   withdrawChangeRequest,
 } from "@/services/ChangeRequests";
+import EntityApprovals from "@/components/EntityApprovals";
+import FederatedBadge from "@/components/FederatedBadge";
+import ComplianceHoldBadge from "@/components/ComplianceHoldBadge";
 
 const IMPACT_TYPES = ["COST", "SCHEDULE", "BOTH", "NONE"];
 
@@ -258,6 +261,27 @@ export default function ChangeRequestEdit() {
             </div>
           )}
         </form>
+
+        {id && (
+          <div className="mt-6">
+            <div
+              className="mb-3"
+              style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
+            >
+              <FederatedBadge entityType="ChangeRequest" entityId={id} />
+              <ComplianceHoldBadge
+                entityType="ChangeRequest"
+                entityId={id}
+                cxProjectId={projectId || undefined}
+              />
+            </div>
+            <EntityApprovals
+              entityType="ChangeRequest"
+              entityId={id}
+              cxProjectId={projectId || undefined}
+            />
+          </div>
+        )}
 
         {isPending && (
           <div className="mt-6 bg-gray-800 border border-gray-700 rounded-xl p-4 space-y-4">

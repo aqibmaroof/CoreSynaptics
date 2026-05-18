@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getAssetById, updateAsset } from "@/services/AssetManagement";
+import PerAssetBundleButton from "@/components/PerAssetBundleButton";
 
 const CATEGORIES = [
   "IT Equipment",
@@ -231,6 +232,7 @@ export default function AssetEdit() {
             )}
           </div>
           <div className="flex items-center justify-end gap-3">
+            <PerAssetBundleButton assetId={editId} />
             {assetStatus && (
               <span
                 className={`px-3 py-1 rounded-full border text-xs font-semibold uppercase tracking-wider ${STATUS_STYLES[assetStatus] || "bg-gray-800 text-gray-400 border-gray-600"}`}

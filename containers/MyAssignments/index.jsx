@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getUser } from "@/services/instance/tokenService";
 import { getMyNextActions } from "@/services/Me";
+import CopilotInboxCard from "@/components/CopilotInboxCard";
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -1459,6 +1460,11 @@ export default function MyAssignments() {
 
   return (
     <div style={{ padding: "24px 28px", margin: "0 auto" }}>
+      {/* ── Phase 7 v7: Copilot inbox card ─────────────────────────────── */}
+      <div style={{ marginBottom: 16 }}>
+        <CopilotInboxCard />
+      </div>
+
       {/* ── Page header ────────────────────────────────────────────────── */}
       <div
         style={{

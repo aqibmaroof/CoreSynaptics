@@ -1,888 +1,584 @@
 "use client";
 
-import { useState, useEffect } from "react";
+// ── Phase v15 B1: Announcements workspace ────────────────────────────────────
+// Drives the DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED → PUBLISHED workflow
+// via the dedicated endpoints. Never compute "can publish?" locally; the
+// server enforces every gate.
+
+import { useCallback, useEffect, useState } from "react";
 import {
-  getReviewQueue,
-  getReviewQueueCount,
-  getCommTimeline,
-  ackCommByOrg,
-  approveAndPublishCommunication,
-  rejectCommunication,
-} from "@/services/Communications";
+  listAnnouncements,
+  announcementTabCounts,
+  createAnnouncement,
+  submitAnnouncement,
+  startAnnouncementReview,
+  approveAnnouncement,
+  publishAnnouncement,
+  rejectAnnouncement,
+  archiveAnnouncement,
+  ANNOUNCEMENT_SCOPES,
+  ANNOUNCEMENT_TABS,
+  ANNOUNCEMENT_STATUS_STYLE,
+} from "@/services/Announcements";
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+const TAB_TO_STATUS = {
+  pending: "SUBMITTED",
+  published: "PUBLISHED",
+  rejected: "REJECTED",
+};
 
-const MOCK_POSTS = [
-  {
-    id: 1,
-    status: "PENDING",
-    authorInitials: "LP",
-    authorColor: "#2ecc71",
-    authorName: "Lisa Park",
-    authorCompany: "Microsoft",
-    authorRole: "Owner's Rep",
-    timeAgo: "30m ago",
-    title: "Customer request: Add load bank capacity for L5 IST",
-    body: "Microsoft would like to expand load bank capacity for the May 19 IST window — 4MW total instead of 3MW currently planned. Need HITT to coordinate with Delta + Shermco on the additional infrastructure. Budget impact assessment requested. Schedule impact: aiming for zero. David approved on our side.",
-    timeline: [
-      {
-        icon: "📋",
-        label: "Drafted by customer",
-        actor: "Lisa Park (MSFT)",
-        time: "45s ago",
-        active: false,
-      },
-      {
-        icon: "🏠",
-        label: "Submitted to GC for review",
-        actor: "Lisa Park (MSFT)",
-        time: "38m ago",
-        active: false,
-      },
-      {
-        icon: "❓",
-        label: "Awaiting GC decision",
-        actor: null,
-        time: null,
-        active: true,
-      },
-    ],
-    comments: 0,
-    reactions: 0,
-    saves: 0,
-  },
-  {
-    id: 2,
-    status: "PUBLISHED",
-    authorInitials: "SC",
-    authorColor: "#3b82f6",
-    authorName: "Sarah Chen",
-    authorCompany: "HITT Contracting",
-    authorRole: "GC Project Manager",
-    timeAgo: "3d ago",
-    title: "Welcome Shermo to the project",
-    body: "Welcome Shermo Industries to MSFT-DC!! Adam Krol leading their NETA acceptance testing scope. They start L3.05 work next Monday. Their scope sheet is in Documents.",
-    timeline: [
-      {
-        icon: "📋",
-        label: "Drafted by GC PM",
-        actor: "Sarah Chen (HITT)",
-        time: "3d ago",
-        active: false,
-      },
-      {
-        icon: "📢",
-        label: "Published direct",
-        actor: "Sarah Chen (HITT)",
-        time: "3d ago",
-        active: false,
-      },
-    ],
-    comments: 3,
-    reactions: 8,
-    saves: 4,
-  },
-];
+export default function Announcements({ cxProjectId }) {
+  const [tab, setTab] = useState("all");
+  const [rows, setRows] = useState([]);
+  const [counts, setCounts] = useState({});
+  const [cursor, setCursor] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState(null);
 
-const TABS = [
-  { key: "all", label: "All visible", count: 9 },
-  { key: "internal", label: "Internal", count: 0 },
-  { key: "awaiting", label: "Awaiting my review", count: 3 },
-  { key: "review_queue", label: "Pending GC Review", count: 0 },
-  { key: "published", label: "Published", count: 6 },
-  { key: "my", label: "My posts", count: 3 },
-];
-
-// ─── Escalation level label helper ────────────────────────────────────────────
-const escalationLabel = (level) =>
-  level > 0 ? `Level ${level} escalation` : "On time";
-const escalationColor = (level) =>
-  level >= 2 ? "var(--rf-red)" : level === 1 ? "var(--rf-yellow)" : "var(--rf-green)";
-
-const REVIEW_ACTIONS = [
-  { key: "approve", icon: "✅", label: "Approve & publish project-wide" },
-  { key: "edit", icon: "✏️", label: "Edit and publish" },
-  { key: "reject", icon: "✖", label: "Reject with feedback" },
-  { key: "comment", icon: "💬", label: "Comment first" },
-];
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function Avatar({ initials, color, size = 40 }) {
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: color,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: "#fff",
-        fontWeight: 700,
-        fontSize: size * 0.38,
-        flexShrink: 0,
-      }}
-    >
-      {initials}
-    </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const styles = {
-    PENDING: {
-      label: "⏱ PENDING",
-      background: "rgba(var(--rf-yellow-rgb, 200,144,0), 0.12)",
-      color: "var(--rf-yellow)",
-      border: "var(--rf-yellow)",
-    },
-    PUBLISHED: {
-      label: "📢 PUBLISHED",
-      background: "rgba(var(--rf-green-rgb, 22,163,74), 0.12)",
-      color: "var(--rf-green)",
-      border: "var(--rf-green)",
-    },
-    INTERNAL: {
-      label: "🏠 INTERNAL",
-      background: "var(--rf-glow)",
-      color: "var(--rf-accent)",
-      border: "var(--rf-accent)",
-    },
-    REJECTED: {
-      label: "✖ REJECTED",
-      background: "rgba(var(--rf-red-rgb, 220,38,38), 0.12)",
-      color: "var(--rf-red)",
-      border: "var(--rf-red)",
-    },
-  };
-  const s = styles[status] ?? styles.PENDING;
-  return (
-    <span
-      style={{
-        background: s.background,
-        color: s.color,
-        border: `1px solid ${s.border}`,
-        borderRadius: 6,
-        padding: "3px 10px",
-        fontSize: 12,
-        fontWeight: 600,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {s.label}
-    </span>
-  );
-}
-
-function Timeline({ steps }) {
-  return (
-    <div
-      style={{
-        background: "var(--rf-bg3)",
-        border: "1px solid var(--rf-border)",
-        borderRadius: 8,
-        padding: "10px 14px",
-        display: "flex",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 4,
-        fontSize: 12,
-        color: "var(--rf-txt2)",
-        margin: "14px 0 0",
-      }}
-    >
-      {steps.map((step, i) => (
-        <span key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {i > 0 && (
-            <span
-              style={{
-                margin: "0 6px",
-                color: "var(--rf-txt3)",
-                fontWeight: 700,
-              }}
-            >
-              →
-            </span>
-          )}
-          <span
-            style={
-              step.active
-                ? {
-                    background: "rgba(var(--rf-yellow-rgb, 200,144,0), 0.15)",
-                    border: "1.5px solid var(--rf-yellow)",
-                    borderRadius: 6,
-                    padding: "2px 10px",
-                    color: "var(--rf-yellow)",
-                    fontWeight: 600,
-                  }
-                : {}
-            }
-          >
-            {step.icon}{" "}
-            <strong style={{ fontWeight: 600, color: "var(--rf-txt)" }}>
-              {step.label}
-            </strong>
-            {step.actor && (
-              <span style={{ color: "var(--rf-txt3)" }}>
-                {" "}
-                · {step.actor} {step.time}
-              </span>
-            )}
-          </span>
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function ReviewActions({ postId, selected, onSelect }) {
-  return (
-    <div
-      style={{
-        background: "rgba(var(--rf-yellow-rgb, 200,144,0), 0.08)",
-        border: "1px solid var(--rf-yellow)",
-        borderRadius: 8,
-        padding: "14px 16px",
-        marginTop: 12,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: "var(--rf-yellow)",
-          marginBottom: 10,
-        }}
-      >
-        ⏱ Decide what to do with this submission
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {REVIEW_ACTIONS.map((action) => {
-          const isSelected = selected === action.key;
-          return (
-            <button
-              key={action.key}
-              onClick={() => onSelect(postId, action.key)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "7px 14px",
-                borderRadius: 6,
-                border: isSelected
-                  ? "2px solid var(--rf-accent)"
-                  : "1.5px solid var(--rf-border2)",
-                background: isSelected ? "var(--rf-accent)" : "var(--rf-bg2)",
-                color: isSelected ? "#fff" : "var(--rf-txt)",
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                if (!isSelected)
-                  e.currentTarget.style.borderColor = "var(--rf-accent)";
-              }}
-              onMouseLeave={(e) => {
-                if (!isSelected)
-                  e.currentTarget.style.borderColor = "var(--rf-border2)";
-              }}
-            >
-              <span>{action.icon}</span>
-              {action.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function PostFooter({ comments, reactions, saves, showCounts }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginTop: 14,
-        paddingTop: 12,
-        borderTop: "1px solid var(--rf-border)",
-      }}
-    >
-      <div style={{ display: "flex", gap: 18 }}>
-        {[
-          `💬 ${comments} comment${comments !== 1 ? "s" : ""}`,
-          "👍 React",
-          "📌 Save",
-        ].map((label) => (
-          <button
-            key={label}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--rf-txt2)",
-              fontSize: 13,
-              cursor: "pointer",
-              padding: "2px 6px",
-              borderRadius: 4,
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.color = "var(--rf-accent)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.color = "var(--rf-txt2)")
-            }
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {showCounts && (
-        <div style={{ display: "flex", gap: 10 }}>
-          <span
-            style={{
-              background: "var(--rf-bg3)",
-              border: "1px solid var(--rf-border)",
-              borderRadius: 20,
-              padding: "2px 12px",
-              fontSize: 13,
-              color: "var(--rf-txt2)",
-              fontWeight: 500,
-            }}
-          >
-            👍 {reactions}
-          </span>
-          <span
-            style={{
-              background: "var(--rf-bg3)",
-              border: "1px solid var(--rf-border)",
-              borderRadius: 20,
-              padding: "2px 12px",
-              fontSize: 13,
-              color: "var(--rf-txt2)",
-              fontWeight: 500,
-            }}
-          >
-            📌 {saves}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PostCard({ post, reviewAction, onReviewSelect }) {
-  return (
-    <div
-      style={{
-        background: "var(--rf-bg2)",
-        border: "1px solid var(--rf-border)",
-        borderRadius: 12,
-        padding: "18px 20px",
-        marginBottom: 12,
-        boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-      }}
-    >
-      {/* Header row */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-        <Avatar initials={post.authorInitials} color={post.authorColor} />
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span
-              style={{ fontWeight: 700, fontSize: 15, color: "var(--rf-txt)" }}
-            >
-              {post.authorName}
-            </span>
-            <StatusBadge status={post.status} />
-          </div>
-          <div style={{ fontSize: 12, color: "var(--rf-txt3)", marginTop: 2 }}>
-            {post.authorCompany} · {post.authorRole} · {post.timeAgo}
-          </div>
-        </div>
-      </div>
-
-      {/* Title */}
-      <div
-        style={{
-          fontWeight: 700,
-          fontSize: 16,
-          color: "var(--rf-txt)",
-          margin: "12px 0 6px",
-        }}
-      >
-        {post.title}
-      </div>
-
-      {/* Body */}
-      <div style={{ fontSize: 14, color: "var(--rf-txt2)", lineHeight: 1.6 }}>
-        {post.body}
-      </div>
-
-      {/* Timeline */}
-      <Timeline steps={post.timeline} />
-
-      {/* Review actions for PENDING posts */}
-      {post.status === "PENDING" && (
-        <ReviewActions
-          postId={post.id}
-          selected={reviewAction}
-          onSelect={onReviewSelect}
-        />
-      )}
-
-      {/* Footer */}
-      <PostFooter
-        comments={post.comments}
-        reactions={post.reactions}
-        saves={post.saves}
-        showCounts={post.status === "PUBLISHED" && post.reactions > 0}
-      />
-    </div>
-  );
-}
-
-// ─── Main container ───────────────────────────────────────────────────────────
-
-// ─── Review queue sub-component ──────────────────────────────────────────────
-
-function ReviewQueueTab({ rows, loading, onApprove, onReject }) {
-  if (loading)
-    return <div style={{ padding: "48px 24px", textAlign: "center", color: "var(--rf-txt3)", fontSize: 13 }}>Loading review queue...</div>;
-  if (!rows.length)
-    return <div style={{ padding: "48px 24px", textAlign: "center", color: "var(--rf-txt3)", fontSize: 13 }}>No communications pending GC review.</div>;
-
-  return (
-    <div style={{ overflowX: "auto" }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-        <thead>
-          <tr style={{ borderBottom: "1px solid var(--rf-border)", background: "var(--rf-bg3)" }}>
-            {["Comm #", "Subject", "Type", "From", "Due", "Escalation", "Actions"].map((h) => (
-              <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "var(--rf-txt3)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.communicationId} style={{ borderBottom: "1px solid var(--rf-border)", transition: "background 0.15s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--rf-bg3)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
-              <td style={{ padding: "11px 14px", fontWeight: 700, color: "var(--rf-accent)", whiteSpace: "nowrap" }}>{r.commNumber}</td>
-              <td style={{ padding: "11px 14px", color: "var(--rf-txt)", maxWidth: 240 }}>{r.subject}</td>
-              <td style={{ padding: "11px 14px", color: "var(--rf-txt3)", whiteSpace: "nowrap", fontSize: 11 }}>{r.commType}</td>
-              <td style={{ padding: "11px 14px", color: "var(--rf-txt2)", whiteSpace: "nowrap" }}>{r.fromCompanyCode}</td>
-              <td style={{ padding: "11px 14px", color: "var(--rf-txt3)", whiteSpace: "nowrap", fontSize: 12 }}>
-                {r.reviewDueAt ? new Date(r.reviewDueAt).toLocaleDateString() : "—"}
-              </td>
-              <td style={{ padding: "11px 14px", whiteSpace: "nowrap" }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: escalationColor(r.escalationLevel) }}>
-                  {escalationLabel(r.escalationLevel)}
-                </span>
-              </td>
-              <td style={{ padding: "11px 14px" }}>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => onApprove(r.communicationId)}
-                    style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: "rgba(16,185,129,0.15)", color: "var(--rf-green)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    ✅ Approve
-                  </button>
-                  <button onClick={() => onReject(r.communicationId)}
-                    style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.12)", color: "var(--rf-red)", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    ✖ Reject
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-export default function AnnouncementsContainer() {
-  const [activeTab, setActiveTab] = useState("all");
-  const [reviewActions, setReviewActions] = useState({ 1: "approve" });
-  const [reviewQueue, setReviewQueue] = useState([]);
-  const [reviewQueueLoading, setReviewQueueLoading] = useState(false);
-  const [queueCount, setQueueCount] = useState(0);
-  const [toast, setToast] = useState(null);
-
-  useEffect(() => {
-    (async () => {
+  const reload = useCallback(
+    async (reset = true) => {
+      setLoading(true);
+      setError("");
       try {
-        const cnt = await getReviewQueueCount();
-        setQueueCount(cnt?.count ?? 0);
-      } catch {}
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab !== "review_queue") return;
-    (async () => {
-      setReviewQueueLoading(true);
-      try {
-        const data = await getReviewQueue();
-        setReviewQueue(Array.isArray(data) ? data : []);
-      } catch {
-        setReviewQueue([]);
+        const [list, t] = await Promise.all([
+          listAnnouncements({
+            tab,
+            cursor: reset ? undefined : cursor || undefined,
+            limit: 50,
+          }),
+          announcementTabCounts(cxProjectId).catch(() => ({})),
+        ]);
+        const items = Array.isArray(list?.data)
+          ? list.data
+          : Array.isArray(list)
+          ? list
+          : list?.items ?? [];
+        setRows((prev) => (reset ? items : [...prev, ...items]));
+        setCursor(list?.nextCursor ?? null);
+        setCounts(t || {});
+      } catch (e) {
+        setError(e?.message || "Failed to load announcements");
       } finally {
-        setReviewQueueLoading(false);
+        setLoading(false);
       }
-    })();
-  }, [activeTab]);
-
-  const handleApprove = async (commId) => {
-    try {
-      await approveAndPublishCommunication(commId);
-      setReviewQueue((prev) => prev.filter((r) => r.communicationId !== commId));
-      setQueueCount((c) => Math.max(0, c - 1));
-      setToast("Communication approved and published");
-      setTimeout(() => setToast(null), 2800);
-    } catch {
-      setToast("Failed to approve");
-      setTimeout(() => setToast(null), 2800);
-    }
-  };
-
-  const handleReject = async (commId) => {
-    const reason = window.prompt("Rejection reason (required):");
-    if (!reason?.trim()) return;
-    try {
-      await rejectCommunication(commId, { reason });
-      setReviewQueue((prev) => prev.filter((r) => r.communicationId !== commId));
-      setQueueCount((c) => Math.max(0, c - 1));
-      setToast("Communication rejected");
-      setTimeout(() => setToast(null), 2800);
-    } catch {
-      setToast("Failed to reject");
-      setTimeout(() => setToast(null), 2800);
-    }
-  };
-
-  const handleReviewSelect = (postId, action) => {
-    setReviewActions((prev) => ({ ...prev, [postId]: action }));
-  };
-
-  const tabsWithCount = TABS.map((t) =>
-    t.key === "review_queue" ? { ...t, count: queueCount } : t
+    },
+    [tab, cursor, cxProjectId]
   );
 
+  useEffect(() => {
+    reload(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
+
   return (
-    <div
-      style={{
-        fontFamily: "Gilroy, Inter, system-ui, sans-serif",
-        margin: "0 auto",
-        padding: "24px 16px",
-        color: "var(--rf-txt)",
-      }}
-    >
-      {/* ── Page header ── */}
-      <div
+    <div style={{ padding: 24 }}>
+      <header
         style={{
           display: "flex",
-          alignItems: "flex-start",
           justifyContent: "space-between",
-          marginBottom: 4,
+          alignItems: "flex-start",
+          gap: 12,
+          marginBottom: 16,
+          flexWrap: "wrap",
         }}
       >
         <div>
           <h1
             style={{
-              fontSize: 26,
-              fontWeight: 800,
+              fontSize: 22,
+              fontWeight: 700,
               color: "var(--rf-txt)",
-              margin: 0,
             }}
           >
-            Announcements
+            📢 Announcements
           </h1>
-          <p
-            style={{
-              fontSize: 13,
-              color: "var(--rf-accent)",
-              margin: "4px 0 0",
-              maxWidth: 520,
-            }}
-          >
-            Posts flow through the GC. Companies post internally, submit to the
-            GC for review, and the GC publishes project-wide so all companies
-            see it.
+          <p style={{ color: "var(--rf-txt3)", fontSize: 13 }}>
+            Server-owned DRAFT → SUBMITTED → APPROVED → PUBLISHED workflow.
           </p>
         </div>
         <button
-          style={{
-            background: "var(--rf-accent)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "9px 18px",
-            fontWeight: 600,
-            fontSize: 14,
-            cursor: "pointer",
-            whiteSpace: "nowrap",
-            boxShadow: "0 2px 8px var(--rf-glow)",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background = "var(--rf-accent2)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background = "var(--rf-accent)")
-          }
+          className="rf-btn rf-btn-primary"
+          onClick={() => setComposeOpen(true)}
         >
           + New post
         </button>
-      </div>
+      </header>
 
-      {/* ── Compose bar ── */}
       <div
-        style={{
-          background: "var(--rf-bg2)",
-          border: "1px solid var(--rf-border)",
-          borderRadius: 12,
-          padding: "12px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          margin: "20px 0 0",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-        }}
+        style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}
       >
-        <Avatar initials="SC" color="#3b82f6" size={36} />
-        <input
-          type="text"
-          placeholder="Share an update from HITT Contracting…"
-          style={{
-            flex: 1,
-            border: "none",
-            outline: "none",
-            fontSize: 14,
-            color: "var(--rf-txt2)",
-            background: "transparent",
-          }}
-        />
-        <button
-          style={{
-            background: "none",
-            border: "1.5px solid var(--rf-border2)",
-            borderRadius: 7,
-            padding: "6px 14px",
-            fontSize: 13,
-            color: "var(--rf-txt)",
-            fontWeight: 600,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.borderColor = "var(--rf-accent)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.borderColor = "var(--rf-border2)")
-          }
-        >
-          <span style={{ fontSize: 15 }}>📝</span> Compose
-        </button>
-      </div>
-
-      {/* ── Review banner ── */}
-      <div
-        style={{
-          background: "rgba(var(--rf-yellow-rgb, 200,144,0), 0.08)",
-          border: "1px solid var(--rf-yellow)",
-          borderRadius: 10,
-          padding: "14px 18px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          margin: "12px 0 0",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 22 }}>⏳</span>
-          <div>
-            <div
-              style={{
-                fontWeight: 700,
-                color: "var(--rf-yellow)",
-                fontSize: 14,
-              }}
-            >
-              3 items awaiting your review
-            </div>
-            <div
-              style={{ fontSize: 13, color: "var(--rf-txt2)", marginTop: 2 }}
-            >
-              As GC PM you decide what gets broadcast project-wide.{" "}
-              <a
-                href="#"
-                style={{
-                  color: "var(--rf-yellow)",
-                  textDecoration: "underline",
-                }}
-              >
-                Click to review →
-              </a>
-            </div>
-          </div>
-        </div>
-        <button
-          style={{
-            background: "var(--rf-yellow)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "8px 18px",
-            fontWeight: 700,
-            fontSize: 13,
-            cursor: "pointer",
-            whiteSpace: "nowrap",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background = "var(--rf-yellow2)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background = "var(--rf-yellow)")
-          }
-        >
-          Review now
-        </button>
-      </div>
-
-      {/* ── Filter tabs ── */}
-      <div
-        style={{
-          display: "flex",
-          gap: 0,
-          borderBottom: "2px solid var(--rf-border)",
-          margin: "20px 0 0",
-          flexWrap: "wrap",
-        }}
-      >
-        {tabsWithCount.map((tab) => {
-          const isActive = activeTab === tab.key;
+        {ANNOUNCEMENT_TABS.map((t) => {
+          const statusKey = TAB_TO_STATUS[t];
+          const count = statusKey ? counts[statusKey] : undefined;
           return (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                background: "none",
-                border: "none",
-                borderBottom: isActive
-                  ? "2px solid var(--rf-accent)"
-                  : "2px solid transparent",
-                marginBottom: -2,
-                padding: "10px 14px",
-                fontSize: 13,
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? "var(--rf-accent)" : "var(--rf-txt2)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                whiteSpace: "nowrap",
-                transition: "color 0.15s",
-              }}
+              key={t}
+              className={`rf-btn ${tab === t ? "rf-btn-primary" : ""}`}
+              onClick={() => setTab(t)}
             >
-              {tab.label}
-              <span
-                style={{
-                  background:
-                    tab.key === "awaiting"
-                      ? "var(--rf-yellow)"
-                      : isActive
-                        ? "var(--rf-glow)"
-                        : "var(--rf-bg3)",
-                  color:
-                    tab.key === "awaiting"
-                      ? "#fff"
-                      : isActive
-                        ? "var(--rf-accent)"
-                        : "var(--rf-txt2)",
-                  borderRadius: 12,
-                  padding: "1px 7px",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  minWidth: 20,
-                  textAlign: "center",
-                }}
-              >
-                {tab.count}
-              </span>
+              {t}
+              {count != null ? ` (${count})` : ""}
             </button>
           );
         })}
       </div>
 
-      {/* ── Info banner ── */}
-      <div
-        style={{
-          background: "var(--rf-glow)",
-          border: "1px solid var(--rf-border2)",
-          borderRadius: 10,
-          padding: "12px 16px",
-          margin: "16px 0",
-          fontSize: 13,
-          color: "var(--rf-txt2)",
-          display: "flex",
-          gap: 10,
-          alignItems: "flex-start",
-        }}
-      >
-        <span style={{ fontSize: 18 }}>💡</span>
-        <span>
-          <strong style={{ color: "var(--rf-txt)" }}>
-            How announcement flow works.
-          </strong>{" "}
-          Sarah Chen sees{" "}
-          <strong style={{ color: "var(--rf-accent)" }}>9 of 13 posts</strong>.
-          As GC PM at HITT Contracting, you also see pending submissions from
-          other companies that need your review and approval before going
-          project-wide.
-        </span>
-      </div>
+      {error && (
+        <div
+          style={{
+            padding: 10,
+            background: "rgba(239,68,68,0.12)",
+            color: "var(--rf-red)",
+            borderRadius: 6,
+            marginBottom: 12,
+          }}
+        >
+          {error}
+        </div>
+      )}
 
-      {/* ── Review queue tab body ── */}
-      {activeTab === "review_queue" ? (
-        <div style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border)", borderRadius: 14, overflow: "hidden", marginTop: 16 }}>
-          <ReviewQueueTab
-            rows={reviewQueue}
-            loading={reviewQueueLoading}
-            onApprove={handleApprove}
-            onReject={handleReject}
-          />
+      {loading && rows.length === 0 ? (
+        <div style={{ color: "var(--rf-txt3)" }}>Loading…</div>
+      ) : rows.length === 0 ? (
+        <div
+          style={{
+            padding: 32,
+            textAlign: "center",
+            color: "var(--rf-txt3)",
+          }}
+        >
+          No announcements in this tab.
         </div>
       ) : (
-        /* ── Post cards ── */
-        <div>
-          {MOCK_POSTS.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              reviewAction={reviewActions[post.id]}
-              onReviewSelect={handleReviewSelect}
+        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+          {rows.map((a) => (
+            <AnnouncementCard
+              key={a.id}
+              announcement={a}
+              onReview={() => setReviewTarget(a)}
+              onChange={() => reload(true)}
             />
           ))}
-        </div>
+        </ul>
       )}
 
-      {toast && (
-        <div style={{ position: "fixed", bottom: 28, right: 28, zIndex: 2000, background: "var(--rf-bg2)", border: "1px solid var(--rf-green)", color: "var(--rf-green)", padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}>
-          ✓ {toast}
+      {cursor && (
+        <button
+          className="rf-btn"
+          onClick={() => reload(false)}
+          disabled={loading}
+          style={{ marginTop: 12 }}
+        >
+          {loading ? "…" : "Load more"}
+        </button>
+      )}
+
+      {composeOpen && (
+        <ComposeModal
+          cxProjectId={cxProjectId}
+          onClose={() => setComposeOpen(false)}
+          onCreated={() => {
+            setComposeOpen(false);
+            reload(true);
+          }}
+        />
+      )}
+
+      {reviewTarget && (
+        <ReviewModal
+          announcement={reviewTarget}
+          onClose={() => setReviewTarget(null)}
+          onChange={() => {
+            setReviewTarget(null);
+            reload(true);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AnnouncementCard({ announcement: a, onReview, onChange }) {
+  const sty =
+    ANNOUNCEMENT_STATUS_STYLE[a.status] || ANNOUNCEMENT_STATUS_STYLE.DRAFT;
+  const [busy, setBusy] = useState(false);
+
+  const action = async (fn) => {
+    setBusy(true);
+    try {
+      await fn();
+      onChange?.();
+    } catch (e) {
+      alert(e?.message || "Action failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <li className="rf-card" style={{ padding: 14, marginBottom: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          marginBottom: 4,
+          flexWrap: "wrap",
+        }}
+      >
+        <span
+          style={{
+            padding: "2px 8px",
+            fontSize: 11,
+            fontWeight: 700,
+            borderRadius: 4,
+            background: sty.bg,
+            color: sty.color,
+          }}
+        >
+          {a.status}
+        </span>
+        <span style={{ fontSize: 11, color: "var(--rf-txt3)" }}>{a.scope}</span>
+        <span style={{ fontSize: 15, fontWeight: 700 }}>{a.title}</span>
+      </div>
+      <div style={{ fontSize: 13, color: "var(--rf-txt2)" }}>{a.body}</div>
+      <div style={{ fontSize: 11, color: "var(--rf-txt3)", marginTop: 6 }}>
+        by {String(a.authorUserId).slice(0, 8)}
+        {a.publishedAt
+          ? ` · published ${new Date(a.publishedAt).toLocaleString()}`
+          : a.submittedAt
+          ? ` · submitted ${new Date(a.submittedAt).toLocaleString()}`
+          : a.createdAt
+          ? ` · created ${new Date(a.createdAt).toLocaleString()}`
+          : ""}
+        {" · "}
+        {a.reactionCount ?? 0} reactions · {a.commentCount ?? 0} comments
+      </div>
+      {a.rejectionReason && (
+        <div
+          style={{
+            marginTop: 6,
+            padding: 6,
+            background: "rgba(239,68,68,0.08)",
+            color: "var(--rf-red)",
+            borderRadius: 4,
+            fontSize: 12,
+          }}
+        >
+          Rejected: {a.rejectionReason}
         </div>
       )}
+      <div
+        style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}
+      >
+        {a.status === "DRAFT" && (
+          <button
+            className="rf-btn rf-btn-primary"
+            disabled={busy}
+            onClick={() => action(() => submitAnnouncement(a.id))}
+          >
+            Submit to GC
+          </button>
+        )}
+        {(a.status === "SUBMITTED" || a.status === "UNDER_REVIEW") && (
+          <button
+            className="rf-btn"
+            disabled={busy}
+            onClick={() => action(() => startAnnouncementReview(a.id))}
+          >
+            Claim & review
+          </button>
+        )}
+        {(a.status === "SUBMITTED" || a.status === "UNDER_REVIEW") && (
+          <button className="rf-btn" disabled={busy} onClick={onReview}>
+            Approve / Reject
+          </button>
+        )}
+        {a.status === "APPROVED" && (
+          <button
+            className="rf-btn rf-btn-primary"
+            disabled={busy}
+            onClick={() => action(() => publishAnnouncement(a.id))}
+          >
+            Publish
+          </button>
+        )}
+        {(a.status === "PUBLISHED" || a.status === "REJECTED") && (
+          <button
+            className="rf-btn"
+            disabled={busy}
+            onClick={() => action(() => archiveAnnouncement(a.id))}
+            style={{ color: "var(--rf-txt3)" }}
+          >
+            Archive
+          </button>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function ComposeModal({ cxProjectId, onClose, onCreated }) {
+  const [scope, setScope] = useState("PROJECT");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = async (asDraftOnly) => {
+    setBusy(true);
+    setError("");
+    try {
+      const created = await createAnnouncement({
+        scope,
+        cxProjectId: scope === "PROJECT" ? cxProjectId || undefined : undefined,
+        title,
+        body,
+      });
+      if (!asDraftOnly) await submitAnnouncement(created.id);
+      onCreated?.(created.id);
+    } catch (e) {
+      setError(e?.message || "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
+        📢 New post
+      </h2>
+      {error && (
+        <div
+          style={{
+            padding: 8,
+            background: "rgba(239,68,68,0.12)",
+            color: "var(--rf-red)",
+            borderRadius: 6,
+            fontSize: 12,
+            marginBottom: 10,
+          }}
+        >
+          {error}
+        </div>
+      )}
+      <Field label="Scope">
+        <select
+          className="rf-input"
+          value={scope}
+          onChange={(e) => setScope(e.target.value)}
+        >
+          {ANNOUNCEMENT_SCOPES.filter((s) => s !== "GLOBAL").map((s) => (
+            <option key={s} value={s}>
+              {s === "PROJECT" ? "Project-wide" : "My company only"}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Subject">
+        <input
+          className="rf-input"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={255}
+        />
+      </Field>
+      <Field label="Body">
+        <textarea
+          className="rf-input"
+          rows={8}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+      </Field>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          justifyContent: "flex-end",
+          marginTop: 14,
+        }}
+      >
+        <button
+          className="rf-btn"
+          onClick={() => save(true)}
+          disabled={busy || !title.trim()}
+        >
+          Save draft
+        </button>
+        <button
+          className="rf-btn rf-btn-primary"
+          onClick={() => save(false)}
+          disabled={busy || !title.trim() || !body.trim()}
+        >
+          Submit to GC
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function ReviewModal({ announcement, onClose, onChange }) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const approve = async (publishNow) => {
+    setBusy(true);
+    setError("");
+    try {
+      await approveAnnouncement(announcement.id, publishNow);
+      onChange?.();
+    } catch (e) {
+      setError(e?.message || "Approve failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const reject = async () => {
+    if (!reason.trim()) return;
+    setBusy(true);
+    setError("");
+    try {
+      await rejectAnnouncement(announcement.id, reason.trim());
+      onChange?.();
+    } catch (e) {
+      setError(e?.message || "Reject failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Review</h2>
+      <div style={{ fontSize: 12, color: "var(--rf-txt3)", marginBottom: 10 }}>
+        {announcement.title}
+      </div>
+      {error && (
+        <div
+          style={{
+            padding: 8,
+            background: "rgba(239,68,68,0.12)",
+            color: "var(--rf-red)",
+            borderRadius: 6,
+            fontSize: 12,
+            marginBottom: 10,
+          }}
+        >
+          {error}
+        </div>
+      )}
+      <div
+        style={{
+          fontSize: 13,
+          color: "var(--rf-txt2)",
+          padding: 10,
+          background: "var(--rf-bg2)",
+          borderRadius: 6,
+          marginBottom: 10,
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {announcement.body}
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <button
+          className="rf-btn rf-btn-primary"
+          disabled={busy}
+          onClick={() => approve(true)}
+        >
+          Approve & publish
+        </button>
+        <button
+          className="rf-btn"
+          disabled={busy}
+          onClick={() => approve(false)}
+        >
+          Approve (defer publish)
+        </button>
+      </div>
+      <hr
+        style={{
+          margin: "12px 0",
+          border: "none",
+          borderTop: "1px solid var(--rf-border)",
+        }}
+      />
+      <Field label="Reason for rejection (required to reject)">
+        <input
+          className="rf-input"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+      </Field>
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <button className="rf-btn" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          className="rf-btn"
+          onClick={reject}
+          disabled={busy || !reason.trim()}
+          style={{ color: "var(--rf-red)" }}
+        >
+          Reject with feedback
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function Modal({ children, onClose }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 100,
+        padding: 20,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="rf-card"
+        style={{
+          padding: 20,
+          maxWidth: 640,
+          width: "100%",
+          maxHeight: "92vh",
+          overflow: "auto",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <label
+        style={{
+          display: "block",
+          fontSize: 11,
+          fontWeight: 600,
+          color: "var(--rf-txt3)",
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </label>
+      {children}
     </div>
   );
 }

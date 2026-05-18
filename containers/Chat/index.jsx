@@ -11,6 +11,8 @@ import {
   postMessage,
   deleteChatMessage,
 } from "@/services/Chat";
+import ChatReactionsBar from "@/components/ChatReactionsBar";
+import ChatMessageBody from "@/components/ChatMessageBody";
 
 // ─── API → UI shape normaliser ────────────────────────────────────────────────
 
@@ -37,6 +39,7 @@ const normaliseMessage = (m, currentUserId) => ({
   initials: m.initials || nameToInitials(m.senderName || m.authorName || "?"),
   color: m.color || colorFor(m.senderName || m.authorName || "?"),
   body: m.body || m.content || "",
+  mentions: Array.isArray(m.mentions) ? m.mentions : [],
   timeAgo: m.timeAgo || formatTime(m.createdAt),
   isOwn: (m.senderId || m.authorId) === currentUserId,
   canDelete: (m.senderId || m.authorId) === currentUserId,
@@ -198,7 +201,7 @@ function SectionLabel({ label }) {
   );
 }
 
-function MessageBubble({ msg, onDelete }) {
+function MessageBubble({ msg, onDelete, currentUserId }) {
   const [hover, setHover] = useState(false);
   return (
     <div
@@ -252,8 +255,14 @@ function MessageBubble({ msg, onDelete }) {
             lineHeight: 1.55,
           }}
         >
-          {msg.body}
+          <ChatMessageBody message={msg} />
         </p>
+        <div style={{ marginTop: 6 }}>
+          <ChatReactionsBar
+            messageId={msg.id}
+            currentUserId={currentUserId}
+          />
+        </div>
       </div>
       {hover && msg.canDelete && (
         <button
@@ -1107,6 +1116,7 @@ export default function Chat() {
                 key={msg.id}
                 msg={msg}
                 onDelete={handleDeleteMessage}
+                currentUserId={currentUser?.id}
               />
             ))
           )}

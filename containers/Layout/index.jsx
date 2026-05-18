@@ -15,6 +15,9 @@ import {
   setUser,
 } from "@/services/instance/tokenService";
 import { GetUser, Logout } from "@/services/auth";
+import GlobalSearchBar from "@/components/GlobalSearchBar";
+import NotificationBell from "@/components/NotificationBell";
+import OnboardingTourOverlay from "@/components/OnboardingTourOverlay";
 
 // ─── Sidebar nav (mirrors HTML sidebar order) ────────────────────────────
 // Each section is a { label, items: [{ icon, title, href, badge?, badgeKind? }] }
@@ -26,7 +29,15 @@ const SECTIONS = [
     items: [
       { icon: "▤", title: "Dashboard", href: "/" },
       { icon: "✓", title: "My Work", href: "/MyAssignments" },
-      { icon: "✉", title: "Announcements", href: "/Announcements" },
+      { icon: "✔", title: "My Approvals", href: "/Approvals/MyPending" },
+      { icon: "🔔", title: "Notifications", href: "/Notifications" },
+      { icon: "🧭", title: "Cross-Lens", href: "/CrossLens" },
+      { icon: "📊", title: "Portfolio Predictions", href: "/PortfolioPredictions" },
+      { icon: "🤖", title: "Portfolio Copilot", href: "/PortfolioCopilot" },
+      { icon: "🎯", title: "Project Copilot", href: "/ProjectCopilot" },
+      { icon: "👩‍🎓", title: "Learner Profile", href: "/LearnerProfile" },
+      { icon: "📢", title: "Announcements", href: "/Announcements" },
+      { icon: "📷", title: "Photos", href: "/Photos" },
       { icon: "✉", title: "Chat", href: "/Chat" },
       { icon: "◑", title: "Portfolio", href: "/Portfolio" },
       { icon: "✉", title: "Analytics", href: "/Analytics" },
@@ -52,13 +63,20 @@ const SECTIONS = [
       { icon: "✿", title: "PSSR Inspections", href: "/PSSR" },
       { icon: "▲", title: "Risk Register", href: "/Risk" },
       { icon: "◎", title: "Readiness", href: "/Readiness" },
-      { icon: "⇄", title: "Training Simulator", href: "/TrainingSim" },
+      { icon: "🏁", title: "Turnover Packages", href: "/Turnover" },
+      { icon: "📂", title: "Artifact Bundles", href: "/ArtifactIntelligence/Bundles" },
+      { icon: "🦺", title: "JHA", href: "/Jha" },
+      { icon: "⚡", title: "Power Flow", href: "/PowerFlow" },
+      { icon: "🧭", title: "Phase Reference", href: "/PhaseReference" },
+      { icon: "🎓", title: "Training & Simulation", href: "/Training" },
+      { icon: "⇄", title: "Training Simulator (legacy)", href: "/TrainingSim" },
     ],
   },
   {
     label: "Quality & Workflow",
     items: [
       { icon: "✓", title: "Checklists", href: "/Checklist/List" },
+      { icon: "🔁", title: "Checklist Delegations", href: "/ChecklistDelegations" },
       { icon: "❑", title: "RFIs", href: "/RFI/List" },
       { icon: "⊟", title: "Submittals", href: "/Submittals/List" },
       { icon: "⇄", title: "Change Requests", href: "/ChangeRequests" },
@@ -73,6 +91,11 @@ const SECTIONS = [
         icon: "👥",
         title: "Crew Dispatch",
         href: "/CrewDispatch",
+      },
+      {
+        icon: "👷",
+        title: "Crew Dispatch v15",
+        href: "/CrewDispatchV15",
       },
       { icon: "📅", title: "Meetings", href: "/Meeting/List" },
     ],
@@ -91,6 +114,27 @@ const SECTIONS = [
       { icon: "⚙", title: "Settings", href: "/Settings" },
       { icon: "🛡", title: "Roles & Permissions", href: "/Roles/List" },
       { icon: "👤", title: "Users", href: "/Users/List" },
+      { icon: "⚡", title: "Automation", href: "/Automation" },
+      { icon: "🧠", title: "Automation Intel", href: "/AutomationIntelligence" },
+      { icon: "📜", title: "Org Policies", href: "/OrgPolicies" },
+      { icon: "🔌", title: "Integrations", href: "/Integrations" },
+      { icon: "🌍", title: "Ecosystem", href: "/Ecosystem" },
+      { icon: "⚖", title: "Governance", href: "/Governance" },
+      { icon: "🩺", title: "Diagnostics", href: "/Diagnostics" },
+      { icon: "🚨", title: "Anomalies", href: "/Anomalies" },
+      { icon: "🌐", title: "Operations Anomalies", href: "/OperationsAnomalies" },
+      { icon: "🤫", title: "Anomaly Suppressions", href: "/AnomalySuppressions" },
+      { icon: "🕸", title: "Cross-Domain", href: "/CrossDomain" },
+      { icon: "🗒", title: "Event Log", href: "/EventLog" },
+      { icon: "📬", title: "Outbox Explorer", href: "/Outbox" },
+      { icon: "🎭", title: "Impersonation Audit", href: "/ImpersonationAudit" },
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      { icon: "📈", title: "SRE Dashboard", href: "/Sre" },
+      { icon: "🧠", title: "Intelligence Stabilization", href: "/IntelligenceStabilization" },
     ],
   },
 ];
@@ -161,8 +205,6 @@ export default function CxLayout({ children }) {
     name: "Active Project",
     code: "—",
   });
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const [menu, setMenu] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
   const [activeProject, setActiveProject] = useState(PROJECTS[0]);
@@ -420,26 +462,13 @@ export default function CxLayout({ children }) {
           )}
         </div>
 
-        <div className="cx-tb-search">
-          <input
-            type="text"
-            placeholder="Search projects, assets, RFIs, checklists…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onFocus={() => setSearchOpen(true)}
-            onBlur={() => setTimeout(() => setSearchOpen(false), 120)}
-            style={{ paddingLeft: 12 }}
-          />
-        </div>
+        <GlobalSearchBar />
 
         <div className="cx-tb-user">
           <button type="button" className="cx-tb-icon" title="Help">
             ?
           </button>
-          <button type="button" className="cx-tb-icon" title="Notifications">
-            🔔
-            <span className="cx-tb-bell-dot" />
-          </button>
+          <NotificationBell />
           <div style={{ position: "relative" }}>
             <button
               type="button"
@@ -558,6 +587,7 @@ export default function CxLayout({ children }) {
 
         <main style={{ overflowX: "hidden", minWidth: 0 }}>{children}</main>
       </div>
+      <OnboardingTourOverlay autoStart={false} />
     </>
   );
 }

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { listMilestones, deleteMilestone, cloneMilestone } from "@/services/ScheduleMilestones";
 import { listPhases } from "@/services/Phases";
 import { getCxProjects } from "@/services/CxProjects";
+import ScheduleBaselineDiff from "@/components/ScheduleBaselineDiff";
 
 const TYPE_STYLES = {
   CONTRACT: "bg-red-900/40 text-red-300 border-red-700/40",
@@ -252,6 +253,13 @@ export default function ScheduleMilestonesList() {
             )}
           </div>
         </div>
+
+        {/* v15 B4 — Baseline vs actual variance, scoped to selected project */}
+        {filterMode !== "global" && filterProjectId && (
+          <div style={{ marginBottom: 16 }}>
+            <ScheduleBaselineDiff cxProjectId={filterProjectId} />
+          </div>
+        )}
 
         {/* Content */}
         {loading ? (

@@ -6,6 +6,11 @@ import {
   setTokens,
   clearTokens,
 } from "./tokenService";
+import { installCorrelation } from "./correlation";
+
+// PR-1 (v6): attach X-Request-Id outbound, capture X-Trace-Id inbound.
+// Idempotent — runs once even if axiosConfig is imported from multiple places.
+installCorrelation(axiosInstance);
 
 let isRefreshing = false;
 let failedQueue = [];

@@ -15,6 +15,9 @@ import { getProjects } from "@/services/Projects";
 import { GetSites } from "@/services/Sites";
 import { GetZones } from "@/services/Zones";
 import { GetEquipments } from "@/services/Equipment";
+import { getUser } from "@/services/instance/tokenService";
+import ChecklistDelegateModal from "@/components/ChecklistDelegateModal";
+import ChecklistDelegationHistory from "@/components/ChecklistDelegationHistory";
 
 const PHASES = ["NONE", "L1", "L2", "L3", "L4", "L5", "IST"];
 const CHECKLIST_TYPES = ["VENDOR", "GC", "CX_AGENT", "TRADE", "INTERNAL"];
@@ -269,6 +272,20 @@ export default function ChecklistEdit() {
   const [checklist, setChecklist] = useState(null);
   const [items, setItems] = useState([]);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [delegateOpen, setDelegateOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = getUser();
+      if (raw) {
+        const u = JSON.parse(raw);
+        setCurrentUserId(u?.id || null);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   // ── Cascade lists ─────────────────────────────────────────────────────────
   const [projects, setProjects] = useState([]);
@@ -564,6 +581,16 @@ export default function ChecklistEdit() {
               </div>
             )}
           </div>
+          {!isLocked && checklist && (
+            <button
+              type="button"
+              onClick={() => setDelegateOpen(true)}
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
+              style={{ marginRight: 8 }}
+            >
+              🔁 Delegate
+            </button>
+          )}
           {checklist?.status === "COMPLETED" && !isLocked && (
             <button
               type="button"
@@ -634,6 +661,21 @@ export default function ChecklistEdit() {
             <span className="text-red-200">{error}</span>
           </div>
         )}
+
+        {/* v15 B5 — Cross-company delegation history */}
+        <div style={{ marginBottom: 16 }}>
+          <ChecklistDelegationHistory
+            checklistId={id}
+            currentUserId={currentUserId}
+          />
+        </div>
+
+        <ChecklistDelegateModal
+          open={delegateOpen}
+          onClose={() => setDelegateOpen(false)}
+          checklistId={id}
+          onCreated={() => setDelegateOpen(false)}
+        />
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* ── Metadata Card ── */}

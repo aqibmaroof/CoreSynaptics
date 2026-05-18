@@ -9,6 +9,15 @@ import { GetZones } from "@/services/Zones";
 import { GetEquipments } from "@/services/Equipment";
 import { getCompanies } from "@/services/Companies";
 import CompanySelect from "@/components/CRM/CompanySelect";
+import EntityApprovals from "@/components/EntityApprovals";
+import RelatedSidebar from "@/components/RelatedSidebar";
+import CopilotPanel from "@/components/CopilotPanel";
+import WhyTab from "@/components/WhyTab";
+import LineageTab from "@/components/LineageTab";
+import ContextPanel from "@/components/ContextPanel";
+import EntityRecommendationsPanel from "@/components/EntityRecommendationsPanel";
+import FederatedBadge from "@/components/FederatedBadge";
+import ComplianceHoldBadge from "@/components/ComplianceHoldBadge";
 
 const PRIORITIES = [
   { value: "LOW", label: "Low" },
@@ -878,6 +887,36 @@ export default function RFIEdit() {
             </div>
           </form>
         </div>
+
+        {rfiId && (
+          <div
+            style={{
+              marginTop: 24,
+              display: "grid",
+              gridTemplateColumns: "2fr 1fr",
+              gap: 16,
+            }}
+          >
+            <div style={{ display: "grid", gap: 16 }}>
+              <EntityApprovals entityType="RFI" entityId={rfiId} />
+              <LineageTab entityType="RFI" entityId={rfiId} />
+              <WhyTab subjectType="RFI" subjectId={rfiId} />
+            </div>
+            <div style={{ display: "grid", gap: 16 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <FederatedBadge entityType="RFI" entityId={rfiId} />
+                <ComplianceHoldBadge entityType="RFI" entityId={rfiId} />
+              </div>
+              <EntityRecommendationsPanel
+                entityType="RFI"
+                entityId={rfiId}
+              />
+              <CopilotPanel entityType="RFI" entityId={rfiId} />
+              <ContextPanel entityType="RFI" entityId={rfiId} />
+              <RelatedSidebar entityType="RFI" entityId={rfiId} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
