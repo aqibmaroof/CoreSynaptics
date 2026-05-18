@@ -32,7 +32,11 @@ const SECTIONS = [
       { icon: "✔", title: "My Approvals", href: "/Approvals/MyPending" },
       { icon: "🔔", title: "Notifications", href: "/Notifications" },
       { icon: "🧭", title: "Cross-Lens", href: "/CrossLens" },
-      { icon: "📊", title: "Portfolio Predictions", href: "/PortfolioPredictions" },
+      {
+        icon: "📊",
+        title: "Portfolio Predictions",
+        href: "/PortfolioPredictions",
+      },
       { icon: "🤖", title: "Portfolio Copilot", href: "/PortfolioCopilot" },
       { icon: "🎯", title: "Project Copilot", href: "/ProjectCopilot" },
       { icon: "👩‍🎓", title: "Learner Profile", href: "/LearnerProfile" },
@@ -64,7 +68,11 @@ const SECTIONS = [
       { icon: "▲", title: "Risk Register", href: "/Risk" },
       { icon: "◎", title: "Readiness", href: "/Readiness" },
       { icon: "🏁", title: "Turnover Packages", href: "/Turnover" },
-      { icon: "📂", title: "Artifact Bundles", href: "/ArtifactIntelligence/Bundles" },
+      {
+        icon: "📂",
+        title: "Artifact Bundles",
+        href: "/ArtifactIntelligence/Bundles",
+      },
       { icon: "🦺", title: "JHA", href: "/Jha" },
       { icon: "⚡", title: "Power Flow", href: "/PowerFlow" },
       { icon: "🧭", title: "Phase Reference", href: "/PhaseReference" },
@@ -76,7 +84,11 @@ const SECTIONS = [
     label: "Quality & Workflow",
     items: [
       { icon: "✓", title: "Checklists", href: "/Checklist/List" },
-      { icon: "🔁", title: "Checklist Delegations", href: "/ChecklistDelegations" },
+      {
+        icon: "🔁",
+        title: "Checklist Delegations",
+        href: "/ChecklistDelegations",
+      },
       { icon: "❑", title: "RFIs", href: "/RFI/List" },
       { icon: "⊟", title: "Submittals", href: "/Submittals/List" },
       { icon: "⇄", title: "Change Requests", href: "/ChangeRequests" },
@@ -115,15 +127,27 @@ const SECTIONS = [
       { icon: "🛡", title: "Roles & Permissions", href: "/Roles/List" },
       { icon: "👤", title: "Users", href: "/Users/List" },
       { icon: "⚡", title: "Automation", href: "/Automation" },
-      { icon: "🧠", title: "Automation Intel", href: "/AutomationIntelligence" },
+      {
+        icon: "🧠",
+        title: "Automation Intel",
+        href: "/AutomationIntelligence",
+      },
       { icon: "📜", title: "Org Policies", href: "/OrgPolicies" },
       { icon: "🔌", title: "Integrations", href: "/Integrations" },
       { icon: "🌍", title: "Ecosystem", href: "/Ecosystem" },
       { icon: "⚖", title: "Governance", href: "/Governance" },
       { icon: "🩺", title: "Diagnostics", href: "/Diagnostics" },
       { icon: "🚨", title: "Anomalies", href: "/Anomalies" },
-      { icon: "🌐", title: "Operations Anomalies", href: "/OperationsAnomalies" },
-      { icon: "🤫", title: "Anomaly Suppressions", href: "/AnomalySuppressions" },
+      {
+        icon: "🌐",
+        title: "Operations Anomalies",
+        href: "/OperationsAnomalies",
+      },
+      {
+        icon: "🤫",
+        title: "Anomaly Suppressions",
+        href: "/AnomalySuppressions",
+      },
       { icon: "🕸", title: "Cross-Domain", href: "/CrossDomain" },
       { icon: "🗒", title: "Event Log", href: "/EventLog" },
       { icon: "📬", title: "Outbox Explorer", href: "/Outbox" },
@@ -134,7 +158,11 @@ const SECTIONS = [
     label: "Platform",
     items: [
       { icon: "📈", title: "SRE Dashboard", href: "/Sre" },
-      { icon: "🧠", title: "Intelligence Stabilization", href: "/IntelligenceStabilization" },
+      {
+        icon: "🧠",
+        title: "Intelligence Stabilization",
+        href: "/IntelligenceStabilization",
+      },
     ],
   },
 ];
@@ -550,7 +578,9 @@ export default function CxLayout({ children }) {
                 : "—"}
             </div>
             <div className="role">
-              {user?.activeRole?.description ?? user?.platformRole ?? "Operator"}
+              {user?.activeRole?.description ??
+                user?.platformRole ??
+                "Operator"}
             </div>
           </div>
 
@@ -558,9 +588,7 @@ export default function CxLayout({ children }) {
             <div key={sec.label} className="cx-side-section">
               <div className="label">{sec.label}</div>
               {sec.items.map((item) => {
-                const active =
-                  pathname === item.href ||
-                  (item.href !== "/" && pathname.startsWith(item.href));
+                const active = pathname === item.href;
                 return (
                   <Link
                     key={item.href}
