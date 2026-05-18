@@ -248,7 +248,7 @@ export default function CxLayout({ children }) {
   };
   useEffect(() => {
     if (!getAccessToken()) {
-      // router.replace("/Auth/Login");
+      router.replace("/Auth/Login");
       return;
     }
     fetchUser();
