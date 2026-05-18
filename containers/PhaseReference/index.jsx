@@ -53,7 +53,7 @@ export default function PhaseReference() {
     <div style={{ padding: 24 }}>
       <header style={{ marginBottom: 16 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>
-          🧭 Phase reference & ownership
+          Phase reference & ownership
         </h1>
         <p style={{ color: "var(--rf-txt3)", fontSize: 13 }}>
           Canonical L1–L5 taxonomy with org overrides. Highlighted rows are

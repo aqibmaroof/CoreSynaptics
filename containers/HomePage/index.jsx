@@ -177,42 +177,42 @@ const EQUIPMENT = [
 const ACTIVITY = [
   {
     time: "2m",
-    icon: "✓",
+    icon: "",
     who: "Aaron Wright",
     action: "completed checklist",
     target: "UPS-01 · L2.05b pre-energization",
   },
   {
     time: "14m",
-    icon: "⚠",
+    icon: "",
     who: "Sarah Chen",
     action: "flagged issue",
     target: "GEN-02 · Fuel line inspection pending",
   },
   {
     time: "38m",
-    icon: "📋",
+    icon: "",
     who: "Lisa Park",
     action: "submitted RFI",
     target: "RFI-047 · Load bank capacity",
   },
   {
     time: "1h",
-    icon: "✓",
+    icon: "",
     who: "Jeff Coufal",
     action: "signed off",
     target: "L2.06 doc review · UPS-02",
   },
   {
     time: "2h",
-    icon: "📦",
+    icon: "",
     who: "Rosendin PM",
     action: "updated PO status",
     target: "Cable trays · now in transit",
   },
   {
     time: "3h",
-    icon: "🔧",
+    icon: "",
     who: "McKinstry",
     action: "completed rough-in",
     target: "CRAH-08 · MER-B",
@@ -935,7 +935,7 @@ function Bar({ pct, tone }) {
   );
 }
 
-function Banner({ icon = "💡", tone = "brand", children }) {
+function Banner({ icon = "", tone = "brand", children }) {
   const map = {
     brand: ["var(--rf-glow)", "var(--rf-border2)", "var(--rf-accent)"],
     amber: ["rgba(255,204,0,0.08)", "var(--rf-yellow)", "var(--rf-yellow)"],
@@ -1129,11 +1129,11 @@ function DashGCPM({ user, router }) {
   return (
     <div>
       <PH
-        title={`Hi ${name} 👋`}
+        title={`Hi ${name}`}
         subtitle={`Here's the program view for <b>${pr.code}</b>. As GC PM you own the whole project — every company, every phase, every checklist.`}
         actions={
           <>
-            <Btn onClick={() => {}}>📋 Status report</Btn>
+            <Btn onClick={() => {}}>Status report</Btn>
             <Btn primary onClick={() => {}}>
               + Invite company
             </Btn>
@@ -1349,7 +1349,7 @@ function DashSafety() {
         subtitle="Daily near-miss log, JHAs, AHAs, OSHA + NFPA references, toolbox talks, evacuation plan, emergency log."
         actions={
           <>
-            <Btn onClick={() => {}}>⚠ Report incident</Btn>
+            <Btn onClick={() => {}}>Report incident</Btn>
             <Btn primary onClick={() => {}}>
               + New JHA
             </Btn>
@@ -1366,31 +1366,31 @@ function DashSafety() {
         <KPI label="Open LOTO permits" value={12} tone="amber" />
         <KPI label="JHAs current" value={sd.jhas.length} />
       </KPIs>
-      <Banner tone="green" icon="✅">
+      <Banner tone="green" icon="">
         <strong>Site is GREEN — 142 days without recordable incident.</strong>{" "}
         All toolbox talks current · all LOTO permits logged · 0 near-misses last
         7 days.
       </Banner>
       <Grid2>
         <div>
-          <SecH>📋 Job Hazard Analyses</SecH>
+          <SecH>Job Hazard Analyses</SecH>
           <Card>
             {sd.jhas.map((j) => (
               <Feed
                 key={j.id}
-                icon="📋"
+                icon=""
                 who={j.title}
                 target={`${j.trade} · ${j.hazards.join(" · ")}`}
                 right={<Tag tone="gray">{j.last}</Tag>}
               />
             ))}
           </Card>
-          <SecH>🎯 Activity Hazard Analyses</SecH>
+          <SecH>Activity Hazard Analyses</SecH>
           <Card>
             {sd.ahas.map((a, i) => (
               <Feed
                 key={i}
-                icon={a.signedBy === "Pending" ? "⚐" : "✓"}
+                icon={a.signedBy === "Pending" ? "" : ""}
                 who={a.activity}
                 target={`${a.date} · lead: ${a.leadCo} · ${a.controls}`}
                 right={
@@ -1401,13 +1401,13 @@ function DashSafety() {
               />
             ))}
           </Card>
-          <SecH>🗣 Toolbox talks (last 5)</SecH>
+          <SecH>Toolbox talks (last 5)</SecH>
           <Card>
             {sd.toolboxTalks.map((t, i) => (
               <Feed
                 key={i}
                 time={t.date}
-                icon="🗣"
+                icon=""
                 who={t.topic}
                 target={`${t.lead} · ${t.attendance} attended`}
               />
@@ -1415,7 +1415,7 @@ function DashSafety() {
           </Card>
         </div>
         <div>
-          <SecH>🚨 Evacuation plan</SecH>
+          <SecH>Evacuation plan</SecH>
           <Card>
             <div
               style={{
@@ -1475,7 +1475,7 @@ function DashSafety() {
               </span>
             </div>
           </Card>
-          <SecH>📜 OSHA / NFPA references</SecH>
+          <SecH>OSHA / NFPA references</SecH>
           <Card>
             {[...sd.osha, ...sd.nfpa].map((r, i) => (
               <Feed
@@ -1598,7 +1598,7 @@ function DashOEMPM({ user }) {
         {myUnits.map((e) => (
           <Feed
             key={e.id}
-            icon="⚙"
+            icon=""
             who={e.id}
             action={`· ${e.name}`}
             target={e.hall}
@@ -1663,9 +1663,9 @@ function DashFSM({ user }) {
           <Feed
             key={e.id}
             time={<span style={{ ...s.mono, fontSize: 10 }}>{e.id}</span>}
-            icon="⚙"
+            icon=""
             who={e.name}
-            target={`${e.hall} · pigtails: ${e.pigtails ? "✓ staged" : "⚠ pending"}`}
+            target={`${e.hall} · pigtails: ${e.pigtails ? "staged" : "pending"}`}
             right={
               <Btn primary sm onClick={() => {}}>
                 + Dispatch
@@ -1892,9 +1892,9 @@ function DashTrade({ user }) {
         subtitle="You think in <b>work</b>: rough-in, set-in-place, termination — not L2.0x labels."
         actions={
           <>
-            <Btn onClick={() => {}}>📦 Procurement</Btn>
+            <Btn onClick={() => {}}>Procurement</Btn>
             <Btn primary onClick={() => {}}>
-              📋 Phase reference
+              Phase reference
             </Btn>
           </>
         }
@@ -1954,7 +1954,7 @@ function DashTrade({ user }) {
             {myMats.map((m, i) => (
               <Feed
                 key={i}
-                icon="📦"
+                icon=""
                 who={m.item}
                 target={`${m.qty} · ${m.vendor} · PO ${m.po || "pending"}`}
                 right={
@@ -1992,7 +1992,7 @@ function DashTrade({ user }) {
               TASKINGS.filter((t) => t.taskedTo === co.id).map((t, i) => (
                 <Feed
                   key={i}
-                  icon={t.status === "closed" ? "✓" : "⚐"}
+                  icon={t.status === "closed" ? "" : ""}
                   who={t.name}
                   target={`${t.asset} · ${t.subPhase} · due ${t.due}`}
                   right={
@@ -2031,43 +2031,43 @@ function DashGCQAQC({ user }) {
       stat: "78/100 · grade B",
     },
     {
-      icon: "📊",
+      icon: "",
       name: "Cx Master Log",
       desc: `${EQUIPMENT.length} assets × phases`,
       stat: "Single-pane view",
     },
     {
-      icon: "🛡",
+      icon: "",
       name: "PSSR · Pre-Startup",
       desc: "OSHA 1910.119 · 6 cats · 40 items per asset",
       stat: `${pssrIP} in progress`,
     },
     {
-      icon: "⚠️",
+      icon: "",
       name: "Risk Register",
       desc: `${RISK_REGISTER.length} risks tracked`,
       stat: `${risksActive} active`,
     },
     {
-      icon: "📦",
+      icon: "",
       name: "Turnover Package",
       desc: "Final customer deliverable",
       stat: "72% ready",
     },
     {
-      icon: "⚠",
+      icon: "",
       name: "NCRs",
       desc: "Raised → CAR → closed",
       stat: `${NCRS.filter((n) => n.status !== "closed").length} open`,
     },
     {
-      icon: "📌",
+      icon: "",
       name: "Punch List",
       desc: "Per-asset deficiency tracking",
       stat: `${PUNCH_ITEMS.filter((p) => p.status !== "closed").length} open`,
     },
     {
-      icon: "🧪",
+      icon: "",
       name: "Test Results",
       desc: "NETA acceptance · per device",
       stat: `${TEST_RESULTS.filter((t) => !t.pass).length} failures`,
@@ -2080,7 +2080,7 @@ function DashGCQAQC({ user }) {
         subtitle="You task out checklists to every company's QA/QC and own the project's quality gate."
         actions={
           <>
-            <Btn onClick={() => {}}>📋 Phase reference</Btn>
+            <Btn onClick={() => {}}>Phase reference</Btn>
             <Btn primary onClick={() => {}}>
               + Task out checklist
             </Btn>
@@ -2360,7 +2360,7 @@ function DashOEMQAQC({ user }) {
               myTaskings.map((t, i) => (
                 <Feed
                   key={i}
-                  icon={t.status === "closed" ? "✓" : "⚐"}
+                  icon={t.status === "closed" ? "" : ""}
                   who={t.name}
                   target={`${t.asset} · ${t.subPhase} · due ${t.due}`}
                   right={
@@ -2387,7 +2387,7 @@ function DashOEMQAQC({ user }) {
             {myUnits.map((u) => (
               <Feed
                 key={u.id}
-                icon="⚙"
+                icon=""
                 who={u.id}
                 action={`· ${u.name}`}
                 target={u.hall}
@@ -2427,7 +2427,7 @@ function DashTradeQAQC({ user, assetType = "electrical" }) {
         subtitle={`Sign off ${isElec ? "electrical" : "mechanical"} pre-energization for ${co.name}'s scope.`}
         actions={
           <>
-            <Btn onClick={() => {}}>📋 Phase reference</Btn>
+            <Btn onClick={() => {}}>Phase reference</Btn>
             <Btn primary onClick={() => {}}>
               All checklists →
             </Btn>
@@ -2453,7 +2453,7 @@ function DashTradeQAQC({ user, assetType = "electrical" }) {
         />
       </KPIs>
       <Banner tone="brand">
-        {isElec ? "⚡" : "❄"} <strong>Your scope.</strong> You sign off L2.05
+        {isElec ? "" : ""} <strong>Your scope.</strong> You sign off L2.05
         {isElec ? "a" : "d"} pre-energization checklist before the OEM does
         L2.05b.
       </Banner>
@@ -2559,7 +2559,7 @@ function DashBMS({ user }) {
         subtitle="You own L2.05c — BMS pre-energization. Verify controls, points lists, network integration before any live data flows."
         actions={
           <Btn primary onClick={() => {}}>
-            📋 L2.05c reference →
+            L2.05c reference →
           </Btn>
         }
       />
@@ -2664,7 +2664,7 @@ function DashCxA({ user }) {
           myList.map((t, i) => (
             <Feed
               key={i}
-              icon={t.status === "closed" ? "✓" : "⚐"}
+              icon={t.status === "closed" ? "" : ""}
               who={t.name}
               target={`${t.asset} · ${t.subPhase} · due ${t.due}`}
               right={

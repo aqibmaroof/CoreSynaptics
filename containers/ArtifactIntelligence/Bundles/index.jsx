@@ -319,7 +319,7 @@ export default function ArtifactBundles() {
                         className="rf-btn"
                         onClick={() => removeItem(it.artifactId)}
                       >
-                        ✕
+                       
                       </button>
                     </li>
                   ))}

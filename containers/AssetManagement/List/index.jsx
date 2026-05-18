@@ -39,12 +39,12 @@ const STATUS_COLORS = {
 };
 
 const STATUS_ICONS = {
-  IN_STOCK: "📦",
-  ASSIGNED: "👤",
-  IN_REPAIR: "🔧",
-  DAMAGED: "⚠️",
-  RETIRED: "🗑️",
-  LOST: "❓",
+  IN_STOCK: "",
+  ASSIGNED: "",
+  IN_REPAIR: "",
+  DAMAGED: "",
+  RETIRED: "",
+  LOST: "",
 };
 
 const TRANSITIONS = {
@@ -286,7 +286,7 @@ export default function AssetsList() {
               color: "text-orange-400",
             },
             {
-              label: "Warranty ⚠",
+              label: "Warranty",
               value: stats.expired,
               color: "text-red-400",
             },

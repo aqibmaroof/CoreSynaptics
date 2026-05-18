@@ -29,13 +29,13 @@ const TRANSITIONS = {
 };
 
 const STEP_ICONS = {
-  CREATED:          "📦",
-  PICKED_UP:        "🚛",
-  IN_TRANSIT:       "🌐",
-  OUT_FOR_DELIVERY: "🏠",
-  DELIVERED:        "✅",
+  CREATED:          "",
+  PICKED_UP:        "",
+  IN_TRANSIT:       "",
+  OUT_FOR_DELIVERY: "",
+  DELIVERED:        "",
   RETURNED:         "↩️",
-  FAILED:           "❌",
+  FAILED:           "",
 };
 
 const fmtAddress = (addr) => {

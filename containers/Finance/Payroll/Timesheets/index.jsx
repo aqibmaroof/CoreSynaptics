@@ -292,7 +292,7 @@ export default function PayrollTimesheets() {
           <div className="p-10 text-center text-gray-100">Loading timesheet entries...</div>
         ) : entries.length === 0 ? (
           <div className="p-10 text-center text-gray-100">
-            <p className="text-4xl mb-3">🕐</p>
+            <p className="text-4xl mb-3"></p>
             <p>No time entries for this period.</p>
           </div>
         ) : (

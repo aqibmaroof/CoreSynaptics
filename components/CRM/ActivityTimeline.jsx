@@ -17,9 +17,9 @@ const TYPE_COLOR = {
 };
 
 const TYPE_ICON = {
-  Note: "📝",
-  Call: "📞",
-  Meeting: "📅",
+  Note: "",
+  Call: "",
+  Meeting: "",
 };
 
 const EMPTY_FORM = {
@@ -189,7 +189,7 @@ export default function ActivityTimeline({ entityType, entityId }) {
                 <div className="bg-gray-800/60 border border-gray-700/50 rounded-lg px-4 py-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">{TYPE_ICON[displayType] || "🔹"}</span>
+                      <span className="text-sm">{TYPE_ICON[displayType] || ""}</span>
                       <span className="text-white text-sm font-medium">{a.title}</span>
                       <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700 text-gray-400">{displayType}</span>
                     </div>
@@ -197,7 +197,7 @@ export default function ActivityTimeline({ entityType, entityId }) {
                       onClick={() => handleDelete(a.id)}
                       className="text-gray-600 hover:text-red-400 text-xs transition-colors flex-shrink-0"
                     >
-                      ✕
+                     
                     </button>
                   </div>
                   {(a.description || a.content) && (

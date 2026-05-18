@@ -36,7 +36,7 @@ export const TypeDebugPanel = ({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <h3 className="text-lg font-bold text-purple-800 flex items-center">
-          <span className="mr-2">🔧</span>
+          <span className="mr-2"></span>
           Type System Debug Panel
         </h3>
         <button
@@ -53,7 +53,7 @@ export const TypeDebugPanel = ({
           {/* Context Section */}
           <div className="bg-white rounded-md p-4 border border-purple-200">
             <h4 className="font-semibold text-purple-700 mb-3 flex items-center">
-              <span className="mr-2">📋</span>
+              <span className="mr-2"></span>
               Current Context
             </h4>
             <div className="grid grid-cols-2 gap-3 text-sm">
@@ -85,7 +85,7 @@ export const TypeDebugPanel = ({
           {/* Selected Types Section */}
           <div className="bg-white rounded-md p-4 border border-purple-200">
             <h4 className="font-semibold text-purple-700 mb-3 flex items-center">
-              <span className="mr-2">🎯</span>
+              <span className="mr-2"></span>
               Selected Types (Hierarchy)
             </h4>
             <div className="space-y-2 text-sm">
@@ -131,7 +131,7 @@ export const TypeDebugPanel = ({
           {availableTypes.length > 0 && (
             <div className="bg-white rounded-md p-4 border border-purple-200">
               <h4 className="font-semibold text-purple-700 mb-3 flex items-center">
-                <span className="mr-2">✓</span>
+                <span className="mr-2"></span>
                 Available Types ({availableTypes.length})
               </h4>
               <div className="flex flex-wrap gap-2">
@@ -158,7 +158,7 @@ export const TypeDebugPanel = ({
               <h4 className={`font-semibold mb-2 flex items-center ${
                 validationResult.isValid ? 'text-green-700' : 'text-red-700'
               }`}>
-                <span className="mr-2">{validationResult.isValid ? '✅' : '❌'}</span>
+                <span className="mr-2">{validationResult.isValid ? '' : ''}</span>
                 Validation Status
               </h4>
               {validationResult.errors && validationResult.errors.length > 0 && (
@@ -175,7 +175,7 @@ export const TypeDebugPanel = ({
                 <div className="space-y-1 mt-2">
                   {validationResult.warnings.map((warning, index) => (
                     <div key={index} className="text-sm text-yellow-700 flex items-start">
-                      <span className="mr-2">⚠️</span>
+                      <span className="mr-2"></span>
                       <span>{warning}</span>
                     </div>
                   ))}
@@ -191,7 +191,7 @@ export const TypeDebugPanel = ({
           {Object.keys(metadata).length > 0 && (
             <div className="bg-white rounded-md p-4 border border-purple-200">
               <h4 className="font-semibold text-purple-700 mb-3 flex items-center">
-                <span className="mr-2">📦</span>
+                <span className="mr-2"></span>
                 Metadata (Dynamic Fields)
               </h4>
               <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto font-mono border border-gray-300">
@@ -203,7 +203,7 @@ export const TypeDebugPanel = ({
           {/* Help Text */}
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
             <p className="text-xs text-blue-800">
-              <strong>💡 This panel demonstrates how the Type System controls the ERP:</strong>
+              <strong>This panel demonstrates how the Type System controls the ERP:</strong>
               <br />
               • Different project categories → different available types
               <br />

@@ -136,7 +136,7 @@ export default function ArtifactLineagePanel({ artifactId, onChange }) {
                   )}
                 </div>
                 <button className="rf-btn" onClick={() => remove(r.id)}>
-                  ✕
+                 
                 </button>
               </li>
             ))}

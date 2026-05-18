@@ -3043,26 +3043,26 @@ export default function ProjectWizard() {
           <div className="sow-icon">
             <span style={{ fontSize: 22 }}>
               {eq.id === "ups"
-                ? "⚡"
+                ? ""
                 : eq.id === "batt"
-                  ? "🔋"
+                  ? ""
                   : eq.id === "gen"
-                    ? "⚙️"
+                    ? ""
                     : eq.id === "pdu"
-                      ? "🔌"
+                      ? ""
                       : eq.id === "ats"
-                        ? "🔀"
+                        ? ""
                         : eq.id === "chlr"
-                          ? "❄️"
+                          ? ""
                           : eq.id === "crah"
-                            ? "🌀"
+                            ? ""
                             : eq.id === "facp"
-                              ? "🚨"
+                              ? ""
                               : eq.id === "acs"
-                                ? "🔐"
+                                ? ""
                                 : eq.id === "bms"
-                                  ? "🖥️"
-                                  : "🔧"}
+                                  ? ""
+                                  : ""}
             </span>
           </div>
           <div>
@@ -3167,7 +3167,7 @@ export default function ProjectWizard() {
           </p>
         </div>
         <div className="callout callout-amber">
-          <span className="callout-icon">⚠</span>
+          <span className="callout-icon"></span>
           <div>
             <div className="callout-t">Dates are planning targets</div>Actual
             schedule will be managed in the project timeline after kickoff.
@@ -4261,7 +4261,7 @@ export default function ProjectWizard() {
         </div>
       )}
       <div className="callout callout-teal">
-        <span className="callout-icon">✓</span>
+        <span className="callout-icon"></span>
         <div>
           <div className="callout-t">Auto-tagging at scan</div>When FSEs scan QR
           codes in the field, tags will be auto-applied using the format you
@@ -6776,7 +6776,7 @@ export default function ProjectWizard() {
                           }))
                         }
                       >
-                        {sel ? "✓ Connected" : "+ Connect"}
+                        {sel ? "Connected" : "+ Connect"}
                       </button>
                     </div>
                   </div>
@@ -7093,7 +7093,7 @@ export default function ProjectWizard() {
           {saving
             ? "Launching…"
             : allReady
-              ? "🚀 Launch project"
+              ? "Launch project"
               : "Complete required steps to launch"}
         </button>
         <div className="launch-disclaimer">
@@ -7178,7 +7178,7 @@ export default function ProjectWizard() {
       {/* Error */}
       {apiError && (
         <div className="callout callout-amber" style={{ marginBottom: 12 }}>
-          <span className="callout-icon">⚠</span>
+          <span className="callout-icon"></span>
           <div>
             <div className="callout-t">API error</div>
             {apiError}
@@ -7193,7 +7193,7 @@ export default function ProjectWizard() {
             }}
             onClick={() => setApiError(null)}
           >
-            ✕
+           
           </button>
         </div>
       )}
@@ -7209,7 +7209,7 @@ export default function ProjectWizard() {
                 className={cls}
                 onClick={() => upd((st) => ({ ...st, step: i }))}
               >
-                <span className="sdn">{i < cur ? "✓" : i + 1}</span>
+                <span className="sdn">{i < cur ? "" : i + 1}</span>
                 <span className="hidden sm:inline">{s.label}</span>
               </div>
             );

@@ -211,7 +211,7 @@ export default function WarehousesAdd({ editId }) {
             <div className="bg-gray-900/50 rounded-xl border border-cyan-500/20 p-5">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Preview</p>
               <div className="flex items-center gap-4">
-                <span className="text-4xl">🏭</span>
+                <span className="text-4xl"></span>
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="text-white font-semibold">{form.name}</p>

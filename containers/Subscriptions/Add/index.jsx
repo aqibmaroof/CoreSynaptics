@@ -333,7 +333,7 @@ export default function AddSubscription() {
                     onClick={() => removeFeature(index)}
                     className="text-gray-600 hover:text-red-400 transition-colors text-lg leading-none px-1"
                   >
-                    ✕
+                   
                   </button>
                 )}
               </div>
@@ -363,7 +363,7 @@ export default function AddSubscription() {
                       : "border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-300"
                   }`}
                 >
-                  {selected && <span className="mr-1.5">✓</span>}
+                  {selected && <span className="mr-1.5"></span>}
                   {mod}
                 </button>
               );

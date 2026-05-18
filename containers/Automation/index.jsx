@@ -324,7 +324,7 @@ function RuleEditor({ draft, setDraft, onCancel, onSave, isNew }) {
       <div style={modal}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--rf-txt)" }}>{isNew ? "New rule" : "Edit rule"}</h2>
-          <button className="rf-btn" onClick={onCancel}>✕</button>
+          <button className="rf-btn" onClick={onCancel}></button>
         </header>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -377,7 +377,7 @@ function RuleEditor({ draft, setDraft, onCancel, onSave, isNew }) {
                   try { setAction(i, { params: JSON.parse(e.target.value || "{}") }); } catch { /* swallow */ }
                 }}
               />
-              <button className="rf-btn" onClick={() => removeAction(i)}>✕</button>
+              <button className="rf-btn" onClick={() => removeAction(i)}></button>
             </div>
           ))}
         </div>

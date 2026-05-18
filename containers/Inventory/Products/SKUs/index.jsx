@@ -54,7 +54,7 @@ function AttributeEditor({ pairs, onChange }) {
             onClick={() => remove(i)}
             className="px-3 py-2 text-gray-500 hover:text-red-400 transition-colors"
           >
-            ✕
+           
           </button>
         </div>
       ))}
@@ -671,7 +671,7 @@ export default function ProductSKUs() {
         {/* SKU list */}
         {skus.length === 0 ? (
           <div className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-16 text-center">
-            <p className="text-4xl mb-4">🏷️</p>
+            <p className="text-4xl mb-4"></p>
             <p className="text-gray-400 text-lg mb-1">No SKUs yet</p>
             <p className="text-gray-600 text-sm mb-6">
               Add SKUs to track variants of this product in inventory

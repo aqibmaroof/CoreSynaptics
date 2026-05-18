@@ -37,11 +37,11 @@ export const CHAT_REACTION_KINDS = [
 ];
 
 export const CHAT_REACTION_EMOJI = {
-  THUMBS_UP: "👍",
-  CELEBRATE: "🎉",
-  ACKNOWLEDGE: "✅",
-  CONCERN: "⚠️",
-  RESOLVED: "☑️",
+  THUMBS_UP: "",
+  CELEBRATE: "",
+  ACKNOWLEDGE: "",
+  CONCERN: "",
+  RESOLVED: "",
 };
 
 // Route a mention chip to the right detail screen.

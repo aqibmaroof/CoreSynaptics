@@ -50,7 +50,7 @@ const PhaseGateIndicator = ({ currentPhase, phases, alert }) => {
             Project progression tracking
           </p>
         </div>
-        <span className="text-3xl">🏗️</span>
+        <span className="text-3xl"></span>
       </div>
 
       {/* Phases */}
@@ -110,7 +110,7 @@ const PhaseGateIndicator = ({ currentPhase, phases, alert }) => {
             border: "1px solid rgba(251,191,36,0.22)",
           }}
         >
-          <span className="text-2xl shrink-0">⚠️</span>
+          <span className="text-2xl shrink-0"></span>
           <div>
             <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "#fbbf24" }}>
               {alert.title}

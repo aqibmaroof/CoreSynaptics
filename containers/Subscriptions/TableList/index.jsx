@@ -194,10 +194,10 @@ export default function PricingPlans() {
                       ${plan.price || "20"}
                     </td>
                     <td className="py-4 px-4 text-gray-400">
-                      {plan.userLimit || "♾️"}
+                      {plan.userLimit || ""}
                     </td>
                     <td className="py-4 px-4 text-gray-400">
-                      {plan.projectLimit || "♾️"}
+                      {plan.projectLimit || ""}
                     </td>
                     <td className="py-4 px-4 text-gray-400">
                       <div className="flex flex-col gap-2 text-gray-300 text-sm mb-4">

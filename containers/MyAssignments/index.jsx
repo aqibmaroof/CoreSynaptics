@@ -512,7 +512,7 @@ function TaskRow({ task, users, onStatusChange }) {
               marginLeft: "auto",
             }}
           >
-            {overdue ? "⚠ " : ""}Due {task.dueDate}
+            {overdue ? "" : ""}Due {task.dueDate}
           </span>
         </div>
       </div>
@@ -557,7 +557,7 @@ function TaskRow({ task, users, onStatusChange }) {
             e.currentTarget.style.color = "var(--rf-txt3)";
           }}
         >
-          ✓
+         
         </button>
       )}
     </div>
@@ -647,7 +647,7 @@ function NextActionRow({ action }) {
               color: overdue ? "var(--rf-red)" : "var(--rf-txt3)",
             }}
           >
-            {overdue ? "⚠ " : ""}
+            {overdue ? "" : ""}
             {action.dueDate ? `Due ${action.dueDate}` : "No due date"}
           </span>
           <span style={{ fontSize: 10, color: "var(--rf-txt3)", marginLeft: "auto" }}>
@@ -659,7 +659,7 @@ function NextActionRow({ action }) {
   );
 }
 
-function EmptyState({ message, icon = "📭" }) {
+function EmptyState({ message, icon = "" }) {
   return (
     <div
       style={{
@@ -693,7 +693,7 @@ function TaskList({ tasks, users, onStatusChange, emptyMsg }) {
 
 function ChecklistTable({ checklists }) {
   if (!checklists.length)
-    return <EmptyState message="No open checklists." icon="☑" />;
+    return <EmptyState message="No open checklists." icon="" />;
   return (
     <div style={{ overflowX: "auto" }}>
       <table
@@ -801,7 +801,7 @@ function ChecklistTable({ checklists }) {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {overdue ? "⚠ " : ""}
+                  {overdue ? "" : ""}
                   {c.dueDate}
                 </td>
                 <td style={{ padding: "12px 16px" }}>
@@ -891,7 +891,7 @@ function NewTaskModal({ onClose, onSave, users, currentUser }) {
               fontSize: 18,
             }}
           >
-            ✕
+           
           </button>
         </div>
 
@@ -1137,7 +1137,7 @@ function Toast({ msg, onDone }) {
         animation: "fadeIn 0.2s ease",
       }}
     >
-      ✓ {msg}
+      {msg}
     </div>
   );
 }
@@ -1336,13 +1336,13 @@ export default function MyAssignments() {
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
   const tabs = [
-    { key: "next", icon: "⚡", label: "Next Actions", count: nextActions.length },
-    { key: "mine", icon: "📋", label: "My Tasks", count: myOpenTasks.length },
+    { key: "next", icon: "", label: "Next Actions", count: nextActions.length },
+    { key: "mine", icon: "", label: "My Tasks", count: myOpenTasks.length },
     ...(isMgmt
       ? [
           {
             key: "team",
-            icon: "👥",
+            icon: "",
             label: "Team Tasks",
             count: teamTasks.length,
           },
@@ -1350,16 +1350,16 @@ export default function MyAssignments() {
       : []),
     {
       key: "assigned",
-      icon: "📤",
+      icon: "",
       label: "Tasks I Assigned",
       count: tasksIAssigned.length,
     },
-    { key: "week", icon: "📅", label: "Due This Week", count: weekList.length },
-    { key: "overdue", icon: "⚠", label: "Overdue", count: overdueList.length },
-    { key: "done", icon: "✓", label: "Completed", count: myDoneTasks.length },
+    { key: "week", icon: "", label: "Due This Week", count: weekList.length },
+    { key: "overdue", icon: "", label: "Overdue", count: overdueList.length },
+    { key: "done", icon: "", label: "Completed", count: myDoneTasks.length },
     {
       key: "check",
-      icon: "☑",
+      icon: "",
       label: "Checklists",
       count: checklistList.length,
     },
@@ -1389,7 +1389,7 @@ export default function MyAssignments() {
           </div>
         );
       if (!nextActions.length)
-        return <EmptyState message="No actions in your queue. You're all caught up!" icon="⚡" />;
+        return <EmptyState message="No actions in your queue. You're all caught up!" icon="" />;
       return (
         <div>
           <div

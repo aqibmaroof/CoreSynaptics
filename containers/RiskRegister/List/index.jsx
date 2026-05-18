@@ -199,7 +199,7 @@ export default function RiskRegisterList({ cxProjectId }) {
           lineHeight: 1.55,
         }}
       >
-        💡 <b>Risk register.</b> Each risk scored on 1-5 probability × 1-5
+        <b>Risk register.</b> Each risk scored on 1-5 probability × 1-5
         impact (max score 25). Critical items (score ≥15) get weekly executive
         review; High items (9-14) get bi-weekly review.
       </div>
@@ -655,7 +655,7 @@ function CloseRiskModal({ risk, onClose, onClosed, onError }) {
           lineHeight: 1.5,
         }}
       >
-        ⚠ <b>MITIGATED</b> requires every linked Issue to already be{" "}
+        <b>MITIGATED</b> requires every linked Issue to already be{" "}
         <b>CLOSED</b>. ACCEPTED / OBSOLETE accept any state.
       </div>
     </Modal>

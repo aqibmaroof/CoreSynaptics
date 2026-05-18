@@ -266,7 +266,7 @@ export default function GuidedFlowDrawer({
           )}
           {onClose && (
             <button className="rf-btn" onClick={onClose} title="Close">
-              ✕
+             
             </button>
           )}
         </div>
@@ -339,7 +339,7 @@ export default function GuidedFlowDrawer({
                 fontSize: 13,
               }}
             >
-              {isDone ? "✓" : s.ordinal}
+              {isDone ? "" : s.ordinal}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{s.title}</div>

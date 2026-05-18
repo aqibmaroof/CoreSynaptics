@@ -217,7 +217,7 @@ export default function PayrollEmployees() {
           <div className="p-10 text-center text-gray-100">Loading profiles...</div>
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center text-gray-100">
-            <p className="text-4xl mb-3">👥</p>
+            <p className="text-4xl mb-3"></p>
             <p>No payroll profiles found.</p>
             <button className="btn btn-sm btn-info rounded-xl mt-4" onClick={openAdd}>
               Add First Profile
@@ -284,7 +284,7 @@ export default function PayrollEmployees() {
                           onClick={() => openDeductions(p)}
                           title="Deductions"
                         >
-                          ✂️
+                         
                         </button>
                         <button
                           className="btn btn-xs btn-ghost text-gray-100"
@@ -493,7 +493,7 @@ export default function PayrollEmployees() {
                         className="btn btn-xs btn-ghost text-error"
                         onClick={() => handleRemoveDeduction(d.id)}
                       >
-                        ✕
+                       
                       </button>
                     </div>
                   </div>

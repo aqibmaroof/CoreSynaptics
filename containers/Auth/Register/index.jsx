@@ -2998,7 +2998,7 @@ function StepEquipment({ w, u }) {
             "Finance splits costs by source",
             "Legal knows warranty holder",
           ].map((t) => (
-            <div key={t}>✓ {t}</div>
+            <div key={t}>{t}</div>
           ))}
         </div>
       </div>
@@ -4957,7 +4957,7 @@ function StepReview({ w, u, showPwd, setShowPwd, apiReview }) {
             border: "1px solid rgba(0,229,160,0.18)",
           }}
         >
-          ✓ ONE PLATFORM · REPLACE THE ENTIRE STACK
+          ONE PLATFORM · REPLACE THE ENTIRE STACK
         </div>
       </div>
 

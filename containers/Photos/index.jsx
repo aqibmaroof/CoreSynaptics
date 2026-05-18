@@ -77,7 +77,7 @@ export default function Photos({ cxProjectId }) {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>📷 Photos</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700 }}>Photos</h1>
           <p style={{ color: "var(--rf-txt3)", fontSize: 13 }}>
             Two-step upload via S3 presign. Tags drive QA / readiness gates
             downstream.
@@ -464,7 +464,7 @@ function UploadModal({ cxProjectId, onClose, onDone }) {
         onClick={(e) => e.stopPropagation()}
       >
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
-          📷 Upload photo
+          Upload photo
         </h2>
         {error && (
           <div

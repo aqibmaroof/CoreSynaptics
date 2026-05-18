@@ -193,7 +193,7 @@ export default function CompanyEdit() {
                 />
                 <span className="text-sm font-medium text-white">Subscription Active</span>
                 <span className="ml-auto text-xs text-gray-400">
-                  {formData.subscriptionActive ? "✓ Active" : "○ Inactive"}
+                  {formData.subscriptionActive ? "Active" : "○ Inactive"}
                 </span>
               </label>
             </div>

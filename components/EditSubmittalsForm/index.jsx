@@ -28,7 +28,7 @@ export default function SubmittalEditForm({
     rejection_reason: "",
   });
 
-  // 🔥 ONLY DIFFERENCE: inject API data into same structure
+  // ONLY DIFFERENCE: inject API data into same structure
   useEffect(() => {
     if (data) {
       setForm({

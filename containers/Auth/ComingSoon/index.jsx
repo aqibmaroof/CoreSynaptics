@@ -15,7 +15,7 @@ const LoginPage = () => {
     try {
       const response = await LoginService(formData);
       if (response) {
-        setMessage({ type: "success", text: "Login successful! 🚀" });
+        setMessage({ type: "success", text: "Login successful!" });
 
         // Save credentials if "Remember Me" is checked
         saveCredentials();

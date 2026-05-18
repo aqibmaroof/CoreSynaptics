@@ -81,7 +81,7 @@ export default function ExecutionExplainDrawer({
         </div>
         {onClose && (
           <button className="rf-btn" onClick={onClose} title="Close">
-            ✕
+           
           </button>
         )}
       </header>

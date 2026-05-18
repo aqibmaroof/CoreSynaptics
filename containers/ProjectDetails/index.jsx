@@ -118,7 +118,7 @@ function EmptyState({ message = "No records found." }) {
         fontSize: 14,
       }}
     >
-      <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
+      <div style={{ fontSize: 32, marginBottom: 8 }}></div>
       {message}
     </div>
   );
@@ -431,7 +431,7 @@ function Modal({ title, subtitle, onClose, children }) {
               flexShrink: 0,
             }}
           >
-            ✕
+           
           </button>
         </div>
         {/* Body */}

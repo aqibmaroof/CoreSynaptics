@@ -133,10 +133,10 @@ export default function PayrollDashboard() {
       {/* Quick Links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Employees", href: "/Finance/Payroll/Employees", emoji: "👥" },
-          { label: "Timesheets", href: "/Finance/Payroll/Timesheets", emoji: "🕐" },
-          { label: "Payroll Runs", href: "/Finance/Payroll/PayrollProcessing", emoji: "💳" },
-          { label: "Finance Overview", href: "/Finance/Dashboard", emoji: "📊" },
+          { label: "Employees", href: "/Finance/Payroll/Employees", emoji: "" },
+          { label: "Timesheets", href: "/Finance/Payroll/Timesheets", emoji: "" },
+          { label: "Payroll Runs", href: "/Finance/Payroll/PayrollProcessing", emoji: "" },
+          { label: "Finance Overview", href: "/Finance/Dashboard", emoji: "" },
         ].map((item) => (
           <Link
             key={item.label}
@@ -165,7 +165,7 @@ export default function PayrollDashboard() {
           <div className="p-6 text-center text-gray-100 ">Loading...</div>
         ) : recentRuns.length === 0 ? (
           <div className="p-10 text-center text-gray-100">
-            <p className="text-4xl mb-3">💳</p>
+            <p className="text-4xl mb-3"></p>
             <p>No payroll runs yet.</p>
             <Link
               href="/Finance/Payroll/PayrollProcessing"
@@ -228,7 +228,7 @@ export default function PayrollDashboard() {
               label: "Permanent Employees",
               data: stats.by_type.permanent,
               color: "bg-primary",
-              emoji: "🏢",
+              emoji: "",
             },
             {
               label: "Hourly Workers",

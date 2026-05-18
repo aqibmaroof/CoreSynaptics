@@ -15,7 +15,7 @@ const PhaseDistributionCard = ({ data }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-sm font-bold flex items-center gap-2" style={{ color: "var(--rf-txt)" }}>
-          <span className="text-base">📊</span>
+          <span className="text-base"></span>
           {data.title}
         </h3>
         <span

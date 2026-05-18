@@ -331,7 +331,7 @@ export default function SuppliersAdd({ editId }) {
                 Preview
               </p>
               <div className="flex items-start gap-4">
-                <span className="text-4xl">🏢</span>
+                <span className="text-4xl"></span>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-white font-semibold">{form.name}</p>

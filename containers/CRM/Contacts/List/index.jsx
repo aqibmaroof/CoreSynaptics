@@ -286,7 +286,7 @@ export default function ContactsList() {
             <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-700 shrink-0">
                 <h3 className="text-white font-bold">Timeline — {timelineEntity.name}</h3>
-                <button onClick={() => setTimelineEntity(null)} className="text-gray-400 hover:text-white text-lg leading-none">✕</button>
+                <button onClick={() => setTimelineEntity(null)} className="text-gray-400 hover:text-white text-lg leading-none"></button>
               </div>
               <div className="p-5 overflow-y-auto">
                 <ActivityTimeline entityType="contact" entityId={timelineEntity.id} />

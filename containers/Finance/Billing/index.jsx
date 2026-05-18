@@ -211,7 +211,7 @@ export default function FinanceBilling() {
           <div className="p-10 text-center text-gray-400">Loading invoices...</div>
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center text-gray-500">
-            <p className="text-4xl mb-3">🧾</p>
+            <p className="text-4xl mb-3"></p>
             <p>No invoices found.</p>
             <button className="btn btn-sm btn-info mt-4" onClick={openAdd}>Create First Invoice</button>
           </div>

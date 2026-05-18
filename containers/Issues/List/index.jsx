@@ -510,7 +510,7 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
           >
             {issue.discipline && <DisciplineChip label={issue.discipline} />}
             {issue.asset && <Chip label={issue.asset} icon="⬤" />}
-            {issue.company && <Chip label={issue.company} icon="🏢" />}
+            {issue.company && <Chip label={issue.company} icon="" />}
             {issue.assigneeCompany && (
               <span
                 style={{
@@ -524,7 +524,7 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
               </span>
             )}
             {issue.checklistRef && (
-              <Chip label={issue.checklistRef} icon="📌" />
+              <Chip label={issue.checklistRef} icon="" />
             )}
             {issue.comments > 0 && (
               <span
@@ -536,7 +536,7 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
                   gap: 3,
                 }}
               >
-                <span>💬</span> {issue.comments}
+                <span></span> {issue.comments}
               </span>
             )}
             {issue.blocker && (
@@ -552,7 +552,7 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
                   letterSpacing: "0.04em",
                 }}
               >
-                🚫 {issue.blocker}
+                {issue.blocker}
               </span>
             )}
           </div>
@@ -590,7 +590,7 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
                 marginBottom: 2,
               }}
             >
-              ⚠ OVERDUE {issue.overdueHours}h
+              OVERDUE {issue.overdueHours}h
             </div>
           ) : issue.timeLeft ? (
             <div
@@ -696,7 +696,7 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
                   fontWeight: 700,
                 }}
               >
-                ✓ Close
+                Close
               </button>
             )}
             {issue.status !== "CLOSED" && (
@@ -1229,7 +1229,7 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
                 }}
               />
               <span style={{ fontSize: 13, color: "var(--rf-txt2)" }}>
-                🚫 This issue{" "}
+                This issue{" "}
                 <strong style={{ color: "var(--rf-txt)" }}>
                   blocks phase advancement
                 </strong>{" "}
@@ -1298,7 +1298,7 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
               opacity: submitting ? 0.7 : 1,
             }}
           >
-            <span>🔔</span> {submitting ? "Raising..." : "Raise issue"}
+            <span></span> {submitting ? "Raising..." : "Raise issue"}
           </button>
         </div>
       </div>
@@ -1364,7 +1364,7 @@ function Toast({ message, onDone }) {
         boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
       }}
     >
-      {message.type === "success" ? "✓" : "✕"} {message.text}
+      {message.type === "success" ? "" : ""} {message.text}
     </div>
   );
 }
@@ -1556,13 +1556,13 @@ export default function IssuesList() {
               gap: 8,
             }}
           >
-            <span>🔔</span> Issues
+            <span></span> Issues
           </h1>
           <p
             style={{ margin: "5px 0 0", fontSize: 13, color: "var(--rf-txt3)" }}
           >
             Day-to-day field issues · {issues.length} total · {overdue.length}{" "}
-            overdue ⚠
+            overdue
           </p>
         </div>
         <button
@@ -1731,7 +1731,7 @@ export default function IssuesList() {
             fontSize: 13,
           }}
         >
-          <div style={{ fontSize: 32, marginBottom: 10 }}>🔔</div>
+          <div style={{ fontSize: 32, marginBottom: 10 }}></div>
           No issues match the current filter.
         </div>
       ) : (

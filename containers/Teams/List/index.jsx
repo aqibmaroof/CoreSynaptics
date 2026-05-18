@@ -28,7 +28,7 @@ export default function TeamsList() {
     try {
       await DeleteTeam(id);
       GetAllTeams();
-      showMessage("success", "Team Deleted Successfully! 🚀");
+      showMessage("success", "Team Deleted Successfully!");
     } catch (error) {
       showMessage("error", "Error Deleting Team: " + error?.message);
     }
@@ -38,7 +38,7 @@ export default function TeamsList() {
     try {
       await RestoreTeam(id);
       GetAllTeams();
-      showMessage("success", "Team Restored Successfully! 🚀");
+      showMessage("success", "Team Restored Successfully!");
     } catch (error) {
       showMessage("error", "Error Restoring Team: " + error?.message);
     }

@@ -148,7 +148,7 @@ export default function WarehousesList() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-16 text-center">
-            <p className="text-5xl mb-4">🏭</p>
+            <p className="text-5xl mb-4"></p>
             <p className="text-gray-400 text-lg mb-1">No warehouses found</p>
             <p className="text-gray-600 text-sm mb-6">Add your first warehouse to start tracking stock locations</p>
             <button onClick={() => router.push("/Inventory/Warehouses/Add")}
@@ -167,7 +167,7 @@ export default function WarehousesList() {
                 <div className="p-5 border-b border-gray-800/60">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-3xl">🏭</span>
+                      <span className="text-3xl"></span>
                       <div>
                         <h3 className="text-white font-semibold text-base">{wh.name}</h3>
                         {wh.code && (
@@ -245,7 +245,7 @@ export default function WarehousesList() {
                   </p>
                 </div>
                 <button onClick={() => setStockDrawer(null)}
-                  className="text-gray-500 hover:text-white transition-colors text-xl leading-none">✕</button>
+                  className="text-gray-500 hover:text-white transition-colors text-xl leading-none"></button>
               </div>
 
               <div className="p-6">
@@ -255,7 +255,7 @@ export default function WarehousesList() {
                   </div>
                 ) : stockLevels.length === 0 ? (
                   <div className="text-center py-10">
-                    <p className="text-4xl mb-3">📦</p>
+                    <p className="text-4xl mb-3"></p>
                     <p className="text-gray-400">No stock recorded in this warehouse yet.</p>
                     <button
                       onClick={() => { setStockDrawer(null); router.push("/Inventory/Movements/Add"); }}

@@ -12,7 +12,7 @@ const timelineData = {
       dotColor: "bg-blue-500",
       title: "12 Invoices have been paid",
       details: "Invoices have been paid to the company",
-      attachment: { name: "invoices.pdf", icon: "📄" },
+      attachment: { name: "invoices.pdf", icon: "" },
     },
     {
       type: "meeting",

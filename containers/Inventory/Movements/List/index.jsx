@@ -200,7 +200,7 @@ export default function MovementsList() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-16 text-center">
-            <p className="text-5xl mb-4">📦</p>
+            <p className="text-5xl mb-4"></p>
             <p className="text-gray-400 text-lg mb-1">No movements found</p>
             <p className="text-gray-600 text-sm mb-6">Try adjusting your filters or record a new stock movement</p>
             <button onClick={() => router.push("/Inventory/Movements/Add")}

@@ -174,7 +174,7 @@ export default function OutboxDeadLetterExplorer() {
             <div style={{ color: "var(--rf-txt3)" }}>Loading…</div>
           ) : rows.length === 0 ? (
             <div style={{ color: "var(--rf-txt3)" }}>
-              No dead-letter events 🎉
+              No dead-letter events
             </div>
           ) : (
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -271,7 +271,7 @@ export default function OutboxDeadLetterExplorer() {
                 onClick={() => setSelected(null)}
                 style={{ marginLeft: "auto", fontSize: 11 }}
               >
-                ✕
+               
               </button>
             </header>
             <div style={{ fontSize: 11, color: "var(--rf-txt3)", marginBottom: 8 }}>

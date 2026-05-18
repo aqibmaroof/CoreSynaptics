@@ -587,7 +587,7 @@ export default function CarriersList() {
                               : "bg-gray-800/50 border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300"
                           }`}
                         >
-                          {selected && "✓ "}
+                          {selected && ""}
                           {region}
                         </button>
                       );

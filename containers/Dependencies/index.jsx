@@ -120,8 +120,8 @@ const MOCK_GRAPH = {
 // ── Node kind styles ──────────────────────────────────────────────────────────
 const KIND_STYLE = {
   PHASE: { bg: "rgba(99,102,241,0.1)", color: "#6366f1", icon: "◈" },
-  ASSET: { bg: "rgba(14,165,233,0.1)", color: "#0ea5e9", icon: "⚙" },
-  BLOCKER: { bg: "rgba(239,68,68,0.1)", color: "#dc2626", icon: "⛔" },
+  ASSET: { bg: "rgba(14,165,233,0.1)", color: "#0ea5e9", icon: "" },
+  BLOCKER: { bg: "rgba(239,68,68,0.1)", color: "#dc2626", icon: "" },
 };
 
 const STATUS_COLOR = {

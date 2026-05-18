@@ -189,7 +189,7 @@ export default function SuppliersList() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-16 text-center">
-            <p className="text-5xl mb-4">🏢</p>
+            <p className="text-5xl mb-4"></p>
             <p className="text-gray-400 text-lg mb-1">No suppliers found</p>
             <p className="text-gray-600 text-sm mb-6">
               Add your first supplier to start tracking your vendors
@@ -216,7 +216,7 @@ export default function SuppliersList() {
                 <div className="p-5 border-b border-gray-800/60">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-3xl">🏢</span>
+                      <span className="text-3xl"></span>
                       <div>
                         <h3 className="text-white font-semibold text-base">
                           {sup.name}

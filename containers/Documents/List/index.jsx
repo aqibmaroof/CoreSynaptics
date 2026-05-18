@@ -36,18 +36,18 @@ const LINKED_TYPES = ["TASK", "CHECKLIST", "ASSET", "QA", "OTHER"];
 const FILE_ICON = (mimeType = "", fileName = "") => {
   const ext = fileName.split(".").pop()?.toLowerCase() || "";
   if (mimeType.startsWith("image/"))
-    return { icon: "🖼️", color: "text-pink-400" };
+    return { icon: "", color: "text-pink-400" };
   if (ext === "pdf" || mimeType === "application/pdf")
-    return { icon: "📄", color: "text-red-400" };
+    return { icon: "", color: "text-red-400" };
   if (["doc", "docx"].includes(ext))
-    return { icon: "📝", color: "text-blue-400" };
+    return { icon: "", color: "text-blue-400" };
   if (["xls", "xlsx"].includes(ext))
-    return { icon: "📊", color: "text-green-400" };
+    return { icon: "", color: "text-green-400" };
   if (["ppt", "pptx"].includes(ext))
-    return { icon: "🎪", color: "text-orange-400" };
+    return { icon: "", color: "text-orange-400" };
   if (["zip", "rar", "7z"].includes(ext))
-    return { icon: "🗜️", color: "text-purple-400" };
-  return { icon: "📁", color: "text-gray-400" };
+    return { icon: "", color: "text-purple-400" };
+  return { icon: "", color: "text-gray-400" };
 };
 
 const formatSize = (bytes) => {
@@ -220,7 +220,7 @@ export default function DocumentList() {
             className="ml-auto text-red-400 hover:text-red-300"
             onClick={() => setError("")}
           >
-            ✕
+           
           </button>
         </div>
       )}

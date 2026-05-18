@@ -94,7 +94,7 @@ export default function CrewDispatchV15({ cxProjectId }) {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>👷 Crew dispatch</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700 }}>Crew dispatch</h1>
           <p style={{ color: "var(--rf-txt3)", fontSize: 13 }}>
             Canonical dispatch board. Conflicts surface inline, never as errors.
           </p>
@@ -151,7 +151,7 @@ export default function CrewDispatchV15({ cxProjectId }) {
             fontSize: 13,
           }}
         >
-          ⚠ {conflict}
+          {conflict}
         </div>
       )}
 

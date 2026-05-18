@@ -87,13 +87,13 @@ const CELL_STYLE = {
   NO_WORK:     { bg: "var(--rf-bg-soft, #f1f5f9)", color: "var(--rf-txt-muted, #94a3b8)", label: "—" },
   PLANNED:     { bg: "rgba(99,102,241,0.12)",       color: "#6366f1",                       label: "P" },
   IN_PROGRESS: { bg: "rgba(245,158,11,0.15)",       color: "#d97706",                       label: "IP" },
-  READY:       { bg: "rgba(34,197,94,0.15)",        color: "#16a34a",                       label: "✓" },
+  READY:       { bg: "rgba(34,197,94,0.15)",        color: "#16a34a",                       label: "" },
   BLOCKED:     { bg: "rgba(239,68,68,0.15)",        color: "#dc2626",                       label: "!" },
 };
 
 const CHECK_STYLE = {
-  PASS: { bg: "rgba(34,197,94,0.12)", color: "#16a34a", icon: "✓" },
-  FAIL: { bg: "rgba(239,68,68,0.12)", color: "#dc2626", icon: "✗" },
+  PASS: { bg: "rgba(34,197,94,0.12)", color: "#16a34a", icon: "" },
+  FAIL: { bg: "rgba(239,68,68,0.12)", color: "#dc2626", icon: "" },
   NA:   { bg: "var(--rf-bg-soft)",    color: "var(--rf-txt-muted)", icon: "—" },
 };
 
@@ -336,7 +336,7 @@ export default function Readiness() {
                     flexShrink: 0,
                   }}
                 >
-                  {phaseData.canAdvance ? "✓" : "✗"}
+                  {phaseData.canAdvance ? "" : ""}
                 </div>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "var(--rf-txt, #0f172a)", marginBottom: 2 }}>
@@ -372,7 +372,7 @@ export default function Readiness() {
                         color: "var(--rf-txt, #0f172a)",
                       }}
                     >
-                      <span style={{ color: "#dc2626", fontWeight: 700, flexShrink: 0 }}>✗</span>
+                      <span style={{ color: "#dc2626", fontWeight: 700, flexShrink: 0 }}></span>
                       {c}
                     </div>
                   ))}
@@ -401,7 +401,7 @@ export default function Readiness() {
                         color: "var(--rf-txt, #0f172a)",
                       }}
                     >
-                      <span style={{ color: "#d97706", fontWeight: 700, flexShrink: 0 }}>⚠</span>
+                      <span style={{ color: "#d97706", fontWeight: 700, flexShrink: 0 }}></span>
                       {c}
                     </div>
                   ))}

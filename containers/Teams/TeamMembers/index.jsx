@@ -96,7 +96,7 @@ export default function TeamMembers() {
       fetchMembers();
       showMessage(
         "success",
-        `${newUserIds.length} member(s) added successfully! 🚀`,
+        `${newUserIds.length} member(s) added successfully!`,
       );
     } catch (err) {
       showMessage("error", "Error adding members: " + err?.message);
@@ -109,7 +109,7 @@ export default function TeamMembers() {
     try {
       await DeleteTeamMember(teamId, userId);
       fetchMembers();
-      showMessage("success", "Member removed successfully! 🚀");
+      showMessage("success", "Member removed successfully!");
     } catch (err) {
       showMessage("error", "Error removing member: " + err?.message);
     }

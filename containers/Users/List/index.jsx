@@ -34,7 +34,7 @@ export default function PricingPlans() {
       GetAllUsers();
       setMessage({
         type: "success",
-        text: "User Deleted Successfully ! 🚀",
+        text: "User Deleted Successfully !",
       });
     } catch (error) {
       setMessage({

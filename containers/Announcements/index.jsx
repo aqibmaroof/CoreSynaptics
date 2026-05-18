@@ -92,7 +92,7 @@ export default function Announcements({ cxProjectId }) {
               color: "var(--rf-txt)",
             }}
           >
-            📢 Announcements
+            Announcements
           </h1>
           <p style={{ color: "var(--rf-txt3)", fontSize: 13 }}>
             Server-owned DRAFT → SUBMITTED → APPROVED → PUBLISHED workflow.
@@ -349,7 +349,7 @@ function ComposeModal({ cxProjectId, onClose, onCreated }) {
   return (
     <Modal onClose={onClose}>
       <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
-        📢 New post
+        New post
       </h2>
       {error && (
         <div

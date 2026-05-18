@@ -198,7 +198,7 @@ export default function CxScoreDashboard({ projectId }) {
             {busy ? "…" : "↻ Live recompute"}
           </button>
           <button onClick={onSnapshot} disabled={busy} style={btnPri}>
-            {busy ? "…" : "📸 Snapshot now"}
+            {busy ? "…" : "Snapshot now"}
           </button>
         </div>
       </div>

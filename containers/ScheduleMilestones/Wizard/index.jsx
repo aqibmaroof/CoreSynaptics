@@ -145,7 +145,7 @@ export default function PhaseMilestoneWizard() {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${done ? "bg-green-600 text-white" : active ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-400"}`}
                 >
-                  {done ? "✓" : idx}
+                  {done ? "" : idx}
                 </div>
                 <span
                   className={`text-sm font-medium ${active ? "text-white" : "text-gray-500"}`}

@@ -299,7 +299,7 @@ export default function CrewDispatch() {
 
       {toast && (
         <div style={{ position: "fixed", bottom: 28, right: 28, zIndex: 2000, background: "var(--rf-bg2)", border: "1px solid var(--rf-green)", color: "var(--rf-green)", padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}>
-          ✓ {toast}
+          {toast}
         </div>
       )}
     </div>

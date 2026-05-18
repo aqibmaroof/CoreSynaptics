@@ -56,12 +56,12 @@ const ISSUES_MOCK = [
 ];
 
 const ACTIVITY = [
-  { id: "a1", actor: "Linda Wu",     action: "confirmed Q2 burn at 64% — on plan",             timeAgo: "25m ago", icon: "💰" },
-  { id: "a2", actor: "Adam Krol",    action: "uploaded L3.05 scope sheet to Documents",         timeAgo: "3h ago",  icon: "📄" },
-  { id: "a3", actor: "Sarah Chen",   action: "confirmed May 19 IST window locked",              timeAgo: "1h ago",  icon: "📅" },
-  { id: "a4", actor: "Joe Martinez", action: "marked UPS-Rm-B termination crew work complete",  timeAgo: "4h ago",  icon: "✅" },
-  { id: "a5", actor: "Carol Reyes",  action: "pulled L2.06 checklist for UPS-03 review",        timeAgo: "2h ago",  icon: "📋" },
-  { id: "a6", actor: "Tom Greene",   action: "updated PO log — termination kits ETA May 12",   timeAgo: "45m ago", icon: "📦" },
+  { id: "a1", actor: "Linda Wu",     action: "confirmed Q2 burn at 64% — on plan",             timeAgo: "25m ago", icon: "" },
+  { id: "a2", actor: "Adam Krol",    action: "uploaded L3.05 scope sheet to Documents",         timeAgo: "3h ago",  icon: "" },
+  { id: "a3", actor: "Sarah Chen",   action: "confirmed May 19 IST window locked",              timeAgo: "1h ago",  icon: "" },
+  { id: "a4", actor: "Joe Martinez", action: "marked UPS-Rm-B termination crew work complete",  timeAgo: "4h ago",  icon: "" },
+  { id: "a5", actor: "Carol Reyes",  action: "pulled L2.06 checklist for UPS-03 review",        timeAgo: "2h ago",  icon: "" },
+  { id: "a6", actor: "Tom Greene",   action: "updated PO log — termination kits ETA May 12",   timeAgo: "45m ago", icon: "" },
 ];
 
 // ─── Phase 3 mock fallbacks ───────────────────────────────────────────────────
@@ -205,8 +205,8 @@ const READINESS_CELL = {
   NO_WORK:     { bg: "var(--rf-bg3)",             color: "var(--rf-txt3)",  label: "—"    },
   PLANNED:     { bg: "rgba(245,158,11,0.08)",     color: "#b45309",         label: "Plan" },
   IN_PROGRESS: { bg: "rgba(245,158,11,0.22)",     color: "#92400e",         label: "WIP"  },
-  READY:       { bg: "rgba(16,185,129,0.18)",     color: "#15803d",         label: "✓"    },
-  BLOCKED:     { bg: "rgba(239,68,68,0.18)",      color: "#dc2626",         label: "🚫"   },
+  READY:       { bg: "rgba(16,185,129,0.18)",     color: "#15803d",         label: ""    },
+  BLOCKED:     { bg: "rgba(239,68,68,0.18)",      color: "#dc2626",         label: ""   },
 };
 
 const DEP_NODE_COLOR = {
@@ -347,7 +347,7 @@ function HealthTab({ health, phaseReadiness, turnover }) {
                 color: phaseReadiness.canAdvance ? "#15803d" : "#dc2626",
                 border: `1px solid ${phaseReadiness.canAdvance ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.3)"}`,
               }}>
-                {phaseReadiness.canAdvance ? "✓ Ready to advance" : "✕ Blocked"}
+                {phaseReadiness.canAdvance ? "Ready to advance" : "Blocked"}
               </span>
             </div>
             {phaseReadiness.blockingConditions.length > 0 && (
@@ -355,7 +355,7 @@ function HealthTab({ health, phaseReadiness, turnover }) {
                 <div style={{ fontSize: 10, fontWeight: 800, color: "var(--rf-red)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Blocking conditions</div>
                 {phaseReadiness.blockingConditions.map((c) => (
                   <div key={c.conditionId} style={{ display: "flex", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--rf-border)", alignItems: "flex-start" }}>
-                    <span style={{ color: "var(--rf-red)", fontSize: 11, marginTop: 1, flexShrink: 0 }}>✕</span>
+                    <span style={{ color: "var(--rf-red)", fontSize: 11, marginTop: 1, flexShrink: 0 }}></span>
                     <span style={{ fontSize: 12, color: "var(--rf-txt2)" }}>{c.description}</span>
                     {c.conditionType && <span style={{ marginLeft: "auto", fontSize: 9, fontWeight: 700, color: "var(--rf-txt3)", background: "var(--rf-bg3)", padding: "1px 6px", borderRadius: 4, whiteSpace: "nowrap" }}>{c.conditionType}</span>}
                   </div>
@@ -367,7 +367,7 @@ function HealthTab({ health, phaseReadiness, turnover }) {
                 <div style={{ fontSize: 10, fontWeight: 800, color: "var(--rf-yellow)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>Advisory</div>
                 {phaseReadiness.advisoryConditions.map((c) => (
                   <div key={c.conditionId} style={{ display: "flex", gap: 8, padding: "4px 0", alignItems: "center" }}>
-                    <span style={{ color: "var(--rf-yellow)", fontSize: 11 }}>⚠</span>
+                    <span style={{ color: "var(--rf-yellow)", fontSize: 11 }}></span>
                     <span style={{ fontSize: 12, color: "var(--rf-txt3)" }}>{c.description}</span>
                   </div>
                 ))}
@@ -403,14 +403,14 @@ function HealthTab({ health, phaseReadiness, turnover }) {
                   <div key={chk.id} style={{ borderBottom: "1px solid var(--rf-border)", paddingBottom: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 13, color: pass ? "var(--rf-green)" : "var(--rf-txt3)" }}>{pass ? "✓" : "○"}</span>
+                        <span style={{ fontSize: 13, color: pass ? "var(--rf-green)" : "var(--rf-txt3)" }}>{pass ? "" : "○"}</span>
                         <span style={{ fontSize: 12, color: "var(--rf-txt)", fontWeight: chk.required ? 600 : 400 }}>{chk.label}</span>
                         {chk.required && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--rf-accent)", textTransform: "uppercase" }}>required</span>}
                       </div>
                       <span style={{ fontSize: 11, color: "var(--rf-txt3)", whiteSpace: "nowrap", marginLeft: 8 }}>{chk.done}/{chk.total}</span>
                     </div>
                     {chk.blockingHint && !pass && (
-                      <div style={{ fontSize: 11, color: "var(--rf-yellow)", paddingLeft: 19 }}>⚠ {chk.blockingHint}</div>
+                      <div style={{ fontSize: 11, color: "var(--rf-yellow)", paddingLeft: 19 }}>{chk.blockingHint}</div>
                     )}
                   </div>
                 );
@@ -471,8 +471,8 @@ function ReadinessTab({ assetReadiness }) {
                       </div>
                       {cell.testTotal > 0 && (
                         <div style={{ fontSize: 9, color: "var(--rf-txt3)", marginTop: 2 }}>
-                          {cell.testsPassing}/{cell.testTotal} ✓
-                          {cell.testsFailed > 0 && <span style={{ color: "var(--rf-red)", marginLeft: 3 }}>{cell.testsFailed} ✗</span>}
+                          {cell.testsPassing}/{cell.testTotal}
+                          {cell.testsFailed > 0 && <span style={{ color: "var(--rf-red)", marginLeft: 3 }}>{cell.testsFailed}</span>}
                         </div>
                       )}
                     </td>
@@ -519,7 +519,7 @@ function DependenciesTab({ dependencies }) {
           <SectionTitle>Blocking nodes ({blocking.length})</SectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {blocking.length === 0 ? (
-              <div style={{ fontSize: 13, color: "var(--rf-green)", textAlign: "center", padding: "20px 0" }}>✓ No blocking nodes</div>
+              <div style={{ fontSize: 13, color: "var(--rf-green)", textAlign: "center", padding: "20px 0" }}>No blocking nodes</div>
             ) : blocking.map((n) => (
               <div key={n.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 8, background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)" }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: DEP_NODE_COLOR[n.kind] || "#6b7280", flexShrink: 0 }} />

@@ -588,7 +588,7 @@ export default function ChecklistEdit() {
               className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
               style={{ marginRight: 8 }}
             >
-              🔁 Delegate
+              Delegate
             </button>
           )}
           {checklist?.status === "COMPLETED" && !isLocked && (

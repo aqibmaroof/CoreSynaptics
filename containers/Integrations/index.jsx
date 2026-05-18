@@ -270,7 +270,7 @@ function WebhooksTab() {
                 className="rf-btn"
                 onClick={() => setOpenDeliveries(null)}
               >
-                ✕
+               
               </button>
             </header>
             {deliveries.length === 0 ? (

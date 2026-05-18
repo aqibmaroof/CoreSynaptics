@@ -67,7 +67,7 @@ export default function Jha({ cxProjectId, currentUserId }) {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>🦺 JHA</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700 }}>JHA</h1>
           <p style={{ color: "var(--rf-txt3)", fontSize: 13 }}>
             Job hazard analysis briefings with required-attendee acknowledgment.
           </p>
@@ -560,7 +560,7 @@ function JhaDetail({ id, currentUserId, onChange }) {
                 fontWeight: 700,
               }}
             >
-              ✓ Acknowledged
+              Acknowledged
             </span>
           )}
           <button
@@ -622,7 +622,7 @@ function NewJhaModal({ cxProjectId, onClose, onCreated }) {
         onClick={(e) => e.stopPropagation()}
       >
         <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
-          🦺 New JHA
+          New JHA
         </h2>
         {error && (
           <div

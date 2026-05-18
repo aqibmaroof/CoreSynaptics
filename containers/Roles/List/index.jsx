@@ -30,7 +30,7 @@ export default function PricingPlans() {
       GetAllRoles();
       setMessage({
         type: "success",
-        text: "Role Deleted Successfully ! 🚀",
+        text: "Role Deleted Successfully !",
       });
     } catch (error) {
       setMessage({

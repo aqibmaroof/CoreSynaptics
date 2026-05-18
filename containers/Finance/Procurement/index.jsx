@@ -201,7 +201,7 @@ export default function Procurement() {
           <div className="p-10 text-center text-gray-400">Loading procurement items...</div>
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center text-gray-500">
-            <p className="text-4xl mb-3">📦</p>
+            <p className="text-4xl mb-3"></p>
             <p>No procurement items found.</p>
             <button className="btn btn-sm btn-info mt-4" onClick={openAdd}>Add First Item</button>
           </div>

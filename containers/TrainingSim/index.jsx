@@ -95,7 +95,7 @@ function SessionModal({ scenario, onClose, onComplete }) {
       <div style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border)", borderRadius: 18, padding: 32, width: "100%", maxWidth: 560, boxShadow: "0 24px 48px rgba(0,0,0,0.35)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--rf-txt)" }}>{scenario.title}</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--rf-txt3)", fontSize: 18 }}>✕</button>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--rf-txt3)", fontSize: 18 }}></button>
         </div>
 
         <div style={{ marginBottom: 14 }}>
@@ -278,7 +278,7 @@ export default function TrainingSim() {
 
       {toast && (
         <div style={{ position: "fixed", bottom: 28, right: 28, zIndex: 2000, background: "var(--rf-bg2)", border: "1px solid var(--rf-green)", color: "var(--rf-green)", padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}>
-          ✓ {toast}
+          {toast}
         </div>
       )}
     </div>

@@ -282,7 +282,7 @@ function MessageBubble({ msg, onDelete, currentUserId }) {
             fontWeight: 600,
           }}
         >
-          ✕
+         
         </button>
       )}
     </div>
@@ -344,7 +344,7 @@ function MembersModal({ roomId, roomName, members, onClose }) {
               lineHeight: 1,
             }}
           >
-            ✕
+           
           </button>
         </div>
         {members.length === 0 ? (
@@ -1005,7 +1005,7 @@ export default function Chat() {
                 marginRight: 4,
               }}
             >
-              ☰
+             
             </button>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1052,7 +1052,7 @@ export default function Chat() {
                 (e.currentTarget.style.background = "var(--rf-bg3)")
               }
             >
-              <span style={{ fontSize: 14 }}>👥</span> Members
+              <span style={{ fontSize: 14 }}></span> Members
             </button>
             <button
               onClick={handleArchiveRoom}
@@ -1079,7 +1079,7 @@ export default function Chat() {
                 (e.currentTarget.style.background = "var(--rf-bg3)")
               }
             >
-              ⚙
+             
             </button>
           </div>
         </div>
@@ -1095,7 +1095,7 @@ export default function Chat() {
                 fontSize: 13,
               }}
             >
-              <div style={{ fontSize: 28, marginBottom: 10 }}>💬</div>
+              <div style={{ fontSize: 28, marginBottom: 10 }}></div>
               Loading messages...
             </div>
           ) : messages.length === 0 ? (
@@ -1107,7 +1107,7 @@ export default function Chat() {
                 fontSize: 13,
               }}
             >
-              <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
+              <div style={{ fontSize: 36, marginBottom: 12 }}></div>
               <div>No messages yet. Be the first to say something!</div>
             </div>
           ) : (
@@ -1181,7 +1181,7 @@ export default function Chat() {
                     padding: "0 0 0 6px",
                   }}
                 >
-                  ✕
+                 
                 </button>
               )}
             </div>

@@ -437,13 +437,13 @@ function Card({ c, isGcReviewer, act, setShowReject }) {
                 )
               }
             >
-              ✓ Approve & publish
+              Approve & publish
             </button>
             <button
               style={{ ...btnSoft, color: "#dc2626", borderColor: "#fecaca" }}
               onClick={() => setShowReject(c)}
             >
-              ✗ Reject
+              Reject
             </button>
           </>
         )}

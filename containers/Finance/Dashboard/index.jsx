@@ -8,12 +8,12 @@ import { formatCurrency } from "@/Utils/payrollCalculations";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 const QUICK_LINKS = [
-  { label: "Contracts & Budget", href: "/Finance/Contracts", emoji: "📋" },
-  { label: "Vendor Quotes", href: "/Finance/VendorQuotes", emoji: "🏷️" },
-  { label: "Finance & Billing", href: "/Finance/Billing", emoji: "🧾" },
-  { label: "Payments", href: "/Finance/BillingChain", emoji: "💳" },
-  { label: "Procurement", href: "/Finance/Procurement", emoji: "📦" },
-  { label: "Payroll", href: "/Finance/Payroll/Dashboard", emoji: "💰" },
+  { label: "Contracts & Budget", href: "/Finance/Contracts", emoji: "" },
+  { label: "Vendor Quotes", href: "/Finance/VendorQuotes", emoji: "" },
+  { label: "Finance & Billing", href: "/Finance/Billing", emoji: "" },
+  { label: "Payments", href: "/Finance/BillingChain", emoji: "" },
+  { label: "Procurement", href: "/Finance/Procurement", emoji: "" },
+  { label: "Payroll", href: "/Finance/Payroll/Dashboard", emoji: "" },
 ];
 
 const PROCUREMENT_STATUS_BADGE = {
@@ -94,12 +94,12 @@ export default function FinanceDashboard() {
   );
 
   const kpis = [
-    { label: "Total Contract Value", value: formatCurrency(kpiTotals.contractValue), color: "text-info", icon: "📋" },
-    { label: "Total Invoiced", value: formatCurrency(kpiTotals.invoiced), color: "text-warning", icon: "🧾" },
-    { label: "Total Paid", value: formatCurrency(kpiTotals.paid), color: "text-success", icon: "💳" },
+    { label: "Total Contract Value", value: formatCurrency(kpiTotals.contractValue), color: "text-info", icon: "" },
+    { label: "Total Invoiced", value: formatCurrency(kpiTotals.invoiced), color: "text-warning", icon: "" },
+    { label: "Total Paid", value: formatCurrency(kpiTotals.paid), color: "text-success", icon: "" },
     { label: "Outstanding", value: formatCurrency(kpiTotals.outstanding), color: "text-error", icon: "⏳" },
-    { label: "Procurement Cost", value: formatCurrency(kpiTotals.procurement), color: "text-secondary", icon: "📦" },
-    { label: "Est. Profit", value: formatCurrency(kpiTotals.profit), color: kpiTotals.profit >= 0 ? "text-success" : "text-error", icon: "📈" },
+    { label: "Procurement Cost", value: formatCurrency(kpiTotals.procurement), color: "text-secondary", icon: "" },
+    { label: "Est. Profit", value: formatCurrency(kpiTotals.profit), color: kpiTotals.profit >= 0 ? "text-success" : "text-error", icon: "" },
   ];
 
   // Bar chart: per-project Contract Value vs Procurement Cost vs Paid
@@ -198,7 +198,7 @@ export default function FinanceDashboard() {
           <div className="p-6 text-center text-gray-400">Loading projects...</div>
         ) : projects.length === 0 ? (
           <div className="p-10 text-center text-gray-500">
-            <p className="text-3xl mb-2">📊</p>
+            <p className="text-3xl mb-2"></p>
             <p>No financial data available.</p>
           </div>
         ) : (

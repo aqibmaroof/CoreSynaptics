@@ -520,7 +520,7 @@ function ItemRow({ item, locked, onAnswered, onError }) {
                   borderColor: compliant ? C.green : C.border,
                 }}
               >
-                ✓ Compliant
+                Compliant
               </button>
               <button
                 onClick={() => setCompliant(false)}
@@ -531,7 +531,7 @@ function ItemRow({ item, locked, onAnswered, onError }) {
                   borderColor: !compliant ? C.red : C.border,
                 }}
               >
-                ✗ Finding
+                Finding
               </button>
             </div>
             <input

@@ -58,21 +58,21 @@ function getEntityLabel(type, entity) {
 }
 
 const FILE_ICON = (file) => {
-  if (!file) return "📁";
-  if (file.type.startsWith("image/")) return "🖼️";
+  if (!file) return "";
+  if (file.type.startsWith("image/")) return "";
   const ext = file.name.split(".").pop()?.toLowerCase();
   const map = {
-    pdf: "📄",
-    doc: "📝",
-    docx: "📝",
-    xls: "📊",
-    xlsx: "📊",
-    ppt: "🎪",
-    pptx: "🎪",
-    zip: "🗜️",
-    txt: "📄",
+    pdf: "",
+    doc: "",
+    docx: "",
+    xls: "",
+    xlsx: "",
+    ppt: "",
+    pptx: "",
+    zip: "",
+    txt: "",
   };
-  return map[ext] || "📁";
+  return map[ext] || "";
 };
 
 // ─── Reusable select (matches Checklist pattern) ──────────────────────────────
@@ -343,7 +343,7 @@ export default function DocumentAdd() {
                         : "bg-gray-700 text-gray-400"
                   }`}
                 >
-                  {done ? "✓" : stepNum}
+                  {done ? "" : stepNum}
                 </div>
                 <span
                   className={`text-xs ${active ? "text-white font-medium" : done ? "text-green-400" : "text-gray-500"}`}
@@ -361,7 +361,7 @@ export default function DocumentAdd() {
         {/* Success */}
         {step === 4 && (
           <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-8 text-center">
-            <div className="text-4xl mb-3">✅</div>
+            <div className="text-4xl mb-3"></div>
             <p className="text-green-300 font-semibold text-lg">
               Document uploaded successfully!
             </p>

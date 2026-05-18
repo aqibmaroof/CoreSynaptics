@@ -16,10 +16,10 @@ export default function MultiSelectDropdown({
     const exists = selected.find((s) => s.id === item.id);
     if (label !== "Assign Teams") {
       if (!exists) {
-        setSelected(item); // ✅ SEND SINGLE ITEM
+        setSelected(item); // SEND SINGLE ITEM
       }
     } else if (!exists && selected.length === 0) {
-      setSelected(item); // ✅ SEND SINGLE ITEM
+      setSelected(item); // SEND SINGLE ITEM
     } else {
       setMessage({
         type: "error",
@@ -64,11 +64,11 @@ export default function MultiSelectDropdown({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeItem(item?.id); // ✅ CALL REMOVE
+                    removeItem(item?.id); // CALL REMOVE
                   }}
                   className="text-xs ml-1 cursor-pointer hover:text-error"
                 >
-                  ✕
+                 
                 </button>
               </span>
             ))}

@@ -104,7 +104,7 @@ export default function PowerFlow() {
   return (
     <div style={{ padding: 24 }}>
       <header style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>⚡ Power-flow simulator</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Power-flow simulator</h1>
         <p style={{ color: "var(--rf-txt3)", fontSize: 13 }}>
           Server-side deterministic engine. Decisions submit + trace as returned.
         </p>
@@ -467,7 +467,7 @@ function Runner({
                   disabled={busy || completed}
                   style={{ marginLeft: "auto", fontSize: 10 }}
                 >
-                  ✕
+                 
                 </button>
               </li>
             ))}
@@ -544,7 +544,7 @@ function NodeList({ nodes, latest }) {
             <div style={{ fontSize: 10, color: "var(--rf-txt3)" }}>
               {n.kind}
               {n.state ? ` · ${n.state}` : ""}
-              {on ? " · ⚡" : ""}
+              {on ? " ·" : ""}
             </div>
           </li>
         );

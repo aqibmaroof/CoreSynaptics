@@ -119,7 +119,7 @@ export const TypeValidationMessage = ({
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-green-800">
-                ✓ Type validation passed
+                Type validation passed
               </p>
             </div>
           </div>

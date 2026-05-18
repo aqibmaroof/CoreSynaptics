@@ -185,7 +185,7 @@ export default function PSSRList({ cxProjectId }) {
           lineHeight: 1.55,
         }}
       >
-        💡 <b>PSSR (Pre-Startup Safety Review)</b> is the GC QA/QC's final gate
+        <b>PSSR (Pre-Startup Safety Review)</b> is the GC QA/QC's final gate
         before authorizing energization. All items must PASS (or be formally
         waived) before sign-off. Each non-compliant answer spawns an{" "}
         <b>Issue (PUNCH_LIST)</b> linked back to the inspection.

@@ -638,7 +638,7 @@ export default function LeadsList() {
                   onClick={() => setTimelineEntity(null)}
                   className="text-gray-400 hover:text-white text-lg leading-none"
                 >
-                  ✕
+                 
                 </button>
               </div>
               <div className="p-5 overflow-y-auto">

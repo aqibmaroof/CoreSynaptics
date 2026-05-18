@@ -14,6 +14,7 @@ import {
 } from "@/services/Notifications";
 import { useRealtimeSocket } from "@/lib/realtime/useRealtimeSocket";
 import { onEnvelope } from "@/lib/realtime/envelope";
+import { FaBell } from "react-icons/fa";
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -28,7 +29,7 @@ export default function NotificationBell() {
     setError("");
     try {
       const xs = await myNotifications({ unreadOnly: true, limit: 20 });
-      setRows(Array.isArray(xs) ? xs : xs?.items ?? []);
+      setRows(Array.isArray(xs) ? xs : (xs?.items ?? []));
     } catch (e) {
       setError(e?.message || "Failed to load notifications");
     } finally {
@@ -85,8 +86,9 @@ export default function NotificationBell() {
         title="Notifications"
         onClick={() => setOpen((v) => !v)}
       >
-        🔔
-        {unreadCount > 0 && <span className="cx-tb-bell-dot" />}
+        <FaBell />
+
+        {true && <span className="cx-tb-bell-dot" />}
       </button>
 
       {open && (
@@ -134,11 +136,7 @@ export default function NotificationBell() {
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               {unreadCount > 0 && (
-                <button
-                  type="button"
-                  onClick={handleMarkAll}
-                  style={menuBtn}
-                >
+                <button type="button" onClick={handleMarkAll} style={menuBtn}>
                   Mark all
                 </button>
               )}

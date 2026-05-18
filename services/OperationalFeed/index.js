@@ -46,14 +46,14 @@ export const FEED_SEVERITY_STYLE = {
 };
 
 export const FEED_CATEGORY_ICON = {
-  QA:          "🔍",
-  PROCUREMENT: "📦",
-  WORKFORCE:   "👷",
-  COMMS:       "📢",
-  SCHEDULE:    "📅",
-  TURNOVER:    "🏁",
-  SCORE:       "📊",
-  PHASE:       "⚡",
-  ESCALATION:  "🚨",
-  SAFETY:      "⛑",
+  QA:          "",
+  PROCUREMENT: "",
+  WORKFORCE:   "",
+  COMMS:       "",
+  SCHEDULE:    "",
+  TURNOVER:    "",
+  SCORE:       "",
+  PHASE:       "",
+  ESCALATION:  "",
+  SAFETY:      "",
 };

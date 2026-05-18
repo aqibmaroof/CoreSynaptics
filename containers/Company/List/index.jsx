@@ -379,7 +379,7 @@ function CompanyCard({ company, onDelete, onTimeline, onClick }) {
             letterSpacing: "0.04em",
           }}
         >
-          ★ THIS IS MY COMPANY
+          THIS IS MY COMPANY
         </div>
       )}
 
@@ -433,7 +433,7 @@ function CompanyCard({ company, onDelete, onTimeline, onClick }) {
             justifyContent: "center",
           }}
         >
-          ✕
+         
         </button>
       </div>
 
@@ -602,7 +602,7 @@ export default function CompanyList() {
             fontSize: 13,
           }}
         >
-          <div style={{ fontSize: 32, marginBottom: 10 }}>🏢</div>
+          <div style={{ fontSize: 32, marginBottom: 10 }}></div>
           {searchTerm
             ? "No companies match your search."
             : "No companies found."}
@@ -771,7 +771,7 @@ export default function CompanyList() {
                   fontSize: 18,
                 }}
               >
-                ✕
+               
               </button>
             </div>
             <div style={{ padding: 20, overflowY: "auto" }}>

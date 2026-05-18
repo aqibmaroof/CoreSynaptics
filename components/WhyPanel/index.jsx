@@ -149,7 +149,7 @@ export default function WhyPanel({ predictionId, fetcher, onClose }) {
         </div>
         {onClose && (
           <button className="rf-btn" onClick={onClose} title="Close">
-            ✕
+           
           </button>
         )}
       </header>
@@ -552,7 +552,7 @@ function SectionHeader({ title, right }) {
 
 function formatValue(v) {
   if (v === null || v === undefined) return "—";
-  if (typeof v === "boolean") return v ? "✓" : "✕";
+  if (typeof v === "boolean") return v ? "" : "";
   if (typeof v === "number") return v.toLocaleString();
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) {
     try {

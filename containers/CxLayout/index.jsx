@@ -25,8 +25,8 @@ const SECTIONS = [
     label: "Workspace",
     items: [
       { icon: "▤", title: "Dashboard", href: "/" },
-      { icon: "✓", title: "My Work", href: "/MyAssignments" },
-      { icon: "✉", title: "Communications", href: "/Communications" },
+      { icon: "", title: "My Work", href: "/MyAssignments" },
+      { icon: "", title: "Communications", href: "/Communications" },
     ],
   },
   {
@@ -34,10 +34,10 @@ const SECTIONS = [
     items: [
       { icon: "◳", title: "Overview", href: "/Projects" },
       { icon: "▦", title: "Companies", href: "/Company/List" },
-      { icon: "⚙", title: "Equipment", href: "/Assets/List" },
+      { icon: "", title: "Equipment", href: "/Assets/List" },
       { icon: "⌚", title: "Schedule", href: "/Schedule" },
-      { icon: "✦", title: "Site Access (TARF)", href: "/CxTARF" },
-      { icon: "⚠", title: "Issues", href: "/Issues/List" },
+      { icon: "", title: "Site Access (TARF)", href: "/CxTARF" },
+      { icon: "", title: "Issues", href: "/Issues/List" },
     ],
   },
   {
@@ -45,15 +45,15 @@ const SECTIONS = [
     items: [
       { icon: "≡", title: "Commissioning Score", href: "/CxScore" },
       { icon: "▣", title: "Test Results", href: "/Commissioning/Tests" },
-      { icon: "✿", title: "PSSR Inspections", href: "/PSSR" },
+      { icon: "", title: "PSSR Inspections", href: "/PSSR" },
       { icon: "▲", title: "Risk Register", href: "/Risk" },
     ],
   },
   {
     label: "Quality & Workflow",
     items: [
-      { icon: "✓", title: "Checklists", href: "/Checklist/List" },
-      { icon: "❑", title: "RFIs", href: "/RFI/List" },
+      { icon: "", title: "Checklists", href: "/Checklist/List" },
+      { icon: "", title: "RFIs", href: "/RFI/List" },
       { icon: "⊟", title: "Submittals", href: "/Submittals" },
       { icon: "⇄", title: "Change Requests", href: "/ChangeRequests" },
     ],
@@ -61,26 +61,26 @@ const SECTIONS = [
   {
     label: "Field & Daily Ops",
     items: [
-      { icon: "☰", title: "Tasks", href: "/Tasks/List" },
-      { icon: "📋", title: "Daily Reports", href: "/DailyReports" },
-      { icon: "👥", title: "Crew", href: "/Field/Dashboard" },
-      { icon: "📅", title: "Meetings", href: "/Meeting/List" },
+      { icon: "", title: "Tasks", href: "/Tasks/List" },
+      { icon: "", title: "Daily Reports", href: "/DailyReports" },
+      { icon: "", title: "Crew", href: "/Field/Dashboard" },
+      { icon: "", title: "Meetings", href: "/Meeting/List" },
     ],
   },
   {
     label: "Supply & Finance",
     items: [
-      { icon: "📦", title: "Inventory", href: "/Inventory/Products/List" },
-      { icon: "🚚", title: "Shipments", href: "/Shipments" },
+      { icon: "", title: "Inventory", href: "/Inventory/Products/List" },
+      { icon: "", title: "Shipments", href: "/Shipments" },
       { icon: "$", title: "Finance", href: "/Finance" },
     ],
   },
   {
     label: "Admin",
     items: [
-      { icon: "⚙", title: "Settings", href: "/Settings" },
-      { icon: "🛡", title: "Roles & Permissions", href: "/Roles" },
-      { icon: "👤", title: "Users", href: "/Users" },
+      { icon: "", title: "Settings", href: "/Settings" },
+      { icon: "", title: "Roles & Permissions", href: "/Roles" },
+      { icon: "", title: "Users", href: "/Users" },
     ],
   },
 ];
@@ -187,7 +187,7 @@ export default function CxLayout({ children }) {
             ?
           </button>
           <button type="button" className="cx-tb-icon" title="Notifications">
-            🔔
+           
             <span className="cx-tb-bell-dot" />
           </button>
           <div style={{ position: "relative" }}>

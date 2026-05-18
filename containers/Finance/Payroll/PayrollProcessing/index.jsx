@@ -215,7 +215,7 @@ export default function PayrollProcessing() {
           <div className="p-10 text-center text-gray-100">Loading payroll runs...</div>
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center text-gray-100">
-            <p className="text-4xl mb-3">💳</p>
+            <p className="text-4xl mb-3"></p>
             <p>No payroll runs found.</p>
             <button
               className="btn btn-sm btn-info mt-4"

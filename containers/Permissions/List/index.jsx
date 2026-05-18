@@ -30,7 +30,7 @@ export default function PricingPlans() {
       GetAllPermissions();
       setMessage({
         type: "success",
-        text: "Permission Deleted Successfully ! 🚀",
+        text: "Permission Deleted Successfully !",
       });
     } catch (error) {
       setMessage({

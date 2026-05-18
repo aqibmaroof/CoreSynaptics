@@ -28,7 +28,7 @@ const LoginPage = () => {
       if (response) {
         setMessage({
           type: "success",
-          text: response?.message || "Forgot password email sent! 🚀",
+          text: response?.message || "Forgot password email sent!",
         });
       } else {
         setMessage({

@@ -3,7 +3,7 @@
 // CommissioningTests · List view
 // Mirrors cxcontrol_v2.html renderTestResults():
 // - "Test results database" page header with pass/fail counts
-// - Tabs: All · ❌ Failures · per-asset
+// - Tabs: All · Failures · per-asset
 // - Dense table: ASSET · PHASE · TEST · VALUE · THRESHOLD · RESULT · DATE/TECH
 // - PASS/FAIL pill, fail rows tinted
 // - Inline actions: + Log test result, Record witness on PASS
@@ -219,7 +219,7 @@ export default function CommissioningTestsList({ cxProjectId }) {
           lineHeight: 1.55,
         }}
       >
-        💡 <b>Test results database.</b> Per ANSI/NETA ATS-2025, every
+        <b>Test results database.</b> Per ANSI/NETA ATS-2025, every
         electrical asset gets acceptance testing before energization.
         Insulation Resistance, Power Factor, Contact Resistance, Hi-Pot,
         Torque values logged per phase. PASS + witness auto-resolves any
@@ -244,7 +244,7 @@ export default function CommissioningTestsList({ cxProjectId }) {
         <Tab
           active={tab === "fail"}
           onClick={() => setTab("fail")}
-          label="❌ Failures"
+          label="Failures"
           count={totalFail}
         />
         {assetIds.map((id) => (
@@ -314,7 +314,7 @@ export default function CommissioningTestsList({ cxProjectId }) {
                 <div>
                   {t.witnessedAt ? (
                     <Mono style={{ color: C.green }}>
-                      ✓ {t.witnessedByUserId?.slice(0, 8) ?? "witnessed"}
+                      {t.witnessedByUserId?.slice(0, 8) ?? "witnessed"}
                     </Mono>
                   ) : t.result === "PASS" ? (
                     <span

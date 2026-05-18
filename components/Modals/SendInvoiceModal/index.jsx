@@ -31,7 +31,7 @@ export default function SendInvoicePanel({ open, onClose }) {
             onClick={onClose}
             className="btn btn-sm btn-circle btn-accent btn-outline"
           >
-            ✕
+           
           </button>
         </div>
 
@@ -79,7 +79,7 @@ We would appreciate payment of this invoice by 05/11/2021`}
         {/* Invoice Attached */}
         <div className="pt-3">
           <span className="badge badge-outline text-white gap-2 ">
-            📎 Invoice Attached
+            Invoice Attached
           </span>
         </div>
 

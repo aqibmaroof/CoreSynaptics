@@ -59,21 +59,21 @@ function getEntityLabel(type, entity) {
 }
 
 const FILE_ICON = (file) => {
-  if (!file) return "📁";
-  if (file.type?.startsWith("image/")) return "🖼️";
+  if (!file) return "";
+  if (file.type?.startsWith("image/")) return "";
   const ext = file.name?.split(".").pop()?.toLowerCase();
   const map = {
-    pdf: "📄",
-    doc: "📝",
-    docx: "📝",
-    xls: "📊",
-    xlsx: "📊",
-    ppt: "🎪",
-    pptx: "🎪",
-    zip: "🗜️",
-    txt: "📄",
+    pdf: "",
+    doc: "",
+    docx: "",
+    xls: "",
+    xlsx: "",
+    ppt: "",
+    pptx: "",
+    zip: "",
+    txt: "",
   };
-  return map[ext] || "📁";
+  return map[ext] || "";
 };
 
 const formatSize = (bytes) => {
@@ -431,7 +431,7 @@ export default function DocumentEdit() {
               )}
               {metaSuccess && (
                 <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 text-green-300 text-sm flex items-center gap-2">
-                  ✓ Metadata updated successfully.
+                  Metadata updated successfully.
                 </div>
               )}
 
@@ -830,7 +830,7 @@ export default function DocumentEdit() {
                 )}
                 {reuploadStep === 4 && (
                   <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 text-green-300 text-sm flex items-center gap-2">
-                    ✓ File replaced. Now at v{(doc?.version || 1) + 1}.
+                    File replaced. Now at v{(doc?.version || 1) + 1}.
                   </div>
                 )}
                 {reuploadStep === 2 && (
