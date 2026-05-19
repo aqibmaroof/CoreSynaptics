@@ -2234,6 +2234,48 @@ export default function ProjectWizard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteAccess, setInviteAccess] = useState("read");
 
+  // ── Child-entity form scaffolding ──────────────────────────────────────────
+  // Some step renderers (workflows/equipment/site/zone) reuse a shared
+  // type-metadata block originally designed for child-record forms. This file
+  // is the root project wizard, so the optional blocks stay inert by default
+  // (isRootProjectForm = true, no active child form). State is declared here
+  // so all references resolve and the wizard never crashes on undefined.
+  const [equipmentForm, setEquipmentForm] = useState({
+    status: "",
+    lifecyclePhase: "",
+    certificationReq: "",
+    metadata: {},
+  });
+  const [siteForm, setSiteForm] = useState({ metadata: {} });
+  const [zoneForm, setZoneForm] = useState({ metadata: {} });
+  const [metadataErrors, setMetadataErrors] = useState({});
+  const [typeValidation, setTypeValidation] = useState(null);
+  const [equipmentTypeDetails, setEquipmentTypeDetails] = useState(null);
+  const [currentTypeDetails, setCurrentTypeDetails] = useState(null);
+  const [loadingContext, setLoadingContext] = useState(false);
+  const [context, setContext] = useState({
+    orgType: "gc",
+    projectCategory: "datacenter",
+  });
+
+  const isRootProjectForm = true;
+  const isSiteForm = false;
+  const isZoneForm = false;
+  const isEquipmentForm = false;
+
+  const currentMetadata = isSiteForm
+    ? siteForm.metadata
+    : isZoneForm
+      ? zoneForm.metadata
+      : isEquipmentForm
+        ? equipmentForm.metadata
+        : {};
+
+  const handleEquipmentChange = (e) => {
+    const { name, value } = e.target;
+    setEquipmentForm((prev) => ({ ...prev, [name]: value }));
+  };
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -5908,6 +5950,7 @@ export default function ProjectWizard() {
     const selectedCount = Object.values(state.workflows || {}).filter(
       Boolean,
     ).length;
+
     return (
       <div>
         <div className="step-head">
@@ -7311,6 +7354,84 @@ function InfoBanner({ children }) {
   return (
     <div className="mt-5 max-w-3xl rounded-xl border border-blue-500/20 bg-blue-900/20 px-4 py-3 text-sm text-blue-200">
       {children}
+    </div>
+  );
+}
+
+function DynamicMetadataFields({
+  typeDefinition,
+  metadata = {},
+  onChange,
+  errors = {},
+}) {
+  const fields =
+    typeDefinition?.metadataFields || typeDefinition?.fields || [];
+  if (!fields.length) return null;
+
+  const handleFieldChange = (key, value) => {
+    onChange?.({ ...metadata, [key]: value });
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <h3 className="text-sm font-semibold text-white">
+        {typeDefinition?.name || "Type"} metadata
+      </h3>
+      {fields.map((f) => {
+        const key = f.key || f.name;
+        const value = metadata?.[key] ?? "";
+        const err = errors?.[key];
+        return (
+          <div key={key} className="flex flex-col gap-1">
+            <label className="text-xs text-white/70">
+              {f.label || key}
+              {f.required && <span className="text-red-400"> *</span>}
+            </label>
+            {f.options?.length ? (
+              <select
+                className="h-10 rounded-md border border-white/10 bg-[#12153d] px-3 text-sm text-white focus:outline-none"
+                value={value}
+                onChange={(e) => handleFieldChange(key, e.target.value)}
+              >
+                <option value="">Select…</option>
+                {f.options.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="h-10 rounded-md border border-white/10 bg-[#12153d] px-3 text-sm text-white focus:outline-none"
+                type={f.type === "number" ? "number" : "text"}
+                value={value}
+                placeholder={f.placeholder || ""}
+                onChange={(e) => handleFieldChange(key, e.target.value)}
+              />
+            )}
+            {err && <span className="text-xs text-red-400">{err}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TypeValidationMessage({ validation, showWhen }) {
+  if (!validation) return null;
+  if (showWhen && !validation.message) return null;
+  const tone =
+    validation.severity || (validation.ok === false ? "error" : "warn");
+  const palette = {
+    ok: "border-green-500/20 bg-green-900/20 text-green-300",
+    warn: "border-amber-500/20 bg-amber-900/20 text-amber-300",
+    error: "border-red-500/20 bg-red-900/20 text-red-300",
+  };
+  return (
+    <div
+      className={`rounded-xl border px-4 py-3 text-sm ${palette[tone] || palette.warn}`}
+    >
+      {validation.message}
     </div>
   );
 }
