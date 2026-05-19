@@ -1,6 +1,6 @@
 "use client";
 
-import CxLayout from "@/containers/CxLayout";
+import CxLayout from "@/containers/Layout";
 import CxTARF from "@/containers/CxTARF";
 
 export default function CxTARFPage() {

@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import CxLayout from "@/containers/CxLayout";
+import CxLayout from "@/containers/Layout";
 import { getCxProjects } from "@/services/CxProjects";
 import { getUser } from "@/services/instance/tokenService";
 

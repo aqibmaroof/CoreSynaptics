@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import CxLayout from "@/containers/CxLayout";
+import CxLayout from "@/containers/Layout";
 import CxIssues from "@/containers/CxIssues";
 
 export default function CxIssuesPage() {

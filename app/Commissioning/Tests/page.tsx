@@ -1,6 +1,6 @@
 "use client";
 
-import CxLayout from "@/containers/CxLayout";
+import CxLayout from "@/containers/Layout";
 import CommissioningTestsList from "@/containers/CommissioningTests/List";
 
 export default function CommissioningTestsPage() {
