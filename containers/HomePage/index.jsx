@@ -1121,11 +1121,913 @@ function PhaseBar() {
   );
 }
 
+// ─── Invite Company Modal ─────────────────────────────────────────────────────
+
+function InviteTemplateCard({ tone, icon, title, subtitle, onClick }) {
+  const tones = {
+    blue: {
+      bg: "color-mix(in srgb, var(--rf-accent) 10%, var(--rf-bg2))",
+      border: "color-mix(in srgb, var(--rf-accent) 35%, var(--rf-border))",
+      chip: "var(--rf-accent)",
+    },
+    orange: {
+      bg: "color-mix(in srgb, var(--rf-orange) 10%, var(--rf-bg2))",
+      border: "color-mix(in srgb, var(--rf-orange) 35%, var(--rf-border))",
+      chip: "var(--rf-orange)",
+    },
+    purple: {
+      bg: "color-mix(in srgb, var(--rf-purple) 10%, var(--rf-bg2))",
+      border: "color-mix(in srgb, var(--rf-purple) 35%, var(--rf-border))",
+      chip: "var(--rf-purple)",
+    },
+  };
+  const t = tones[tone];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        flex: 1,
+        background: t.bg,
+        border: `1px solid ${t.border}`,
+        borderRadius: 10,
+        padding: "14px 14px 12px",
+        textAlign: "left",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
+      <div
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 8,
+          background: t.chip,
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {icon}
+      </div>
+      <div>
+        <div style={{ fontWeight: 700, fontSize: 13, ...s.txt }}>{title}</div>
+        <div style={{ fontSize: 12, marginTop: 2, ...s.txt3 }}>{subtitle}</div>
+      </div>
+    </button>
+  );
+}
+
+function Field({ label, required, hint, children }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <label
+        style={{
+          display: "block",
+          fontSize: 12,
+          fontWeight: 600,
+          marginBottom: 6,
+          ...s.txt2,
+        }}
+      >
+        {label}
+        {required && <span style={{ color: "var(--rf-red)" }}> *</span>}
+        {hint && (
+          <span style={{ fontWeight: 400, ...s.txt3 }}> {hint}</span>
+        )}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: "100%",
+  background: "var(--rf-bg)",
+  border: "1px solid var(--rf-border2)",
+  borderRadius: 7,
+  padding: "9px 11px",
+  fontSize: 13,
+  color: "var(--rf-txt)",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+function InviteCompanyModal({ open, onClose }) {
+  const [form, setForm] = useState({
+    companyName: "",
+    companyType: "Subcontractor",
+    email: "",
+    phone: "",
+  });
+
+  if (!open) return null;
+
+  const update = (k) => (e) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const applyTemplate = (type) =>
+    setForm((f) => ({ ...f, companyType: type }));
+
+  const handleSubmit = () => {
+    onClose();
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(5, 9, 26, 0.55)",
+        backdropFilter: "blur(2px)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 720,
+          maxHeight: "90vh",
+          overflowY: "auto",
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border)",
+          borderRadius: 12,
+          boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            padding: "18px 20px 14px",
+            borderBottom: "1px solid var(--rf-border)",
+          }}
+        >
+          <div>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, ...s.txt }}>
+              Invite Company
+            </h3>
+            <p style={{ margin: "4px 0 0", fontSize: 13, ...s.txt2 }}>
+              Send invitations to companies to join your project network
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--rf-txt3)",
+              fontSize: 22,
+              lineHeight: 1,
+              cursor: "pointer",
+              padding: 4,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div>
+          {/* Quick Templates */}
+          <div style={{ padding: "16px 20px 4px" }}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                ...s.txt3,
+                marginBottom: 10,
+              }}
+            >
+              Quick Invite Templates
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <InviteTemplateCard
+                tone="blue"
+                title="Trusted Subcontractor"
+                subtitle="Pre-approved partner"
+                onClick={() => applyTemplate("Subcontractor")}
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 2l8 4v6c0 5-3.5 9.3-8 10-4.5-.7-8-5-8-10V6l8-4z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9 12l2 2 4-4"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                }
+              />
+              <InviteTemplateCard
+                tone="orange"
+                title="Material Vendor"
+                subtitle="Supply chain partner"
+                onClick={() => applyTemplate("Vendor")}
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M3 7l9-4 9 4-9 4-9-4z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M3 7v10l9 4 9-4V7"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M12 11v10"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                }
+              />
+              <InviteTemplateCard
+                tone="purple"
+                title="Equipment Rental"
+                subtitle="Equipment provider"
+                onClick={() => applyTemplate("Equipment Rental")}
+                icon={
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M2 7h11v9H2z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M13 10h5l3 3v3h-8z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="6.5" cy="17.5" r="1.8" fill="currentColor" />
+                    <circle cx="17.5" cy="17.5" r="1.8" fill="currentColor" />
+                  </svg>
+                }
+              />
+            </div>
+          </div>
+
+          {/* Company Information */}
+          <div style={{ padding: "18px 20px 4px" }}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                ...s.txt3,
+                marginBottom: 12,
+              }}
+            >
+              Company Information
+            </div>
+            <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+              <Field label="Company Name" required>
+                <input
+                  type="text"
+                  value={form.companyName}
+                  onChange={update("companyName")}
+                  placeholder="Enter company name"
+                  style={inputStyle}
+                />
+              </Field>
+              <Field label="Company Type">
+                <select
+                  value={form.companyType}
+                  onChange={update("companyType")}
+                  style={inputStyle}
+                >
+                  <option>Subcontractor</option>
+                  <option>Vendor</option>
+                  <option>Equipment Rental</option>
+                  <option>Consultant</option>
+                  <option>OEM</option>
+                </select>
+              </Field>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <Field label="Primary Contact Email" required>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={update("email")}
+                  placeholder="company@example.com"
+                  style={inputStyle}
+                />
+              </Field>
+              <Field label="Contact Phone" hint="(optional)">
+                <input
+                  type="tel"
+                  value={form.phone}
+                  onChange={update("phone")}
+                  placeholder="+1 (555) 123-4567"
+                  style={inputStyle}
+                />
+              </Field>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 8,
+              padding: "18px 20px",
+              marginTop: 8,
+              borderTop: "1px solid var(--rf-border)",
+            }}
+          >
+            <Btn onClick={onClose}>Cancel</Btn>
+            <Btn primary onClick={handleSubmit}>
+              Send Invitation
+            </Btn>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Status Report Modal ──────────────────────────────────────────────────────
+
+function SectionCard({ tone, icon, title, count, children, action }) {
+  const tones = {
+    orange: "var(--rf-orange)",
+    blue: "var(--rf-accent)",
+    green: "var(--rf-green)",
+    yellow: "var(--rf-yellow)",
+    red: "var(--rf-red)",
+    purple: "var(--rf-purple)",
+  };
+  const accent = tones[tone] || "var(--rf-accent)";
+  return (
+    <div
+      style={{
+        background: "var(--rf-bg2)",
+        border: "1px solid var(--rf-border)",
+        borderLeft: `3px solid ${accent}`,
+        borderRadius: 8,
+        padding: 12,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 10,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              background: `color-mix(in srgb, ${accent} 18%, var(--rf-bg2))`,
+              color: accent,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {icon}
+          </span>
+          <strong style={{ fontSize: 13, ...s.txt }}>{title}</strong>
+          {typeof count !== "undefined" && (
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                padding: "2px 7px",
+                borderRadius: 99,
+                background: `color-mix(in srgb, ${accent} 18%, var(--rf-bg2))`,
+                color: accent,
+              }}
+            >
+              {count}
+            </span>
+          )}
+        </div>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function StatusReportModal({ open, onClose, projectName }) {
+  const [form, setForm] = useState({
+    project: projectName || "MSFT Data Center – Sterling DC1",
+    date: "",
+    dayNo: 1,
+    work: "",
+    manpower: 0,
+    material: "Available",
+    hours: "",
+    equipment: "",
+  });
+
+  if (!open) return null;
+
+  const update = (k) => (e) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const sparkle = (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"
+        fill="currentColor"
+      />
+      <path
+        d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(5, 9, 26, 0.55)",
+        backdropFilter: "blur(2px)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%",
+          maxWidth: 820,
+          maxHeight: "92vh",
+          overflowY: "auto",
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border)",
+          borderRadius: 12,
+          boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+            padding: "18px 20px 14px",
+            borderBottom: "1px solid var(--rf-border)",
+          }}
+        >
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                background:
+                  "color-mix(in srgb, var(--rf-green) 18%, var(--rf-bg2))",
+                color: "var(--rf-green)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M9 12l2 2 4-4"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+              </svg>
+            </div>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: 18,
+                    fontWeight: 800,
+                    ...s.txt,
+                  }}
+                >
+                  Daily Status Report
+                </h3>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 99,
+                    background:
+                      "color-mix(in srgb, var(--rf-green) 15%, var(--rf-bg2))",
+                    color: "var(--rf-green)",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: "var(--rf-green)",
+                    }}
+                  />
+                  Auto-Saved
+                </span>
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: 13, ...s.txt2 }}>
+                Update your daily project status — your work auto-saves as you
+                type
+              </p>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              type="button"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: "var(--rf-purple)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 7,
+                padding: "7px 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {sparkle}
+              Generate AI Report
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "var(--rf-txt3)",
+                fontSize: 22,
+                lineHeight: 1,
+                cursor: "pointer",
+                padding: 4,
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div style={{ padding: "16px 20px" }}>
+          {/* Project Info */}
+          <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+            <Field label="Project">
+              <select
+                value={form.project}
+                onChange={update("project")}
+                style={inputStyle}
+              >
+                <option>MSFT Data Center – Sterling DC1</option>
+                <option>AWS Region Build – Ashburn</option>
+                <option>Meta DC – Eagle Mountain</option>
+              </select>
+            </Field>
+            <Field label="Date">
+              <input
+                type="date"
+                value={form.date}
+                onChange={update("date")}
+                style={inputStyle}
+              />
+            </Field>
+            <div style={{ width: 110, flexShrink: 0 }}>
+              <Field label="Day No">
+                <input
+                  type="number"
+                  min={1}
+                  value={form.dayNo}
+                  onChange={update("dayNo")}
+                  style={inputStyle}
+                />
+              </Field>
+            </div>
+          </div>
+
+          {/* Work Performed Today */}
+          <div style={{ marginBottom: 14 }}>
+            <SectionCard
+              tone="orange"
+              title="Work Performed Today"
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M4 6h12M4 12h16M4 18h10"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              }
+              action={
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
+                      background: "var(--rf-purple)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "5px 10px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {sparkle}
+                    AI Assist
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      background: "var(--rf-bg3)",
+                      color: "var(--rf-txt)",
+                      border: "1px solid var(--rf-border2)",
+                      borderRadius: 6,
+                      padding: "5px 10px",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Insert Template
+                  </button>
+                </div>
+              }
+            >
+              <textarea
+                value={form.work}
+                onChange={update("work")}
+                placeholder="Add work performed today..."
+                rows={4}
+                style={{ ...inputStyle, resize: "vertical", minHeight: 88 }}
+              />
+            </SectionCard>
+          </div>
+
+          {/* Manpower + Material */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 12,
+              marginBottom: 14,
+            }}
+          >
+            <SectionCard
+              tone="blue"
+              title="Manpower On-Site"
+              count={form.manpower}
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    cx="9"
+                    cy="8"
+                    r="3.2"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M3 19c0-3.3 2.7-6 6-6s6 2.7 6 6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx="17"
+                    cy="9"
+                    r="2.5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M15 19c0-2.5 1.8-4.5 4-4.5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              }
+            >
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.manpower}
+                  onChange={update("manpower")}
+                  style={inputStyle}
+                />
+                <button
+                  type="button"
+                  style={{
+                    background: "var(--rf-accent)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 7,
+                    padding: "0 14px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  + Add
+                </button>
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              tone="green"
+              title="Material Status"
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M3 7l9-4 9 4-9 4-9-4z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M3 7v10l9 4 9-4V7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              }
+            >
+              <select
+                value={form.material}
+                onChange={update("material")}
+                style={inputStyle}
+              >
+                <option>Available</option>
+                <option>Partially Available</option>
+                <option>Shortage</option>
+                <option>Awaiting Delivery</option>
+              </select>
+            </SectionCard>
+          </div>
+
+          {/* Hours Worked */}
+          <div style={{ marginBottom: 14 }}>
+            <SectionCard
+              tone="yellow"
+              title="Hours Worked"
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M12 7v5l3 2"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              }
+            >
+              <input
+                type="text"
+                value={form.hours}
+                onChange={update("hours")}
+                placeholder="e.g. 8.5"
+                style={inputStyle}
+              />
+            </SectionCard>
+          </div>
+
+          {/* Equipment Used */}
+          <div>
+            <SectionCard
+              tone="red"
+              title="Equipment Used"
+              icon={
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M2 7h11v9H2z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M13 10h5l3 3v3h-8z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="6.5" cy="17.5" r="1.8" fill="currentColor" />
+                  <circle cx="17.5" cy="17.5" r="1.8" fill="currentColor" />
+                </svg>
+              }
+            >
+              <input
+                type="text"
+                value={form.equipment}
+                onChange={update("equipment")}
+                placeholder="List equipment used..."
+                style={inputStyle}
+              />
+            </SectionCard>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 8,
+            padding: "14px 20px",
+            borderTop: "1px solid var(--rf-border)",
+          }}
+        >
+          <Btn onClick={onClose}>Cancel</Btn>
+          <Btn primary onClick={onClose}>
+            Submit Report
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Dashboards ───────────────────────────────────────────────────────────────
 
 function DashGCPM({ user, router }) {
   const pr = PROJECT;
   const name = user?.firstName || "there";
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
   return (
     <div>
       <PH
@@ -1133,12 +2035,21 @@ function DashGCPM({ user, router }) {
         subtitle={`Here's the program view for <b>${pr.code}</b>. As GC PM you own the whole project — every company, every phase, every checklist.`}
         actions={
           <>
-            <Btn onClick={() => {}}>Status report</Btn>
-            <Btn primary onClick={() => {}}>
+            <Btn onClick={() => setStatusOpen(true)}>Status report</Btn>
+            <Btn primary onClick={() => setInviteOpen(true)}>
               + Invite company
             </Btn>
           </>
         }
+      />
+      <InviteCompanyModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+      />
+      <StatusReportModal
+        open={statusOpen}
+        onClose={() => setStatusOpen(false)}
+        projectName={pr.name}
       />
       <KPIs>
         <KPI
