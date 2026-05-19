@@ -1,10 +1,10 @@
-import Dashboard from "../../../containers/FSM/Dashboard";
+import Executive from "../../../containers/Executive";
 import Layout from "@/containers/Layout";
 
 export default function List() {
   return (
     <Layout>
-      <Dashboard />
+      <Executive />
     </Layout>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   getAssets,
@@ -10,42 +10,7 @@ import {
 } from "@/services/AssetManagement";
 import { getUsers } from "@/services/Users";
 
-const ASSET_STATUSES = [
-  "IN_STOCK",
-  "ASSIGNED",
-  "IN_REPAIR",
-  "DAMAGED",
-  "RETIRED",
-  "LOST",
-];
-const CATEGORIES = [
-  "IT Equipment",
-  "Vehicle",
-  "Machinery",
-  "Furniture",
-  "Safety Equipment",
-  "Tools",
-  "Other",
-];
-const TABS = ["All", "IN_STOCK", "ASSIGNED", "IN_REPAIR", "DAMAGED", "RETIRED"];
-
-const STATUS_COLORS = {
-  IN_STOCK: "bg-green-500/20 text-green-300 border-green-500/30",
-  ASSIGNED: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-  IN_REPAIR: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  DAMAGED: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  RETIRED: "bg-gray-600/30 text-gray-400 border-gray-600/40",
-  LOST: "bg-red-500/20 text-red-300 border-red-500/30",
-};
-
-const STATUS_ICONS = {
-  IN_STOCK: "",
-  ASSIGNED: "",
-  IN_REPAIR: "",
-  DAMAGED: "",
-  RETIRED: "",
-  LOST: "",
-};
+// ── Domain constants ────────────────────────────────────────────────────────
 
 const TRANSITIONS = {
   IN_STOCK: ["ASSIGNED", "IN_REPAIR", "RETIRED"],
@@ -56,18 +21,93 @@ const TRANSITIONS = {
   LOST: ["IN_STOCK"],
 };
 
+// ── UI mapping ──────────────────────────────────────────────────────────────
+
+const STAGE_LABEL = {
+  IN_STOCK: "In Stock",
+  ASSIGNED: "Installed",
+  IN_REPAIR: "In Repair",
+  DAMAGED: "Damaged",
+  RETIRED: "Commissioned",
+  LOST: "Lost",
+};
+
+// Stage pill (background tint + text color)
+const STAGE_PILL = {
+  IN_STOCK: {
+    bg: "color-mix(in srgb, var(--rf-green) 16%, transparent)",
+    fg: "var(--rf-green2)",
+  },
+  ASSIGNED: {
+    bg: "color-mix(in srgb, var(--rf-yellow) 22%, transparent)",
+    fg: "var(--rf-yellow2)",
+  },
+  IN_REPAIR: {
+    bg: "color-mix(in srgb, var(--rf-orange) 18%, transparent)",
+    fg: "var(--rf-orange)",
+  },
+  DAMAGED: {
+    bg: "color-mix(in srgb, var(--rf-orange) 22%, transparent)",
+    fg: "var(--rf-orange)",
+  },
+  RETIRED: {
+    bg: "color-mix(in srgb, var(--rf-green) 18%, transparent)",
+    fg: "var(--rf-green2)",
+  },
+  LOST: {
+    bg: "color-mix(in srgb, var(--rf-red) 14%, transparent)",
+    fg: "var(--rf-red2)",
+  },
+};
+
+// Lifecycle progression: how many segments are "filled" by status.
+const LIFECYCLE_STAGES = ["L2", "L3", "L4", "IST"];
+const STATUS_PROGRESS = {
+  IN_STOCK: 1, // L2
+  ASSIGNED: 2, // L2, L3
+  IN_REPAIR: 2,
+  DAMAGED: 2,
+  RETIRED: 4, // all
+  LOST: 4,
+};
+
+const STAGE_COLOR_AT = (i, status) => {
+  // L2/L3 → accent, L4 → orange, IST → orange (or muted if not reached)
+  if (status === "RETIRED") return "var(--rf-green)";
+  if (i <= 1) return "var(--rf-accent)";
+  return "var(--rf-orange)";
+};
+
+const MONO = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
+
+// ── Toast ───────────────────────────────────────────────────────────────────
 const Toast = ({ msg }) =>
   msg ? (
     <div
-      className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg border shadow-xl text-sm flex items-center gap-2 ${
-        msg.type === "success"
-          ? "bg-green-900/90 border-green-500/40 text-green-300"
-          : "bg-red-900/90 border-red-500/40 text-red-300"
-      }`}
+      style={{
+        position: "fixed",
+        top: 20,
+        right: 20,
+        zIndex: 200,
+        padding: "10px 14px",
+        borderRadius: 8,
+        fontSize: 13,
+        background:
+          msg.type === "success"
+            ? "color-mix(in srgb, var(--rf-green) 16%, var(--rf-bg2))"
+            : "color-mix(in srgb, var(--rf-red) 16%, var(--rf-bg2))",
+        color: msg.type === "success" ? "var(--rf-green2)" : "var(--rf-red2)",
+        border: `1px solid ${
+          msg.type === "success" ? "var(--rf-green)" : "var(--rf-red)"
+        }`,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+      }}
     >
       {msg.text}
     </div>
   ) : null;
+
+// ── Main ────────────────────────────────────────────────────────────────────
 
 export default function AssetsList() {
   const router = useRouter();
@@ -77,20 +117,14 @@ export default function AssetsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [msg, setMsg] = useState(null);
-  const [activeTab, setActiveTab] = useState("All");
-  const [searchTerm, setSearch] = useState("");
-  const [filterCat, setFilterCat] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Status change modal
-  const [statusModal, setStatusModal] = useState(null); // { asset, nextStatus }
+  const [statusModal, setStatusModal] = useState(null);
   const [statusReason, setStatusReason] = useState("");
 
-  // Assign modal
   const [assignModal, setAssignModal] = useState(null);
   const [assignUserId, setAssignUserId] = useState("");
 
-  // History modal
   const [historyModal, setHistoryModal] = useState(null);
   const [historyEvents, setHistoryEvents] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -122,7 +156,9 @@ export default function AssetsList() {
     try {
       const res = await getUsers();
       setUsers(Array.isArray(res) ? res : res?.data || []);
-    } catch {}
+    } catch {
+      // non-critical
+    }
   };
 
   const withAction = async (fn, successMsg) => {
@@ -175,533 +211,936 @@ export default function AssetsList() {
     }
   };
 
-  const isWarrantyExpiring = (asset) => {
-    if (!asset.warrantyExpiry) return false;
+  const isWarrantyExpiring = (a) => {
+    if (!a.warrantyExpiry) return false;
     const diff =
-      (new Date(asset.warrantyExpiry) - new Date()) / (1000 * 60 * 60 * 24);
+      (new Date(a.warrantyExpiry) - new Date()) / (1000 * 60 * 60 * 24);
     return diff >= 0 && diff <= 30;
   };
+  const isWarrantyExpired = (a) =>
+    a.warrantyExpiry && new Date(a.warrantyExpiry) < new Date();
 
-  const isWarrantyExpired = (asset) =>
-    asset.warrantyExpiry && new Date(asset.warrantyExpiry) < new Date();
-
-  const filtered = assets.filter((a) => {
-    const matchTab = activeTab === "All" || a.status === activeTab;
-    const matchSearch =
-      !searchTerm ||
-      (a.assetTag || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (a.name || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCat = !filterCat || a.category === filterCat;
-    return matchTab && matchSearch && matchCat;
-  });
-
-  const stats = {
-    total: assets.length,
-    inStock: assets.filter((a) => a.status === "IN_STOCK").length,
-    assigned: assets.filter((a) => a.status === "ASSIGNED").length,
-    inRepair: assets.filter((a) => a.status === "IN_REPAIR").length,
-    damaged: assets.filter((a) => a.status === "DAMAGED").length,
-    expired: assets.filter(isWarrantyExpired).length,
-  };
+  // Distinct OEM count (best-effort, since asset domain has no manufacturer field)
+  const oemCount = useMemo(() => {
+    const set = new Set();
+    assets.forEach((a) => {
+      const v = a.manufacturer || a.supplier || a.category;
+      if (v) set.add(v);
+    });
+    return set.size;
+  }, [assets]);
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="mx-auto">
-        <Toast msg={msg} />
+    <div style={{ padding: 24, margin: "0 auto" }}>
+      <Toast msg={msg} />
 
-        {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
-              Asset Database
-            </h1>
-            <p className="text-gray-400">
-              Track enterprise assets — lifecycle, assignments, and maintenance
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push("/Assets/Assignments")}
-              className="px-5 py-3 border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white rounded-lg font-medium transition-all flex items-center gap-2"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              Assignments
-            </button>
-            <button
-              onClick={() => router.push("/Assets/Add")}
-              className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Register Asset
-            </button>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
-          {[
-            { label: "Total", value: stats.total, color: "text-white" },
-            {
-              label: "In Stock",
-              value: stats.inStock,
-              color: "text-green-400",
-            },
-            {
-              label: "Assigned",
-              value: stats.assigned,
-              color: "text-cyan-400",
-            },
-            {
-              label: "In Repair",
-              value: stats.inRepair,
-              color: "text-yellow-400",
-            },
-            {
-              label: "Damaged",
-              value: stats.damaged,
-              color: "text-orange-400",
-            },
-            {
-              label: "Warranty",
-              value: stats.expired,
-              color: "text-red-400",
-            },
-          ].map((s) => (
-            <div
-              key={s.label}
-              className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-4"
-            >
-              <p className="text-gray-500 text-xs uppercase tracking-wider">
-                {s.label}
-              </p>
-              <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Tabs + Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="flex bg-gray-900/60 border border-gray-800/60 rounded-lg overflow-x-auto">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab
-                    ? "bg-cyan-600 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800/50"
-                }`}
-              >
-                {STATUS_ICONS[tab] ? `${STATUS_ICONS[tab]} ` : ""}
-                {tab.replace(/_/g, " ")}
-              </button>
-            ))}
-          </div>
-          <input
-            type="text"
-            placeholder="Search by tag or name..."
-            value={searchTerm}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 min-w-[200px] max-w-sm px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-cyan-500"
-          />
-          <select
-            value={filterCat}
-            onChange={(e) => setFilterCat(e.target.value)}
-            className="px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 cursor-pointer"
+      {/* Header */}
+      <header
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 12,
+          marginBottom: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: 28,
+              fontWeight: 800,
+              color: "var(--rf-txt)",
+              margin: 0,
+            }}
           >
-            <option value="">All Categories</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+            Equipment
+          </h1>
+          <p
+            style={{
+              color: "var(--rf-txt3)",
+              fontSize: 13,
+              marginTop: 4,
+            }}
+          >
+            {assets.length} unit{assets.length === 1 ? "" : "s"} across{" "}
+            {oemCount || "all"} OEM{oemCount === 1 ? "" : "s"}.
+          </p>
         </div>
+        <button
+          className="rf-btn rf-btn-primary"
+          onClick={() => router.push("/Assets/Add")}
+        >
+          + Create asset
+        </button>
+      </header>
 
-        {error && (
-          <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div
+          style={{
+            padding: 10,
+            background: "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+            color: "var(--rf-red2)",
+            borderRadius: 8,
+            marginBottom: 12,
+            fontSize: 13,
+          }}
+        >
+          {error}
+        </div>
+      )}
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="bg-gray-900/50 rounded-xl border border-gray-800/50 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-800">
-                    {[
-                      "Asset Tag",
-                      "Name / Category",
-                      "Status",
-                      "Assigned To",
-                      "Location",
-                      "Cost",
-                      "Warranty",
-                      "Actions",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((asset) => {
-                    const transitions = TRANSITIONS[asset.status] || [];
-                    const warExpiring = isWarrantyExpiring(asset);
-                    const warExpired = isWarrantyExpired(asset);
-                    const assignedUser = users.find(
-                      (u) => u.id === asset.currentAssignedUserId,
-                    );
-
-                    return (
-                      <tr
-                        key={asset.id}
-                        className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors ${warExpired ? "bg-red-900/5" : ""}`}
-                      >
-                        <td className="px-5 py-4">
-                          <p className="text-cyan-400 font-mono text-sm font-medium">
-                            {asset.assetTag}
-                          </p>
-                        </td>
-                        <td className="px-5 py-4">
-                          <p className="text-white text-sm font-medium">
-                            {asset.name}
-                          </p>
-                          <p className="text-gray-500 text-xs mt-0.5">
-                            {asset.category}
-                          </p>
-                        </td>
-                        <td className="px-5 py-4 whitespace-nowrap">
-                          <span
-                            className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_COLORS[asset.status]}`}
-                          >
-                            {STATUS_ICONS[asset.status]}{" "}
-                            {asset.status.replace(/_/g, " ")}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-xs text-gray-400 whitespace-nowrap">
-                          {assignedUser
-                            ? `${assignedUser.firstName} ${assignedUser.lastName}`
-                            : "—"}
-                        </td>
-                        <td className="px-5 py-4 text-xs text-gray-400">
-                          {asset.location?.name || "—"}
-                        </td>
-                        <td className="px-5 py-4 text-sm text-gray-400 font-mono">
-                          {asset.purchaseCost
-                            ? `$${Number(asset.purchaseCost).toLocaleString()}`
-                            : "—"}
-                        </td>
-                        <td
-                          className={`px-5 py-4 text-xs whitespace-nowrap ${warExpired ? "text-red-400" : warExpiring ? "text-yellow-400" : "text-gray-500"}`}
-                        >
-                          {asset.warrantyExpiry
-                            ? new Date(
-                                asset.warrantyExpiry,
-                              ).toLocaleDateString()
-                            : "—"}
-                          {warExpired && (
-                            <span className="ml-1 text-[10px] text-red-500 uppercase font-bold">
-                              expired
-                            </span>
-                          )}
-                          {warExpiring && !warExpired && (
-                            <span className="ml-1 text-[10px] text-yellow-500 uppercase">
-                              expiring
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-1 flex-wrap min-w-[180px]">
-                            <button
-                              onClick={() => openHistory(asset)}
-                              className="text-gray-400 hover:text-white text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
-                            >
-                              History
-                            </button>
-                            {asset.status === "IN_STOCK" && (
-                              <button
-                                onClick={() =>
-                                  router.push(`/Assets/Assign/${asset.id}`)
-                                }
-                                className="text-cyan-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
-                              >
-                                Assign
-                              </button>
-                            )}
-                            {transitions.map((next) => (
-                              <button
-                                key={next}
-                                onClick={() => {
-                                  setStatusModal({ asset, nextStatus: next });
-                                  setStatusReason("");
-                                }}
-                                className={`text-[11px] px-2 py-0.5 rounded bg-gray-800/50 ${
-                                  next === "IN_STOCK"
-                                    ? "text-green-400"
-                                    : next === "IN_REPAIR"
-                                      ? "text-yellow-400"
-                                      : next === "DAMAGED"
-                                        ? "text-orange-400"
-                                        : next === "RETIRED"
-                                          ? "text-gray-400"
-                                          : "text-red-400"
-                                }`}
-                              >
-                                → {next.replace(/_/g, " ")}
-                              </button>
-                            ))}
-                            <button
-                              onClick={() =>
-                                router.push(`/Assets/Edit/${asset.id}`)
-                              }
-                              className="text-purple-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
-                            >
-                              Edit
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {filtered.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="text-center text-gray-500 py-14"
-                      >
-                        No assets found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* ── Status Change Modal ── */}
-        {statusModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-white font-bold text-lg mb-1">
-                Change Asset Status
-              </h3>
-              <p className="text-gray-400 text-sm mb-5">
-                <span className="font-mono text-cyan-400">
-                  {statusModal.asset.assetTag}
-                </span>
-                {" → "}
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full border ml-1 ${STATUS_COLORS[statusModal.nextStatus]}`}
-                >
-                  {statusModal.nextStatus.replace(/_/g, " ")}
-                </span>
-              </p>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">
-                  Reason / Notes
-                </label>
-                <textarea
-                  value={statusReason}
-                  onChange={(e) => setStatusReason(e.target.value)}
-                  rows={3}
-                  placeholder="Reason for this status change..."
-                  className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 resize-none"
-                />
-              </div>
-              <div className="flex gap-3 justify-end mt-5">
-                <button
-                  onClick={() => setStatusModal(null)}
-                  className="px-5 py-2.5 border border-gray-600 text-gray-300 rounded-lg text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleStatusChange}
-                  disabled={actionLoading}
-                  className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium disabled:opacity-50"
-                >
-                  {actionLoading ? "Updating..." : "Confirm"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Assign Modal ── */}
-        {assignModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-white font-bold text-lg mb-1">
-                Assign Asset
-              </h3>
-              <p className="text-gray-400 text-sm mb-5 font-mono">
-                {assignModal.assetTag} — {assignModal.name}
-              </p>
-              <div>
-                <label className="block text-xs font-bold text-gray-400 mb-1.5 uppercase">
-                  Assign To User <span className="text-red-400">*</span>
-                </label>
-                <select
-                  value={assignUserId}
-                  onChange={(e) => setAssignUserId(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 cursor-pointer"
-                >
-                  <option value="">Select user...</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.firstName} {u.lastName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-3 justify-end mt-5">
-                <button
-                  onClick={() => setAssignModal(null)}
-                  className="px-5 py-2.5 border border-gray-600 text-gray-300 rounded-lg text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAssign}
-                  disabled={actionLoading || !assignUserId}
-                  className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium disabled:opacity-50"
-                >
-                  {actionLoading ? "Assigning..." : "Assign"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── History Modal ── */}
-        {historyModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
-              <div className="flex items-start justify-between mb-5">
-                <div>
-                  <h3 className="text-white font-bold text-lg">
-                    Status History
-                  </h3>
-                  <p className="text-cyan-400 font-mono text-sm">
-                    {historyModal.assetTag} — {historyModal.name}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setHistoryModal(null)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+      {/* Table */}
+      <div
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border)",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ overflowX: "auto" }}>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: 13,
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  background: "var(--rf-bg3)",
+                  borderBottom: "1px solid var(--rf-border)",
+                }}
+              >
+                {[
+                  "UNIT ID",
+                  "NAME",
+                  "STAGE",
+                  "LIFECYCLE",
+                  "OEM",
+                  "PIGTAIL",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      textAlign: "left",
+                      padding: "12px 16px",
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: "0.08em",
+                      color: "var(--rf-txt3)",
+                      whiteSpace: "nowrap",
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-              {historyLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : historyEvents.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-6">
-                  No history recorded yet
-                </p>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    style={{
+                      padding: 40,
+                      textAlign: "center",
+                      color: "var(--rf-txt3)",
+                    }}
+                  >
+                    Loading…
+                  </td>
+                </tr>
+              ) : assets.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    style={{
+                      padding: 40,
+                      textAlign: "center",
+                      color: "var(--rf-txt3)",
+                    }}
+                  >
+                    No assets found
+                  </td>
+                </tr>
               ) : (
-                <div className="relative">
-                  <div className="absolute left-3.5 top-0 bottom-0 w-px bg-gray-700" />
-                  <div className="space-y-4">
-                    {historyEvents.map((ev, i) => {
-                      const changer = users.find((u) => u.id === ev.changedBy);
-                      return (
-                        <div key={ev.id || i} className="relative pl-8">
-                          <div
-                            className={`absolute left-0 w-7 h-7 rounded-full flex items-center justify-center text-xs ${STATUS_COLORS[ev.newStatus] || "bg-gray-800 border border-gray-700"}`}
-                          >
-                            {STATUS_ICONS[ev.newStatus] || "•"}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              {ev.previousStatus && (
-                                <span
-                                  className={`text-[10px] px-1.5 py-0.5 rounded border ${STATUS_COLORS[ev.previousStatus]}`}
-                                >
-                                  {ev.previousStatus.replace(/_/g, " ")}
-                                </span>
-                              )}
-                              <span className="text-gray-500 text-xs">→</span>
-                              <span
-                                className={`text-[10px] px-1.5 py-0.5 rounded border ${STATUS_COLORS[ev.newStatus]}`}
-                              >
-                                {ev.newStatus?.replace(/_/g, " ")}
-                              </span>
-                            </div>
-                            {ev.reason && (
-                              <p className="text-gray-400 text-xs mt-1">
-                                {ev.reason}
-                              </p>
-                            )}
-                            <p className="text-gray-600 text-xs mt-0.5">
-                              {changer
-                                ? `${changer.firstName} ${changer.lastName}`
-                                : "System"}
-                              {" · "}
-                              {ev.timestamp
-                                ? new Date(ev.timestamp).toLocaleString()
-                                : ""}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                assets.map((asset) => (
+                  <AssetRow
+                    key={asset.id}
+                    asset={asset}
+                    users={users}
+                    router={router}
+                    onHistory={() => openHistory(asset)}
+                    onStatus={(next) => {
+                      setStatusModal({ asset, nextStatus: next });
+                      setStatusReason("");
+                    }}
+                    onAssign={() => {
+                      setAssignModal(asset);
+                      setAssignUserId("");
+                    }}
+                    expiring={isWarrantyExpiring(asset)}
+                    expired={isWarrantyExpired(asset)}
+                  />
+                ))
               )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Modals ───────────────────────────────────────────────────────── */}
+      {statusModal && (
+        <Modal onClose={() => setStatusModal(null)}>
+          <h3
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: "var(--rf-txt)",
+              margin: 0,
+            }}
+          >
+            Change asset status
+          </h3>
+          <p
+            style={{
+              color: "var(--rf-txt3)",
+              fontSize: 13,
+              margin: "4px 0 14px",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: MONO,
+                color: "var(--rf-accent)",
+                fontWeight: 700,
+              }}
+            >
+              {statusModal.asset.assetTag}
+            </span>{" "}
+            <span style={{ color: "var(--rf-txt3)" }}>→</span>{" "}
+            <StagePill status={statusModal.nextStatus} />
+          </p>
+          <Field label="Reason / Notes">
+            <textarea
+              className="rf-input"
+              rows={3}
+              placeholder="Reason for this status change…"
+              value={statusReason}
+              onChange={(e) => setStatusReason(e.target.value)}
+            />
+          </Field>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              justifyContent: "flex-end",
+              marginTop: 12,
+            }}
+          >
+            <button className="rf-btn" onClick={() => setStatusModal(null)}>
+              Cancel
+            </button>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={handleStatusChange}
+              disabled={actionLoading}
+            >
+              {actionLoading ? "Updating…" : "Confirm"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {assignModal && (
+        <Modal onClose={() => setAssignModal(null)}>
+          <h3
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: "var(--rf-txt)",
+              margin: 0,
+            }}
+          >
+            Assign asset
+          </h3>
+          <p
+            style={{
+              color: "var(--rf-txt3)",
+              fontSize: 13,
+              margin: "4px 0 14px",
+              fontFamily: MONO,
+            }}
+          >
+            {assignModal.assetTag} — {assignModal.name}
+          </p>
+          <Field label="Assign to user *">
+            <select
+              className="rf-input"
+              value={assignUserId}
+              onChange={(e) => setAssignUserId(e.target.value)}
+            >
+              <option value="">Select user…</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              justifyContent: "flex-end",
+              marginTop: 12,
+            }}
+          >
+            <button className="rf-btn" onClick={() => setAssignModal(null)}>
+              Cancel
+            </button>
+            <button
+              className="rf-btn rf-btn-primary"
+              onClick={handleAssign}
+              disabled={actionLoading || !assignUserId}
+            >
+              {actionLoading ? "Assigning…" : "Assign"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {historyModal && (
+        <Modal onClose={() => setHistoryModal(null)} wide>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              marginBottom: 14,
+            }}
+          >
+            <div>
+              <h3
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: "var(--rf-txt)",
+                  margin: 0,
+                }}
+              >
+                Status history
+              </h3>
+              <p
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 13,
+                  color: "var(--rf-accent)",
+                  margin: "4px 0 0",
+                }}
+              >
+                {historyModal.assetTag} — {historyModal.name}
+              </p>
             </div>
+            <button
+              className="rf-btn"
+              onClick={() => setHistoryModal(null)}
+              aria-label="Close"
+              style={{ padding: "4px 10px" }}
+            >
+              ✕
+            </button>
+          </div>
+          {historyLoading ? (
+            <div
+              style={{
+                color: "var(--rf-txt3)",
+                textAlign: "center",
+                padding: 30,
+              }}
+            >
+              Loading…
+            </div>
+          ) : historyEvents.length === 0 ? (
+            <div
+              style={{
+                color: "var(--rf-txt3)",
+                textAlign: "center",
+                padding: 24,
+              }}
+            >
+              No history recorded yet
+            </div>
+          ) : (
+            <div style={{ position: "relative" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: 14,
+                  top: 0,
+                  bottom: 0,
+                  width: 1,
+                  background: "var(--rf-border)",
+                }}
+              />
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 14 }}
+              >
+                {historyEvents.map((ev, i) => {
+                  const changer = users.find((u) => u.id === ev.changedBy);
+                  return (
+                    <div
+                      key={ev.id || i}
+                      style={{ position: "relative", paddingLeft: 32 }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          background: "var(--rf-bg2)",
+                          border: "2px solid var(--rf-border)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 11,
+                          color: "var(--rf-txt3)",
+                        }}
+                      >
+                        •
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                          alignItems: "center",
+                        }}
+                      >
+                        {ev.previousStatus && (
+                          <StagePill status={ev.previousStatus} small />
+                        )}
+                        <span style={{ color: "var(--rf-txt3)", fontSize: 11 }}>
+                          →
+                        </span>
+                        <StagePill status={ev.newStatus} small />
+                      </div>
+                      {ev.reason && (
+                        <p
+                          style={{
+                            color: "var(--rf-txt2)",
+                            fontSize: 12,
+                            margin: "4px 0 0",
+                          }}
+                        >
+                          {ev.reason}
+                        </p>
+                      )}
+                      <p
+                        style={{
+                          color: "var(--rf-txt3)",
+                          fontSize: 11,
+                          margin: "2px 0 0",
+                          fontFamily: MONO,
+                        }}
+                      >
+                        {changer
+                          ? `${changer.firstName} ${changer.lastName}`
+                          : "System"}{" "}
+                        ·{" "}
+                        {ev.timestamp
+                          ? new Date(ev.timestamp).toLocaleString()
+                          : ""}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ── Row ─────────────────────────────────────────────────────────────────────
+
+function AssetRow({
+  asset,
+  users,
+  router,
+  onHistory,
+  onStatus,
+  onAssign,
+  expiring,
+  expired,
+}) {
+  const [hovered, setHovered] = useState(false);
+  const transitions = TRANSITIONS[asset.status] || [];
+  const assignedUser = users.find((u) => u.id === asset.currentAssignedUserId);
+  const oem = asset.manufacturer || asset.supplier || asset.category || "—";
+
+  return (
+    <tr
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => router.push(`/Assets/Edit/${asset.id}`)}
+      style={{
+        borderBottom: "1px solid var(--rf-border)",
+        background: hovered
+          ? "color-mix(in srgb, var(--rf-accent) 4%, transparent)"
+          : expired
+          ? "color-mix(in srgb, var(--rf-red) 4%, transparent)"
+          : "transparent",
+        cursor: "pointer",
+      }}
+    >
+      <td
+        style={{
+          padding: "14px 16px",
+          verticalAlign: "top",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: 13,
+            fontWeight: 700,
+            color: "var(--rf-txt)",
+          }}
+        >
+          {asset.assetTag || "—"}
+        </div>
+        {asset.category && (
+          <div
+            style={{
+              display: "inline-block",
+              marginTop: 4,
+              padding: "2px 6px",
+              background: "var(--rf-bg3)",
+              borderRadius: 4,
+              fontFamily: MONO,
+              fontSize: 9,
+              fontWeight: 700,
+              color: "var(--rf-txt3)",
+              letterSpacing: "0.05em",
+            }}
+          >
+            {String(asset.category).toUpperCase().slice(0, 8)}
           </div>
         )}
+      </td>
+
+      <td style={{ padding: "14px 16px", verticalAlign: "top" }}>
+        <div style={{ fontWeight: 600, color: "var(--rf-txt)" }}>
+          {asset.name || "—"}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--rf-txt3)", marginTop: 2 }}>
+          {asset.location?.name ||
+            (assignedUser
+              ? `${assignedUser.firstName} ${assignedUser.lastName}`
+              : "—")}
+        </div>
+      </td>
+
+      <td
+        style={{
+          padding: "14px 16px",
+          verticalAlign: "top",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <StagePill status={asset.status} />
+      </td>
+
+      <td
+        style={{
+          padding: "14px 16px",
+          verticalAlign: "top",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <LifecycleBar status={asset.status} />
+      </td>
+
+      <td
+        style={{
+          padding: "14px 16px",
+          verticalAlign: "top",
+          color: "var(--rf-txt2)",
+        }}
+      >
+        {oem}
+      </td>
+
+      <td
+        style={{
+          padding: "14px 16px",
+          verticalAlign: "top",
+          whiteSpace: "nowrap",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <PigtailPill
+            expired={expired}
+            expiring={expiring}
+            hasWarranty={!!asset.warrantyExpiry}
+          />
+          <RowKebab
+            visible={hovered}
+            asset={asset}
+            transitions={transitions}
+            onHistory={onHistory}
+            onAssign={onAssign}
+            onStatus={onStatus}
+            onEdit={() => router.push(`/Assets/Edit/${asset.id}`)}
+          />
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function RowKebab({
+  visible,
+  asset,
+  transitions,
+  onHistory,
+  onAssign,
+  onStatus,
+  onEdit,
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span
+      style={{
+        position: "relative",
+        opacity: visible || open ? 1 : 0,
+        transition: "opacity 120ms",
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Row actions"
+        style={{
+          width: 26,
+          height: 26,
+          borderRadius: 6,
+          background: "var(--rf-bg3)",
+          border: "1px solid var(--rf-border)",
+          color: "var(--rf-txt2)",
+          cursor: "pointer",
+          fontSize: 14,
+          lineHeight: 1,
+          padding: 0,
+        }}
+      >
+        ⋮
+      </button>
+      {open && (
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 30 }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              right: 0,
+              zIndex: 31,
+              minWidth: 180,
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border)",
+              borderRadius: 8,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+              padding: 4,
+            }}
+          >
+            <KebabItem
+              onClick={() => {
+                setOpen(false);
+                onHistory();
+              }}
+            >
+              View history
+            </KebabItem>
+            {asset.status === "IN_STOCK" && (
+              <KebabItem
+                accent
+                onClick={() => {
+                  setOpen(false);
+                  onAssign();
+                }}
+              >
+                Assign
+              </KebabItem>
+            )}
+            <KebabItem
+              onClick={() => {
+                setOpen(false);
+                onEdit();
+              }}
+            >
+              Edit
+            </KebabItem>
+            {transitions.length > 0 && (
+              <>
+                <div
+                  style={{
+                    height: 1,
+                    background: "var(--rf-border)",
+                    margin: "4px 0",
+                  }}
+                />
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: "var(--rf-txt3)",
+                    letterSpacing: "0.05em",
+                    padding: "4px 10px",
+                  }}
+                >
+                  CHANGE STAGE
+                </div>
+                {transitions.map((next) => (
+                  <KebabItem
+                    key={next}
+                    onClick={() => {
+                      setOpen(false);
+                      onStatus(next);
+                    }}
+                  >
+                    → {STAGE_LABEL[next] || next.replace(/_/g, " ")}
+                  </KebabItem>
+                ))}
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </span>
+  );
+}
+
+function KebabItem({ onClick, accent, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        padding: "6px 10px",
+        background: "transparent",
+        border: "none",
+        borderRadius: 4,
+        cursor: "pointer",
+        fontSize: 12,
+        color: accent ? "var(--rf-accent)" : "var(--rf-txt2)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── Cell-level helpers ──────────────────────────────────────────────────────
+
+function StagePill({ status, small }) {
+  const pill = STAGE_PILL[status] || {
+    bg: "var(--rf-bg3)",
+    fg: "var(--rf-txt3)",
+  };
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: small ? "2px 8px" : "4px 12px",
+        borderRadius: 4,
+        fontSize: small ? 10 : 11,
+        fontWeight: 700,
+        letterSpacing: "0.03em",
+        background: pill.bg,
+        color: pill.fg,
+        fontFamily: MONO,
+      }}
+    >
+      {STAGE_LABEL[status] || status}
+    </span>
+  );
+}
+
+function LifecycleBar({ status }) {
+  const filled = STATUS_PROGRESS[status] ?? 0;
+  return (
+    <div style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
+      {LIFECYCLE_STAGES.map((label, i) => {
+        const isFilled = i < filled;
+        const color = STAGE_COLOR_AT(i, status);
+        return (
+          <span
+            key={label}
+            style={{
+              minWidth: 28,
+              textAlign: "center",
+              padding: "3px 6px",
+              borderRadius: 4,
+              fontFamily: MONO,
+              fontSize: 10,
+              fontWeight: 700,
+              background: isFilled ? color : "var(--rf-bg3)",
+              color: isFilled ? "#fff" : "var(--rf-txt3)",
+              border: isFilled
+                ? "1px solid transparent"
+                : "1px solid var(--rf-border)",
+            }}
+          >
+            {label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function PigtailPill({ expired, expiring, hasWarranty }) {
+  if (expired) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "4px 10px",
+          borderRadius: 4,
+          fontFamily: MONO,
+          fontSize: 10,
+          fontWeight: 700,
+          background: "color-mix(in srgb, var(--rf-red) 14%, transparent)",
+          color: "var(--rf-red2)",
+        }}
+      >
+        ⚠ EXPIRED
+      </span>
+    );
+  }
+  if (expiring) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "4px 10px",
+          borderRadius: 4,
+          fontFamily: MONO,
+          fontSize: 10,
+          fontWeight: 700,
+          background: "color-mix(in srgb, var(--rf-yellow) 22%, transparent)",
+          color: "var(--rf-yellow2)",
+        }}
+      >
+        ⚠ PENDING
+      </span>
+    );
+  }
+  if (hasWarranty) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "4px 10px",
+          borderRadius: 4,
+          fontFamily: MONO,
+          fontSize: 10,
+          fontWeight: 700,
+          background: "color-mix(in srgb, var(--rf-green) 16%, transparent)",
+          color: "var(--rf-green2)",
+        }}
+      >
+        ✓ STAGED
+      </span>
+    );
+  }
+  return <span style={{ color: "var(--rf-txt3)" }}>—</span>;
+}
+
+// ── Modal primitives ────────────────────────────────────────────────────────
+
+function Modal({ children, onClose, wide }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 100,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+    >
+      <div
+        className="rf-card"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          padding: 20,
+          maxWidth: wide ? 640 : 480,
+          width: "100%",
+          maxHeight: "92vh",
+          overflow: "auto",
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border)",
+          borderRadius: 12,
+        }}
+      >
+        {children}
       </div>
     </div>
   );
 }
+
+function Field({ label, children }) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <label
+        style={{
+          display: "block",
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--rf-txt3)",
+          marginBottom: 4,
+          letterSpacing: "0.05em",
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+

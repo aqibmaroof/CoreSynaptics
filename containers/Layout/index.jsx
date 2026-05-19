@@ -6,7 +6,7 @@
 //   · You-panel summarising the signed-in user
 // Uses the .cx-* helper classes defined in app/globals.css.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -23,149 +23,93 @@ import OnboardingTourOverlay from "@/components/OnboardingTourOverlay";
 // Each section is a { label, items: [{ icon, title, href, badge?, badgeKind? }] }
 // Role gating is handled at the page level; Cx commissioning routes are
 // universally addressable but the action UIs surface what each user can act on.
-const SECTIONS = [
-  {
-    label: "Workspace",
-    items: [
-      { icon: "", title: "Dashboard", href: "/" },
-      { icon: "", title: "My Work", href: "/MyAssignments" },
-      { icon: "", title: "My Approvals", href: "/Approvals/MyPending" },
-      { icon: "", title: "Notifications", href: "/Notifications" },
-      { icon: "", title: "Cross-Lens", href: "/CrossLens" },
-      {
-        icon: "",
-        title: "Portfolio Predictions",
-        href: "/PortfolioPredictions",
-      },
-      { icon: "", title: "Portfolio Copilot", href: "/PortfolioCopilot" },
-      { icon: "", title: "Project Copilot", href: "/ProjectCopilot" },
-      { icon: "", title: "Learner Profile", href: "/LearnerProfile" },
-      { icon: "", title: "Announcements", href: "/Announcements" },
-      { icon: "", title: "Photos", href: "/Photos" },
-      { icon: "", title: "Chat", href: "/Chat" },
-      { icon: "", title: "Portfolio", href: "/Portfolio" },
-      { icon: "", title: "Analytics", href: "/Analytics" },
-    ],
-  },
-  {
-    label: "Project",
-    items: [
-      { icon: "", title: "Overview", href: "/ProjectOverview" },
-      { icon: "", title: "Companies", href: "/Company/List" },
-      { icon: "", title: "Equipment", href: "/Assets/List" },
-      { icon: "", title: "Schedule", href: "/ScheduleMilestones/List" },
-      { icon: "", title: "Site Access (TARF)", href: "/CxTARF" },
-      { icon: "", title: "Issues", href: "/Issues/List" },
-      { icon: "", title: "Dependencies", href: "/Dependencies" },
-    ],
-  },
-  {
-    label: "Commissioning · GC QA/QC",
-    items: [
-      { icon: "", title: "Commissioning Score", href: "/CxScore" },
-      { icon: "", title: "Test Results", href: "/Commissioning/Tests" },
-      { icon: "", title: "PSSR Inspections", href: "/PSSR" },
-      { icon: "", title: "Risk Register", href: "/Risk" },
-      { icon: "", title: "Readiness", href: "/Readiness" },
-      { icon: "", title: "Turnover Packages", href: "/Turnover" },
-      {
-        icon: "",
-        title: "Artifact Bundles",
-        href: "/ArtifactIntelligence/Bundles",
-      },
-      { icon: "", title: "JHA", href: "/Jha" },
-      { icon: "", title: "Power Flow", href: "/PowerFlow" },
-      { icon: "", title: "Phase Reference", href: "/PhaseReference" },
-      { icon: "", title: "Training & Simulation", href: "/Training" },
-      { icon: "", title: "Training Simulator (legacy)", href: "/TrainingSim" },
-    ],
-  },
-  {
-    label: "Quality & Workflow",
-    items: [
-      { icon: "", title: "Checklists", href: "/Checklist/List" },
-      {
-        icon: "",
-        title: "Checklist Delegations",
-        href: "/ChecklistDelegations",
-      },
-      { icon: "", title: "RFIs", href: "/RFI/List" },
-      { icon: "", title: "Submittals", href: "/Submittals/List" },
-      { icon: "", title: "Change Requests", href: "/ChangeRequests" },
-    ],
-  },
-  {
-    label: "Field & Daily Ops",
-    items: [
-      { icon: "", title: "Tasks", href: "/Tasks/List" },
-      { icon: "", title: "Daily Reports", href: "/DailyReports" },
-      {
-        icon: "",
-        title: "Crew Dispatch",
-        href: "/CrewDispatch",
-      },
-      {
-        icon: "",
-        title: "Crew Dispatch v15",
-        href: "/CrewDispatchV15",
-      },
-      { icon: "", title: "Meetings", href: "/Meeting/List" },
-    ],
-  },
-  {
-    label: "Supply & Finance",
-    items: [
-      { icon: "", title: "Inventory", href: "/Inventory/Products/List" },
-      { icon: "", title: "Shipments", href: "/Shipments/List" },
-      { icon: "", title: "Finance", href: "/Finance/Billing" },
-    ],
-  },
-  {
-    label: "Admin",
-    items: [
-      { icon: "", title: "Settings", href: "/Settings" },
-      { icon: "", title: "Roles & Permissions", href: "/Roles/List" },
-      { icon: "", title: "Users", href: "/Users/List" },
-      { icon: "", title: "Automation", href: "/Automation" },
-      {
-        icon: "",
-        title: "Automation Intel",
-        href: "/AutomationIntelligence",
-      },
-      { icon: "", title: "Org Policies", href: "/OrgPolicies" },
-      { icon: "", title: "Integrations", href: "/Integrations" },
-      { icon: "", title: "Ecosystem", href: "/Ecosystem" },
-      { icon: "", title: "Governance", href: "/Governance" },
-      { icon: "", title: "Diagnostics", href: "/Diagnostics" },
-      { icon: "", title: "Anomalies", href: "/Anomalies" },
-      {
-        icon: "",
-        title: "Operations Anomalies",
-        href: "/OperationsAnomalies",
-      },
-      {
-        icon: "",
-        title: "Anomaly Suppressions",
-        href: "/AnomalySuppressions",
-      },
-      { icon: "", title: "Cross-Domain", href: "/CrossDomain" },
-      { icon: "", title: "Event Log", href: "/EventLog" },
-      { icon: "", title: "Outbox Explorer", href: "/Outbox" },
-      { icon: "", title: "Impersonation Audit", href: "/ImpersonationAudit" },
-    ],
-  },
-  {
-    label: "Platform",
-    items: [
-      { icon: "", title: "SRE Dashboard", href: "/Sre" },
-      {
-        icon: "",
-        title: "Intelligence Stabilization",
-        href: "/IntelligenceStabilization",
-      },
-    ],
-  },
-];
+// Sidebar section builder. The Project and My Company groups embed the
+// active project code in their labels, so we derive SECTIONS from the
+// current project at render time rather than holding a static module-level
+// array.
+function buildSections(projectCode) {
+  const code = projectCode || "—";
+  return [
+    {
+      label: "Workspace",
+      items: [
+        { title: "Dashboard", href: "/" },
+        { title: "Executive Summary", href: "/Executive/Dashboard" },
+        { title: "My work", href: "/MyAssignments" },
+        { title: "Announcements", href: "/Announcements" },
+        {
+          title: "Projects",
+          href: "/Projects",
+        },
+        { title: "Chat", href: "/Chat" },
+        { title: "Daily field log", href: "/FieldReports" },
+        { title: "Crew dispatch", href: "/CrewDispatch" },
+      ],
+    },
+    {
+      label: `Project · ${code}`,
+      items: [
+        { title: "Overview", href: "/ProjectOverview" },
+        { title: "Companies", href: "/Company/List" },
+        { title: "Equipment", href: "/Assets/List" },
+        { title: "Schedule (Gantt)", href: "/Schedule" },
+        { title: "QA/QC checklists", href: "/Checklist/List" },
+        { title: "Issues", href: "/Issues/List" },
+        { title: "NCRs", href: "/NCRs" },
+        { title: "Hold/Witness pts", href: "/HoldWitnessPoints" },
+        { title: "Punch list", href: "/PunchList" },
+        { title: "Test results", href: "/Commissioning/Tests" },
+        { title: "Long-lead items", href: "/LongLeadItems" },
+        { title: "Procurement", href: "/Finance/Procurement" },
+      ],
+    },
+    {
+      label: "GC QA/QC Toolkit",
+      items: [
+        { title: "QA/QC Command Center", href: "/QAQC" },
+        { title: "Phase advancement queue", href: "/Phases/List" },
+        { title: "Cx Score · Exec", href: "/CxScore" },
+        { title: "Cx Master Log", href: "/CxMasterLog" },
+        { title: "PSSR · Pre-Startup", href: "/PSSR" },
+        { title: "Risk Register", href: "/Risk" },
+        { title: "Turnover Package", href: "/Turnover" },
+      ],
+    },
+    {
+      label: "Communication",
+      items: [
+        { title: "Present to leadership", href: "/PresentToLeadership" },
+        { title: "RFIs", href: "/RFI/List" },
+        { title: "Artifacto", href: "/Artifacto" },
+        { title: "Photos", href: "/Photos" },
+        { title: "Site arrivals (TARF)", href: "/CxTARF" },
+        { title: "Activity feed", href: "/ActivityFeed" },
+      ],
+    },
+    {
+      label: "Learning",
+      items: [
+        { title: "Training & Library", href: "/Training" },
+        { title: "Phase reference", href: "/PhaseReference" },
+        { title: "Cx flow diagram", href: "/CxFlowDiagram" },
+        { title: "Cx walkthrough sim", href: "/CxWalkthroughSim" },
+        { title: "Power flow simulator", href: "/PowerFlow" },
+        { title: "Glossary", href: "/Glossary" },
+      ],
+    },
+    {
+      label: `My Company · ${code}`,
+      items: [
+        { title: "Team", href: "/Teams/List" },
+        { title: "Billing & invoices", href: "/Finance/Billing" },
+      ],
+    },
+    {
+      label: "Portfolio",
+      items: [{ title: "All my projects", href: "/Portfolio" }],
+    },
+  ];
+}
 
 // ─── Project switcher data ────────────────────────────────────────────────
 const PROJECTS = [
@@ -237,6 +181,37 @@ export default function CxLayout({ children }) {
   const [projectOpen, setProjectOpen] = useState(false);
   const [activeProject, setActiveProject] = useState(PROJECTS[0]);
 
+  // Preserve sidebar scroll position across route changes. Each page wraps
+  // itself in <Layout>, so the <aside> remounts on every navigation and its
+  // scrollTop would otherwise reset to 0 — pulling the active item out of
+  // view. We persist to sessionStorage and restore before paint.
+  const sidebarRef = useRef(null);
+  const SIDEBAR_SCROLL_KEY = "cx-sidebar-scroll";
+
+  useLayoutEffect(() => {
+    const el = sidebarRef.current;
+    if (!el || typeof window === "undefined") return;
+    const saved = Number(window.sessionStorage.getItem(SIDEBAR_SCROLL_KEY));
+    if (saved > 0) {
+      el.scrollTop = saved;
+    } else {
+      const activeLink = el.querySelector(".cx-nav-item.active");
+      if (activeLink && typeof activeLink.scrollIntoView === "function") {
+        activeLink.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [pathname]);
+
+  useEffect(() => {
+    const el = sidebarRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      window.sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(el.scrollTop));
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
   const fetchUser = async () => {
     try {
       const u = await GetUser();
@@ -253,6 +228,11 @@ export default function CxLayout({ children }) {
     }
     fetchUser();
   }, []);
+
+  const SECTIONS = useMemo(
+    () => buildSections(activeProject?.code),
+    [activeProject?.code],
+  );
 
   const initials = useMemo(() => {
     if (!user) return "U";
@@ -567,7 +547,7 @@ export default function CxLayout({ children }) {
 
       {/* ── Body: 240px sidebar + main ────────────────────────────────── */}
       <div className="cx-layout">
-        <aside className="cx-sidebar">
+        <aside ref={sidebarRef} className="cx-sidebar">
           <div className="cx-you">
             <div className="lbl">Signed in</div>
             <div className="name">

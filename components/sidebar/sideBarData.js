@@ -4010,6 +4010,16 @@ export function getLensNavItems(lensId) {
 }
 
 export const sidebarItems = [
+  // ─── Projects (top-level shortcut) ──────────────────────────────────
+  {
+    title: "Projects",
+    icon: config?.chart,
+    iconActive: config?.home,
+    path: "/Projects",
+    type: "link",
+    roles: ALL,
+  },
+
   // ─── Reporting & Dashboards ─────────────────────────────────────────
   {
     title: "Reporting & Dashboards",
