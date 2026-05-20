@@ -3016,6 +3016,16 @@ export default function ProjectWizard() {
         </div>
 
         <div>
+          <label className="input-label">Target End Date</label>
+          <input
+            className="input-field"
+            type="date"
+            value={state.endDate || ""}
+            onChange={(e) => upd((s) => ({ ...s, endDate: e.target.value }))}
+          />
+        </div>
+
+        <div>
           <label className="input-label">Contract Value (USD)</label>
           <input
             className="input-field"
@@ -7132,7 +7142,11 @@ export default function ProjectWizard() {
             </div>
           ))}
         </div>
-        <button className="launch-btn" disabled={saving} onClick={handleLaunch}>
+        <button
+          className="launch-btn"
+          disabled={saving || !allReady}
+          onClick={handleLaunch}
+        >
           {saving
             ? "Launching…"
             : allReady
