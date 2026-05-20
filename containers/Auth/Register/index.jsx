@@ -139,7 +139,7 @@ const COMPANY_SIZES = [
     id: "med",
     n: "Small business",
     d: "26–250 people",
-    plan: "Small Bussiness",
+    plan: "Small Business",
     // price: 2999,
   },
   {
@@ -3910,33 +3910,26 @@ function StepTeam({ w, u, apiRoles, roleQtys, setRoleQtys }) {
           gap: 8,
         }}
       >
-        {[
-          { l: "Total", v: total },
-          {
-            l: "Premium",
-            v: useApi
-              ? 0
-              : (w.team || [])
-                  .filter((r) => r.tier === "P")
-                  .reduce((s, r) => s + r.qty, 0),
-          },
-          {
-            l: "Standard",
-            v: useApi
-              ? 0
-              : (w.team || [])
-                  .filter((r) => r.tier === "S")
-                  .reduce((s, r) => s + r.qty, 0),
-          },
-          {
-            l: "Field",
-            v: useApi
-              ? 0
-              : (w.team || [])
-                  .filter((r) => r.tier === "F")
-                  .reduce((s, r) => s + r.qty, 0),
-          },
-        ].map((b) => (
+        {(() => {
+          const sumByTier = (tierLetter) => {
+            if (useApi) {
+              return apiRoles.reduce((s, r) => {
+                if ((r.tier || "S") !== tierLetter) return s;
+                const id = r.roleKey || r.id || String(r.name);
+                return s + (roleQtys[id] ?? r.defaultCount ?? 0);
+              }, 0);
+            }
+            return (w.team || [])
+              .filter((r) => r.tier === tierLetter)
+              .reduce((s, r) => s + r.qty, 0);
+          };
+          return [
+            { l: "Total", v: total },
+            { l: "Premium", v: sumByTier("P") },
+            { l: "Standard", v: sumByTier("S") },
+            { l: "Field", v: sumByTier("F") },
+          ];
+        })().map((b) => (
           <div
             key={b.l}
             style={{
@@ -5632,6 +5625,7 @@ export default function RegisterPage() {
         wizard.companyType &&
         wizard.companyName.trim() &&
         wizard.companySize &&
+        wizard.companyEmail.trim() &&
         wizard.adminFirstName.trim() &&
         wizard.adminLastName.trim() &&
         wizard.adminEmail.trim() &&
