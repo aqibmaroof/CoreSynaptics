@@ -9,18 +9,19 @@ import sendRequest from "../instance/sendRequest";
  *  payload: {
  *    name: string,
  *    roomType: "INTERNAL" | "CROSS" | "HORIZONTAL" | "PROJECT",
- *    projectId?: uuid   // required when roomType === "PROJECT"
+ *    cxProjectId?: uuid        // required for CROSS, HORIZONTAL, PROJECT
+ *    participantOrgIds?: uuid[] // required for CROSS (exactly 1), HORIZONTAL (≥ 1)
  *  }
  *  INTERNAL  — same org only
- *  CROSS     — two specific orgs (GC ↔ OEM)
- *  HORIZONTAL — same discipline across orgs
- *  PROJECT   — all orgs on a project
+ *  CROSS     — two specific orgs (GC ↔ OEM); needs cxProjectId + 1 participantOrgId
+ *  HORIZONTAL — multi-party; needs cxProjectId + ≥1 participantOrgIds
+ *  PROJECT   — all orgs on a project; auto-provisioned on project creation
  */
 export const createChatRoom = async (payload) =>
   sendRequest({ url: "/chat-rooms", method: "POST", data: payload });
 
 /** List rooms visible to the caller.
- *  params: { projectId?, orgId?, roomType?, page?, limit? }
+ *  params: { cxProjectId?, roomType?, includeArchived? }
  */
 export const listChatRooms = async (params = {}) =>
   sendRequest({ url: "/chat-rooms", method: "GET", params });
@@ -31,7 +32,39 @@ export const getChatRoom = async (id) =>
 
 /** Soft-archive a room (owner only). Archived rooms are hidden from list by default. */
 export const archiveChatRoom = async (id) =>
-  sendRequest({ url: `/chat-rooms/${id}/archive`, method: "PATCH" });
+  sendRequest({ url: `/chat-rooms/${id}/archive`, method: "POST" });
+
+/** List resolved members visible in a room (with names + role). */
+export const listRoomMembers = async (roomId) =>
+  sendRequest({ url: `/chat-rooms/${roomId}/members`, method: "GET" });
+
+/** Add explicit member userIds to a room (owner org only). */
+export const addRoomMembers = async (roomId, userIds) =>
+  sendRequest({ url: `/chat-rooms/${roomId}/members`, method: "POST", data: { userIds } });
+
+/** Remove a single member from a room (owner org only). */
+export const removeRoomMember = async (roomId, userId) =>
+  sendRequest({ url: `/chat-rooms/${roomId}/members/${userId}`, method: "DELETE" });
+
+/** List users in the caller's organization (for member-picker).
+ *  Hits the chat-scoped directory endpoint so non-admin users can still
+ *  add teammates to rooms they own.
+ */
+export const listOrgUsers = async () =>
+  sendRequest({ url: "/chat-rooms/_directory/users", method: "GET" });
+
+/** Open (find or create) a DIRECT 1:1 chat with another user.
+ *  Returns the ChatRoom DTO. Idempotent — repeated calls return the same room.
+ */
+export const openDirectRoom = async (peerUserId) =>
+  sendRequest({ url: `/chat-rooms/direct/${peerUserId}`, method: "POST" });
+
+/** Projects the caller can use to scope cross-org chat rooms.
+ *  Each entry has { id, projectName, memberOrgs:[{id,name,role,isOwner}] }
+ *  so the picker doesn't need a second request per project.
+ */
+export const listChatProjects = async () =>
+  sendRequest({ url: "/chat-rooms/_directory/projects", method: "GET" });
 
 /** Paginated message history.
  *  params: { before?: ISO8601-cursor, limit?: number (default 50) }
@@ -46,31 +79,11 @@ export const listMessages = async (roomId, params = {}) =>
 export const postMessage = async (roomId, payload) =>
   sendRequest({ url: `/chat-rooms/${roomId}/messages`, method: "POST", data: payload });
 
-/** Delete a message (own messages only, or room owner).
- *  Hard-delete — not recoverable.
+/** Delete a message (own messages only).
+ *  Soft-delete — row is preserved for audit, body is hidden.
  */
-export const deleteChatMessage = async (roomId, msgId) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/messages/${msgId}`, method: "DELETE" });
-
-// ── Legacy channel aliases (kept for backward compat with existing containers) ─
-
-/** @deprecated Use listChatRooms instead */
-export const getChannels = (params = {}) => listChatRooms(params);
-
-/** @deprecated Use getChatRoom instead */
-export const getChannelById = (id) => getChatRoom(id);
-
-/** @deprecated Use createChatRoom instead */
-export const createChannel = (payload) => createChatRoom(payload);
-
-/** @deprecated Use listMessages instead */
-export const getMessages = (channelId, params = {}) => listMessages(channelId, params);
-
-/** @deprecated Use postMessage instead */
-export const sendMessage = (channelId, payload) => postMessage(channelId, payload);
-
-/** @deprecated Use deleteChatMessage instead */
-export const deleteMessage = (roomId, msgId) => deleteChatMessage(roomId, msgId);
+export const deleteChatMessage = async (_roomId, msgId) =>
+  sendRequest({ url: `/chat-rooms/messages/${msgId}`, method: "DELETE" });
 
 // ── Phase 4 PR-5: Presence · read receipts · typing · entity rooms ────────────
 
