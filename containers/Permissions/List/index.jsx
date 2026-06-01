@@ -17,6 +17,7 @@ import {
   levelToActions,
   sanitizeActions,
   errorBody,
+  prettyReason,
   TENANT_ACTIONS,
   MAX_GRANT_PAIRS,
 } from "@/services/RbacAdmin";
@@ -79,7 +80,6 @@ export default function ModuleGrantMatrix() {
     setRolesLoading(true);
     try {
       const res = await listRoles();
-      console.log("res : ", res);
       const raw = Array.isArray(res) ? res : res?.data || res?.roles || [];
 
       const selectable = raw.filter((r) => !isAdminRole(r)); // exclude admin role
@@ -91,7 +91,6 @@ export default function ModuleGrantMatrix() {
       );
       setAdminOnly(false);
     } catch (err) {
-      console.log("err : ", err);
 
       if ((err?.statusCode || err?.status) === 403) setAdminOnly(true);
       else flash("error", errorBody(err)?.message || "Failed to load roles");
@@ -243,14 +242,24 @@ export default function ModuleGrantMatrix() {
       flash("success", `Updated ${res?.applied ?? grants.length} grant(s).`);
       await loadRoleModules(selectedRoleId); // refetch server truth
     } catch (err) {
-      // 400 → nothing was written and per-pair detail is NOT forwarded. Show the
-      // summary message and ask the admin to review (client validation keeps
-      // these rare). Staged changes are preserved so they can adjust.
+      // 400 → nothing was written (all-or-nothing). The backend now forwards the
+      // per-pair `results`, so surface exactly which module(s) were rejected and
+      // why. Staged changes are preserved so the admin can adjust and retry.
       const body = errorBody(err);
-      setBatchError(
-        body?.message ||
-          "No changes were applied. Review your selections (plan-included modules and valid actions) and retry.",
+      const rejected = (body?.results || []).filter(
+        (r) => r?.status === "REJECTED",
       );
+      if (rejected.length) {
+        const detail = rejected
+          .map((r) => `${moduleLabel(r.moduleKey)}: ${prettyReason(r.reason)}`)
+          .join(" · ");
+        setBatchError(`No changes applied. ${detail}`);
+      } else {
+        setBatchError(
+          body?.message ||
+            "No changes were applied. Review your selections (plan-included modules and valid actions) and retry.",
+        );
+      }
       flash("error", "Batch rejected — no changes applied.");
     } finally {
       setSaving(false);

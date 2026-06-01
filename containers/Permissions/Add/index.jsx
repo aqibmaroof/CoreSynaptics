@@ -15,6 +15,7 @@ import {
   orgAssignUserRoles,
   orgRevokeUserRoles,
   errorBody,
+  prettyUserReason,
   MAX_USER_ROLE_PAIRS,
 } from "@/services/RbacAdmin";
 import { useRealtimeSocket } from "@/lib/realtime/useRealtimeSocket";
@@ -131,7 +132,7 @@ export default function AssignRolesToUsers() {
     let touchedSelf = false;
     (resArr || []).forEach((r) => {
       if (r.status === "REJECTED") {
-        next[r.userId] = { danger: true, text: r.reason || "Rejected." };
+        next[r.userId] = { danger: true, text: prettyUserReason(r.reason) };
       } else {
         next[r.userId] = {
           danger: !r.resultingRoleId,
@@ -159,8 +160,11 @@ export default function AssignRolesToUsers() {
       renderResults(res?.results);
       flash("success", `Assigned to ${res?.applied ?? assignments.length} user(s).`);
     } catch (err) {
-      // 400 → nothing applied, no per-pair detail. Show the summary.
-      flash("error", errorBody(err)?.message || "Batch rejected — no changes applied.");
+      // 400 → nothing applied (all-or-nothing). The backend now forwards per-pair
+      // `results`, so mark each rejected user with its reason.
+      const body = errorBody(err);
+      if (body?.results?.length) renderResults(body.results);
+      flash("error", body?.message || "Batch rejected — no changes applied.");
     } finally {
       setBusy(false);
     }
@@ -177,7 +181,9 @@ export default function AssignRolesToUsers() {
       renderResults(res?.results);
       flash("success", `Revoked ${res?.applied ?? selectedUserIds.length} user(s).`);
     } catch (err) {
-      flash("error", errorBody(err)?.message || "Batch rejected — no changes applied.");
+      const body = errorBody(err);
+      if (body?.results?.length) renderResults(body.results);
+      flash("error", body?.message || "Batch rejected — no changes applied.");
     } finally {
       setBusy(false);
     }

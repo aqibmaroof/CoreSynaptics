@@ -5028,10 +5028,15 @@ export const sidebarItems = [
         roles: PLATFORM,
       },
       {
+        // RBAC-admin write surface is guarded by CompanyAdminGuard, which admits
+        // SUPERADMIN (support) + each org's resolved admin role (the EXEC/admin
+        // tier) and REJECTS PLATFORM_ADMIN. Gate the link to that same set so the
+        // intended audience (org company admins) can reach it — gating to PLATFORM
+        // showed it only to SUPERADMIN/PLATFORM_ADMIN, the latter of whom 403s.
         title: "Permissions",
         type: "link",
         path: "/Permissions",
-        roles: PLATFORM,
+        roles: [ROLES.SUPERADMIN, ...EXEC_ROLES],
       },
       {
         title: "Subscriptions",
