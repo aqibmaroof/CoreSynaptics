@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getShipments, updateShipmentStatus, getShipmentTracking } from "@/services/ShipmentLogistics";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const STATUSES = ["CREATED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "RETURNED", "FAILED"];
 const TABS     = ["All", "CREATED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "RETURNED", "FAILED"];
@@ -53,6 +54,7 @@ const Toast = ({ msg }) =>
 
 export default function ShipmentsList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [shipments, setShipments]           = useState([]);
   const [loading, setLoading]               = useState(true);
@@ -152,6 +154,7 @@ export default function ShipmentsList() {
             <p className="text-gray-400">Track global shipments with real-time status updates</p>
           </div>
           <button onClick={() => router.push("/Shipments/Add")}
+            {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "create a shipment")}
             className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

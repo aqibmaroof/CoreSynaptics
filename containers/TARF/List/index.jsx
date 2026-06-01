@@ -10,6 +10,7 @@ import {
   signOutTARF,
   deleteTARF,
 } from "@/services/TARF";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const TABS = ["All", "Pending", "Approved", "On Site", "Expired"];
 
@@ -41,6 +42,7 @@ function isExpired(tarf) {
 
 export default function TARFList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete, canApprove } = useUserPermissions();
   const [tarfs, setTARFs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -166,6 +168,7 @@ export default function TARFList() {
           </div>
           <button
             onClick={() => router.push("/TARF/Add")}
+            {...permissionProps(canCreate(MODULE.COMMISSIONING_TESTS), "create a TARF")}
             className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

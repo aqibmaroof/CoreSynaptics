@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { listOrgMobCatalog, deleteOrgMobCatalogItem, MOB_STEP_KEYS } from "@/services/OrgMobCatalog";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 function toArray(res) {
   return Array.isArray(res) ? res : (res?.data ?? []);
@@ -15,6 +16,7 @@ const STEP_LABELS = {
 
 export default function OrgMobCatalogList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [items, setItems] = useState([]);
   const [filterStep, setFilterStep] = useState("");
   const [loading, setLoading] = useState(true);
@@ -54,6 +56,7 @@ export default function OrgMobCatalogList() {
             <p className="text-gray-400 text-sm mt-1">Org-level mobilization items by step</p>
           </div>
           <button onClick={() => router.push("/OrgMobCatalog/Add")}
+            {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "create a mobilization catalog item")}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
             + New Item
           </button>

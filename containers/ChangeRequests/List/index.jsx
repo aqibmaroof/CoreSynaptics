@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { listChangeRequests, getChangeRequestSummary, deleteChangeRequest, withdrawChangeRequest } from "@/services/ChangeRequests";
 import { listCxProjects } from "@/services/ProjectWizard";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 function toArray(res) {
   return Array.isArray(res) ? res : (res?.data ?? []);
@@ -25,6 +26,7 @@ const IMPACT_STYLES = {
 
 export default function ChangeRequestList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [projects, setProjects] = useState([]);
   const [projectId, setProjectId] = useState("");
   const [items, setItems] = useState([]);
@@ -98,6 +100,7 @@ export default function ChangeRequestList() {
           </div>
           {projectId && (
             <button onClick={() => router.push(`/ChangeRequests/Add?projectId=${projectId}`)}
+              {...permissionProps(canCreate(MODULE.PROJECTS), "create a change request")}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
               + New CR
             </button>
@@ -167,11 +170,13 @@ export default function ChangeRequestList() {
                   </button>
                   {cr.status === "PENDING" && (
                     <button onClick={() => setActionTarget({ type: "withdraw", id: cr.id })}
+                      {...permissionProps(canEdit(MODULE.PROJECTS), "withdraw change request")}
                       className="px-3 py-1.5 text-xs bg-yellow-900/30 hover:bg-yellow-900/50 text-yellow-300 rounded-lg transition-colors">
                       Withdraw
                     </button>
                   )}
                   <button onClick={() => setActionTarget({ type: "delete", id: cr.id })}
+                    {...permissionProps(canDelete(MODULE.PROJECTS), "delete change request")}
                     className="px-3 py-1.5 text-xs bg-red-900/40 hover:bg-red-900/60 text-red-300 rounded-lg transition-colors">
                     Delete
                   </button>

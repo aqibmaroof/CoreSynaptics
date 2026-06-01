@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CreateUsers, GetUsersById, UpdateUsers } from "@/services/Users";
+import { useRequirePermission, MODULE } from "@/Utils/rbac";
 
 const defaultForm = {
   email: "",
@@ -15,10 +16,15 @@ export default function AddSubscription() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
+  // Both create and update gated by `edit` on the admin module.
+  const guard = useRequirePermission(MODULE.ADMIN, "edit");
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const roles = JSON.parse(localStorage.getItem("roles"));
+  const roles =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("roles") || "[]")
+      : [];
 
   useEffect(() => {
     if (id) {
@@ -87,6 +93,8 @@ export default function AddSubscription() {
   const accentBg = "bg-orange-400 hover:bg-orange-300";
 
   const cardGradient = "from-[#FF8E4E]/20";
+
+  if (guard.loading || guard.blocked) return guard.fallback;
 
   return (
     <div className="flex flex-col mt-5 justify-center py-5 px-7">

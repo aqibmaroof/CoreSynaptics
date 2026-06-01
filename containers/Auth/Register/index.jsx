@@ -19,6 +19,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect } from "react";
 import {
+  clearTokens,
   getAccessToken,
   setOrganization,
   setTokens,
@@ -5721,12 +5722,23 @@ export default function RegisterPage() {
       sessionId || sessionStorage.getItem("cxcontrol_session_id") || "";
 
     try {
+      // Drop any stale tokens from a previous abandoned registration so the
+      // request interceptor cannot silently reuse them if finalize's response
+      // shape changes.
+      clearTokens();
+
       // Finalize — creates org + user + returns JWT
-
       const finalizeRes = await FinalizeSetup({ sessionId: sid });
-      const { accessToken, organization, user } = finalizeRes || {};
 
-      if (accessToken) setTokens({ accessToken });
+      // Backend auth endpoints return snake_case (see LoginService); accept
+      // both shapes defensively.
+      const accessToken =
+        finalizeRes?.access_token || finalizeRes?.accessToken;
+      const refreshToken =
+        finalizeRes?.refresh_token || finalizeRes?.refreshToken;
+      const { organization, user } = finalizeRes || {};
+
+      if (accessToken) setTokens({ accessToken, refreshToken });
       if (user) setUser({ user });
       if (organization) setOrganization({ organization });
 
@@ -5740,6 +5752,20 @@ export default function RegisterPage() {
         } catch {}
       }
 
+      // Select the chosen subscription plan now that the new user/org is
+      // authenticated with the freshly-issued token. Guard against an empty
+      // plan id so we never send `subscriptionPlanId: ""` to the backend.
+      if (wizard?.companyId) {
+        try {
+          await selectSubscription({
+            subscriptionPlanId: wizard.companyId,
+          });
+        } catch (subError) {
+          // Don't block the redirect — the admin can re-select inside the app.
+          console.error("Failed to select subscription:", subError);
+        }
+      }
+
       setMsg({
         type: "success",
         text: "Account created! Redirecting to your platform…",
@@ -5750,7 +5776,6 @@ export default function RegisterPage() {
       try {
         sessionStorage.removeItem("cxcontrol_session_id");
       } catch {}
-      await selectSubscription({ subscriptionPlanId: wizard?.companyId });
 
       setTimeout(() => router.push("/"), 2200);
     } catch (error) {

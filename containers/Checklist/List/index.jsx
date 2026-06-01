@@ -8,6 +8,7 @@ import { getProjects } from "@/services/Projects";
 import { GetSites } from "@/services/Sites";
 import { GetZones } from "@/services/Zones";
 import { GetEquipments } from "@/services/Equipment";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const PHASES = ["NONE", "L1", "L2", "L3", "L4", "L5", "IST"];
 const CHECKLIST_TYPES = ["VENDOR", "GC", "CX_AGENT", "TRADE", "INTERNAL"];
@@ -48,6 +49,7 @@ function toArray(data) {
 
 export default function ChecklistList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [checklists, setChecklists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -196,25 +198,28 @@ export default function ChecklistList() {
             <h1 className="text-4xl font-bold text-white mb-2">Checklists</h1>
             <p className="text-gray-400">Manage and track project checklists</p>
           </div>
-          <Link
-            href="/Checklist/Add"
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {(
+            <Link
+              href={canCreate(MODULE.CHECKLISTS) ? "/Checklist/Add" : "#"}
+              {...permissionProps(canCreate(MODULE.CHECKLISTS), "create a checklist")}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Checklist
-          </Link>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add Checklist
+            </Link>
+          )}
         </div>
 
         {/* Error */}
@@ -617,8 +622,10 @@ export default function ChecklistList() {
             {filteredChecklists.map((checklist) => (
               <div
                 key={checklist.id}
-                className="bg-gray-800 rounded-xl border border-gray-700 p-6 hover:border-blue-500 transition-all cursor-pointer group"
-                onClick={() => router.push(`/Checklist/Edit/${checklist.id}`)}
+                className={`bg-gray-800 rounded-xl border border-gray-700 p-6 hover:border-blue-500 transition-all group ${canEdit(MODULE.CHECKLISTS) ? "cursor-pointer" : ""}`}
+                onClick={() => {
+                  if (canEdit(MODULE.CHECKLISTS)) router.push(`/Checklist/Edit/${checklist.id}`);
+                }}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0 mr-3">
@@ -679,28 +686,32 @@ export default function ChecklistList() {
                   </p>
                 )}
 
-                <div className="flex gap-2 pt-4 border-t border-gray-700">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/Checklist/Edit/${checklist.id}`);
-                    }}
-                    className="flex-1 px-3 py-2 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  >
-                    Edit
-                  </button>
-                  {!checklist.lockedAt && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteConfirm(checklist.id);
-                      }}
-                      className="px-3 py-2 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
+                {(canEdit(MODULE.CHECKLISTS) || canDelete(MODULE.CHECKLISTS)) && (
+                  <div className="flex gap-2 pt-4 border-t border-gray-700">
+                    {canEdit(MODULE.CHECKLISTS) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/Checklist/Edit/${checklist.id}`);
+                        }}
+                        className="flex-1 px-3 py-2 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      >
+                        Edit
+                      </button>
+                    )}
+                    {canDelete(MODULE.CHECKLISTS) && !checklist.lockedAt && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirm(checklist.id);
+                        }}
+                        className="px-3 py-2 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

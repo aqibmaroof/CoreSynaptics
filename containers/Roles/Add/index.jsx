@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CreateRoles, GetRolesById, UpdateRoles } from "@/services/Roles";
+import { useRequirePermission, MODULE } from "@/Utils/rbac";
 
 const defaultForm = {
   name: "",
@@ -13,6 +14,7 @@ export default function AddSubscription() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
+  const guard = useRequirePermission(MODULE.ADMIN, "edit");
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -88,6 +90,8 @@ export default function AddSubscription() {
   const accentBg = "bg-orange-400 hover:bg-orange-300";
 
   const cardGradient = "from-[#FF8E4E]/20";
+
+  if (guard.loading || guard.blocked) return guard.fallback;
 
   return (
     <div className="flex flex-col mt-5 justify-center py-5 px-7">

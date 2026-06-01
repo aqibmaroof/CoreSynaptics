@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getWarehouses, deleteWarehouse, getStockByWarehouse } from "@/services/Inventory";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const Toast = ({ msg }) =>
   msg ? (
@@ -23,6 +24,7 @@ const stockStatus = (level) => {
 
 export default function WarehousesList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [warehouses, setWarehouses]   = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -112,6 +114,7 @@ export default function WarehousesList() {
           <div className="flex items-center gap-3">
             <Toast msg={msg} />
             <button onClick={() => router.push("/Inventory/Warehouses/Add")}
+              {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "create a warehouse")}
               className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -152,6 +155,7 @@ export default function WarehousesList() {
             <p className="text-gray-400 text-lg mb-1">No warehouses found</p>
             <p className="text-gray-600 text-sm mb-6">Add your first warehouse to start tracking stock locations</p>
             <button onClick={() => router.push("/Inventory/Warehouses/Add")}
+              {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "create a warehouse")}
               className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white rounded-lg text-sm font-medium">
               Add First Warehouse
             </button>

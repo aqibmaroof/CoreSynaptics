@@ -10,6 +10,7 @@ import {
   reopenCommunication,
   deleteCommunication,
 } from "@/services/Communications";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 function toArray(res) {
   return Array.isArray(res) ? res : (res?.data ?? []);
@@ -62,6 +63,7 @@ function fmtDate(iso) {
 
 export default function CommunicationsList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -128,6 +130,7 @@ export default function CommunicationsList() {
           </div>
           <button
             onClick={() => router.push("/Communications/Add")}
+            {...permissionProps(canCreate(MODULE.COMMUNICATIONS), "create communications")}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"
           >
             + New
@@ -246,6 +249,7 @@ export default function CommunicationsList() {
                             label: "Delete",
                           })
                         }
+                        {...permissionProps(canDelete(MODULE.COMMUNICATIONS), "delete communication")}
                         className="px-3 py-1.5 text-xs bg-red-900/40 hover:bg-red-900/60 text-red-300 rounded-lg transition-colors"
                       >
                         Delete

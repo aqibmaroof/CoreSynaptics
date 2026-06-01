@@ -14,6 +14,7 @@ import {
   NCR_SUB_STATUSES,
 } from "@/services/Issues";
 import { getUsers } from "@/services/Users";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 // ─── Mock fallback data (matches screenshot) ──────────────────────────────────
 
@@ -1373,6 +1374,7 @@ function Toast({ message, onDone }) {
 
 export default function IssuesList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete, canApprove } = useUserPermissions();
 
   const [issues, setIssues] = useState(MOCK_ISSUES);
   const [users, setUsers] = useState([]);
@@ -1567,6 +1569,7 @@ export default function IssuesList() {
         </div>
         <button
           onClick={() => setShowRaiseModal(true)}
+          {...permissionProps(canCreate(MODULE.RMA_RCA), "raise an issue")}
           style={{
             padding: "9px 18px",
             borderRadius: 9,

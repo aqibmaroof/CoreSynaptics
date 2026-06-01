@@ -9,6 +9,7 @@ import {
   getAssetHistory,
 } from "@/services/AssetManagement";
 import { getUsers } from "@/services/Users";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 // ── Domain constants ────────────────────────────────────────────────────────
 
@@ -111,6 +112,7 @@ const Toast = ({ msg }) =>
 
 export default function AssetsList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [assets, setAssets] = useState([]);
   const [users, setUsers] = useState([]);
@@ -270,6 +272,7 @@ export default function AssetsList() {
         <button
           className="rf-btn rf-btn-primary"
           onClick={() => router.push("/Assets/Add")}
+          {...permissionProps(canCreate(MODULE.FIELD_EXECUTION), "create an asset")}
         >
           + Create asset
         </button>

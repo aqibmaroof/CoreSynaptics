@@ -7,6 +7,7 @@ import { getCompanies } from "@/services/Companies";
 import { createContact } from "@/services/Contacts";
 import CompanySelect from "@/components/CRM/CompanySelect";
 import ActivityTimeline from "@/components/CRM/ActivityTimeline";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const LEAD_SOURCES = [
   "Website",
@@ -40,6 +41,7 @@ const EMPTY_FORM = {
 
 export default function LeadsList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -398,6 +400,7 @@ export default function LeadsList() {
             </div>
             <button
               onClick={openCreate}
+              {...permissionProps(canCreate(MODULE.LEADS), "create a lead")}
               className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
             >
               <svg

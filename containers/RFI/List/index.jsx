@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getRFIs, deleteRFI } from "@/services/RFI";
 import { getProjects } from "@/services/Projects";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const STATUSES = ["OPEN", "ANSWERED", "CLOSED"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
@@ -28,6 +29,7 @@ function toArray(data) {
 
 export default function RFIList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [projects, setProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -109,7 +111,8 @@ export default function RFIList() {
             <p className="text-gray-400">Manage Requests For Information</p>
           </div>
           <Link
-            href="/RFI/Add"
+            href={canCreate(MODULE.COMMUNICATIONS) ? "/RFI/Add" : "#"}
+            {...permissionProps(canCreate(MODULE.COMMUNICATIONS), "create an RFI")}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
           >
             <svg
@@ -410,6 +413,7 @@ export default function RFIList() {
                           {rfi.status !== "CLOSED" && (
                             <button
                               onClick={() => setDeleteConfirm(rfi.id)}
+                              {...permissionProps(canDelete(MODULE.COMMUNICATIONS), "delete RFI")}
                               className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
                             >
                               Delete

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { listOrgWorkflows, deleteOrgWorkflow, updateOrgWorkflow } from "@/services/OrgWorkflows";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 function toArray(res) {
   return Array.isArray(res) ? res : (res?.data ?? []);
@@ -10,6 +11,7 @@ function toArray(res) {
 
 export default function OrgWorkflowList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -58,6 +60,7 @@ export default function OrgWorkflowList() {
           </div>
           <button
             onClick={() => router.push("/OrgWorkflows/Add")}
+            {...permissionProps(canCreate(MODULE.ADMIN), "create a workflow")}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"
           >
             + New Workflow

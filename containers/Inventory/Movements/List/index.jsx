@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getStockMovements, getProducts, getWarehouses } from "@/services/Inventory";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const MOVEMENT_TYPES = ["IN", "OUT", "TRANSFER", "RETURN", "ADJUSTMENT"];
 
@@ -30,6 +31,7 @@ const MONTH_START = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
 
 export default function MovementsList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [movements, setMovements]   = useState([]);
   const [products, setProducts]     = useState([]);
@@ -114,6 +116,7 @@ export default function MovementsList() {
           <div className="flex items-center gap-3">
             <Toast msg={msg} />
             <button onClick={() => router.push("/Inventory/Movements/Add")}
+              {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "record a stock movement")}
               className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -204,6 +207,7 @@ export default function MovementsList() {
             <p className="text-gray-400 text-lg mb-1">No movements found</p>
             <p className="text-gray-600 text-sm mb-6">Try adjusting your filters or record a new stock movement</p>
             <button onClick={() => router.push("/Inventory/Movements/Add")}
+              {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "record a stock movement")}
               className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white rounded-lg text-sm font-medium">
               Record First Movement
             </button>
