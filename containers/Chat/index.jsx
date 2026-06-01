@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { getUser } from "@/services/instance/tokenService";
 import {
   listChatRooms,
@@ -15,7 +15,13 @@ import {
   listOrgUsers,
   openDirectRoom,
   listChatProjects,
+  markRoomRead,
+  getRoomReceipts,
+  startTyping,
+  stopTyping,
 } from "@/services/Chat";
+import { useRealtimeSocket } from "@/lib/realtime/useRealtimeSocket";
+import { onEnvelope } from "@/lib/realtime/envelope";
 import ChatReactionsBar from "@/components/ChatReactionsBar";
 import ChatMessageBody from "@/components/ChatMessageBody";
 
@@ -50,6 +56,15 @@ const normaliseMessage = (m, currentUser) => {
     m.authorName ||
     (isOwn ? currentUser?.name : null) ||
     "Unknown";
+  // Edited indicator: prefer an explicit editedAt, else infer from updatedAt
+  // diverging from createdAt by more than a second (clock jitter guard).
+  const createdAt = m.createdAt || m.created_at || m.sentAt || null;
+  const editedAt =
+    m.editedAt ||
+    m.edited_at ||
+    (m.updatedAt && createdAt && new Date(m.updatedAt) - new Date(createdAt) > 1000
+      ? m.updatedAt
+      : null);
   return {
     id: m.id,
     senderId,
@@ -59,9 +74,22 @@ const normaliseMessage = (m, currentUser) => {
     color: m.color || colorFor(senderName),
     body: m.body || m.content || "",
     mentions: Array.isArray(m.mentions) ? m.mentions : [],
-    timeAgo: m.timeAgo || formatTime(m.createdAt),
+    createdAt,
+    editedAt,
+    // Attachment (rendered when the server stored an attachmentUrl on the message).
+    attachmentUrl: m.attachmentUrl || m.attachment_url || null,
+    attachmentName: m.attachmentName || m.attachment_name || "",
+    attachmentType: m.attachmentType || m.attachment_type || "",
+    // Reply reference (display + scroll-to). The send API does not persist this
+    // yet, but we render it whenever the DTO provides it.
+    replyToId: m.replyToId || m.parentMessageId || m.parentId || null,
+    replyToBody: m.replyToBody || m.parentBody || "",
+    replyToSender: m.replyToSender || m.parentSender || "",
+    timeAgo: m.timeAgo || formatTime(createdAt),
     isOwn,
     canDelete: isOwn,
+    // `pending` marks an optimistic, not-yet-acknowledged message.
+    pending: !!m.pending,
   };
 };
 
@@ -142,6 +170,81 @@ const formatTime = (iso) => {
   return `${Math.floor(diff / 1440)}d ago`;
 };
 
+// Absolute clock time in the viewer's local timezone, e.g. "3:42 PM".
+const formatClock = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+};
+
+// Full local date+time for hover tooltips, e.g. "Jun 2, 2026, 3:42:07 PM".
+const formatFull = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
+
+// A day separator label ("Today", "Yesterday", or a local date).
+const formatDayLabel = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const today = new Date();
+  const yest = new Date();
+  yest.setDate(today.getDate() - 1);
+  const sameDay = (a, b) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  if (sameDay(d, today)) return "Today";
+  if (sameDay(d, yest)) return "Yesterday";
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: d.getFullYear() === today.getFullYear() ? undefined : "numeric",
+  });
+};
+
+const dayKey = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toDateString();
+};
+
+// File-upload policy. Any file type is allowed; only an oversize guard remains
+// so a single huge file can't be queued.
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB
+const isImageName = (name = "", type = "") =>
+  /^image\//.test(type) || /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(name);
+const fileExt = (name = "") => name.split(".").pop()?.toLowerCase() || "";
+const humanSize = (bytes) => {
+  if (!bytes && bytes !== 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+// Validate a chosen file; returns an error string or null when acceptable.
+// All formats are permitted — only the size ceiling is enforced.
+const validateUploadFile = (file) => {
+  if (!file) return "No file selected.";
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return `"${file.name}" is too large (${humanSize(
+      file.size
+    )}). Maximum is ${humanSize(MAX_UPLOAD_BYTES)}.`;
+  }
+  return null;
+};
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function Avatar({ initials, color, size = 36 }) {
@@ -168,7 +271,8 @@ function Avatar({ initials, color, size = 36 }) {
   );
 }
 
-function ChannelItem({ room, active, onClick }) {
+function ChannelItem({ room, active, unread = 0, onClick }) {
+  const hasUnread = unread > 0 && !active;
   return (
     <button
       onClick={onClick}
@@ -181,7 +285,9 @@ function ChannelItem({ room, active, onClick }) {
         borderRadius: 8,
         transition: "background 0.15s",
         background: active ? "var(--rf-accent)" : "transparent",
-        display: "block",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
       }}
       onMouseEnter={(e) => {
         if (!active) e.currentTarget.style.background = "var(--rf-bg3)";
@@ -190,32 +296,51 @@ function ChannelItem({ room, active, onClick }) {
         if (!active) e.currentTarget.style.background = "transparent";
       }}
     >
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: active ? 700 : 500,
-          color: active ? "#fff" : "var(--rf-txt)",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          fontFamily: "monospace",
-          letterSpacing: "-0.01em",
-        }}
-      >
-        {room.name}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: active || hasUnread ? 700 : 500,
+            color: active ? "#fff" : "var(--rf-txt)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            fontFamily: "monospace",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {room.name}
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            marginTop: 1,
+            color: active ? "rgba(255,255,255,0.7)" : "var(--rf-txt3)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {room.subtitle}
+        </div>
       </div>
-      <div
-        style={{
-          fontSize: 11,
-          marginTop: 1,
-          color: active ? "rgba(255,255,255,0.7)" : "var(--rf-txt3)",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-      >
-        {room.subtitle}
-      </div>
+      {hasUnread && (
+        <span
+          style={{
+            background: "var(--rf-red, #ef4444)",
+            color: "#fff",
+            fontSize: 10,
+            fontWeight: 800,
+            borderRadius: 10,
+            padding: "1px 6px",
+            minWidth: 16,
+            textAlign: "center",
+            flexShrink: 0,
+          }}
+        >
+          {unread}
+        </span>
+      )}
     </button>
   );
 }
@@ -237,15 +362,130 @@ function SectionLabel({ label }) {
   );
 }
 
-function MessageBubble({ msg, onDelete, currentUserId }) {
+// Single/double tick read-status indicator for the sender's own messages.
+function StatusTick({ status }) {
+  if (status === "sending") {
+    return (
+      <span style={{ fontSize: 10, opacity: 0.8 }} title="Sending…">
+        · sending…
+      </span>
+    );
+  }
+  const read = status === "read";
+  return (
+    <span
+      title={read ? "Read" : "Delivered"}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 2,
+        color: read ? "#4ade80" : "inherit",
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M1.5 12.5l4 4 8-9"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* second tick for the "read" state */}
+        <path
+          d="M8.5 16.5l1 1 8-9"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={read ? 1 : 0}
+        />
+      </svg>
+      <span style={{ fontSize: 10 }}>{read ? "Read" : "Delivered"}</span>
+    </span>
+  );
+}
+
+function Attachment({ url, name, type }) {
+  const isImg = isImageName(name || url, type);
+  if (isImg) {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: "block" }}>
+        <img
+          src={url}
+          alt={name || "attachment"}
+          style={{
+            maxWidth: 240,
+            maxHeight: 240,
+            borderRadius: 8,
+            display: "block",
+            objectFit: "cover",
+            border: "1px solid var(--rf-border)",
+          }}
+        />
+      </a>
+    );
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      download={name || true}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "8px 10px",
+        borderRadius: 8,
+        background: "var(--rf-bg2)",
+        border: "1px solid var(--rf-border)",
+        color: "var(--rf-txt)",
+        textDecoration: "none",
+        maxWidth: 260,
+      }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="12" y1="18" x2="12" y2="12" />
+        <polyline points="9 15 12 18 15 15" />
+      </svg>
+      <span
+        style={{
+          flex: 1,
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          fontSize: 12,
+          fontWeight: 600,
+        }}
+      >
+        {name || "Download file"}
+      </span>
+    </a>
+  );
+}
+
+function MessageBubble({
+  msg,
+  onDelete,
+  onForward,
+  onReplyClick,
+  currentUserId,
+  status,
+  registerRef,
+  highlighted,
+}) {
   const [hover, setHover] = useState(false);
   const isOwn = !!msg.isOwn;
   const bubbleBg = isOwn ? "var(--rf-blue, #3b82f6)" : "var(--rf-bg3)";
   const bubbleColor = isOwn ? "white" : "var(--rf-txt)";
-  const metaColor = isOwn ? "rgba(255,255,255,0.75)" : "var(--rf-txt3)";
+  const metaColor = isOwn ? "rgba(255,255,255,0.85)" : "var(--rf-txt3)";
 
   return (
     <div
+      ref={registerRef}
       style={{
         display: "flex",
         flexDirection: isOwn ? "row-reverse" : "row",
@@ -253,6 +493,8 @@ function MessageBubble({ msg, onDelete, currentUserId }) {
         padding: "6px 20px",
         position: "relative",
         alignItems: "flex-end",
+        background: highlighted ? "rgba(59,130,246,0.12)" : "transparent",
+        transition: "background 0.4s",
       }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -291,6 +533,36 @@ function MessageBubble({ msg, onDelete, currentUserId }) {
             )}
           </div>
         )}
+
+        {/* Reply reference */}
+        {msg.replyToId && (
+          <button
+            type="button"
+            onClick={() => onReplyClick?.(msg.replyToId)}
+            style={{
+              textAlign: "left",
+              maxWidth: "100%",
+              marginBottom: 3,
+              padding: "4px 8px",
+              borderLeft: "3px solid var(--rf-accent)",
+              background: "var(--rf-bg2)",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontSize: 11,
+              color: "var(--rf-txt2)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title="Jump to replied message"
+          >
+            <span style={{ fontWeight: 700 }}>
+              {msg.replyToSender || "Reply"}
+            </span>{" "}
+            {msg.replyToBody || "View message"}
+          </button>
+        )}
+
         <div
           style={{
             position: "relative",
@@ -305,36 +577,52 @@ function MessageBubble({ msg, onDelete, currentUserId }) {
             wordBreak: "break-word",
             whiteSpace: "pre-wrap",
             boxShadow: "0 1px 1px rgba(0,0,0,0.08)",
+            maxWidth: "100%",
           }}
         >
-          <ChatMessageBody message={msg} />
+          {msg.body && <ChatMessageBody message={msg} />}
+          {msg.attachmentUrl && (
+            <div style={{ marginTop: msg.body ? 6 : 0 }}>
+              <Attachment
+                url={msg.attachmentUrl}
+                name={msg.attachmentName}
+                type={msg.attachmentType}
+              />
+            </div>
+          )}
         </div>
+
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 8,
+            gap: 6,
             marginTop: 3,
             paddingLeft: isOwn ? 0 : 2,
             paddingRight: isOwn ? 2 : 0,
             fontSize: 10,
-            color: "var(--rf-txt3)",
+            color: metaColor,
           }}
         >
-          <span>{msg.timeAgo}</span>
+          <span title={formatFull(msg.createdAt)}>
+            {formatClock(msg.createdAt) || msg.timeAgo}
+          </span>
+          {msg.editedAt && (
+            <span title={`Edited ${formatFull(msg.editedAt)}`} style={{ fontStyle: "italic" }}>
+              · edited
+            </span>
+          )}
+          {isOwn && <StatusTick status={status} />}
         </div>
+
         <div style={{ marginTop: 4, alignSelf: isOwn ? "flex-end" : "flex-start" }}>
-          <ChatReactionsBar
-            messageId={msg.id}
-            currentUserId={currentUserId}
-          />
+          <ChatReactionsBar messageId={msg.id} currentUserId={currentUserId} />
         </div>
       </div>
-      {hover && msg.canDelete && (
-        <button
-          onClick={() => onDelete(msg.id)}
-          title="Delete message"
-          aria-label="Delete message"
+
+      {/* Hover action bar */}
+      {hover && !msg.pending && (
+        <div
           style={{
             position: "absolute",
             top: 6,
@@ -342,38 +630,55 @@ function MessageBubble({ msg, onDelete, currentUserId }) {
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
-            background: "var(--rf-bg2)",
-            border: "1px solid var(--rf-border)",
-            borderRadius: 6,
-            padding: "3px 8px",
-            cursor: "pointer",
-            fontSize: 11,
-            color: "var(--rf-red, #ef4444)",
-            fontWeight: 600,
           }}
         >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+          <button
+            onClick={() => onForward?.(msg)}
+            title="Forward message"
+            aria-label="Forward message"
+            style={hoverActionStyle}
           >
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6M14 11v6" />
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-          </svg>
-          Delete
-        </button>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="15 17 20 12 15 7" />
+              <path d="M4 18v-2a4 4 0 0 1 4-4h12" />
+            </svg>
+            Forward
+          </button>
+          {msg.canDelete && (
+            <button
+              onClick={() => onDelete(msg.id)}
+              title="Delete message"
+              aria-label="Delete message"
+              style={{ ...hoverActionStyle, color: "var(--rf-red, #ef4444)" }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+              Delete
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
 }
+
+const hoverActionStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  background: "var(--rf-bg2)",
+  border: "1px solid var(--rf-border)",
+  borderRadius: 6,
+  padding: "3px 8px",
+  cursor: "pointer",
+  fontSize: 11,
+  color: "var(--rf-txt2)",
+  fontWeight: 600,
+};
 
 function MembersModal({
   roomName,
@@ -1253,8 +1558,33 @@ export default function Chat() {
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // ── Audit additions ───────────────────────────────────────────────────────
+  const [roomSearch, setRoomSearch] = useState("");
+  const [successMsg, setSuccessMsg] = useState(null);
+  const [unreadByRoom, setUnreadByRoom] = useState({}); // { roomId: count }
+  const [othersReadAt, setOthersReadAt] = useState(null); // ISO: latest read by any other member
+  const [typingNames, setTypingNames] = useState([]); // names currently typing in active room
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [forwardMsg, setForwardMsg] = useState(null); // message being forwarded
+  const [highlightId, setHighlightId] = useState(null);
+  // Attachment compose state — multiple files, each individually removable.
+  const [pendingFiles, setPendingFiles] = useState([]); // [{ id, file, previewUrl }]
+  const [uploadError, setUploadError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(null); // 0–100 or null
+
+  const socket = useRealtimeSocket();
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const messageRefs = useRef({}); // { messageId: HTMLElement } for reply scroll-to
+  const activeRoomIdRef = useRef(null); // latest active room for socket/poll closures
+  const notifiedIdsRef = useRef(new Set()); // de-dupe in-app notifications
+  const typingTimersRef = useRef({}); // { userId: timeoutId } to expire typing indicators
+  const typingSentRef = useRef(0); // throttle outbound typing-start signals
+  const flashSuccess = useCallback((text) => {
+    setSuccessMsg(text);
+    setTimeout(() => setSuccessMsg((cur) => (cur === text ? null : cur)), 3000);
+  }, []);
 
   // ── Boot: resolve current user ─────────────────────────────────────────────
   useEffect(() => {
@@ -1391,6 +1721,180 @@ export default function Chat() {
     fetchMessages(activeRoomId);
   }, [activeRoomId, fetchMessages]);
 
+  // Keep a ref of the active room for socket/poll closures, reset per-room
+  // ephemeral state, clear that room's unread badge, and mark it read server-side.
+  useEffect(() => {
+    activeRoomIdRef.current = activeRoomId;
+    setTypingNames([]);
+    setOthersReadAt(null);
+    if (!activeRoomId) return;
+    setUnreadByRoom((prev) => {
+      if (!prev[activeRoomId]) return prev;
+      const next = { ...prev };
+      delete next[activeRoomId];
+      return next;
+    });
+    markRoomRead(activeRoomId).catch(() => {});
+  }, [activeRoomId]);
+
+  // ── Read receipts: poll who has read up to where (Delivered → Read) ─────────
+  const refreshReceipts = useCallback(async () => {
+    const roomId = activeRoomIdRef.current;
+    if (!roomId || !currentUser) return;
+    try {
+      const res = await getRoomReceipts(roomId);
+      const raw = Array.isArray(res) ? res : res?.data || res?.receipts || [];
+      // Latest read timestamp among *other* members.
+      let latest = null;
+      for (const r of raw) {
+        const uid = r.userId || r.memberId || r.id;
+        if (uid === currentUser.id) continue;
+        const at = r.readAt || r.lastReadAt || r.at || r.readUpTo;
+        if (at && (!latest || new Date(at) > new Date(latest))) latest = at;
+      }
+      setOthersReadAt(latest);
+    } catch {
+      /* receipts endpoint optional — ignore */
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!activeRoomId || !currentUser) return;
+    refreshReceipts();
+    const t = setInterval(refreshReceipts, 8000);
+    return () => clearInterval(t);
+  }, [activeRoomId, currentUser, refreshReceipts]);
+
+  // Re-mark read whenever new messages land while the room is focused, so the
+  // peer's "Read" status advances without a refresh.
+  useEffect(() => {
+    if (!activeRoomId || messages.length === 0) return;
+    markRoomRead(activeRoomId).catch(() => {});
+  }, [activeRoomId, messages.length]);
+
+  // Keep a live ref of rooms for closures (notifications need room names).
+  const roomsRef = useRef([]);
+  useEffect(() => {
+    roomsRef.current = rooms;
+  }, [rooms]);
+
+  // ── Incoming message handling (shared by socket + poll) ─────────────────────
+  const ingestIncoming = useCallback(
+    (rawMsg, roomId) => {
+      if (!rawMsg?.id || !currentUser) return;
+      const isActive = roomId === activeRoomIdRef.current;
+      if (isActive) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === rawMsg.id)) return prev; // de-dupe
+          return [...prev, normaliseMessage(rawMsg, currentUser)];
+        });
+      } else {
+        // Bump unread badge + raise a single in-app notification per message.
+        const senderId =
+          rawMsg.senderUserId || rawMsg.senderId || rawMsg.authorId || "";
+        if (senderId && senderId !== currentUser.id) {
+          setUnreadByRoom((prev) => ({
+            ...prev,
+            [roomId]: (prev[roomId] || 0) + 1,
+          }));
+          if (!notifiedIdsRef.current.has(rawMsg.id)) {
+            notifiedIdsRef.current.add(rawMsg.id);
+            const room = roomsRef.current.find((r) => r.id === roomId);
+            const preview = String(rawMsg.body || rawMsg.content || "Attachment");
+            flashSuccess(
+              `New message in ${room?.name || "a conversation"}: ${preview.slice(0, 60)}`
+            );
+          }
+        }
+      }
+    },
+    [currentUser, flashSuccess]
+  );
+
+  // ── Realtime socket wiring (best-effort; polling below is the guarantee) ────
+  useEffect(() => {
+    if (!socket || !currentUser) return;
+    const offs = [];
+    const onCreated = ({ data }) => {
+      const msg = data?.message || data;
+      const roomId = data?.roomId || msg?.roomId || msg?.chatRoomId;
+      if (roomId) ingestIncoming(msg, roomId);
+    };
+    const onDeleted = ({ data }) => {
+      const id = data?.messageId || data?.id;
+      if (id) setMessages((prev) => prev.filter((m) => m.id !== id));
+    };
+    const onTyping = ({ data }) => {
+      const roomId = data?.roomId;
+      if (roomId !== activeRoomIdRef.current) return;
+      const uid = data?.userId;
+      if (!uid || uid === currentUser.id) return;
+      const name = data?.userName || data?.name || "Someone";
+      if (data?.stopped) {
+        setTypingNames((prev) => prev.filter((n) => n !== name));
+        return;
+      }
+      setTypingNames((prev) => (prev.includes(name) ? prev : [...prev, name]));
+      clearTimeout(typingTimersRef.current[uid]);
+      typingTimersRef.current[uid] = setTimeout(() => {
+        setTypingNames((prev) => prev.filter((n) => n !== name));
+      }, 4000);
+    };
+    const onReceipt = () => refreshReceipts();
+
+    // The backend's exact channel names aren't referenced elsewhere in the
+    // frontend; we subscribe to the conventional `domain.event` names and also
+    // poll (below) so behaviour is correct even if a name differs.
+    for (const ev of ["chat.message.created", "chat.message", "message.created"]) {
+      offs.push(onEnvelope(socket, ev, onCreated));
+    }
+    for (const ev of ["chat.message.deleted", "message.deleted"]) {
+      offs.push(onEnvelope(socket, ev, onDeleted));
+    }
+    for (const ev of ["chat.typing", "typing"]) {
+      offs.push(onEnvelope(socket, ev, onTyping));
+    }
+    for (const ev of ["chat.read", "chat.receipt", "read.receipt"]) {
+      offs.push(onEnvelope(socket, ev, onReceipt));
+    }
+    return () => offs.forEach((off) => off && off());
+  }, [socket, currentUser, ingestIncoming, refreshReceipts]);
+
+  // ── Polling fallback: active-room messages + room unread (no refresh needed) ─
+  useEffect(() => {
+    if (!currentUser) return;
+    const tick = async () => {
+      const roomId = activeRoomIdRef.current;
+      if (!roomId || document.hidden) return;
+      try {
+        const res = await listMessages(roomId, { limit: 50 });
+        const raw = Array.isArray(res) ? res : res?.data || res?.messages || [];
+        const next = [...raw].reverse();
+        setMessages((prev) => {
+          // Preserve optimistic (pending) messages not yet returned by the API.
+          const serverIds = new Set(next.map((m) => m.id));
+          const pendings = prev.filter((m) => m.pending && !serverIds.has(m.id));
+          const merged = [
+            ...next.map((m) => normaliseMessage(m, currentUser)),
+            ...pendings,
+          ];
+          // Skip state churn when nothing changed.
+          if (
+            merged.length === prev.length &&
+            merged.every((m, i) => m.id === prev[i]?.id && m.body === prev[i]?.body)
+          ) {
+            return prev;
+          }
+          return merged;
+        });
+      } catch {
+        /* transient — try again next tick */
+      }
+    };
+    const t = setInterval(tick, 6000);
+    return () => clearInterval(t);
+  }, [currentUser]);
+
   // ── Load room members when members modal opens ─────────────────────────────
   const refreshMembers = useCallback(async () => {
     if (!activeRoomId) return;
@@ -1433,58 +1937,187 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ── Typing signals (outbound) ──────────────────────────────────────────────
+  const signalTyping = useCallback(() => {
+    if (!activeRoomId) return;
+    const now = Date.now();
+    // Throttle "start" to at most once every 2.5s per compose session.
+    if (now - typingSentRef.current > 2500) {
+      typingSentRef.current = now;
+      startTyping(activeRoomId).catch(() => {});
+    }
+  }, [activeRoomId]);
+
+  const stopTypingNow = useCallback(() => {
+    if (!activeRoomId) return;
+    typingSentRef.current = 0;
+    stopTyping(activeRoomId).catch(() => {});
+  }, [activeRoomId]);
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+    if (e.target.value) signalTyping();
+    else stopTypingNow();
+  };
+
+  // ── File selection + validation (multiple, append, any format) ─────────────
+  const handleFilePick = (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ""; // allow re-selecting the same file(s)
+    if (!files.length) return;
+
+    const accepted = [];
+    const errors = [];
+    for (const file of files) {
+      const err = validateUploadFile(file);
+      if (err) {
+        errors.push(err);
+        continue;
+      }
+      accepted.push({
+        id: `f-${Date.now()}-${Math.round(file.size)}-${file.name}`,
+        file,
+        previewUrl: isImageName(file.name, file.type)
+          ? URL.createObjectURL(file)
+          : null,
+      });
+    }
+    setUploadError(errors.join(" "));
+    if (accepted.length) {
+      setPendingFiles((prev) => [...prev, ...accepted]);
+    }
+  };
+
+  const removePendingFile = (id) => {
+    setPendingFiles((prev) => {
+      const found = prev.find((p) => p.id === id);
+      if (found?.previewUrl) URL.revokeObjectURL(found.previewUrl);
+      return prev.filter((p) => p.id !== id);
+    });
+  };
+
+  const clearPendingFiles = () => {
+    setPendingFiles((prev) => {
+      prev.forEach((p) => p.previewUrl && URL.revokeObjectURL(p.previewUrl));
+      return [];
+    });
+  };
+
   // ── Send message ───────────────────────────────────────────────────────────
   const handleSend = async () => {
     const body = inputValue.trim();
-    if (!body || sending || !activeRoomId || !currentUser) return;
+    const filesToSend = pendingFiles;
+    if (
+      (!body && filesToSend.length === 0) ||
+      sending ||
+      !activeRoomId ||
+      !currentUser
+    )
+      return;
 
-    const optimistic = {
-      id: "opt-" + Date.now(),
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      initials: currentUser.initials,
-      color: currentUser.color,
-      body,
-      timeAgo: "just now",
-      isOwn: true,
-      canDelete: true,
-    };
+    stopTypingNow();
+    const nowIso = new Date().toISOString();
+    const first = filesToSend[0]?.file;
+    const optimistic = normaliseMessage(
+      {
+        id: "opt-" + Date.now(),
+        senderUserId: currentUser.id,
+        senderName: currentUser.name,
+        body,
+        createdAt: nowIso,
+        attachmentUrl: filesToSend[0]?.previewUrl || null,
+        attachmentName: first?.name || "",
+        attachmentType: first?.type || "",
+        pending: true,
+      },
+      currentUser
+    );
 
     setMessages((prev) => [...prev, optimistic]);
     setInputValue("");
+    // Detach the array from state without revoking the object URLs yet — we may
+    // need to restore them if the send fails.
+    setPendingFiles([]);
     inputRef.current?.focus();
     setSending(true);
 
     try {
-      const res = await postMessage(activeRoomId, { body });
+      let attachmentUrl;
+      if (filesToSend.length > 0) {
+        // The confirmed chat API accepts a stored attachmentUrl on postMessage,
+        // but there is no chat-scoped upload endpoint in services/Chat. Until
+        // one exists we surface a clear message rather than silently dropping
+        // the files. (See audit notes — backend gap.)
+        setUploadProgress(0);
+        throw new Error(
+          `Attachment uploads are not yet supported by the chat API (no upload endpoint). ${filesToSend.length} file(s) were not sent.`
+        );
+      }
+      const res = await postMessage(activeRoomId, { body, attachmentUrl });
       const saved = res?.data || res;
       if (saved?.id) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === optimistic.id
               ? normaliseMessage({ ...saved, canDelete: true }, currentUser)
-              : m,
-          ),
+              : m
+          )
         );
       }
     } catch (err) {
-      // Roll the optimistic message back so the user sees the failure.
+      // Roll the optimistic message back so the user sees the failure, and
+      // restore whatever they had typed / attached so nothing is silently lost.
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-      setInputValue(body);
+      if (body) setInputValue(body);
+      if (filesToSend.length > 0) setPendingFiles(filesToSend);
       setLastError(extractErrorMessage(err, "Failed to send message"));
     } finally {
       setSending(false);
+      setUploadProgress(null);
     }
   };
 
-  // ── Delete message ─────────────────────────────────────────────────────────
-  const handleDeleteMessage = async (msgId) => {
+  // ── Forward a message to another room (uses the confirmed postMessage API) ──
+  const handleForward = async (targetRoomId) => {
+    if (!forwardMsg || !targetRoomId) return;
+    try {
+      await postMessage(targetRoomId, {
+        body: forwardMsg.body,
+        attachmentUrl: forwardMsg.attachmentUrl || undefined,
+      });
+      setForwardMsg(null);
+      const room = rooms.find((r) => r.id === targetRoomId);
+      flashSuccess(`Message forwarded to ${room?.name || "conversation"}.`);
+      if (targetRoomId === activeRoomId) fetchMessages(activeRoomId);
+    } catch (err) {
+      setLastError(extractErrorMessage(err, "Failed to forward message"));
+    }
+  };
+
+  // ── Scroll to / highlight a replied-to message ─────────────────────────────
+  const scrollToMessage = (id) => {
+    const el = messageRefs.current[id];
+    if (!el) {
+      setLastError("Original message is not loaded in this view.");
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightId(id);
+    setTimeout(() => setHighlightId((cur) => (cur === id ? null : cur)), 1600);
+  };
+
+  // ── Delete message (confirm → delete → success feedback) ───────────────────
+  const performDelete = async (msgId) => {
+    setConfirmDeleteId(null);
+    const snapshot = messages;
     setMessages((prev) => prev.filter((m) => m.id !== msgId));
     try {
       await deleteChatMessage(activeRoomId, msgId);
+      flashSuccess("Message deleted.");
     } catch (err) {
+      // Restore so the message never disappears silently on failure.
+      setMessages(snapshot);
       setLastError(extractErrorMessage(err, "Failed to delete message"));
-      await fetchMessages(activeRoomId);
     }
   };
 
@@ -1581,8 +2214,29 @@ export default function Chat() {
   const activeRoom =
     decoratedRooms?.length > 0 &&
     decoratedRooms?.find((r) => r.id === activeRoomId);
-  const groups = groupBySection(decoratedRooms);
-  const peopleWithoutSelf = people.filter((u) => u.id !== currentUser.id);
+
+  // ── Conversation search (rooms + people) ──────────────────────────────────
+  const search = roomSearch.trim().toLowerCase();
+  const matchedRooms = search
+    ? decoratedRooms.filter(
+        (r) =>
+          (r.name || "").toLowerCase().includes(search) ||
+          (r.subtitle || "").toLowerCase().includes(search)
+      )
+    : decoratedRooms;
+  const groups = groupBySection(matchedRooms);
+
+  const allPeopleWithoutSelf = people.filter((u) => u.id !== currentUser.id);
+  const peopleWithoutSelf = search
+    ? allPeopleWithoutSelf.filter((u) => {
+        const name = `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase();
+        return name.includes(search) || (u.email || "").toLowerCase().includes(search);
+      })
+    : allPeopleWithoutSelf;
+
+  const hasSearchResults =
+    matchedRooms.length > 0 || (search && peopleWithoutSelf.length > 0);
+  const totalUnread = Object.values(unreadByRoom).reduce((a, b) => a + b, 0);
 
   return (
     <div
@@ -1593,6 +2247,48 @@ export default function Chat() {
         overflow: "hidden",
       }}
     >
+      {/* ── Inline success toast ─────────────────────────────────────────────── */}
+      {successMsg && (
+        <div
+          role="status"
+          style={{
+            position: "absolute",
+            top: lastError ? 56 : 12,
+            right: 16,
+            zIndex: 2000,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "rgba(22,163,74,0.96)",
+            color: "white",
+            border: "1px solid rgba(22,163,74,1)",
+            borderRadius: 8,
+            padding: "8px 12px",
+            fontSize: 12,
+            fontWeight: 600,
+            maxWidth: 420,
+            boxShadow: "0 10px 24px rgba(0,0,0,0.25)",
+          }}
+        >
+          <span style={{ flex: 1 }}>{successMsg}</span>
+          <button
+            onClick={() => setSuccessMsg(null)}
+            aria-label="Dismiss"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "white",
+              cursor: "pointer",
+              fontSize: 16,
+              lineHeight: 1,
+              padding: 0,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* ── Inline error toast ───────────────────────────────────────────────── */}
       {lastError && (
         <div
@@ -1665,9 +2361,28 @@ export default function Chat() {
                   fontSize: 14,
                   fontWeight: 800,
                   color: "var(--rf-txt)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
                 }}
               >
                 Messages
+                {totalUnread > 0 && (
+                  <span
+                    style={{
+                      background: "var(--rf-red, #ef4444)",
+                      color: "#fff",
+                      fontSize: 10,
+                      fontWeight: 800,
+                      borderRadius: 10,
+                      padding: "1px 6px",
+                      minWidth: 16,
+                      textAlign: "center",
+                    }}
+                  >
+                    {totalUnread}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: 11, color: "var(--rf-txt3)" }}>
                 {roomsLoading ? "Loading rooms..." : `${rooms.length} rooms`}
@@ -1695,8 +2410,84 @@ export default function Chat() {
             </button>
           </div>
 
+          {/* Conversation search */}
+          <div style={{ padding: "10px 12px 4px" }}>
+            <div style={{ position: "relative" }}>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  left: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--rf-txt3)",
+                }}
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                value={roomSearch}
+                onChange={(e) => setRoomSearch(e.target.value)}
+                placeholder="Search conversations…"
+                style={{
+                  width: "100%",
+                  padding: "8px 10px 8px 30px",
+                  fontSize: 12,
+                  background: "var(--rf-bg)",
+                  color: "var(--rf-txt)",
+                  border: "1px solid var(--rf-border)",
+                  borderRadius: 8,
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+              {roomSearch && (
+                <button
+                  onClick={() => setRoomSearch("")}
+                  aria-label="Clear search"
+                  style={{
+                    position: "absolute",
+                    right: 8,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--rf-txt3)",
+                    fontSize: 16,
+                    lineHeight: 1,
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Room groups */}
           <div style={{ flex: 1, paddingBottom: 16 }}>
+            {search && !hasSearchResults && (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "28px 16px",
+                  color: "var(--rf-txt3)",
+                  fontSize: 12.5,
+                }}
+              >
+                No results found for &ldquo;{roomSearch}&rdquo;
+              </div>
+            )}
             {groups.map(([section, sectionRooms]) => (
               <div key={section}>
                 <SectionLabel label={section} />
@@ -1705,6 +2496,7 @@ export default function Chat() {
                     <ChannelItem
                       room={room}
                       active={room.id === activeRoomId}
+                      unread={unreadByRoom[room.id] || 0}
                       onClick={() => selectRoom(room.id)}
                     />
                   </div>
@@ -1966,14 +2758,77 @@ export default function Chat() {
               <div>No messages yet. Be the first to say something!</div>
             </div>
           ) : (
-            messages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                msg={msg}
-                onDelete={handleDeleteMessage}
-                currentUserId={currentUser?.id}
-              />
-            ))
+            messages.map((msg, i) => {
+              const prev = messages[i - 1];
+              const showDay =
+                msg.createdAt &&
+                (!prev || dayKey(prev.createdAt) !== dayKey(msg.createdAt));
+              let status = null;
+              if (msg.pending) status = "sending";
+              else if (msg.isOwn)
+                status =
+                  othersReadAt &&
+                  msg.createdAt &&
+                  new Date(othersReadAt) >= new Date(msg.createdAt)
+                    ? "read"
+                    : "delivered";
+              return (
+                <Fragment key={msg.id}>
+                  {showDay && (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        margin: "10px 0 6px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: "var(--rf-txt3)",
+                          background: "var(--rf-bg2)",
+                          border: "1px solid var(--rf-border)",
+                          borderRadius: 10,
+                          padding: "2px 10px",
+                        }}
+                      >
+                        {formatDayLabel(msg.createdAt)}
+                      </span>
+                    </div>
+                  )}
+                  <MessageBubble
+                    msg={msg}
+                    onDelete={(id) => setConfirmDeleteId(id)}
+                    onForward={(m) => setForwardMsg(m)}
+                    onReplyClick={scrollToMessage}
+                    currentUserId={currentUser?.id}
+                    status={status}
+                    highlighted={highlightId === msg.id}
+                    registerRef={(el) => {
+                      if (el) messageRefs.current[msg.id] = el;
+                    }}
+                  />
+                </Fragment>
+              );
+            })
+          )}
+
+          {/* Typing indicator */}
+          {typingNames.length > 0 && (
+            <div
+              style={{
+                padding: "2px 20px 6px",
+                fontSize: 12,
+                color: "var(--rf-txt3)",
+                fontStyle: "italic",
+              }}
+            >
+              {typingNames.length === 1
+                ? `${typingNames[0]} is typing…`
+                : `${typingNames.slice(0, 2).join(", ")}${
+                    typingNames.length > 2 ? " and others" : ""
+                  } are typing…`}
+            </div>
           )}
           <div ref={messagesEndRef} />
         </div>
@@ -1987,7 +2842,193 @@ export default function Chat() {
             flexShrink: 0,
           }}
         >
+          {/* Upload validation error */}
+          {uploadError && (
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--rf-red, #ef4444)",
+                background: "rgba(239,68,68,0.1)",
+                border: "1px solid rgba(239,68,68,0.3)",
+                borderRadius: 8,
+                padding: "6px 10px",
+                marginBottom: 8,
+              }}
+            >
+              {uploadError}
+            </div>
+          )}
+
+          {/* Pending attachments — one removable chip per file */}
+          {pendingFiles.length > 0 && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                marginBottom: 8,
+              }}
+            >
+              {pendingFiles.map(({ id, file, previewUrl }) => (
+                <div
+                  key={id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    background: "var(--rf-bg)",
+                    border: "1px solid var(--rf-border)",
+                    maxWidth: 240,
+                  }}
+                >
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt={file.name}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        objectFit: "cover",
+                        borderRadius: 6,
+                        flexShrink: 0,
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 6,
+                        background: "var(--rf-bg3)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "var(--rf-txt2)",
+                        textTransform: "uppercase",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {fileExt(file.name) || "file"}
+                    </div>
+                  )}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: "var(--rf-txt)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={file.name}
+                    >
+                      {file.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--rf-txt3)" }}>
+                      {humanSize(file.size)}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removePendingFile(id)}
+                    aria-label={`Remove ${file.name}`}
+                    title="Remove"
+                    style={{
+                      background: "var(--rf-bg3)",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: 20,
+                      height: 20,
+                      cursor: "pointer",
+                      color: "var(--rf-txt2)",
+                      fontSize: 14,
+                      lineHeight: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {pendingFiles.length > 1 && (
+                <button
+                  onClick={clearPendingFiles}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--rf-txt3)",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    textDecoration: "underline",
+                  }}
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Upload progress (shared) */}
+          {uploadProgress !== null && (
+            <div
+              style={{
+                height: 4,
+                background: "var(--rf-bg3)",
+                borderRadius: 2,
+                marginBottom: 8,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: `${uploadProgress}%`,
+                  height: "100%",
+                  background: "var(--rf-accent)",
+                  transition: "width 0.2s",
+                }}
+              />
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={handleFilePick}
+              style={{ display: "none" }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach files"
+              aria-label="Attach files"
+              disabled={sending}
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 10,
+                border: "1px solid var(--rf-border)",
+                background: "var(--rf-bg)",
+                color: "var(--rf-txt2)",
+                cursor: sending ? "default" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+            </button>
             <div
               style={{
                 flex: 1,
@@ -2009,8 +3050,9 @@ export default function Chat() {
               <input
                 ref={inputRef}
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                onBlur={stopTypingNow}
                 placeholder={`Message ${activeRoom?.name || ""}...`}
                 disabled={sending}
                 style={{
@@ -2026,7 +3068,10 @@ export default function Chat() {
               />
               {inputValue && (
                 <button
-                  onClick={() => setInputValue("")}
+                  onClick={() => {
+                    setInputValue("");
+                    stopTypingNow();
+                  }}
                   aria-label="Clear message"
                   title="Clear"
                   style={{
@@ -2059,20 +3104,27 @@ export default function Chat() {
             </div>
             <button
               onClick={handleSend}
-              disabled={!inputValue.trim() || sending}
+              disabled={
+                (!inputValue.trim() && pendingFiles.length === 0) || sending
+              }
               style={{
                 padding: "11px 22px",
                 borderRadius: 10,
                 border: "none",
                 background:
-                  inputValue.trim() && !sending
+                  (inputValue.trim() || pendingFiles.length > 0) && !sending
                     ? "var(--rf-accent)"
                     : "var(--rf-bg3)",
                 color:
-                  inputValue.trim() && !sending ? "#fff" : "var(--rf-txt3)",
+                  (inputValue.trim() || pendingFiles.length > 0) && !sending
+                    ? "#fff"
+                    : "var(--rf-txt3)",
                 fontSize: 13,
                 fontWeight: 700,
-                cursor: inputValue.trim() && !sending ? "pointer" : "default",
+                cursor:
+                  (inputValue.trim() || pendingFiles.length > 0) && !sending
+                    ? "pointer"
+                    : "default",
                 transition: "background 0.15s, color 0.15s",
                 whiteSpace: "nowrap",
                 flexShrink: 0,
@@ -2113,6 +3165,274 @@ export default function Chat() {
           onCreate={handleCreateRoom}
         />
       )}
+
+      {/* ── Delete confirmation ────────────────────────────────────────────── */}
+      {confirmDeleteId && (
+        <ConfirmDialog
+          title="Delete message?"
+          message="This message will be removed for everyone. This action cannot be undone."
+          confirmLabel="Delete"
+          danger
+          onCancel={() => setConfirmDeleteId(null)}
+          onConfirm={() => performDelete(confirmDeleteId)}
+        />
+      )}
+
+      {/* ── Forward modal ──────────────────────────────────────────────────── */}
+      {forwardMsg && (
+        <ForwardModal
+          message={forwardMsg}
+          rooms={decoratedRooms.filter((r) => r.id !== activeRoomId)}
+          onForward={handleForward}
+          onClose={() => setForwardMsg(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Confirmation dialog ──────────────────────────────────────────────────────
+function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCancel }) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1100,
+        background: "rgba(0,0,0,0.5)",
+        backdropFilter: "blur(4px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <div
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border)",
+          borderRadius: 14,
+          width: "100%",
+          maxWidth: 380,
+          padding: 22,
+          boxShadow: "0 24px 48px rgba(0,0,0,0.3)",
+        }}
+      >
+        <h3 style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 800, color: "var(--rf-txt)" }}>
+          {title}
+        </h3>
+        <p style={{ margin: "0 0 18px", fontSize: 13, color: "var(--rf-txt2)", lineHeight: 1.5 }}>
+          {message}
+        </p>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 9,
+              border: "1px solid var(--rf-border)",
+              background: "transparent",
+              color: "var(--rf-txt2)",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            autoFocus
+            style={{
+              padding: "8px 18px",
+              borderRadius: 9,
+              border: "none",
+              background: danger ? "var(--rf-red, #ef4444)" : "var(--rf-accent)",
+              color: "#fff",
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            {confirmLabel || "Confirm"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Forward picker ───────────────────────────────────────────────────────────
+function ForwardModal({ message, rooms, onForward, onClose }) {
+  const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState(null);
+  const list = query.trim()
+    ? rooms.filter((r) =>
+        (r.name || "").toLowerCase().includes(query.trim().toLowerCase())
+      )
+    : rooms;
+
+  const go = async (roomId) => {
+    setBusyId(roomId);
+    try {
+      await onForward(roomId);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1100,
+        background: "rgba(0,0,0,0.5)",
+        backdropFilter: "blur(6px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border)",
+          borderRadius: 14,
+          width: "100%",
+          maxWidth: 420,
+          maxHeight: "80vh",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "0 24px 48px rgba(0,0,0,0.3)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 20px 12px",
+            borderBottom: "1px solid var(--rf-border)",
+          }}
+        >
+          <span style={{ fontSize: 15, fontWeight: 800, color: "var(--rf-txt)" }}>
+            Forward message
+          </span>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--rf-txt3)",
+              fontSize: 20,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={{ padding: "12px 20px 0" }}>
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--rf-txt2)",
+              background: "var(--rf-bg)",
+              border: "1px solid var(--rf-border)",
+              borderRadius: 8,
+              padding: "8px 10px",
+              marginBottom: 12,
+              maxHeight: 70,
+              overflow: "hidden",
+            }}
+          >
+            {message.body || message.attachmentName || "Attachment"}
+          </div>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search conversations…"
+            autoFocus
+            style={{
+              width: "100%",
+              padding: "8px 10px",
+              fontSize: 13,
+              background: "var(--rf-bg)",
+              color: "var(--rf-txt)",
+              border: "1px solid var(--rf-border)",
+              borderRadius: 8,
+              boxSizing: "border-box",
+              marginBottom: 8,
+            }}
+          />
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 12px" }}>
+          {list.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: 20,
+                color: "var(--rf-txt3)",
+                fontSize: 13,
+              }}
+            >
+              No conversations found.
+            </div>
+          ) : (
+            list.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => go(r.id)}
+                disabled={busyId !== null}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  padding: "10px 10px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "transparent",
+                  cursor: busyId !== null ? "wait" : "pointer",
+                  color: "var(--rf-txt)",
+                  fontSize: 13,
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "var(--rf-bg3)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                <span
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    fontFamily: "monospace",
+                    fontWeight: 600,
+                  }}
+                >
+                  {r.name}
+                </span>
+                <span style={{ fontSize: 11, color: "var(--rf-accent)", fontWeight: 700 }}>
+                  {busyId === r.id ? "Sending…" : "Forward →"}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
