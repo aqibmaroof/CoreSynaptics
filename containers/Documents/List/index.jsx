@@ -8,6 +8,7 @@ import {
   getDownloadUrl,
   deleteDocument,
 } from "@/services/Documents";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ const FILTER_MODES = [
 
 export default function DocumentList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -181,7 +183,8 @@ export default function DocumentList() {
           </p>
         </div>
         <Link
-          href="/Document/Add"
+          href={canCreate(MODULE.DOCUMENTS) ? "/Document/Add" : "#"}
+          {...permissionProps(canCreate(MODULE.DOCUMENTS), "upload a document")}
           className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
         >
           <svg
@@ -420,6 +423,7 @@ export default function DocumentList() {
                     <div className="flex-shrink-0 flex gap-1">
                       <button
                         onClick={() => router.push(`/Document/Edit/${doc.id}`)}
+                        {...permissionProps(canEdit(MODULE.DOCUMENTS), "edit document metadata")}
                         className="p-1.5 text-gray-400 hover:text-blue-400 transition-colors"
                         title="Edit metadata"
                       >
@@ -439,6 +443,7 @@ export default function DocumentList() {
                       </button>
                       <button
                         onClick={() => setDeleteTarget(doc)}
+                        {...permissionProps(canDelete(MODULE.DOCUMENTS), "delete document")}
                         className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
                         title="Delete"
                       >

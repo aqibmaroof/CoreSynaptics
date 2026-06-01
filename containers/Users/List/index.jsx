@@ -6,9 +6,12 @@ import { useRouter } from "next/navigation";
 import { DeleteUsers, getUsers, UpdateUserStatus } from "@/services/Users";
 import StatusDropdown from "../../../components/StatusDropDown";
 import PermisionsDropdown from "../../../components/PersmissionsDropdown";
+import { useUserPermissions, useRequirePermission, MODULE, permissionProps } from "@/Utils/rbac";
 
 export default function PricingPlans() {
   const router = useRouter();
+  const guard = useRequirePermission(MODULE.ADMIN, "view");
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -67,6 +70,8 @@ export default function PricingPlans() {
       setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     }
   };
+
+  if (guard.loading || guard.blocked) return guard.fallback;
 
   return (
     <div className="text-white flex flex-col justify-center py-5 px-7">
@@ -158,24 +163,27 @@ export default function PricingPlans() {
             </svg>
           </button>
 
-          <button
-            onClick={() => router.push("/Users/Add")}
-            className="bg-[#facc15] text-[#0a1128] cursor-pointer p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {(
+            <button
+              onClick={() => router.push("/Users/Add")}
+              {...permissionProps(canCreate(MODULE.ADMIN), "create a user")}
+              className="bg-[#facc15] text-[#0a1128] cursor-pointer p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Table */}
@@ -277,17 +285,21 @@ export default function PricingPlans() {
                     </td>
 
                     <td className="flex items-center justify-center py-4 px-4 gap-4">
-                      <button className="text-info text-xl mt-10 mb-10 cursor-pointer">
-                        <a href={`/Users/Add?id=${user?.id}`}>
-                          <FaEdit />
-                        </a>
-                      </button>
-                      <button
-                        className="text-error text-xl cursor-pointer"
-                        onClick={() => removeUser(user.id)}
-                      >
-                        <FaTrash />
-                      </button>
+                      {canEdit(MODULE.ADMIN) && (
+                        <button className="text-info text-xl mt-10 mb-10 cursor-pointer">
+                          <a href={`/Users/Add?id=${user?.id}`}>
+                            <FaEdit />
+                          </a>
+                        </button>
+                      )}
+                      {canDelete(MODULE.ADMIN) && (
+                        <button
+                          className="text-error text-xl cursor-pointer"
+                          onClick={() => removeUser(user.id)}
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

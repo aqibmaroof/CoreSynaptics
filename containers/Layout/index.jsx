@@ -12,12 +12,210 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   getAccessToken,
   clearTokens,
-  setUser,
 } from "@/services/instance/tokenService";
-import { GetUser, Logout } from "@/services/auth";
+import { Logout } from "@/services/auth";
 import GlobalSearchBar from "@/components/GlobalSearchBar";
 import NotificationBell from "@/components/NotificationBell";
 import OnboardingTourOverlay from "@/components/OnboardingTourOverlay";
+import { canAccessModule, isSuperUser, MODULE, useUserPermissions, useRequirePermission } from "@/Utils/rbac";
+
+// ─── Route → (module, action) permission map ─────────────────────────────
+// Layout is mounted by every page.* route in /app, so we centralise the
+// page-level RBAC hard-gate here. Order matters: more specific patterns
+// (Add/Edit/Wizard) come BEFORE the generic prefix so the edit-level guard
+// wins. Pathnames that match no entry render unconditionally (auth, profile,
+// glossary, learning aids — all universal content).
+const ROUTE_PERMISSIONS = [
+  // ── Projects / Portfolio / Copilot ───────────────────────────────────
+  { match: /^\/CreateProject/,                module: MODULE.PROJECTS,            action: "edit" },
+  { match: /^\/create-project/,               module: MODULE.PROJECTS,            action: "edit" },
+  { match: /^\/Projects(\/|$)/,               module: MODULE.PROJECTS,            action: "view" },
+  { match: /^\/ProjectOverview/,              module: MODULE.PROJECTS,            action: "view" },
+  { match: /^\/ProjectDetails/,               module: MODULE.PROJECTS,            action: "view" },
+  { match: /^\/Portfolio(\/|$)/,              module: MODULE.PROJECTS,            action: "view" },
+  { match: /^\/PortfolioCopilot/,             module: MODULE.COPILOT,             action: "view" },
+  { match: /^\/PortfolioPredictions/,         module: MODULE.PREDICTION,          action: "view" },
+  { match: /^\/ProjectCopilot/,               module: MODULE.COPILOT,             action: "view" },
+  { match: /^\/ChangeRequests\/(?:Add|Edit)/, module: MODULE.PROJECTS,            action: "edit" },
+  { match: /^\/ChangeRequests/,               module: MODULE.PROJECTS,            action: "view" },
+  { match: /^\/ChangeOrders/,                 module: MODULE.PROJECTS,            action: "view" },
+
+  // ── Tasks ────────────────────────────────────────────────────────────
+  { match: /^\/Tasks\/(?:CreateTask|Add)/,    module: MODULE.TASKS,               action: "edit" },
+  { match: /^\/Tasks(\/|$)/,                  module: MODULE.TASKS,               action: "view" },
+
+  // ── Meetings / Chat ──────────────────────────────────────────────────
+  { match: /^\/Meeting\/(?:Add|Edit)/,        module: MODULE.MEETINGS,            action: "edit" },
+  { match: /^\/Meeting(\/|$)/,                module: MODULE.MEETINGS,            action: "view" },
+  { match: /^\/Chat(\/|$)/,                   module: MODULE.CHAT,                action: "view" },
+
+  // ── Checklists ───────────────────────────────────────────────────────
+  { match: /^\/Checklist\/(?:Add|Edit)/,      module: MODULE.CHECKLISTS,          action: "edit" },
+  { match: /^\/Checklist(\/|$)/,              module: MODULE.CHECKLISTS,          action: "view" },
+  { match: /^\/ChecklistDelegations/,         module: MODULE.CHECKLISTS,          action: "view" },
+
+  // ── Submittals / RFI / Communications / Documents / Artifacts ────────
+  { match: /^\/Submittals\/(?:Add|Edit)/,     module: MODULE.SUBMITTALS,          action: "edit" },
+  { match: /^\/Submittals(\/|$)/,             module: MODULE.SUBMITTALS,          action: "view" },
+  { match: /^\/RFI\/(?:Add|Edit)/,            module: MODULE.COMMUNICATIONS,      action: "edit" },
+  { match: /^\/RFI(\/|$)/,                    module: MODULE.COMMUNICATIONS,      action: "view" },
+  { match: /^\/Communications\/Add/,          module: MODULE.COMMUNICATIONS,      action: "edit" },
+  { match: /^\/Communications(\/|$)/,         module: MODULE.COMMUNICATIONS,      action: "view" },
+  { match: /^\/Document\/(?:Add|Edit)/,       module: MODULE.DOCUMENTS,           action: "edit" },
+  { match: /^\/Document(\/|$)/,               module: MODULE.DOCUMENTS,           action: "view" },
+  { match: /^\/Documents(\/|$)/,              module: MODULE.DOCUMENTS,           action: "view" },
+  { match: /^\/Turnover(\/|$)/,               module: MODULE.DOCUMENTS,           action: "view" },
+  { match: /^\/Artifacto/,                    module: MODULE.ARTIFACTS,           action: "view" },
+  { match: /^\/ArtifactIntelligence/,         module: MODULE.ARTIFACTS,           action: "view" },
+
+  // ── Issues / Field Execution / RMA ───────────────────────────────────
+  { match: /^\/Issues\/(?:Add|Edit)/,         module: MODULE.RMA_RCA,             action: "edit" },
+  { match: /^\/Issues(\/|$)/,                 module: MODULE.RMA_RCA,             action: "view" },
+  { match: /^\/CxIssues/,                     module: MODULE.RMA_RCA,             action: "view" },
+  { match: /^\/RMA(\/|$)/,                    module: MODULE.RMA_RCA,             action: "view" },
+  { match: /^\/PunchList/,                    module: MODULE.FIELD_EXECUTION,     action: "view" },
+  { match: /^\/NCRs/,                         module: MODULE.QA_QC,               action: "view" },
+
+  // ── Commissioning / PSSR / Risk / CxScore ────────────────────────────
+  { match: /^\/Phases\/(?:Add|Edit)/,         module: MODULE.COMMISSIONING,       action: "edit" },
+  { match: /^\/Phases(\/|$)/,                 module: MODULE.COMMISSIONING,       action: "view" },
+  { match: /^\/Commissioning/,                module: MODULE.COMMISSIONING,       action: "view" },
+  { match: /^\/CxMasterLog/,                  module: MODULE.COMMISSIONING,       action: "view" },
+  { match: /^\/HoldWitnessPoints/,            module: MODULE.COMMISSIONING_TESTS, action: "view" },
+  { match: /^\/TestResults/,                  module: MODULE.COMMISSIONING_TESTS, action: "view" },
+  { match: /^\/CxTARF/,                       module: MODULE.COMMISSIONING_TESTS, action: "view" },
+  { match: /^\/TARF\/(?:Add|Edit)/,           module: MODULE.COMMISSIONING_TESTS, action: "edit" },
+  { match: /^\/TARF(\/|$)/,                   module: MODULE.COMMISSIONING_TESTS, action: "view" },
+  { match: /^\/PSSR/,                         module: MODULE.PSSR,                action: "view" },
+  { match: /^\/Risk(\/|$)/,                   module: MODULE.RISK,                action: "view" },
+  { match: /^\/CxScore/,                      module: MODULE.CX_SCORE,            action: "view" },
+  { match: /^\/CrossLens/,                    module: MODULE.CX_SCORE,            action: "view" },
+
+  // ── QA/QC / Safety / Toolbox / SOPs ──────────────────────────────────
+  { match: /^\/QAQC/,                         module: MODULE.QA_QC,               action: "view" },
+  { match: /^\/QA\//,                         module: MODULE.QA_QC,               action: "view" },
+  { match: /^\/Quality/,                      module: MODULE.QA_QC,               action: "view" },
+  { match: /^\/Safety/,                       module: MODULE.SAFETY,              action: "view" },
+  { match: /^\/Jha/,                          module: MODULE.SAFETY,              action: "view" },
+  { match: /^\/OrgSafetyPlans\/(?:Add|Edit)/, module: MODULE.SAFETY,              action: "edit" },
+  { match: /^\/OrgSafetyPlans/,               module: MODULE.SAFETY,              action: "view" },
+  { match: /^\/OrgSOPs\/(?:Add|Edit)/,        module: MODULE.SAFETY,              action: "edit" },
+  { match: /^\/OrgSOPs/,                      module: MODULE.SAFETY,              action: "view" },
+  { match: /^\/OrgToolboxTalks\/(?:Add|Edit)/,module: MODULE.SAFETY,              action: "edit" },
+  { match: /^\/OrgToolboxTalks/,              module: MODULE.SAFETY,              action: "view" },
+
+  // ── Sales / CRM / Company ────────────────────────────────────────────
+  { match: /^\/Sales/,                        module: MODULE.SALES,               action: "view" },
+  { match: /^\/CRM\/Contacts/,                module: MODULE.CONTACTS,            action: "view" },
+  { match: /^\/CRM\/Leads/,                   module: MODULE.LEADS,               action: "view" },
+  { match: /^\/CRM\/Deals/,                   module: MODULE.DEALS,               action: "view" },
+  { match: /^\/Company\/(?:Add|Edit)/,        module: MODULE.CONTACTS,            action: "edit" },
+  { match: /^\/Company/,                      module: MODULE.CONTACTS,            action: "view" },
+
+  // ── Supply Chain (Inventory / Warehouse / Shipments / Receiving) ─────
+  { match: /^\/Inventory\/[^/]+\/(?:Add|Edit)/, module: MODULE.SUPPLY_CHAIN,      action: "edit" },
+  { match: /^\/Inventory/,                    module: MODULE.SUPPLY_CHAIN,        action: "view" },
+  { match: /^\/Warehouse/,                    module: MODULE.SUPPLY_CHAIN,        action: "view" },
+  { match: /^\/Shipments\/(?:Add|Edit)/,      module: MODULE.SUPPLY_CHAIN,        action: "edit" },
+  { match: /^\/Shipments/,                    module: MODULE.SUPPLY_CHAIN,        action: "view" },
+  { match: /^\/Shipment(\/|$)/,               module: MODULE.SUPPLY_CHAIN,        action: "view" },
+  { match: /^\/Receiving/,                    module: MODULE.SUPPLY_CHAIN,        action: "view" },
+  { match: /^\/Logistics/,                    module: MODULE.SUPPLY_CHAIN,        action: "view" },
+  { match: /^\/SupplyChain/,                  module: MODULE.SUPPLY_CHAIN,        action: "view" },
+  { match: /^\/LongLeadItems/,                module: MODULE.SUPPLY_CHAIN,        action: "view" },
+  { match: /^\/OrgMobCatalog\/(?:Add|Edit)/,  module: MODULE.SUPPLY_CHAIN,        action: "edit" },
+  { match: /^\/OrgMobCatalog/,                module: MODULE.SUPPLY_CHAIN,        action: "view" },
+
+  // ── Field Execution / Photos / Daily Log / Crew / Dispatch ───────────
+  { match: /^\/Assets\/(?:Add|Edit|Assign)/,  module: MODULE.FIELD_EXECUTION,     action: "edit" },
+  { match: /^\/Assets/,                       module: MODULE.FIELD_EXECUTION,     action: "view" },
+  { match: /^\/Photos/,                       module: MODULE.FIELD_EXECUTION,     action: "view" },
+  { match: /^\/Field\//,                      module: MODULE.FIELD_EXECUTION,     action: "view" },
+  { match: /^\/FieldReports/,                 module: MODULE.DAILY_LOG,           action: "view" },
+  { match: /^\/DailyReports/,                 module: MODULE.DAILY_LOG,           action: "view" },
+  { match: /^\/CrewDispatch/,                 module: MODULE.CREW,                action: "view" },
+  { match: /^\/Dispatch/,                     module: MODULE.CREW,                action: "view" },
+
+  // ── Schedule ─────────────────────────────────────────────────────────
+  { match: /^\/ScheduleMilestones\/(?:Add|Edit|Wizard)/, module: MODULE.MILESTONES, action: "edit" },
+  { match: /^\/ScheduleMilestones/,           module: MODULE.MILESTONES,          action: "view" },
+  { match: /^\/Schedule(\/|$)/,               module: MODULE.SCHEDULING,          action: "view" },
+  { match: /^\/ScheduleWindows/,              module: MODULE.SCHEDULING,          action: "view" },
+
+  // ── FSM / Service ────────────────────────────────────────────────────
+  { match: /^\/FSM/,                          module: MODULE.RMA_RCA,             action: "view" },
+  { match: /^\/ServiceSchedule/,              module: MODULE.RMA_RCA,             action: "view" },
+
+  // ── Finance / Payroll (HR) ───────────────────────────────────────────
+  { match: /^\/Finance\/Procurement/,         module: MODULE.SUPPLY_CHAIN,        action: "view" },
+  { match: /^\/Finance\/Payroll/,             module: MODULE.HR,                  action: "view" },
+  { match: /^\/Finance/,                      module: MODULE.FINANCE,             action: "view" },
+
+  // ── Teams / Managers / Profile ───────────────────────────────────────
+  { match: /^\/Teams\/(?:Add|Edit)/,          module: MODULE.TEAM,                action: "edit" },
+  { match: /^\/Teams/,                        module: MODULE.TEAM,                action: "view" },
+  { match: /^\/Managers/,                     module: MODULE.TEAM,                action: "view" },
+  { match: /^\/Profile\/Managers/,            module: MODULE.TEAM,                action: "view" },
+
+  // ── Admin (Users / Roles / Permissions / Settings / Subscriptions) ───
+  { match: /^\/Users\/(?:Add|Edit)/,          module: MODULE.ADMIN,               action: "edit" },
+  { match: /^\/Users/,                        module: MODULE.ADMIN,               action: "view" },
+  { match: /^\/Roles\/(?:Add|Edit)/,          module: MODULE.ADMIN,               action: "edit" },
+  { match: /^\/Roles/,                        module: MODULE.ADMIN,               action: "view" },
+  { match: /^\/Permissions\/(?:Add|Edit)/,    module: MODULE.ADMIN,               action: "edit" },
+  { match: /^\/Permissions/,                  module: MODULE.ADMIN,               action: "view" },
+  { match: /^\/Settings/,                     module: MODULE.ADMIN,               action: "view" },
+  { match: /^\/Admin/,                        module: MODULE.ADMIN,               action: "view" },
+  { match: /^\/Subscriptions/,                module: MODULE.ADMIN,               action: "view" },
+  { match: /^\/OrgWorkflows\/(?:Add|Edit)/,   module: MODULE.ADMIN,               action: "edit" },
+  { match: /^\/OrgWorkflows/,                 module: MODULE.ADMIN,               action: "view" },
+  { match: /^\/OrgPolicies/,                  module: MODULE.GOVERNANCE,          action: "view" },
+
+  // ── Reports / Dashboards ─────────────────────────────────────────────
+  { match: /^\/Executive/,                    module: MODULE.REPORTS,             action: "view" },
+  { match: /^\/OEM\/Dashboard/,               module: MODULE.REPORTS,             action: "view" },
+  { match: /^\/OemDashboard/,                 module: MODULE.REPORTS,             action: "view" },
+  { match: /^\/Analytics/,                    module: MODULE.REPORTS,             action: "view" },
+  { match: /^\/Reports/,                      module: MODULE.REPORTS,             action: "view" },
+  { match: /^\/PresentToLeadership/,          module: MODULE.REPORTS,             action: "view" },
+  { match: /^\/KPIs/,                         module: MODULE.REPORTS,             action: "view" },
+
+  // ── Intelligence cluster ─────────────────────────────────────────────
+  { match: /^\/Anomalies/,                    module: MODULE.ANOMALY,             action: "view" },
+  { match: /^\/AnomalySuppressions/,          module: MODULE.ANOMALY,             action: "view" },
+  { match: /^\/OperationsAnomalies/,          module: MODULE.ANOMALY,             action: "view" },
+  { match: /^\/Automation(\/|$)/,             module: MODULE.AUTOMATION,          action: "view" },
+  { match: /^\/AutomationIntelligence/,       module: MODULE.AUTOMATION,          action: "view" },
+  { match: /^\/IntelligenceStabilization/,    module: MODULE.INTELLIGENCE,        action: "view" },
+  { match: /^\/Dependencies/,                 module: MODULE.ORCHESTRATION,       action: "view" },
+  { match: /^\/CrossDomain/,                  module: MODULE.ORCHESTRATION,       action: "view" },
+  { match: /^\/Readiness/,                    module: MODULE.ORCHESTRATION,       action: "view" },
+  { match: /^\/Ecosystem/,                    module: MODULE.ECOSYSTEM,           action: "view" },
+  { match: /^\/Integrations/,                 module: MODULE.ECOSYSTEM,           action: "view" },
+  { match: /^\/EventLog/,                     module: MODULE.EVENT_LOG,           action: "view" },
+  { match: /^\/Governance/,                   module: MODULE.GOVERNANCE,          action: "view" },
+  { match: /^\/ImpersonationAudit/,           module: MODULE.GOVERNANCE,          action: "view" },
+  { match: /^\/Sre/,                          module: MODULE.GOVERNANCE,          action: "view" },
+  { match: /^\/Diagnostics/,                  module: MODULE.GOVERNANCE,          action: "view" },
+
+  // ── Learning ─────────────────────────────────────────────────────────
+  { match: /^\/Training(\/|$)/,               module: MODULE.LEARNING,            action: "view" },
+  { match: /^\/TrainingSim/,                  module: MODULE.LEARNING,            action: "view" },
+  { match: /^\/LearnerProfile/,               module: MODULE.LEARNING,            action: "view" },
+
+  // Pages with no entry fall through to "no gate" — universal content:
+  // /, /HomePage, /UserProfile, /Profile (own), /Glossary, /PhaseReference,
+  // /CxFlowDiagram, /CxWalkthroughSim, /PowerFlow, /Search, /Notifications,
+  // /Outbox, /Approvals/MyPending, /MyAssignments, /Announcements,
+  // /CxAnnouncements, /Assignments, /ActivityFeed, /Auth/*
+];
+
+function resolveRouteGuard(pathname) {
+  for (const r of ROUTE_PERMISSIONS) {
+    if (r.match.test(pathname)) return r;
+  }
+  return null;
+}
 
 // ─── Sidebar nav (mirrors HTML sidebar order) ────────────────────────────
 // Each section is a { label, items: [{ icon, title, href, badge?, badgeKind? }] }
@@ -27,88 +225,144 @@ import OnboardingTourOverlay from "@/components/OnboardingTourOverlay";
 // active project code in their labels, so we derive SECTIONS from the
 // current project at render time rather than holding a static module-level
 // array.
+// Each nav item carries an optional `module` (BE moduleKey). `null` = always
+// visible to any signed-in user (dashboards, own profile, learning content).
+// Filtering happens in filterSectionsForUser() below — items whose module the
+// user can't view are dropped, and sections with zero remaining items are
+// hidden entirely.
 function buildSections(projectCode) {
   const code = projectCode || "—";
   return [
     {
       label: "Workspace",
       items: [
-        { title: "Dashboard", href: "/" },
-        { title: "Executive Summary", href: "/Executive/Dashboard" },
-        { title: "My work", href: "/MyAssignments" },
-        { title: "Announcements", href: "/Announcements" },
-        {
-          title: "Projects",
-          href: "/Projects",
-        },
-        { title: "Chat", href: "/Chat" },
-        { title: "Daily field log", href: "/FieldReports" },
-        { title: "Crew dispatch", href: "/CrewDispatch" },
+        { title: "Dashboard", href: "/", module: null },
+        { title: "Executive Summary", href: "/Executive/Dashboard", module: MODULE.REPORTS },
+        { title: "My work", href: "/MyAssignments", module: null },
+        { title: "Approvals", href: "/Approvals/MyPending", module: null },
+        { title: "Announcements", href: "/Announcements", module: null },
+        { title: "Projects", href: "/Projects", module: MODULE.PROJECTS },
+        { title: "Tasks", href: "/Tasks/List", module: MODULE.TASKS },
+        { title: "Meetings", href: "/Meeting/List", module: MODULE.MEETINGS },
+        { title: "Chat", href: "/Chat", module: MODULE.CHAT },
+        { title: "Daily field log", href: "/FieldReports", module: MODULE.DAILY_LOG },
+        { title: "Crew dispatch", href: "/CrewDispatch", module: MODULE.CREW },
       ],
     },
     {
       label: `Project · ${code}`,
       items: [
-        { title: "Overview", href: "/ProjectOverview" },
-        { title: "Companies", href: "/Company/List" },
-        { title: "Equipment", href: "/Assets/List" },
-        { title: "Schedule (Gantt)", href: "/Schedule" },
-        { title: "QA/QC checklists", href: "/Checklist/List" },
-        { title: "Issues", href: "/Issues/List" },
-        { title: "NCRs", href: "/NCRs" },
-        { title: "Hold/Witness pts", href: "/HoldWitnessPoints" },
-        { title: "Punch list", href: "/PunchList" },
-        { title: "Test results", href: "/Commissioning/Tests" },
-        { title: "Long-lead items", href: "/LongLeadItems" },
-        { title: "Procurement", href: "/Finance/Procurement" },
+        { title: "Overview", href: "/ProjectOverview", module: MODULE.PROJECTS },
+        { title: "Companies", href: "/Company/List", module: MODULE.CONTACTS },
+        { title: "Equipment", href: "/Assets/List", module: MODULE.FIELD_EXECUTION },
+        { title: "Schedule (Gantt)", href: "/Schedule", module: MODULE.SCHEDULING },
+        { title: "Schedule milestones", href: "/ScheduleMilestones", module: MODULE.MILESTONES },
+        { title: "QA/QC checklists", href: "/Checklist/List", module: MODULE.CHECKLISTS },
+        { title: "Issues", href: "/Issues/List", module: MODULE.RMA_RCA },
+        { title: "NCRs", href: "/NCRs", module: MODULE.QA_QC },
+        { title: "Hold/Witness pts", href: "/HoldWitnessPoints", module: MODULE.COMMISSIONING_TESTS },
+        { title: "Punch list", href: "/PunchList", module: MODULE.FIELD_EXECUTION },
+        { title: "Test results", href: "/Commissioning/Tests", module: MODULE.COMMISSIONING_TESTS },
+        { title: "Change requests", href: "/ChangeRequests/List", module: MODULE.PROJECTS },
+        { title: "Submittals", href: "/Submittals/List", module: MODULE.SUBMITTALS },
+      ],
+    },
+    {
+      label: "Supply Chain",
+      items: [
+        { title: "Inventory", href: "/Inventory/Products", module: MODULE.SUPPLY_CHAIN },
+        { title: "Warehouses", href: "/Inventory/Warehouses", module: MODULE.SUPPLY_CHAIN },
+        { title: "Suppliers", href: "/Inventory/Suppliers", module: MODULE.SUPPLY_CHAIN },
+        { title: "Movements", href: "/Inventory/Movements", module: MODULE.SUPPLY_CHAIN },
+        { title: "Shipments", href: "/Shipments", module: MODULE.SUPPLY_CHAIN },
+        { title: "Long-lead items", href: "/LongLeadItems", module: MODULE.SUPPLY_CHAIN },
+        { title: "Procurement", href: "/Finance/Procurement", module: MODULE.SUPPLY_CHAIN },
       ],
     },
     {
       label: "GC QA/QC Toolkit",
       items: [
-        { title: "QA/QC Command Center", href: "/QAQC" },
-        { title: "Phase advancement queue", href: "/Phases/List" },
-        { title: "Cx Score · Exec", href: "/CxScore" },
-        { title: "Cx Master Log", href: "/CxMasterLog" },
-        { title: "PSSR · Pre-Startup", href: "/PSSR" },
-        { title: "Risk Register", href: "/Risk" },
-        { title: "Turnover Package", href: "/Turnover" },
+        { title: "QA/QC Command Center", href: "/QAQC", module: MODULE.QA_QC },
+        { title: "Phase advancement queue", href: "/Phases/List", module: MODULE.COMMISSIONING },
+        { title: "Cx Score · Exec", href: "/CxScore", module: MODULE.CX_SCORE },
+        { title: "Cx Master Log", href: "/CxMasterLog", module: MODULE.COMMISSIONING },
+        { title: "PSSR · Pre-Startup", href: "/PSSR", module: MODULE.PSSR },
+        { title: "Risk Register", href: "/Risk", module: MODULE.RISK },
+        { title: "Turnover Package", href: "/Turnover", module: MODULE.DOCUMENTS },
       ],
     },
     {
       label: "Communication",
       items: [
-        { title: "Present to leadership", href: "/PresentToLeadership" },
-        { title: "RFIs", href: "/RFI/List" },
-        { title: "Artifacto", href: "/Artifacto" },
-        { title: "Photos", href: "/Photos" },
-        { title: "Site arrivals (TARF)", href: "/CxTARF" },
-        { title: "Activity feed", href: "/ActivityFeed" },
+        { title: "Present to leadership", href: "/PresentToLeadership", module: MODULE.REPORTS },
+        { title: "Communications", href: "/Communications", module: MODULE.COMMUNICATIONS },
+        { title: "RFIs", href: "/RFI/List", module: MODULE.COMMUNICATIONS },
+        { title: "Artifacto", href: "/Artifacto", module: MODULE.ARTIFACTS },
+        { title: "Photos", href: "/Photos", module: MODULE.FIELD_EXECUTION },
+        { title: "Site arrivals (TARF)", href: "/CxTARF", module: MODULE.FIELD_EXECUTION },
+        { title: "Activity feed", href: "/ActivityFeed", module: null },
+      ],
+    },
+    {
+      label: "Sales & CRM",
+      items: [
+        { title: "Sales pipeline", href: "/Sales/List", module: MODULE.SALES },
+        { title: "Contacts", href: "/CRM/Contacts", module: MODULE.CONTACTS },
+        { title: "Leads", href: "/CRM/Leads", module: MODULE.LEADS },
+        { title: "Deals", href: "/CRM/Deals", module: MODULE.DEALS },
       ],
     },
     {
       label: "Learning",
       items: [
-        { title: "Training & Library", href: "/Training" },
-        { title: "Phase reference", href: "/PhaseReference" },
-        { title: "Cx flow diagram", href: "/CxFlowDiagram" },
-        { title: "Cx walkthrough sim", href: "/CxWalkthroughSim" },
-        { title: "Power flow simulator", href: "/PowerFlow" },
-        { title: "Glossary", href: "/Glossary" },
+        { title: "Training & Library", href: "/Training", module: MODULE.LEARNING },
+        { title: "Phase reference", href: "/PhaseReference", module: null },
+        { title: "Cx flow diagram", href: "/CxFlowDiagram", module: null },
+        { title: "Cx walkthrough sim", href: "/CxWalkthroughSim", module: null },
+        { title: "Power flow simulator", href: "/PowerFlow", module: null },
+        { title: "Glossary", href: "/Glossary", module: null },
       ],
     },
     {
       label: `My Company · ${code}`,
       items: [
-        { title: "Team", href: "/Teams/List" },
-        { title: "Billing & invoices", href: "/Finance/Billing" },
+        { title: "Team", href: "/Teams/List", module: MODULE.TEAM },
+        { title: "Billing & invoices", href: "/Finance/Billing", module: MODULE.FINANCE },
+        { title: "Org SOPs", href: "/OrgSOPs/List", module: MODULE.SAFETY },
+        { title: "Safety plans", href: "/OrgSafetyPlans/List", module: MODULE.SAFETY },
+        { title: "Toolbox talks", href: "/OrgToolboxTalks/List", module: MODULE.SAFETY },
+        { title: "Mob catalog", href: "/OrgMobCatalog/List", module: MODULE.SUPPLY_CHAIN },
+        { title: "Workflows", href: "/OrgWorkflows/List", module: MODULE.ADMIN },
+      ],
+    },
+    {
+      label: "Administration",
+      items: [
+        { title: "Users", href: "/Users/List", module: MODULE.ADMIN },
+        { title: "Roles", href: "/Roles/List", module: MODULE.ADMIN },
+        { title: "Permissions", href: "/Permissions", module: MODULE.ADMIN },
+        { title: "Settings", href: "/Settings", module: MODULE.ADMIN },
       ],
     },
     {
       label: "Portfolio",
-      items: [{ title: "All my projects", href: "/Portfolio" }],
+      items: [{ title: "All my projects", href: "/Portfolio", module: MODULE.PROJECTS }],
     },
   ];
+}
+
+// Drop nav items the user can't view; drop sections that end up empty.
+// `module: null` items are always kept. SUPERADMIN / platform users see all.
+function filterSectionsForUser(sections, user) {
+  if (isSuperUser(user)) return sections;
+  return sections
+    .map((sec) => ({
+      ...sec,
+      items: sec.items.filter(
+        (it) => it.module == null || canAccessModule(user, it.module),
+      ),
+    }))
+    .filter((sec) => sec.items.length > 0);
 }
 
 // ─── Project switcher data ────────────────────────────────────────────────
@@ -172,7 +426,26 @@ const PHASE_STYLE = {
 export default function CxLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
-  const [user, setLocalUser] = useState(null);
+  // useUserPermissions reads the cached user from localStorage synchronously
+  // so the sidebar paints fully on first render and then refreshes from
+  // /auth/me in the background. It also performs the GET /auth/me refresh
+  // internally — we don't repeat that here.
+  const { user: rbacUser } = useUserPermissions();
+  const [user, setLocalUser] = useState(rbacUser);
+  useEffect(() => {
+    if (rbacUser) setLocalUser(rbacUser);
+  }, [rbacUser]);
+
+  // ── Route-level RBAC hard gate ─────────────────────────────────────────
+  // Look up the (module, action) pair for the current pathname and run the
+  // permission guard. When blocked, the main content slot renders the
+  // access-denied fallback instead of `children`. Sidebar + topbar stay
+  // mounted so the user can navigate elsewhere.
+  const routeRule = useMemo(() => resolveRouteGuard(pathname), [pathname]);
+  const routeGuard = useRequirePermission(
+    routeRule?.module,
+    routeRule?.action ?? "view",
+  );
   const [activeOrg, setActiveOrg] = useState({
     name: "Active Project",
     code: "—",
@@ -212,26 +485,16 @@ export default function CxLayout({ children }) {
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  const fetchUser = async () => {
-    try {
-      const u = await GetUser();
-      setUser({ user: u });
-      if (u) setLocalUser(u);
-    } catch {
-      /* ignore */
-    }
-  };
   useEffect(() => {
     if (!getAccessToken()) {
       router.replace("/Auth/Login");
-      return;
     }
-    fetchUser();
-  }, []);
+    // /auth/me refresh is owned by useUserPermissions — no duplicate call here.
+  }, [router]);
 
   const SECTIONS = useMemo(
-    () => buildSections(activeProject?.code),
-    [activeProject?.code],
+    () => filterSectionsForUser(buildSections(activeProject?.code), user),
+    [activeProject?.code, user],
   );
 
   const initials = useMemo(() => {
@@ -592,7 +855,11 @@ export default function CxLayout({ children }) {
           ))}
         </aside>
 
-        <main style={{ overflowX: "hidden", minWidth: 0 }}>{children}</main>
+        <main style={{ overflowX: "hidden", minWidth: 0 }}>
+          {routeRule && (routeGuard.loading || routeGuard.blocked)
+            ? routeGuard.fallback
+            : children}
+        </main>
       </div>
       <OnboardingTourOverlay autoStart={false} />
     </>

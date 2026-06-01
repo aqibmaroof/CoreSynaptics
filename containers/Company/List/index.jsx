@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCompanies, deleteCompany } from "@/services/Companies";
 import ActivityTimeline from "@/components/CRM/ActivityTimeline";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 // ─── Mock fallback data (matches screenshot) ──────────────────────────────────
 
@@ -446,6 +447,7 @@ function CompanyCard({ company, onDelete, onTimeline, onClick }) {
 
 export default function CompanyList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [companies, setCompanies] = useState(MOCK_COMPANIES);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -547,6 +549,7 @@ export default function CompanyList() {
           />
           <button
             onClick={() => router.push("/Company/Add")}
+            {...permissionProps(canCreate(MODULE.CONTACTS), "invite a company")}
             style={{
               padding: "9px 18px",
               borderRadius: 9,

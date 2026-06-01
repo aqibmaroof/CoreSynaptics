@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getProducts, deleteProduct } from "@/services/Inventory";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const CATEGORIES = ["Electrical", "Mechanical", "Civil", "IT Equipment", "Safety", "Tools", "Consumables", "Spare Parts", "Hardware", "Other"];
 
@@ -17,6 +18,7 @@ const Toast = ({ msg }) =>
 
 export default function ProductsList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [products, setProducts]     = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -83,10 +85,12 @@ export default function ProductsList() {
           </div>
           <div className="flex gap-3">
             <button onClick={() => router.push("/Inventory/StockMovement/Add")}
+              {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "record a stock movement")}
               className="px-5 py-3 border border-gray-600 hover:border-cyan-500 text-gray-300 hover:text-cyan-400 rounded-lg text-sm font-medium transition-all">
               Record Movement
             </button>
             <button onClick={() => router.push("/Inventory/Products/Add")}
+              {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "create a product")}
               className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { listOrgSafetyPlans, deleteOrgSafetyPlan, updateOrgSafetyPlan } from "@/services/OrgSafetyPlans";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 function toArray(res) {
   return Array.isArray(res) ? res : (res?.data ?? []);
@@ -10,6 +11,7 @@ function toArray(res) {
 
 export default function OrgSafetyPlanList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,6 +59,7 @@ export default function OrgSafetyPlanList() {
             <p className="text-gray-400 text-sm mt-1">Organization safety plan defaults</p>
           </div>
           <button onClick={() => router.push("/OrgSafetyPlans/Add")}
+            {...permissionProps(canCreate(MODULE.SAFETY), "create a safety plan")}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
             + New Template
           </button>

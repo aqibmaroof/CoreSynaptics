@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { listPhases, deletePhase, clonePhase } from "@/services/Phases";
 import { getCxProjects } from "@/services/CxProjects";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const fmt = (iso) =>
   iso ? new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" }) : "—";
@@ -37,6 +38,7 @@ function SelectField({ label, value, onChange, options, placeholder, loading: l 
 
 export default function PhasesList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [phases, setPhases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,7 +127,8 @@ export default function PhasesList() {
             <p className="text-gray-400">Manage schedule phases and project templates</p>
           </div>
           <Link
-            href="/Phases/Add"
+            href={canCreate(MODULE.COMMISSIONING) ? "/Phases/Add" : "#"}
+            {...permissionProps(canCreate(MODULE.COMMISSIONING), "create a phase")}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -7,6 +7,7 @@ import {
   deleteSupplier,
   updateSupplier,
 } from "@/services/Inventory";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const Toast = ({ msg }) =>
   msg ? (
@@ -23,6 +24,7 @@ const Toast = ({ msg }) =>
 
 export default function SuppliersList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +116,7 @@ export default function SuppliersList() {
             <Toast msg={msg} />
             <button
               onClick={() => router.push("/Inventory/Suppliers/Add")}
+              {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "create a supplier")}
               className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
             >
               <svg
@@ -196,6 +199,7 @@ export default function SuppliersList() {
             </p>
             <button
               onClick={() => router.push("/Inventory/Suppliers/Add")}
+              {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "create a supplier")}
               className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white rounded-lg text-sm font-medium"
             >
               Add First Supplier

@@ -18,6 +18,7 @@ import {
   TEST_RESULTS,
   COMMISSIONING_PHASES,
 } from "@/services/CommissioningTests";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 // ─── Color tokens (mirrors HTML Cobalt + Citrine palette) ───────────────────
 const C = {
@@ -106,6 +107,7 @@ const Toast = ({ message, onClose }) => {
 };
 
 export default function CommissioningTestsList({ cxProjectId }) {
+  const { canCreate, canEdit, canApprove } = useUserPermissions();
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("all"); // 'all' | 'fail' | <assetId>
@@ -191,6 +193,7 @@ export default function CommissioningTestsList({ cxProjectId }) {
         </div>
         <button
           onClick={() => setShowCreate(true)}
+          {...permissionProps(canCreate(MODULE.COMMISSIONING_TESTS), "log a test result")}
           style={{
             background: C.brand,
             color: "#fff",

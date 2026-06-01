@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getMeetings, deleteMeeting } from "@/services/Meetings";
 import { getProjects } from "@/services/Projects";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const STATUSES = ["DRAFT", "MINUTES", "CLOSED"];
 
@@ -20,6 +21,7 @@ const STATUS_COLORS = {
 
 export default function MeetingList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState("");
@@ -95,25 +97,28 @@ export default function MeetingList() {
             <h1 className="text-4xl font-bold text-white mb-2">Meetings</h1>
             <p className="text-gray-400">Manage project meetings and minutes</p>
           </div>
-          <Link
-            href="/Meeting/Add"
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {(
+            <Link
+              href={canCreate(MODULE.MEETINGS) ? "/Meeting/Add" : "#"}
+              {...permissionProps(canCreate(MODULE.MEETINGS), "create a meeting")}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            New Meeting
-          </Link>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              New Meeting
+            </Link>
+          )}
         </div>
 
         {/* Error */}
@@ -385,9 +390,9 @@ export default function MeetingList() {
                             }
                             className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
                           >
-                            View / Edit
+                            {canEdit(MODULE.MEETINGS) ? "View / Edit" : "View"}
                           </button>
-                          {meeting.status !== "CLOSED" && (
+                          {canDelete(MODULE.MEETINGS) && meeting.status !== "CLOSED" && (
                             <button
                               onClick={() => setDeleteConfirm(meeting.id)}
                               className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors"

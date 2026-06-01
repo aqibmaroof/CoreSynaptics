@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { listOrgToolboxTalks, deleteOrgToolboxTalk, updateOrgToolboxTalk, TBT_CATEGORIES } from "@/services/OrgToolboxTalks";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 function toArray(res) {
   return Array.isArray(res) ? res : (res?.data ?? []);
@@ -10,6 +11,7 @@ function toArray(res) {
 
 export default function OrgToolboxTalkList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [items, setItems] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,7 @@ export default function OrgToolboxTalkList() {
             <p className="text-gray-400 text-sm mt-1">Organization safety training topics</p>
           </div>
           <button onClick={() => router.push("/OrgToolboxTalks/Add")}
+            {...permissionProps(canCreate(MODULE.SAFETY), "create a toolbox talk")}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
             + New Talk
           </button>

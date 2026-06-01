@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaPlus, FaTrash, FaUndo, FaUsers } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { DeleteTeam, getTeams, RestoreTeam } from "@/services/Teams";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 export default function TeamsList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [teams, setTeams] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -145,6 +147,7 @@ export default function TeamsList() {
 
           <button
             onClick={() => router.push("/Teams/Add")}
+            {...permissionProps(canCreate(MODULE.TEAM), "create a team")}
             className="bg-[#facc15] text-[#0a1128] cursor-pointer p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20"
           >
             <svg
@@ -237,13 +240,19 @@ export default function TeamsList() {
                     {/* Actions */}
                     <td className="py-4 px-4">
                       <div className="flex items-center justify-center gap-4">
-                        <button className="text-info text-xl cursor-pointer">
-                          <a href={`/Teams/Edit/${team.id}`}>
-                            <FaEdit />
-                          </a>
+                        <button
+                          {...permissionProps(canEdit(MODULE.TEAM), "edit team")}
+                          className="text-info text-xl cursor-pointer"
+                          onClick={() =>
+                            canEdit(MODULE.TEAM) &&
+                            router.push(`/Teams/Edit/${team.id}`)
+                          }
+                        >
+                          <FaEdit />
                         </button>
                         {team.deletedAt ? (
                           <button
+                            {...permissionProps(canEdit(MODULE.TEAM), "restore team")}
                             className="text-green-400 text-xl cursor-pointer"
                             onClick={() => restoreTeam(team.id)}
                           >
@@ -251,6 +260,7 @@ export default function TeamsList() {
                           </button>
                         ) : (
                           <button
+                            {...permissionProps(canDelete(MODULE.TEAM), "delete team")}
                             className="text-error text-xl cursor-pointer"
                             onClick={() => removeTeam(team.id)}
                           >

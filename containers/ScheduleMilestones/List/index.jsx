@@ -7,6 +7,7 @@ import { listMilestones, deleteMilestone, cloneMilestone } from "@/services/Sche
 import { listPhases } from "@/services/Phases";
 import { getCxProjects } from "@/services/CxProjects";
 import ScheduleBaselineDiff from "@/components/ScheduleBaselineDiff";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const TYPE_STYLES = {
   CONTRACT: "bg-red-900/40 text-red-300 border-red-700/40",
@@ -47,6 +48,7 @@ const FILTER_MODES = ["global", "project", "phase"];
 
 export default function ScheduleMilestonesList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -185,7 +187,8 @@ export default function ScheduleMilestonesList() {
             <p className="text-gray-400">Manage schedule milestones and project templates</p>
           </div>
           <Link
-            href="/ScheduleMilestones/Add"
+            href={canCreate(MODULE.MILESTONES) ? "/ScheduleMilestones/Add" : "#"}
+            {...permissionProps(canCreate(MODULE.MILESTONES), "create a milestone")}
             className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

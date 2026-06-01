@@ -17,6 +17,7 @@ import {
   RISK_STATUSES,
   RISK_CLOSE_REASONS,
 } from "@/services/RiskRegister";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const C = {
   bg: "#f8fafc",
@@ -89,6 +90,7 @@ const Toast = ({ message, onClose }) =>
   ) : null;
 
 export default function RiskRegisterList({ cxProjectId }) {
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [risks, setRisks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -172,6 +174,7 @@ export default function RiskRegisterList({ cxProjectId }) {
         </div>
         <button
           onClick={() => setShowCreate(true)}
+          {...permissionProps(canCreate(MODULE.RISK), "add a risk")}
           style={{
             background: C.brand,
             color: "#fff",

@@ -8,6 +8,7 @@ import { FiMessageCircle, FiStar } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { getCxProjects, deleteCxProject } from "@/services/CxProjects";
 import EntityModal from "@/components/EntityModal";
+import { useUserPermissions, useRequirePermission, MODULE } from "@/Utils/rbac";
 
 const STATUS_COLORS = {
   ACTIVE: {
@@ -29,6 +30,8 @@ const STATUS_COLORS = {
 };
 
 export default function KanbanBoard() {
+  const guard = useRequirePermission(MODULE.PROJECTS, "view");
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [searchTerm, setSearchTerm] = useState("");
   const [projects, setProjects] = useState([]);
   const [pagination, setPagination] = useState({

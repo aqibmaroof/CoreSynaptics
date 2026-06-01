@@ -3,9 +3,11 @@ import { FaCircle } from "react-icons/fa";
 import { FaPencil } from "react-icons/fa6";
 import { FiMessageCircle, FiStar } from "react-icons/fi";
 import { useRouter } from "next/navigation";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 export default function KanbanBoard() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
 
   const tasks = [
     {
@@ -206,6 +208,7 @@ export default function KanbanBoard() {
           <div className="flex items-center gap-5">
             <button
               onClick={() => document.getElementById("my_modal_4").showModal()}
+              {...permissionProps(canCreate(MODULE.TASKS), "create a task")}
               className="bg-gradient-to-r from-[#3C71F0] to-[#1C3B80] text-white py-2 px-4 border-none rounded-xl transition-all cursor-pointer"
             >
               <div className="flex flex-row gap-2">

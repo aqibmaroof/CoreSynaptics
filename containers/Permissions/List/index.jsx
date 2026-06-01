@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { DeletePermissions, getPermissions } from "@/services/Permissions";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 export default function PricingPlans() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [permissions, setPermissions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -132,6 +134,7 @@ export default function PricingPlans() {
 
           <button
             onClick={() => router.push("/Permissions/Add")}
+            {...permissionProps(canCreate(MODULE.ADMIN), "create a permission")}
             className="bg-[#facc15] text-[#0a1128] cursor-pointer p-3.5 rounded-xl hover:bg-[#fbbf24] transition-all shadow-lg shadow-yellow-500/20"
           >
             <svg

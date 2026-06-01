@@ -7,6 +7,7 @@ import { getContactsByCompany, getContacts } from "@/services/Contacts";
 import { getCompanies, getCompanyById } from "@/services/Companies";
 import CompanySelect from "@/components/CRM/CompanySelect";
 import ActivityTimeline from "@/components/CRM/ActivityTimeline";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const STAGES = [
   { label: "Qualified", value: "QUALIFIED" },
@@ -70,6 +71,7 @@ const formatCurrency = (val) => {
 
 export default function DealsList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [deals, setDeals] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -517,6 +519,7 @@ export default function DealsList() {
             </div>
             <button
               onClick={openCreate}
+              {...permissionProps(canCreate(MODULE.DEALS), "create a deal")}
               className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
             >
               <svg

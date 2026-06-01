@@ -12,6 +12,7 @@ import {
   reviseSubmittal,
   resubmitSubmittal,
 } from "@/services/Submittals";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const STATUSES = [
   "DRAFT",
@@ -90,6 +91,7 @@ function getAvailableActions(sub) {
 
 export default function SubmittalsList() {
   const router = useRouter();
+  const { canCreate, canEdit, canDelete: canDeletePerm, canApprove } = useUserPermissions();
   const [submittals, setSubmittals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -228,25 +230,28 @@ export default function SubmittalsList() {
               Manage technical documentation submissions and approvals
             </p>
           </div>
-          <button
-            onClick={() => router.push("/Submittals/Add")}
-            className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {(
+            <button
+              onClick={() => router.push("/Submittals/Add")}
+              {...permissionProps(canCreate(MODULE.SUBMITTALS), "create a submittal")}
+              className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Submittal
-          </button>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add Submittal
+            </button>
+          )}
         </div>
 
         {/* Stats */}
@@ -354,7 +359,7 @@ export default function SubmittalsList() {
                   {filtered.map((sub) => {
                     const overdue = isOverdue(sub);
                     const actions = getAvailableActions(sub);
-                    const canDelete =
+                    const rowDeletable =
                       sub.status !== "APPROVED" && sub.status !== "VOID";
                     return (
                       <tr
@@ -397,30 +402,40 @@ export default function SubmittalsList() {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-1 flex-wrap">
-                            {actions.map((a) => (
+                            {actions
+                              .filter((a) => {
+                                // Approve/reject actions require approve perm; others require edit.
+                                const isApprove = a.key === "approve" || a.key === "reject";
+                                return isApprove
+                                  ? canApprove(MODULE.SUBMITTALS)
+                                  : canEdit(MODULE.SUBMITTALS);
+                              })
+                              .map((a) => (
+                                <button
+                                  key={a.key}
+                                  onClick={() =>
+                                    setActionModal({
+                                      id: sub.id,
+                                      action: a.key,
+                                      submittal: sub,
+                                    })
+                                  }
+                                  className={`${a.color} hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50 whitespace-nowrap`}
+                                >
+                                  {a.label}
+                                </button>
+                              ))}
+                            {canEdit(MODULE.SUBMITTALS) && (
                               <button
-                                key={a.key}
                                 onClick={() =>
-                                  setActionModal({
-                                    id: sub.id,
-                                    action: a.key,
-                                    submittal: sub,
-                                  })
+                                  router.push(`/Submittals/Edit/${sub.id}`)
                                 }
-                                className={`${a.color} hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50 whitespace-nowrap`}
+                                className="text-cyan-400 hover:text-cyan-300 text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
                               >
-                                {a.label}
+                                Edit
                               </button>
-                            ))}
-                            <button
-                              onClick={() =>
-                                router.push(`/Submittals/Edit/${sub.id}`)
-                              }
-                              className="text-cyan-400 hover:text-cyan-300 text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
-                            >
-                              Edit
-                            </button>
-                            {canDelete && (
+                            )}
+                            {canDeletePerm(MODULE.SUBMITTALS) && rowDeletable && (
                               <button
                                 onClick={() => setDeleteConfirm(sub.id)}
                                 className="text-red-400 hover:text-red-300 text-[11px] px-2 py-0.5 rounded bg-gray-800/50"

@@ -16,6 +16,7 @@ import {
   PSSR_CATEGORIES,
   PSSR_CATEGORY_LABELS,
 } from "@/services/PSSR";
+import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const C = {
   bg: "#f8fafc",
@@ -92,6 +93,7 @@ const Toast = ({ message, onClose }) =>
 
 export default function PSSRList({ cxProjectId }) {
   const router = useRouter();
+  const { canCreate, canEdit, canApprove } = useUserPermissions();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -158,6 +160,7 @@ export default function PSSRList({ cxProjectId }) {
         </div>
         <button
           onClick={() => setShowCreate(true)}
+          {...permissionProps(canCreate(MODULE.PSSR), "initiate a PSSR")}
           style={{
             background: C.brand,
             color: "#fff",
