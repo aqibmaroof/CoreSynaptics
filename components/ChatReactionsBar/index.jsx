@@ -14,12 +14,19 @@ import {
   CHAT_REACTION_EMOJI,
 } from "@/services/ChatReactions";
 
+// Optimistic message ids (e.g. "opt-1779396208133") are placeholder strings
+// minted client-side before the server returns the real UUID. Skip API calls
+// for them so we don't fire a guaranteed-400 reactions fetch on every send.
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isPersistedId = (id) => typeof id === "string" && UUID_RE.test(id);
+
 export default function ChatReactionsBar({ messageId, currentUserId }) {
   const [reactions, setReactions] = useState([]);
   const [busy, setBusy] = useState(null);
 
   const refresh = useCallback(async () => {
-    if (!messageId) return;
+    if (!isPersistedId(messageId)) return;
     try {
       const xs = await listMessageReactions(messageId);
       setReactions(Array.isArray(xs) ? xs : xs?.items ?? []);
@@ -32,7 +39,7 @@ export default function ChatReactionsBar({ messageId, currentUserId }) {
     refresh();
   }, [refresh]);
 
-  if (!messageId) return null;
+  if (!isPersistedId(messageId)) return null;
 
   const myKinds = new Set(
     reactions
