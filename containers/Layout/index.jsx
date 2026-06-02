@@ -434,7 +434,7 @@ function buildSections(projectCode) {
         },
         {
           title: "Change requests",
-          href: "/ChangeRequests/List",
+          href: "/ChangeRequests",
           module: MODULE.PROJECTS,
         },
         {

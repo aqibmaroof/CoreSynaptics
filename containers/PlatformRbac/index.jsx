@@ -47,6 +47,21 @@ const LEVEL_BADGE = {
   full: { label: "Full", color: "var(--rf-green)" },
 };
 
+// ── Shared theme class strings ───────────────────────────────────────────────
+const BTN_PRIMARY =
+  "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[var(--rf-accent)] hover:bg-[var(--rf-accent2)] disabled:opacity-40 disabled:cursor-not-allowed transition-all";
+const BTN_GHOST =
+  "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-[var(--rf-border2)] text-[var(--rf-txt2)] hover:text-[var(--rf-txt)] hover:border-[var(--rf-accent)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors";
+const BTN_DANGER =
+  "inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-[var(--rf-red)] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all";
+const SELECT_CLS =
+  "px-3 py-2 rounded-lg text-sm bg-[var(--rf-bg3)] border border-[var(--rf-border2)] text-[var(--rf-txt)] focus:border-[var(--rf-accent)] focus:outline-none [&_option]:bg-[var(--rf-bg2)]";
+const CARD_CLS = "rounded-2xl bg-[var(--rf-bg2)] border border-[var(--rf-border)]";
+const CHECKBOX_CLS =
+  "checkbox checkbox-sm border-2 border-gray-400 text-white checked:[--input-color:var(--rf-green)] checked:border-[var(--rf-green)]";
+const TH_CLS =
+  "text-left py-3 px-4 text-white font-semibold text-xs uppercase tracking-wider";
+
 const sameSet = (a, b) => {
   if (a.length !== b.length) return false;
   const s = new Set(a);
@@ -183,6 +198,13 @@ export default function PlatformRbac() {
     return out;
   }, [original, staged]);
 
+  // Revert staged matrix edits back to the server truth.
+  const discardGrants = () => {
+    if (saving) return;
+    setStaged(original);
+    setBatchError("");
+  };
+
   const saveGrants = async () => {
     if (!selectedRoleId || changedModules.length === 0) return;
     setSaving(true);
@@ -284,13 +306,39 @@ export default function PlatformRbac() {
   };
 
   // ── render ────────────────────────────────────────────────────────────────
-  if (allowed === null) return <div style={{ padding: 24 }}>Loading…</div>;
+  if (allowed === null)
+    return (
+      <div className="font-gilroy p-10 text-sm text-[var(--rf-txt3)]">
+        Loading…
+      </div>
+    );
   if (allowed === false)
     return (
-      <div style={{ padding: 48, textAlign: "center" }}>
-        <div className="rf-card" style={{ maxWidth: 420, margin: "0 auto", padding: 32 }}>
-          <h3>Platform access required</h3>
-          <p style={{ color: "var(--rf-txt3)" }}>Only platform super-admins can manage cross-organization RBAC.</p>
+      <div className="font-gilroy py-6 px-7 text-[var(--rf-txt)]">
+        <div
+          className={`${CARD_CLS} max-w-md mx-auto text-center mt-20 p-10`}
+        >
+          <div className="w-14 h-14 rounded-full bg-[var(--rf-bg3)] flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-7 h-7 text-[var(--rf-txt3)]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-bold text-[var(--rf-txt)] mb-1">
+            Platform access required
+          </h3>
+          <p className="text-sm text-[var(--rf-txt2)]">
+            Only platform super-admins can manage cross-organization RBAC.
+          </p>
         </div>
       </div>
     );
@@ -298,20 +346,26 @@ export default function PlatformRbac() {
   const selectedRole = roles.find((r) => r.id === selectedRoleId);
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 26, fontWeight: 700 }}>Platform RBAC</h1>
-      <p style={{ color: "var(--rf-txt3)", marginTop: 4 }}>
-        Manage roles &amp; access across any organization. Changes apply all-or-nothing.
+    <div className="font-gilroy py-6 px-7 text-[var(--rf-txt)]">
+      {/* Header */}
+      <h1 className="text-3xl font-bold tracking-tight text-[var(--rf-txt)]">
+        Platform RBAC
+      </h1>
+      <p className="text-sm text-[var(--rf-txt2)] mt-1">
+        Manage roles &amp; access across any organization. Changes apply
+        all-or-nothing.
       </p>
 
-      {/* org picker */}
-      <div style={{ margin: "16px 0", display: "flex", gap: 12, alignItems: "center" }}>
-        <label style={{ fontSize: 12, letterSpacing: 1, color: "var(--rf-txt3)" }}>ORGANIZATION</label>
+      {/* Org picker */}
+      <div className="mt-5 mb-4 flex items-center gap-3 flex-wrap">
+        <label className="text-xs font-semibold uppercase tracking-wider text-[var(--rf-txt3)]">
+          Organization
+        </label>
         <select
           value={orgId}
           onChange={(e) => setOrgId(e.target.value)}
           disabled={orgsLoading}
-          style={{ padding: "8px 12px", borderRadius: 6, minWidth: 280 }}
+          className={`${SELECT_CLS} min-w-[280px] disabled:opacity-50`}
         >
           {orgs.map((o) => (
             <option key={o.id} value={o.id}>
@@ -321,24 +375,44 @@ export default function PlatformRbac() {
         </select>
       </div>
 
-      {/* tabs */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        <button className={`rf-btn ${tab === "modules" ? "rf-btn-primary" : ""}`} onClick={() => setTab("modules")}>
-          Modules → Roles
-        </button>
-        <button className={`rf-btn ${tab === "users" ? "rf-btn-primary" : ""}`} onClick={() => setTab("users")}>
-          Roles → Users
-        </button>
+      {/* Tabs */}
+      <div className="inline-flex gap-1 p-1 mb-5 rounded-xl bg-[var(--rf-bg2)] border border-[var(--rf-border)]">
+        {[
+          { key: "modules", label: "Modules → Roles" },
+          { key: "users", label: "Roles → Users" },
+        ].map((t) => {
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className="px-4 py-2 rounded-lg text-sm transition-colors"
+              style={{
+                fontWeight: active ? 700 : 500,
+                background: active ? "var(--rf-accent)" : "transparent",
+                color: active ? "#fff" : "var(--rf-txt2)",
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {flash && (
         <div
+          className="mb-4 rounded-xl px-4 py-3 text-sm font-medium border"
           style={{
-            padding: "10px 14px",
-            borderRadius: 6,
-            marginBottom: 12,
-            background: flash.type === "success" ? "var(--rf-green-bg, #e8f5e9)" : "var(--rf-red-bg, #fdecea)",
-            color: flash.type === "success" ? "var(--rf-green)" : "var(--rf-red)",
+            background:
+              flash.type === "success"
+                ? "color-mix(in srgb, var(--rf-green) 12%, transparent)"
+                : "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+            borderColor:
+              flash.type === "success"
+                ? "color-mix(in srgb, var(--rf-green) 40%, transparent)"
+                : "color-mix(in srgb, var(--rf-red) 40%, transparent)",
+            color:
+              flash.type === "success" ? "var(--rf-green)" : "var(--rf-red)",
           }}
         >
           {flash.text}
@@ -346,127 +420,278 @@ export default function PlatformRbac() {
       )}
 
       {tab === "modules" ? (
-        <div style={{ display: "flex", gap: 16 }}>
-          {/* roles list */}
-          <div className="rf-card" style={{ width: 280, padding: 12, maxHeight: 560, overflow: "auto" }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Roles</div>
-            {loading ? (
-              <div>Loading…</div>
-            ) : (
-              roles.map((r) => (
-                <div
-                  key={r.id}
-                  onClick={() => setSelectedRoleId(r.id)}
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    background: r.id === selectedRoleId ? "var(--rf-accent, #2563eb)" : "transparent",
-                    color: r.id === selectedRoleId ? "#fff" : "inherit",
-                  }}
-                >
-                  {r.name}
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5">
+          {/* Roles list */}
+          <div className={`${CARD_CLS} overflow-hidden h-fit`}>
+            <div className="px-4 py-3 border-b border-[var(--rf-border)] bg-[var(--rf-bg3)]/40 text-sm font-bold text-[var(--rf-txt)]">
+              Roles
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto p-2">
+              {loading ? (
+                <div className="p-4 text-sm text-[var(--rf-txt3)]">Loading…</div>
+              ) : roles.length === 0 ? (
+                <div className="p-4 text-sm text-[var(--rf-txt3)]">
+                  No roles found.
                 </div>
-              ))
-            )}
+              ) : (
+                roles.map((r) => {
+                  const active = r.id === selectedRoleId;
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => setSelectedRoleId(r.id)}
+                      className="w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-colors"
+                      style={{
+                        background: active ? "var(--rf-accent)" : "transparent",
+                        color: active ? "#fff" : "var(--rf-txt)",
+                      }}
+                    >
+                      <div className="text-sm font-semibold truncate">
+                        {r.name}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
 
-          {/* matrix */}
-          <div className="rf-card" style={{ flex: 1, padding: 16 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontWeight: 700 }}>{selectedRole?.name || "—"}</div>
-              <button
-                className="rf-btn rf-btn-primary"
-                onClick={saveGrants}
-                disabled={changedModules.length === 0 || saving}
-              >
-                {saving ? "Saving…" : `Save${changedModules.length ? ` (${changedModules.length})` : ""}`}
-              </button>
+          {/* Matrix */}
+          <div className={`${CARD_CLS} overflow-hidden flex flex-col`}>
+            <div className="px-5 py-4 border-b border-[var(--rf-border)] bg-[var(--rf-bg3)]/40 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <div className="text-base font-bold text-[var(--rf-txt)]">
+                  {selectedRole?.name || "Select a role"}
+                </div>
+                <div className="text-xs text-[var(--rf-txt2)]">
+                  {changedModules.length > 0
+                    ? `${changedModules.length} unsaved change(s)`
+                    : "Module actions for this role"}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className={BTN_GHOST}
+                  onClick={discardGrants}
+                  disabled={changedModules.length === 0 || saving}
+                >
+                  Discard
+                </button>
+                <button
+                  className={BTN_PRIMARY}
+                  onClick={saveGrants}
+                  disabled={changedModules.length === 0 || saving}
+                >
+                  {saving
+                    ? "Saving…"
+                    : `Save${changedModules.length ? ` (${changedModules.length})` : ""}`}
+                </button>
+              </div>
             </div>
+
             {batchError && (
-              <div style={{ marginTop: 8, color: "var(--rf-red)", fontSize: 13 }}>{batchError}</div>
+              <div
+                className="mx-5 mt-4 rounded-xl px-4 py-3 text-sm"
+                style={{
+                  color: "var(--rf-red)",
+                  background:
+                    "color-mix(in srgb, var(--rf-red) 10%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+                }}
+              >
+                {batchError}
+              </div>
             )}
-            <table style={{ width: "100%", marginTop: 12, borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left", fontSize: 11, color: "var(--rf-txt3)" }}>
-                  <th style={{ padding: 8 }}>MODULE</th>
-                  {TENANT_ACTIONS.map((a) => (
-                    <th key={a} style={{ padding: 8, textTransform: "uppercase" }}>{a}</th>
-                  ))}
-                  <th style={{ padding: 8, textAlign: "right" }}>LEVEL</th>
-                </tr>
-              </thead>
-              <tbody>
-                {grantable.map((mk) => {
-                  const acts = staged[mk] || [];
-                  const lvl = deriveLevel(acts);
-                  const badge = LEVEL_BADGE[lvl];
-                  const changed = !sameSet(original[mk] || [], acts);
-                  return (
-                    <tr key={mk} style={{ borderTop: "1px solid var(--rf-border, #eee)" }}>
-                      <td style={{ padding: 8 }}>
-                        {moduleLabel(mk)} {changed ? <span style={{ color: "var(--rf-accent)" }}>•</span> : null}
-                        <div style={{ fontSize: 11, color: "var(--rf-txt3)" }}>{mk}</div>
-                      </td>
-                      {TENANT_ACTIONS.map((a) => (
-                        <td key={a} style={{ padding: 8 }}>
-                          <input type="checkbox" checked={acts.includes(a)} onChange={() => toggle(mk, a)} />
+
+            <div className="flex-1 overflow-auto max-h-[62vh]">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-[var(--rf-accent)] z-10">
+                  <tr>
+                    <th className={TH_CLS}>Module</th>
+                    {TENANT_ACTIONS.map((a) => (
+                      <th key={a} className={`${TH_CLS} text-center`}>
+                        {a}
+                      </th>
+                    ))}
+                    <th className={`${TH_CLS} text-right`}>Level</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grantable.map((mk, i) => {
+                    const acts = staged[mk] || [];
+                    const lvl = deriveLevel(acts);
+                    const badge = LEVEL_BADGE[lvl];
+                    const changed = !sameSet(original[mk] || [], acts);
+                    return (
+                      <tr
+                        key={mk}
+                        className="border-t border-[var(--rf-border)]"
+                        style={{
+                          background:
+                            i % 2 === 1
+                              ? "color-mix(in srgb, var(--rf-bg3) 35%, transparent)"
+                              : "transparent",
+                        }}
+                      >
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-[var(--rf-txt)]">
+                              {moduleLabel(mk)}
+                            </span>
+                            {changed && (
+                              <span
+                                className="w-1.5 h-1.5 rounded-full bg-[var(--rf-accent)]"
+                                title="Unsaved change"
+                              />
+                            )}
+                          </div>
+                          <div className="text-xs text-[var(--rf-txt3)] font-mono">
+                            {mk}
+                          </div>
                         </td>
-                      ))}
-                      <td style={{ padding: 8, textAlign: "right", color: badge.color, fontSize: 12 }}>
-                        {badge.label}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        {TENANT_ACTIONS.map((a) => (
+                          <td key={a} className="py-3 px-4 text-center">
+                            <input
+                              type="checkbox"
+                              className={CHECKBOX_CLS}
+                              checked={acts.includes(a)}
+                              onChange={() => toggle(mk, a)}
+                            />
+                          </td>
+                        ))}
+                        <td className="py-3 px-4 text-right">
+                          <span
+                            className="inline-flex items-center text-[11px] font-semibold uppercase tracking-wider px-2 py-1 rounded"
+                            style={{
+                              background: `color-mix(in srgb, ${badge.color} 16%, transparent)`,
+                              color: badge.color,
+                            }}
+                          >
+                            {badge.label}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       ) : (
         // ── Roles → Users ──
-        <div className="rf-card" style={{ padding: 16 }}>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}>
-            <label style={{ fontSize: 12, color: "var(--rf-txt3)" }}>ROLE TO SET</label>
-            <select value={assignRoleId} onChange={(e) => setAssignRoleId(e.target.value)} style={{ padding: "8px 12px", borderRadius: 6 }}>
-              {roles.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-            <button className="rf-btn rf-btn-primary" onClick={assignUsers} disabled={selectedUserIds.length === 0 || busy}>
+        <div className={`${CARD_CLS} overflow-hidden`}>
+          <div className="px-5 py-4 border-b border-[var(--rf-border)] bg-[var(--rf-bg3)]/40 flex items-end gap-3 flex-wrap">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--rf-txt3)]">
+                Role to set
+              </label>
+              <select
+                value={assignRoleId}
+                onChange={(e) => setAssignRoleId(e.target.value)}
+                className={SELECT_CLS}
+              >
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              className={BTN_PRIMARY}
+              onClick={assignUsers}
+              disabled={selectedUserIds.length === 0 || busy}
+            >
               Set role {selectedUserIds.length ? `(${selectedUserIds.length})` : ""}
             </button>
-            <button className="rf-btn" onClick={revokeUsers} disabled={selectedUserIds.length === 0 || busy} style={{ color: "var(--rf-red)" }}>
+            <button
+              className={BTN_DANGER}
+              onClick={revokeUsers}
+              disabled={selectedUserIds.length === 0 || busy}
+            >
               Remove from org
             </button>
           </div>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left", fontSize: 11, color: "var(--rf-txt3)" }}>
-                <th style={{ padding: 8 }} />
-                <th style={{ padding: 8 }}>USER</th>
-                <th style={{ padding: 8 }}>CURRENT ROLE</th>
-                <th style={{ padding: 8, textAlign: "right" }}>RESULT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} style={{ borderTop: "1px solid var(--rf-border, #eee)" }}>
-                  <td style={{ padding: 8 }}>
-                    <input type="checkbox" checked={selectedUserIds.includes(u.id)} onChange={() => toggleUser(u.id)} />
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <div style={{ fontWeight: 600 }}>{userName(u)}</div>
-                    <div style={{ fontSize: 12, color: "var(--rf-txt3)" }}>{u.email}</div>
-                  </td>
-                  <td style={{ padding: 8 }}>{u.roleName || "—"}</td>
-                  <td style={{ padding: 8, textAlign: "right", color: userResults[u.id]?.danger ? "var(--rf-red)" : "var(--rf-green)", fontSize: 13 }}>
-                    {userResults[u.id]?.text || "—"}
-                  </td>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[var(--rf-accent)]">
+                <tr>
+                  <th className={`${TH_CLS} w-10`} />
+                  <th className={TH_CLS}>User</th>
+                  <th className={TH_CLS}>Current Role</th>
+                  <th className={`${TH_CLS} text-right`}>Result</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {users.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="py-10 text-center text-sm text-[var(--rf-txt3)]"
+                    >
+                      No users in this organization.
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((u, i) => {
+                    const res = userResults[u.id];
+                    return (
+                      <tr
+                        key={u.id}
+                        className="border-t border-[var(--rf-border)]"
+                        style={{
+                          background:
+                            i % 2 === 1
+                              ? "color-mix(in srgb, var(--rf-bg3) 35%, transparent)"
+                              : "transparent",
+                        }}
+                      >
+                        <td className="py-3 px-4">
+                          <input
+                            type="checkbox"
+                            className={CHECKBOX_CLS}
+                            checked={selectedUserIds.includes(u.id)}
+                            onChange={() => toggleUser(u.id)}
+                          />
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-[var(--rf-txt)]">
+                            {userName(u)}
+                          </div>
+                          <div className="text-xs text-[var(--rf-txt3)]">
+                            {u.email}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-[var(--rf-txt2)]">
+                          {u.roleName || "—"}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {res ? (
+                            <span
+                              className="inline-flex items-center text-xs font-medium px-2 py-1 rounded"
+                              style={{
+                                background: `color-mix(in srgb, ${res.danger ? "var(--rf-red)" : "var(--rf-green)"} 14%, transparent)`,
+                                color: res.danger
+                                  ? "var(--rf-red)"
+                                  : "var(--rf-green)",
+                              }}
+                            >
+                              {res.text}
+                            </span>
+                          ) : (
+                            <span className="text-[var(--rf-txt3)]">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
