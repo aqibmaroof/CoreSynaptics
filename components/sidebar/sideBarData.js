@@ -1295,7 +1295,7 @@ export const ROLE_LABELS = {
   [ROLES.OEM_APP_FSE]: "Apprentice FSE",
   [ROLES.OEM_SVC_DISPATCH]: "Service Dispatch",
   [ROLES.OEM_CX_LEAD]: "Lead",
-  [ROLES.OEM_SR_CX]:"Senior Engineer",
+  [ROLES.OEM_SR_CX]: "Senior Engineer",
   [ROLES.OEM_CX]: "Engineer",
   [ROLES.OEM_APP_ENG]: "Application Engineer",
   [ROLES.OEM_SR_APP_ENG]: "Senior App Engineer",
@@ -5053,28 +5053,28 @@ export const sidebarItems = [
         path: "/Roles/List",
         roles: PLATFORM,
       },
-      {
-        // RBAC-admin write surface is guarded by CompanyAdminGuard, which admits
-        // SUPERADMIN (support) + each org's ONE resolved admin role and REJECTS
-        // PLATFORM_ADMIN. Gate the link to exactly that set (the 17 catalog admin
-        // roles + SUPERADMIN) so only users who can actually use it see it — a
-        // non-admin Project Executive / VP would otherwise see the link and hit
-        // the page's "Admin access required" fallback.
-        title: "Permissions",
-        type: "link",
-        path: "/Permissions",
-        roles: [ROLES.SUPERADMIN, ...ORG_ADMIN_ROLES],
-      },
-      {
-        // Platform-wide RBAC — SUPERADMIN only. Cross-organization grant/assign
-        // via the /platform/rbac/* endpoints (org-picker + target org). The org
-        // "Permissions" screen above is org-scoped and useless to a null-org
-        // superadmin, so platform users get this dedicated surface.
-        title: "Platform RBAC",
-        type: "link",
-        path: "/PlatformRbac",
-        roles: [ROLES.SUPERADMIN],
-      },
+      // {
+      //   // RBAC-admin write surface is guarded by CompanyAdminGuard, which admits
+      //   // SUPERADMIN (support) + each org's ONE resolved admin role and REJECTS
+      //   // PLATFORM_ADMIN. Gate the link to exactly that set (the 17 catalog admin
+      //   // roles + SUPERADMIN) so only users who can actually use it see it — a
+      //   // non-admin Project Executive / VP would otherwise see the link and hit
+      //   // the page's "Admin access required" fallback.
+      //   title: "Permissions",
+      //   type: "link",
+      //   path: "/Permissions",
+      //   roles: [ROLES.SUPERADMIN, ...ORG_ADMIN_ROLES],
+      // },
+      // {
+      //   // Platform-wide RBAC — SUPERADMIN only. Cross-organization grant/assign
+      //   // via the /platform/rbac/* endpoints (org-picker + target org). The org
+      //   // "Permissions" screen above is org-scoped and useless to a null-org
+      //   // superadmin, so platform users get this dedicated surface.
+      //   title: "Platform RBAC",
+      //   type: "link",
+      //   path: "/PlatformRbac",
+      //   roles: [ROLES.SUPERADMIN, ...ORG_ADMIN_ROLES],
+      // },
       {
         title: "Subscriptions",
         type: "link",
@@ -5456,7 +5456,7 @@ export function getMenuByRole(role, accessibleModules) {
       // 3. Module gate — skip when no module list provided
       if (allowedSections && !allowedSections.has(titleKey)) return false;
       // 1. Role gate
-      // if (item.roles && !item.roles.includes(role)) return false;  
+      // if (item.roles && !item.roles.includes(role)) return false;
       return true;
     })
     .map((item) => ({
