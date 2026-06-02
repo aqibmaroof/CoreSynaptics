@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getDocuments } from "@/services/Documents";
 import { getRFIs } from "@/services/RFI";
@@ -7193,8 +7193,43 @@ export default function ProjectWizard() {
   };
 
   // ── RENDER ─────────────────────────────────────────────────────────────────
+  // ── Keyboard accessibility ────────────────────────────────────────────────
+  // The selectable cards (.start-option, .pc, .wcard, .step-dot) are plain
+  // <div>s with onClick handlers. Make them keyboard-operable in one place:
+  // mark them focusable + role="button", and activate the underlying click on
+  // Enter/Space. A MutationObserver keeps newly rendered step cards covered.
+  const wizRef = useRef(null);
+  const KBD_SELECTABLE = ".start-option, .pc, .wcard, .step-dot";
+
+  useEffect(() => {
+    const root = wizRef.current;
+    if (!root || typeof MutationObserver === "undefined") return;
+    const makeFocusable = () => {
+      root.querySelectorAll(KBD_SELECTABLE).forEach((el) => {
+        if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+        if (!el.hasAttribute("role")) el.setAttribute("role", "button");
+      });
+    };
+    makeFocusable();
+    const observer = new MutationObserver(makeFocusable);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
+  const handleWizKeyDown = (e) => {
+    const el = e.target;
+    if (
+      (e.key === "Enter" || e.key === " " || e.key === "Spacebar") &&
+      typeof el?.matches === "function" &&
+      el.matches(KBD_SELECTABLE)
+    ) {
+      e.preventDefault();
+      el.click();
+    }
+  };
+
   return (
-    <div className="wiz-wrap">
+    <div className="wiz-wrap" ref={wizRef} onKeyDown={handleWizKeyDown}>
       {/* Header */}
       <div className="wiz-top">
         <div className="wiz-brand">
