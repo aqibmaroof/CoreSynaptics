@@ -2210,6 +2210,18 @@ const STEPS = [
 
 const STORAGE_KEY = "cxcontrol_register_v2";
 
+// ── Validation helpers ─────────────────────────────────────────────────────────
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const isValidEmail = (v) => EMAIL_RE.test(String(v || "").trim());
+const MIN_PASSWORD_LEN = 8;
+const LOGO_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+const LOGO_ALLOWED_TYPES = [
+  "image/png",
+  "image/svg+xml",
+  "image/jpeg",
+  "image/webp",
+];
+
 // ── Style constants ────────────────────────────────────────────────────────────
 
 const C = {
@@ -2250,22 +2262,42 @@ const lStyle = {
 
 // ── Shared UI ─────────────────────────────────────────────────────────────────
 
-function FI({ label, ...p }) {
+function FI({ label, error, ...p }) {
   return (
     <div>
       <label style={lStyle}>{label}</label>
       <input
-        style={iBase}
+        style={{
+          ...iBase,
+          border: error ? "1px solid #ff4455" : iBase.border,
+        }}
+        aria-invalid={error ? "true" : "false"}
         onFocus={(e) => {
-          e.target.style.borderColor = C.accent;
-          e.target.style.boxShadow = "0 0 0 2px rgba(0,200,255,0.15)";
+          e.target.style.borderColor = error ? "#ff4455" : C.accent;
+          e.target.style.boxShadow = error
+            ? "0 0 0 2px rgba(255,68,85,0.15)"
+            : "0 0 0 2px rgba(0,200,255,0.15)";
         }}
         onBlur={(e) => {
-          e.target.style.borderColor = C.border;
+          e.target.style.borderColor = error ? "#ff4455" : C.border;
           e.target.style.boxShadow = "none";
         }}
         {...p}
       />
+      {error && (
+        <div
+          style={{
+            fontFamily: C.mono,
+            fontSize: "0.6rem",
+            lineHeight: 1.4,
+            color: "#ff4455",
+            marginTop: 5,
+            letterSpacing: "0.02em",
+          }}
+        >
+          {error}
+        </div>
+      )}
     </div>
   );
 }
@@ -2370,27 +2402,32 @@ function Toggle({ on, onToggle, label, sub }) {
     >
       <div
         onClick={onToggle}
+        role="switch"
+        aria-checked={on}
         style={{
           width: 38,
           height: 20,
           borderRadius: 10,
           background: on ? C.accent : "var(--rf-bg4)",
+          border: on
+            ? "1px solid transparent"
+            : "1px solid var(--rf-border2)",
           position: "relative",
           cursor: "pointer",
           flexShrink: 0,
-          transition: "background 0.15s",
+          transition: "background 0.15s, border-color 0.15s",
         }}
       >
         <div
           style={{
             width: 14,
             height: 14,
-            background: "#fff",
+            background: on ? "#fff" : "var(--rf-txt2)",
             borderRadius: "50%",
             position: "absolute",
-            top: 3,
+            top: 2,
             left: on ? 21 : 3,
-            transition: "left 0.15s",
+            transition: "left 0.15s, background 0.15s",
             boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
           }}
         />
@@ -2622,6 +2659,20 @@ function calcPricing(w) {
 
 function StepCompany({ w, u, showPwd, setShowPwd, subscriptions }) {
   const p = calcPricing(w);
+  // User-friendly, inline validation — shown only once the user has typed
+  // something invalid (empty required fields keep the Continue button disabled).
+  const companyEmailErr =
+    w.companyEmail && !isValidEmail(w.companyEmail)
+      ? "Enter a valid email address, e.g. name@company.com"
+      : "";
+  const adminEmailErr =
+    w.adminEmail && !isValidEmail(w.adminEmail)
+      ? "Enter a valid email address, e.g. you@company.com"
+      : "";
+  const passwordErr =
+    w.adminPassword && w.adminPassword.length < MIN_PASSWORD_LEN
+      ? `Password must be at least ${MIN_PASSWORD_LEN} characters`
+      : "";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
       <div>
@@ -2674,6 +2725,7 @@ function StepCompany({ w, u, showPwd, setShowPwd, subscriptions }) {
           type="text"
           placeholder="e.g., Acme Data Center Co"
           value={w.companyName}
+          maxLength={80}
           onChange={(e) => u({ companyName: e.target.value })}
         />
       </div>
@@ -2796,6 +2848,8 @@ function StepCompany({ w, u, showPwd, setShowPwd, subscriptions }) {
             type="email"
             placeholder="info@company.com"
             value={w.companyEmail}
+            maxLength={120}
+            error={companyEmailErr}
             onChange={(e) => u({ companyEmail: e.target.value })}
           />
           <G cols={2} gap={10}>
@@ -2804,6 +2858,7 @@ function StepCompany({ w, u, showPwd, setShowPwd, subscriptions }) {
               type="text"
               placeholder="First name"
               value={w.adminFirstName}
+              maxLength={40}
               onChange={(e) => u({ adminFirstName: e.target.value })}
             />
             <FI
@@ -2811,6 +2866,7 @@ function StepCompany({ w, u, showPwd, setShowPwd, subscriptions }) {
               type="text"
               placeholder="Last name"
               value={w.adminLastName}
+              maxLength={40}
               onChange={(e) => u({ adminLastName: e.target.value })}
             />
           </G>
@@ -2819,41 +2875,77 @@ function StepCompany({ w, u, showPwd, setShowPwd, subscriptions }) {
             type="email"
             placeholder="you@company.com"
             value={w.adminEmail}
+            maxLength={120}
+            error={adminEmailErr}
             onChange={(e) => u({ adminEmail: e.target.value })}
           />
-          <div style={{ position: "relative" }}>
+          <div>
             <label style={lStyle}>Password</label>
-            <input
-              type={showPwd ? "text" : "password"}
-              placeholder="Create a strong password"
-              value={w.adminPassword}
-              onChange={(e) => u({ adminPassword: e.target.value })}
-              style={{ ...iBase, paddingRight: 42 }}
-              onFocus={(e) => {
-                e.target.style.borderColor = C.accent;
-                e.target.style.boxShadow = "0 0 0 2px rgba(0,200,255,0.15)";
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = C.border;
-                e.target.style.boxShadow = "none";
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPwd((p) => !p)}
-              style={{
-                position: "absolute",
-                right: 11,
-                top: "calc(100% - 27px)",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--rf-txt2)",
-                padding: 0,
-              }}
-            >
-              {showPwd ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-            </button>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPwd ? "text" : "password"}
+                placeholder="Create a strong password"
+                value={w.adminPassword}
+                maxLength={64}
+                onChange={(e) => u({ adminPassword: e.target.value })}
+                style={{
+                  ...iBase,
+                  paddingRight: 42,
+                  border: passwordErr ? "1px solid #ff4455" : iBase.border,
+                }}
+                aria-invalid={passwordErr ? "true" : "false"}
+                onFocus={(e) => {
+                  e.target.style.borderColor = passwordErr
+                    ? "#ff4455"
+                    : C.accent;
+                  e.target.style.boxShadow = passwordErr
+                    ? "0 0 0 2px rgba(255,68,85,0.15)"
+                    : "0 0 0 2px rgba(0,200,255,0.15)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = passwordErr
+                    ? "#ff4455"
+                    : C.border;
+                  e.target.style.boxShadow = "none";
+                }}
+              />
+              <button
+                type="button"
+                aria-label={showPwd ? "Hide password" : "Show password"}
+                onClick={() => setShowPwd((p) => !p)}
+                style={{
+                  position: "absolute",
+                  right: 11,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--rf-txt2)",
+                  padding: 0,
+                  lineHeight: 0,
+                }}
+              >
+                {showPwd ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
+              </button>
+            </div>
+            {passwordErr && (
+              <div
+                style={{
+                  fontFamily: C.mono,
+                  fontSize: "0.6rem",
+                  lineHeight: 1.4,
+                  color: "#ff4455",
+                  marginTop: 5,
+                  letterSpacing: "0.02em",
+                }}
+              >
+                {passwordErr}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -4240,6 +4332,19 @@ function StepBrand({ w, u, sessionId }) {
     if (!file) return;
 
     setUploadError("");
+
+    // Restrict input client-side before requesting an upload URL.
+    if (file.type && !LOGO_ALLOWED_TYPES.includes(file.type)) {
+      setUploadError("Unsupported file type. Use PNG, SVG, JPG, or WEBP.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    if (file.size > LOGO_MAX_BYTES) {
+      setUploadError("File is too large. Maximum logo size is 2 MB.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setUploadProgress(0);
     setUploadStep("requesting");
 
@@ -4343,7 +4448,7 @@ function StepBrand({ w, u, sessionId }) {
                 }}
               >
                 {uploadStep === "requesting" && "Requesting upload URL…"}
-                {uploadStep === "uploading" && `Uploading… ${uploadProgress}%`}
+                {uploadStep === "uploading" && "Uploading…"}
                 {uploadStep === "confirming" && "Confirming upload…"}
               </span>
               <span
@@ -4686,33 +4791,11 @@ function StepReview({ w, u, showPwd, setShowPwd, apiReview }) {
         total: apiReview.addonsTotal ?? local.total,
       }
     : local;
-  const typeL = {
-    customer: "Customer",
-    gc: "GC",
-    oem: "OEM",
-    trade: "Trade",
-    cxa: "Cx Agent",
-    rig: "Rigging",
-    arch: "Architecture",
-    bld: "Builder",
-    sec: "Security",
-    fire: "Fire Alarm",
-    staff: "Staffing",
-  };
-  const dcL = {
-    ai: "AI",
-    hyp: "Hyperscale",
-    colo: "Colo",
-    ent: "Enterprise",
-    edg: "Edge",
-    hpc: "HPC",
-    cry: "Crypto",
-    gov: "Gov/DOD",
-    bro: "Broadcast",
-    res: "Research",
-    mod: "Modular",
-    fin: "Financial",
-  };
+  // Derive labels from the canonical source lists so every selectable option
+  // resolves correctly (avoids "?" for types missing from a hand-kept map).
+  const companyTypeLabel =
+    COMPANY_TYPES.find((t) => t.id === w.companyType)?.n || "—";
+  const facilityLabel = DC_TYPES.find((t) => t.id === w.dcType)?.n || "—";
   const sb = {
     small: { p: 700, p6: 500, a: 800, cx: 900, h: 400, d: 500 },
     med: { p: 2500, p6: 1800, a: 2200, cx: 2800, h: 1500, d: 1800 },
@@ -4794,9 +4877,12 @@ function StepReview({ w, u, showPwd, setShowPwd, apiReview }) {
         }}
       >
         {[
-          { l: "Company", v: typeL[w.companyType] || "?" },
-          { l: "Facility", v: dcL[w.dcType] || "?" },
-          { l: "Mode", v: w.mode === "connected" ? "Connected" : "Standalone" },
+          { l: "Company", v: companyTypeLabel },
+          { l: "Facility", v: facilityLabel },
+          {
+            l: "Mode",
+            v: w.defaultConnected ? "Connected" : "Standalone",
+          },
           {
             l: "Team size",
             v: String(w.team?.reduce((s, r) => s + r.qty, 0) || 0),
@@ -5626,11 +5712,11 @@ export default function RegisterPage() {
         wizard.companyType &&
         wizard.companyName.trim() &&
         wizard.companySize &&
-        wizard.companyEmail.trim() &&
+        isValidEmail(wizard.companyEmail) &&
         wizard.adminFirstName.trim() &&
         wizard.adminLastName.trim() &&
-        wizard.adminEmail.trim() &&
-        wizard.adminPassword
+        isValidEmail(wizard.adminEmail) &&
+        wizard.adminPassword.length >= MIN_PASSWORD_LEN
       );
     return true;
   };
@@ -6074,11 +6160,16 @@ export default function RegisterPage() {
               style={{
                 padding: "8px 16px",
                 borderRadius: 6,
-                border: `1px solid ${C.border}`,
-                background: "transparent",
-                color: step === 0 ? C.muted : "var(--rf-txt2)",
+                border:
+                  step === 0
+                    ? `1px solid ${C.border}`
+                    : "1px solid var(--rf-accent)",
+                background: step === 0 ? "transparent" : "var(--rf-bg2)",
+                color: step === 0 ? C.muted : "var(--rf-txt)",
                 fontFamily: C.mono,
                 fontSize: "0.7rem",
+                fontWeight: step === 0 ? 400 : 600,
+                opacity: step === 0 ? 0.6 : 1,
                 cursor: step === 0 || stepLoading ? "not-allowed" : "pointer",
                 letterSpacing: "0.08em",
               }}
@@ -6221,6 +6312,117 @@ export default function RegisterPage() {
           </div>
         </div>
       </section>
+
+      {/* Confirmation popup — shown after the account is successfully created */}
+      {msg.type === "success" && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(2,13,22,0.72)",
+            backdropFilter: "blur(3px)",
+          }}
+        >
+          <div
+            style={{
+              width: "min(420px, 90vw)",
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-accent)",
+              borderRadius: 14,
+              padding: "30px 28px",
+              textAlign: "center",
+              boxShadow: "0 18px 60px rgba(0,0,0,0.45)",
+            }}
+          >
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                margin: "0 auto 16px",
+                background: "rgba(0,229,160,0.12)",
+                border: "1px solid rgba(0,229,160,0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24">
+                <path
+                  d="M5 12l4 4 10-10"
+                  stroke="#00e5a0"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div
+              style={{
+                fontFamily: "'Rajdhani', sans-serif",
+                fontSize: "1.35rem",
+                fontWeight: 700,
+                color: "var(--rf-txt)",
+                letterSpacing: "0.03em",
+                marginBottom: 6,
+              }}
+            >
+              Account created
+            </div>
+            <div
+              style={{
+                fontFamily: C.mono,
+                fontSize: "0.72rem",
+                color: "var(--rf-txt2)",
+                lineHeight: 1.5,
+                marginBottom: 18,
+              }}
+            >
+              {msg.text}
+            </div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                fontFamily: C.mono,
+                fontSize: "0.68rem",
+                color: C.accent,
+              }}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                style={{ animation: "spin 1s linear infinite" }}
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  opacity="0.25"
+                />
+                <path
+                  fill="currentColor"
+                  opacity="0.75"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              Redirecting to your platform…
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
