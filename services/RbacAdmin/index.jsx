@@ -141,6 +141,30 @@ export const platformRevokeUserRoles = (organizationId, userIds) =>
     data: { organizationId, userIds },
   });
 
+// ── Platform read pickers (SUPERADMIN, explicit target org) ──────────────────
+/** → tenant org list: [{ id, name, type, ... }] (GET /platform/tenants). */
+export const platformListTenants = () =>
+  sendRequest({ url: "/platform/tenants", method: "GET" });
+
+/** → a target org's roles: [{ id, name, isSystemRole, isResolvedAdmin, ... }] */
+export const platformOrgRoles = (orgId) =>
+  sendRequest({ url: `/platform/rbac/roles/orgs/${orgId}/roles`, method: "GET" });
+
+/** → a target org's users: [{ id, email, firstName, lastName, roleId, roleName }] */
+export const platformOrgUsers = (orgId) =>
+  sendRequest({ url: `/platform/rbac/roles/orgs/${orgId}/users`, method: "GET" });
+
+/** → { modules: string[] } — a target org's plan-grantable moduleKeys. */
+export const platformOrgGrantableModules = (orgId) =>
+  sendRequest({
+    url: `/platform/rbac/roles/orgs/${orgId}/grantable-modules`,
+    method: "GET",
+  });
+
+/** → { permissions: [...] } — a role's current module grants (works for any org's role for SUPERADMIN). */
+export const platformRoleModules = (roleId) =>
+  sendRequest({ url: `/roles/${roleId}/modules`, method: "GET" });
+
 // ── Read pickers (existing endpoints, fetched from elsewhere — §9) ───────────
 /** → RoleSummaryDto[] (roles in the caller's org). */
 export const listRoles = () => sendRequest({ url: "/roles", method: "GET" });

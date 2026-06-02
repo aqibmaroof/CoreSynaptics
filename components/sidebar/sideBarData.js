@@ -1295,7 +1295,7 @@ export const ROLE_LABELS = {
   [ROLES.OEM_APP_FSE]: "Apprentice FSE",
   [ROLES.OEM_SVC_DISPATCH]: "Service Dispatch",
   [ROLES.OEM_CX_LEAD]: "Lead",
-  [ROLES.OEM_SR_CX]:"Senior Engineer",
+  [ROLES.OEM_SR_CX]: "Senior Engineer",
   [ROLES.OEM_CX]: "Engineer",
   [ROLES.OEM_APP_ENG]: "Application Engineer",
   [ROLES.OEM_SR_APP_ENG]: "Senior App Engineer",
@@ -2401,6 +2401,32 @@ const union = (...arrays) => [...new Set(arrays.flat())];
 
 // Platform admins always get everything
 const PLATFORM = [ROLES.SUPERADMIN, ROLES.PLATFORM_ADMIN];
+
+// ── Org-admin roles (the catalog `isAdmin` role per company type) ────────────
+// Exactly the set the backend CompanyAdminGuard resolves to via the role catalog
+// — ONE designated admin per company type. The RBAC-admin "Roles & Access" screen
+// is gated to these (+ SUPERADMIN), NOT the broad EXEC tier: a Project Executive /
+// VP Ops who is NOT the designated admin must not see the link (they'd hit the
+// guard's "Admin access required"). Mirrors rbac-catalog.ts isAdmin keys.
+const ORG_ADMIN_ROLES = [
+  ROLES.OEM_VP_OPS,
+  ROLES.GC_PROJ_EXEC,
+  ROLES.CUST_VP_INFRA,
+  ROLES.TR_PM,
+  ROLES.CXA_PRINCIPAL,
+  ROLES.AE_PRINCIPAL,
+  ROLES.RIG_PM,
+  ROLES.BLD_PROJ_EXEC,
+  ROLES.SEC_PM,
+  ROLES.FA_PM,
+  ROLES.ST_OWNER,
+  ROLES.INT_PRINCIPAL,
+  ROLES.CT_PM,
+  ROLES.LV_PM,
+  ROLES.MC_PM,
+  ROLES.OPS_OEM_DIR_PROJ,
+  ROLES.CC_VP_CONST,
+];
 
 // Executive/director tier across all org types
 const EXEC_ROLES = [
@@ -5027,17 +5053,28 @@ export const sidebarItems = [
         path: "/Roles/List",
         roles: PLATFORM,
       },
-      {
-        // RBAC-admin write surface is guarded by CompanyAdminGuard, which admits
-        // SUPERADMIN (support) + each org's resolved admin role (the EXEC/admin
-        // tier) and REJECTS PLATFORM_ADMIN. Gate the link to that same set so the
-        // intended audience (org company admins) can reach it — gating to PLATFORM
-        // showed it only to SUPERADMIN/PLATFORM_ADMIN, the latter of whom 403s.
-        title: "Permissions",
-        type: "link",
-        path: "/Permissions",
-        roles: [ROLES.SUPERADMIN, ...EXEC_ROLES],
-      },
+      // {
+      //   // RBAC-admin write surface is guarded by CompanyAdminGuard, which admits
+      //   // SUPERADMIN (support) + each org's ONE resolved admin role and REJECTS
+      //   // PLATFORM_ADMIN. Gate the link to exactly that set (the 17 catalog admin
+      //   // roles + SUPERADMIN) so only users who can actually use it see it — a
+      //   // non-admin Project Executive / VP would otherwise see the link and hit
+      //   // the page's "Admin access required" fallback.
+      //   title: "Permissions",
+      //   type: "link",
+      //   path: "/Permissions",
+      //   roles: [ROLES.SUPERADMIN, ...ORG_ADMIN_ROLES],
+      // },
+      // {
+      //   // Platform-wide RBAC — SUPERADMIN only. Cross-organization grant/assign
+      //   // via the /platform/rbac/* endpoints (org-picker + target org). The org
+      //   // "Permissions" screen above is org-scoped and useless to a null-org
+      //   // superadmin, so platform users get this dedicated surface.
+      //   title: "Platform RBAC",
+      //   type: "link",
+      //   path: "/PlatformRbac",
+      //   roles: [ROLES.SUPERADMIN, ...ORG_ADMIN_ROLES],
+      // },
       {
         title: "Subscriptions",
         type: "link",
@@ -5419,7 +5456,7 @@ export function getMenuByRole(role, accessibleModules) {
       // 3. Module gate — skip when no module list provided
       if (allowedSections && !allowedSections.has(titleKey)) return false;
       // 1. Role gate
-      // if (item.roles && !item.roles.includes(role)) return false;  
+      // if (item.roles && !item.roles.includes(role)) return false;
       return true;
     })
     .map((item) => ({
