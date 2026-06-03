@@ -79,6 +79,14 @@ export const listMessages = async (roomId, params = {}) =>
 export const postMessage = async (roomId, payload) =>
   sendRequest({ url: `/chat-rooms/${roomId}/messages`, method: "POST", data: payload });
 
+/** Edit a message body (own messages only).
+ *  Mirrors the delete route; the server stamps an editedAt timestamp which the
+ *  client surfaces as an "edited" indicator.
+ *  payload echoed back: { id, body, editedAt, ... }
+ */
+export const editChatMessage = async (_roomId, msgId, body) =>
+  sendRequest({ url: `/chat-rooms/messages/${msgId}`, method: "PATCH", data: { body } });
+
 /** Delete a message (own messages only).
  *  Soft-delete — row is preserved for audit, body is hidden.
  */

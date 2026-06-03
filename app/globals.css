@@ -1479,6 +1479,29 @@ html {
   grid-template-columns: 44px 1fr auto auto;
   gap: 14px;
   align-items: center;
+  transition: all 0.15s;
+}
+.wiz-wrap .sow-item:hover {
+  border-color: var(--navy-soft);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Clearly-clickable inline link used in the wizard (distinct color + hover). */
+.wiz-wrap .wiz-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--electric);
+  font-weight: 600;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.wiz-wrap .wiz-link:hover {
+  color: var(--navy);
+  text-decoration-thickness: 2px;
 }
 .wiz-wrap .sow-icon {
   width: 44px;
