@@ -202,7 +202,7 @@ export default function KanbanBoard() {
               </div>
             </button>
             <button
-              onClick={() => router.push("/CalendarView")}
+              onClick={() => router.push("/Tasks/Calendar")}
               className="btn mt-5 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] text-white p-2  rounded-3xl transition-all"
             >
               <div className="flex flex-row gap-2">
@@ -376,7 +376,7 @@ export default function KanbanBoard() {
                 </div>
               </button>
               <button
-                onClick={() => router.push("/CalendarView")}
+                onClick={() => router.push("/Tasks/Calendar")}
                 className="btn mt-5 bg-transparent border-2 border-white/[0.03] border-t-white/[0.09] text-white p-2  rounded-3xl transition-all"
               >
                 <div className="flex flex-row gap-2">

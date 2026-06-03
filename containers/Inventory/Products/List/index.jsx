@@ -84,7 +84,7 @@ export default function ProductsList() {
             <p className="text-gray-400">Manage products, SKUs, and warehouse stock levels</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => router.push("/Inventory/StockMovement/Add")}
+            <button onClick={() => router.push("/Inventory/Movements/Add")}
               {...permissionProps(canCreate(MODULE.SUPPLY_CHAIN), "record a stock movement")}
               className="px-5 py-3 border border-gray-600 hover:border-cyan-500 text-gray-300 hover:text-cyan-400 rounded-lg text-sm font-medium transition-all">
               Record Movement

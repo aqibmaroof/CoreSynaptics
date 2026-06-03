@@ -643,7 +643,7 @@ export default function KanbanBoard() {
             </div>
             <form method="dialog" className="gap-2 flex">
               <button
-                onClick={() => router.push("/Tasks/CreateTask")}
+                onClick={() => router.push("/Tasks/CreateTask/new")}
                 className="size-9 rounded-xl hover:bg-gray-300 flex items-center justify-center border border-white bg-[#656A80]"
               >
                 <img src="/images/maximize.svg" alt="Maximize" />

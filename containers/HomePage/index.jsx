@@ -2115,7 +2115,7 @@ function DashGCPM({ user, router }) {
       </Card>
       <Grid2>
         <div>
-          <SecH action="View all →" onClick={() => router.push("/Companies")}>
+          <SecH action="View all →" onClick={() => router.push("/Company/List")}>
             Companies on this project
           </SecH>
           <div

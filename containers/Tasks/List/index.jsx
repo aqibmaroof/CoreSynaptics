@@ -337,7 +337,7 @@ export default function TasksList() {
           </div>
 
           <button
-            onClick={() => router.push("/Tasks/CreateTask")}
+            onClick={() => router.push("/Tasks/CreateTask/new")}
             {...permissionProps(canCreate(MODULE.TASKS), "create a task")}
             style={{
               padding: "9px 18px",
