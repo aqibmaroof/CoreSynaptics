@@ -8,9 +8,11 @@ import { getUser } from "../instance/tokenService";
 //   • tenant users  → /chat-rooms/*
 //   • SUPERADMIN     → /platform/chat-rooms/*   (cross-org rooms + DMs)
 // This service detects the caller and routes to the right base. The container
-// is unchanged and works for both. A few enhancements (typing, receipts,
-// archive, project-scoped rooms) exist only on the tenant path; for a platform
-// user they degrade to safe no-ops so the shared UI never errors.
+// is unchanged and works for both. SUPERADMIN now has full chat parity
+// (messages, edit/delete, receipts, typing, presence, attachments) via the
+// platform surface. Only a few genuinely tenant-only actions (archive, single
+// member-remove, project-scoped rooms) still degrade to safe no-ops for
+// platform users so the shared UI never errors.
 
 const isPlatformUser = () => {
   try {
@@ -107,64 +109,53 @@ export const postMessage = async (roomId, payload) =>
  *  payload echoed back: { id, body, editedAt, ... }
  */
 export const editChatMessage = async (_roomId, msgId, body) =>
-  sendRequest({ url: `/chat-rooms/messages/${msgId}`, method: "PATCH", data: { body } });
+  sendRequest({ url: `${base()}/messages/${msgId}`, method: "PATCH", data: { body } });
 
 /** Delete a message (own messages only).
  *  Soft-delete — row is preserved for audit, body is hidden.
  */
 export const deleteChatMessage = async (_roomId, msgId) =>
-  sendRequest({ url: `/chat-rooms/messages/${msgId}`, method: "DELETE" });
+  sendRequest({ url: `${base()}/messages/${msgId}`, method: "DELETE" });
 
-// ── Presence · read receipts · typing · entity rooms (tenant-only enhancements) ──
-// These exist only on the org-scoped surface. For platform users they degrade
-// to no-ops so the shared chat UI behaves identically without 404s.
+// ── Presence · read receipts · typing ───────────────────────────────────────
+// These now exist on BOTH surfaces: tenant (/chat-rooms) and platform
+// (/platform/chat-rooms). base() routes the caller to the right one, so
+// SUPERADMIN gets full parity (no more no-op degradation).
 
 /** Mark all messages in a room as read up to `atIso` (defaults to now) — CHAT_010.
  *  Advances the caller's read (+ delivery) watermark and broadcasts a read
  *  receipt so senders see "Read".
  */
-export const markRoomRead = async (roomId, atIso) => {
-  if (isPlatformUser()) return noop();
-  return sendRequest({ url: `/chat-rooms/${roomId}/read`, method: "POST", data: { atIso } });
-};
+export const markRoomRead = async (roomId, atIso) =>
+  sendRequest({ url: `${base()}/${roomId}/read`, method: "POST", data: { atIso } });
 
 /** Mark a room's messages delivered to the caller (CHAT_009) — advances only the
  *  delivery watermark and broadcasts a "Delivered" receipt. Call when messages
  *  arrive without the room being opened/focused.
  */
-export const markRoomDelivered = async (roomId, atIso) => {
-  if (isPlatformUser()) return noop();
-  return sendRequest({ url: `/chat-rooms/${roomId}/delivered`, method: "POST", data: { atIso } });
-};
+export const markRoomDelivered = async (roomId, atIso) =>
+  sendRequest({ url: `${base()}/${roomId}/delivered`, method: "POST", data: { atIso } });
 
 /** Get per-member receipt watermarks for a room.
  *  Each row: { userId, lastReadAt, lastDeliveredAt, lastSeenAt }.
  */
-export const getRoomReceipts = async (roomId) => {
-  if (isPlatformUser()) return noop({ receipts: [] });
-  return sendRequest({ url: `/chat-rooms/${roomId}/receipts`, method: "GET" });
-};
+export const getRoomReceipts = async (roomId) =>
+  sendRequest({ url: `${base()}/${roomId}/receipts`, method: "GET" });
 
 /** Online/offline snapshot for a room's members (CHAT_012/013).
  *  Returns [{ userId, online }]. Seed the UI with this, then keep it current via
  *  the `chat.presence.changed` socket event.
  */
-export const getRoomPresence = async (roomId) => {
-  if (isPlatformUser()) return noop([]);
-  return sendRequest({ url: `/chat-rooms/${roomId}/presence`, method: "GET" });
-};
+export const getRoomPresence = async (roomId) =>
+  sendRequest({ url: `${base()}/${roomId}/presence`, method: "GET" });
 
 /** Signal typing start (call on first keystroke per compose session). */
-export const startTyping = async (roomId) => {
-  if (isPlatformUser()) return noop();
-  return sendRequest({ url: `/chat-rooms/${roomId}/typing/start`, method: "POST" });
-};
+export const startTyping = async (roomId) =>
+  sendRequest({ url: `${base()}/${roomId}/typing/start`, method: "POST" });
 
 /** Signal typing stop (call on send or blur). */
-export const stopTyping = async (roomId) => {
-  if (isPlatformUser()) return noop();
-  return sendRequest({ url: `/chat-rooms/${roomId}/typing/stop`, method: "POST" });
-};
+export const stopTyping = async (roomId) =>
+  sendRequest({ url: `${base()}/${roomId}/typing/stop`, method: "POST" });
 
 /**
  * Create or retrieve a chat room linked to a platform entity (tenant only).
@@ -178,7 +169,7 @@ export const openEntityRoom = async (body) => {
 // ── Attachments (CHAT_020–024) ───────────────────────────────────────────────
 // Chat-native presign flow: init (server validates type + size BEFORE issuing a
 // URL) → PUT to S3 → confirm → bind via attachmentIds on postMessage. Download
-// is a presigned GET. Platform path doesn't expose attachments → safe no-ops.
+// is a presigned GET. Both surfaces expose attachments (tenant + platform).
 
 /** Allowed types + size limit — mirrors the backend (single source for the UI). */
 export const CHAT_ATTACHMENT_RULES = {
@@ -194,21 +185,15 @@ export const CHAT_ATTACHMENT_RULES = {
 /** Validate + reserve an upload. body: { fileName, mimeType, fileSize }.
  *  Returns { attachmentId, uploadUrl, expiresIn }. Throws 400 on bad type/size.
  */
-export const initAttachment = async (roomId, body) => {
-  if (isPlatformUser()) return noop(null);
-  return sendRequest({ url: `/chat-rooms/${roomId}/attachments/init`, method: "POST", data: body });
-};
+export const initAttachment = async (roomId, body) =>
+  sendRequest({ url: `${base()}/${roomId}/attachments/init`, method: "POST", data: body });
 
 /** Confirm an upload finished. Returns { ok, fileName }. */
-export const confirmAttachment = async (attachmentId) => {
-  if (isPlatformUser()) return noop(null);
-  return sendRequest({ url: `/chat-rooms/attachments/${attachmentId}/confirm`, method: "POST" });
-};
+export const confirmAttachment = async (attachmentId) =>
+  sendRequest({ url: `${base()}/attachments/${attachmentId}/confirm`, method: "POST" });
 
 /** Get a fresh presigned download URL for a received attachment (CHAT_024).
  *  Returns { downloadUrl, expiresIn, fileName }.
  */
-export const getAttachmentDownload = async (attachmentId) => {
-  if (isPlatformUser()) return noop(null);
-  return sendRequest({ url: `/chat-rooms/attachments/${attachmentId}/download`, method: "GET" });
-};
+export const getAttachmentDownload = async (attachmentId) =>
+  sendRequest({ url: `${base()}/attachments/${attachmentId}/download`, method: "GET" });
