@@ -1266,6 +1266,16 @@ html {
   padding: 13px 15px;
   background: var(--electric-soft);
 }
+/* Keyboard focus ring for the selectable wizard cards (made focusable in JS).
+   Mirrors the hover affordance so keyboard users get clear, visible focus. */
+.wiz-wrap .start-option:focus-visible,
+.wiz-wrap .pc:focus-visible,
+.wiz-wrap .wcard:focus-visible,
+.wiz-wrap .step-dot:focus-visible {
+  outline: 2px solid var(--electric);
+  outline-offset: 2px;
+  border-color: var(--electric);
+}
 .wiz-wrap .phase-card {
   background: var(--wcard);
   border: 1px solid var(--stone-dark);

@@ -21,6 +21,24 @@ const LoginPage = () => {
     password: "",
   });
 
+  // Per-field validation messages
+  const [errors, setErrors] = useState({ email: "", password: "" });
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const EMAIL_MAX = 254; // RFC 5321
+  const PASSWORD_MAX = 64;
+
+  const validate = () => {
+    const next = { email: "", password: "" };
+    const email = formData.email.trim();
+    if (!email) next.email = "Email is required";
+    else if (!EMAIL_RE.test(email))
+      next.email = "Enter a valid email address, e.g. name@company.com";
+    if (!formData.password) next.password = "Password is required";
+    setErrors(next);
+    return !next.email && !next.password;
+  };
+
   // Load saved credentials on component mount
   useEffect(() => {
     loadSavedCredentials();
@@ -29,14 +47,16 @@ const LoginPage = () => {
   const loadSavedCredentials = () => {
     try {
       const savedEmail = localStorage.getItem("rememberedEmail");
-      const savedPassword = localStorage.getItem("rememberedPassword");
       const wasRemembered = localStorage.getItem("rememberMe") === "true";
+
+      // Defensively remove any password persisted by a previous build —
+      // passwords must never live in localStorage.
+      localStorage.removeItem("rememberedPassword");
 
       if (wasRemembered && savedEmail) {
         setFormData((prev) => ({
           ...prev,
           email: savedEmail,
-          password: savedPassword || "",
         }));
         setRememberMe(true);
       }
@@ -52,8 +72,8 @@ const LoginPage = () => {
   const saveCredentials = () => {
     try {
       if (rememberMe) {
-        localStorage.setItem("rememberedEmail", formData.email);
-        localStorage.setItem("rememberedPassword", formData.password);
+        // Persist only the email — never the password.
+        localStorage.setItem("rememberedEmail", formData.email.trim());
         localStorage.setItem("rememberMe", "true");
       } else {
         // Clear saved credentials if "Remember Me" is unchecked
@@ -80,7 +100,12 @@ const LoginPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Email never contains spaces — strip them automatically so leading,
+    // trailing, or pasted spaces are ignored.
+    const nextValue = name === "email" ? value.replace(/\s/g, "") : value;
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
+    // Clear the field's validation message as the user corrects it.
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleRememberMeChange = (e) => {
@@ -95,11 +120,18 @@ const LoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setMessage({ type: "", text: "" });
 
+    // Block submission until required fields are valid.
+    if (!validate()) return;
+
+    setLoading(true);
+
     try {
-      const response = await LoginService(formData);
+      const response = await LoginService({
+        email: formData.email.trim(),
+        password: formData.password,
+      });
       if (response) {
         setMessage({ type: "success", text: "Login successful!" });
 
@@ -108,10 +140,10 @@ const LoginPage = () => {
 
         const userResponse = await GetUser();
         setUser({ user: userResponse });
-        if (userResponse?.organizationName) {
-          const organizationResponse = await GetOrganization();
-          setOrganization({ organization: organizationResponse });
-        }
+        // if (userResponse?.organizationName) {
+        //   const organizationResponse = await GetOrganization();
+        //   setOrganization({ organization: organizationResponse });
+        // }
         setTimeout(() => router.push("/"), 2000);
       } else {
         setMessage({
@@ -496,26 +528,47 @@ const LoginPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Enter email"
-                required
+                maxLength={EMAIL_MAX}
+                aria-invalid={errors.email ? "true" : "false"}
                 className="w-full px-3.5 py-2.5 rounded border text-sm transition-all outline-none"
                 style={{
                   backgroundColor: "rgba(0,30,50,0.7)",
-                  borderColor: "rgba(0,180,220,0.22)",
+                  borderColor: errors.email
+                    ? "#ff6464"
+                    : "rgba(0,180,220,0.22)",
                   color: "#c8eaf5",
                   fontFamily: "'Exo 2', sans-serif",
                   fontSize: "0.8rem",
                   letterSpacing: "0.04em",
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = "#00d4ff";
-                  e.target.style.boxShadow =
-                    "0 0 0 2px rgba(0,212,255,0.18), inset 0 0 8px rgba(0,212,255,0.04)";
+                  e.target.style.borderColor = errors.email
+                    ? "#ff6464"
+                    : "#00d4ff";
+                  e.target.style.boxShadow = errors.email
+                    ? "0 0 0 2px rgba(255,100,100,0.18)"
+                    : "0 0 0 2px rgba(0,212,255,0.18), inset 0 0 8px rgba(0,212,255,0.04)";
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = "rgba(0,180,220,0.22)";
+                  e.target.style.borderColor = errors.email
+                    ? "#ff6464"
+                    : "rgba(0,180,220,0.22)";
                   e.target.style.boxShadow = "none";
                 }}
               />
+              {errors.email && (
+                <p
+                  style={{
+                    fontFamily: "'Share Tech Mono', monospace",
+                    color: "var(--rf-red)",
+                    fontSize: "0.62rem",
+                    letterSpacing: "0.04em",
+                    marginTop: "5px",
+                  }}
+                >
+                  {errors.email}
+                </p>
+              )}
             </div>
 
             {/* Password Field */}
@@ -539,11 +592,14 @@ const LoginPage = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Enter password"
-                required
+                maxLength={PASSWORD_MAX}
+                aria-invalid={errors.password ? "true" : "false"}
                 className="w-full px-3.5 py-2.5 rounded border text-sm transition-all outline-none"
                 style={{
                   backgroundColor: "rgba(0,30,50,0.7)",
-                  borderColor: "rgba(0,180,220,0.22)",
+                  borderColor: errors.password
+                    ? "#ff6464"
+                    : "rgba(0,180,220,0.22)",
                   color: "#c8eaf5",
                   fontFamily: "'Exo 2', sans-serif",
                   fontSize: "0.8rem",
@@ -551,23 +607,42 @@ const LoginPage = () => {
                   paddingRight: "42px",
                 }}
                 onFocus={(e) => {
-                  e.target.style.borderColor = "#00d4ff";
-                  e.target.style.boxShadow =
-                    "0 0 0 2px rgba(0,212,255,0.18), inset 0 0 8px rgba(0,212,255,0.04)";
+                  e.target.style.borderColor = errors.password
+                    ? "#ff6464"
+                    : "#00d4ff";
+                  e.target.style.boxShadow = errors.password
+                    ? "0 0 0 2px rgba(255,100,100,0.18)"
+                    : "0 0 0 2px rgba(0,212,255,0.18), inset 0 0 8px rgba(0,212,255,0.04)";
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = "rgba(0,180,220,0.22)";
+                  e.target.style.borderColor = errors.password
+                    ? "#ff6464"
+                    : "rgba(0,180,220,0.22)";
                   e.target.style.boxShadow = "none";
                 }}
               />
               <button
                 type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 onClick={togglePasswordVisibility}
                 className="absolute right-3 top-8.5 text-slate-400 hover:text-cyan-400 transition-colors"
                 style={{ color: "#5a9ab5" }}
               >
                 {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
               </button>
+              {errors.password && (
+                <p
+                  style={{
+                    fontFamily: "'Share Tech Mono', monospace",
+                    color: "var(--rf-red)",
+                    fontSize: "0.62rem",
+                    letterSpacing: "0.04em",
+                    marginTop: "5px",
+                  }}
+                >
+                  {errors.password}
+                </p>
+              )}
             </div>
 
             {/* Remember Me */}
@@ -623,27 +698,31 @@ const LoginPage = () => {
             )}
 
             {/* Submit Button */}
+            {(() => {
+              const isDisabled =
+                loading || !formData.email.trim() || !formData.password;
+              return (
             <button
               type="submit"
-              disabled={loading}
+              disabled={isDisabled}
               className="w-full py-3 rounded font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all mt-2"
               style={{
                 fontFamily: "'Rajdhani', sans-serif",
-                backgroundColor: loading ? "#0088aa" : "#00d4ff",
+                backgroundColor: isDisabled ? "#0088aa" : "#00d4ff",
                 color: "#020d16",
                 fontSize: "0.95rem",
                 letterSpacing: "0.2em",
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
+                cursor: isDisabled ? "not-allowed" : "pointer",
+                opacity: isDisabled ? 0.6 : 1,
               }}
               onMouseEnter={(e) => {
-                if (!loading) {
+                if (!isDisabled) {
                   e.target.style.backgroundColor = "#10eaff";
                   e.target.style.boxShadow = "0 0 22px rgba(0,212,255,0.45)";
                 }
               }}
               onMouseLeave={(e) => {
-                if (!loading) {
+                if (!isDisabled) {
                   e.target.style.backgroundColor = "#00d4ff";
                   e.target.style.boxShadow = "none";
                 }
@@ -680,6 +759,8 @@ const LoginPage = () => {
                 </>
               )}
             </button>
+              );
+            })()}
 
             <style>{`
               @keyframes fadeIn {
