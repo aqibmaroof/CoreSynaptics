@@ -89,7 +89,15 @@ export const listChatProjects = async () => {
 export const listMessages = async (roomId, params = {}) =>
   sendRequest({ url: `${base()}/${roomId}/messages`, method: "GET", params });
 
-/** Post a new message. payload: { body, parentId?, mentionedUserIds? } */
+/** Post a new message.
+ *  payload: { body, parentId?, mentionedUserIds?, attachmentIds? }
+ *  - parentId       → threaded reply (CHAT_027); the response carries a
+ *                     `replyTo` quoted preview of the parent.
+ *  - attachmentIds  → ids returned by initAttachment + confirmed via
+ *                     confirmAttachment (CHAT_020/021); bound to this message.
+ *  The response includes `status` (SENT|DELIVERED|READ), `attachments[]`,
+ *  `editedAt`, and `replyTo`.
+ */
 export const postMessage = async (roomId, payload) =>
   sendRequest({ url: `${base()}/${roomId}/messages`, method: "POST", data: payload });
 
@@ -111,16 +119,39 @@ export const deleteChatMessage = async (_roomId, msgId) =>
 // These exist only on the org-scoped surface. For platform users they degrade
 // to no-ops so the shared chat UI behaves identically without 404s.
 
-/** Mark all messages in a room as read up to `atIso` (defaults to now). */
+/** Mark all messages in a room as read up to `atIso` (defaults to now) — CHAT_010.
+ *  Advances the caller's read (+ delivery) watermark and broadcasts a read
+ *  receipt so senders see "Read".
+ */
 export const markRoomRead = async (roomId, atIso) => {
   if (isPlatformUser()) return noop();
   return sendRequest({ url: `/chat-rooms/${roomId}/read`, method: "POST", data: { atIso } });
 };
 
-/** Get per-member read receipt timestamps for a room. */
+/** Mark a room's messages delivered to the caller (CHAT_009) — advances only the
+ *  delivery watermark and broadcasts a "Delivered" receipt. Call when messages
+ *  arrive without the room being opened/focused.
+ */
+export const markRoomDelivered = async (roomId, atIso) => {
+  if (isPlatformUser()) return noop();
+  return sendRequest({ url: `/chat-rooms/${roomId}/delivered`, method: "POST", data: { atIso } });
+};
+
+/** Get per-member receipt watermarks for a room.
+ *  Each row: { userId, lastReadAt, lastDeliveredAt, lastSeenAt }.
+ */
 export const getRoomReceipts = async (roomId) => {
   if (isPlatformUser()) return noop({ receipts: [] });
   return sendRequest({ url: `/chat-rooms/${roomId}/receipts`, method: "GET" });
+};
+
+/** Online/offline snapshot for a room's members (CHAT_012/013).
+ *  Returns [{ userId, online }]. Seed the UI with this, then keep it current via
+ *  the `chat.presence.changed` socket event.
+ */
+export const getRoomPresence = async (roomId) => {
+  if (isPlatformUser()) return noop([]);
+  return sendRequest({ url: `/chat-rooms/${roomId}/presence`, method: "GET" });
 };
 
 /** Signal typing start (call on first keystroke per compose session). */
@@ -142,4 +173,42 @@ export const stopTyping = async (roomId) => {
 export const openEntityRoom = async (body) => {
   if (isPlatformUser()) return noop(null);
   return sendRequest({ url: "/chat-rooms/linked", method: "POST", data: body });
+};
+
+// ── Attachments (CHAT_020–024) ───────────────────────────────────────────────
+// Chat-native presign flow: init (server validates type + size BEFORE issuing a
+// URL) → PUT to S3 → confirm → bind via attachmentIds on postMessage. Download
+// is a presigned GET. Platform path doesn't expose attachments → safe no-ops.
+
+/** Allowed types + size limit — mirrors the backend (single source for the UI). */
+export const CHAT_ATTACHMENT_RULES = {
+  extensions: ["pdf", "doc", "docx"],
+  mimeTypes: [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ],
+  maxBytes: 10 * 1024 * 1024, // 10 MB
+};
+
+/** Validate + reserve an upload. body: { fileName, mimeType, fileSize }.
+ *  Returns { attachmentId, uploadUrl, expiresIn }. Throws 400 on bad type/size.
+ */
+export const initAttachment = async (roomId, body) => {
+  if (isPlatformUser()) return noop(null);
+  return sendRequest({ url: `/chat-rooms/${roomId}/attachments/init`, method: "POST", data: body });
+};
+
+/** Confirm an upload finished. Returns { ok, fileName }. */
+export const confirmAttachment = async (attachmentId) => {
+  if (isPlatformUser()) return noop(null);
+  return sendRequest({ url: `/chat-rooms/attachments/${attachmentId}/confirm`, method: "POST" });
+};
+
+/** Get a fresh presigned download URL for a received attachment (CHAT_024).
+ *  Returns { downloadUrl, expiresIn, fileName }.
+ */
+export const getAttachmentDownload = async (attachmentId) => {
+  if (isPlatformUser()) return noop(null);
+  return sendRequest({ url: `/chat-rooms/attachments/${attachmentId}/download`, method: "GET" });
 };

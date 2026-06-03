@@ -17,16 +17,17 @@ import {
   openDirectRoom,
   listChatProjects,
   markRoomRead,
+  markRoomDelivered,
   getRoomReceipts,
+  getRoomPresence,
   startTyping,
   stopTyping,
+  initAttachment,
+  confirmAttachment,
+  getAttachmentDownload,
+  CHAT_ATTACHMENT_RULES,
 } from "@/services/Chat";
-import {
-  requestUploadUrl,
-  uploadFileToS3,
-  confirmUpload,
-  getDownloadUrl,
-} from "@/services/Documents";
+import { uploadFileToS3 } from "@/services/Documents";
 import { useRealtimeSocket } from "@/lib/realtime/useRealtimeSocket";
 import { onEnvelope } from "@/lib/realtime/envelope";
 import ChatReactionsBar from "@/components/ChatReactionsBar";
@@ -77,6 +78,57 @@ const normaliseMessage = (m, currentUser) => {
     (m.updatedAt && createdAt && new Date(m.updatedAt) - new Date(createdAt) > 1000
       ? m.updatedAt
       : null);
+  // Attachments: backend returns an `attachments[]` array, each
+  // { id, fileName, mimeType, fileSize, downloadUrl }. Older/optimistic shapes
+  // may carry a single attachmentUrl — fold both into one normalized list.
+  const rawAttachments = Array.isArray(m.attachments) ? m.attachments : [];
+  const attachments = rawAttachments.map((a) => ({
+    id: a.id,
+    name: a.fileName || a.name || "file",
+    type: a.mimeType || a.type || "",
+    size: a.fileSize ?? a.size ?? null,
+    url: a.downloadUrl || a.url || null,
+  }));
+  if (attachments.length === 0 && (m.attachmentUrl || m.attachment_url)) {
+    attachments.push({
+      id: m.attachmentId || null,
+      name: m.attachmentName || m.attachment_name || "file",
+      type: m.attachmentType || m.attachment_type || "",
+      size: null,
+      url: m.attachmentUrl || m.attachment_url,
+    });
+  }
+
+  // Reply preview: backend returns a `replyTo` object
+  // { id, senderName, body, deleted }. Fall back to flat fields for optimistic
+  // messages composed locally before the server echo.
+  const replyTo = m.replyTo
+    ? {
+        id: m.replyTo.id,
+        senderName: m.replyTo.senderName || "",
+        body: m.replyTo.body || "",
+        deleted: !!m.replyTo.deleted,
+      }
+    : m.replyToId || m.parentId
+      ? {
+          id: m.replyToId || m.parentId,
+          senderName: m.replyToSender || "",
+          body: m.replyToBody || "",
+          deleted: false,
+        }
+      : null;
+
+  // Per-message status (CHAT_009/010): backend sends SENT|DELIVERED|READ.
+  // Normalize to the lowercase tokens the StatusTick component renders.
+  const rawStatus = (m.status || "").toString().toUpperCase();
+  const status = m.pending
+    ? "sending"
+    : rawStatus === "READ"
+      ? "read"
+      : rawStatus === "DELIVERED"
+        ? "delivered"
+        : "sent";
+
   return {
     id: m.id,
     senderId,
@@ -88,15 +140,13 @@ const normaliseMessage = (m, currentUser) => {
     mentions: Array.isArray(m.mentions) ? m.mentions : [],
     createdAt,
     editedAt,
-    // Attachment (rendered when the server stored an attachmentUrl on the message).
-    attachmentUrl: m.attachmentUrl || m.attachment_url || null,
-    attachmentName: m.attachmentName || m.attachment_name || "",
-    attachmentType: m.attachmentType || m.attachment_type || "",
-    // Reply reference (display + scroll-to). The send API does not persist this
-    // yet, but we render it whenever the DTO provides it.
-    replyToId: m.replyToId || m.parentMessageId || m.parentId || null,
-    replyToBody: m.replyToBody || m.parentBody || "",
-    replyToSender: m.replyToSender || m.parentSender || "",
+    attachments,
+    // Per-message delivery status for the sender's own messages.
+    status,
+    // Reply reference (display + scroll-to).
+    replyToId: replyTo?.id || null,
+    replyToBody: replyTo?.deleted ? "This message was deleted" : replyTo?.body || "",
+    replyToSender: replyTo?.senderName || "",
     timeAgo: m.timeAgo || formatTime(createdAt),
     isOwn,
     canDelete: isOwn,
@@ -242,9 +292,12 @@ const dayKey = (iso) => {
   return isNaN(d) ? "" : d.toDateString();
 };
 
-// File-upload policy. Any file type is allowed; only an oversize guard remains
-// so a single huge file can't be queued.
-const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB
+// File-upload policy — must mirror the backend (CHAT_020–023). Only PDF / DOC /
+// DOCX are accepted, with a 10 MB ceiling. The server re-validates and is the
+// source of truth; this client check just gives instant, clear feedback.
+const MAX_UPLOAD_BYTES = CHAT_ATTACHMENT_RULES.maxBytes; // 10 MB
+const ALLOWED_EXTS = CHAT_ATTACHMENT_RULES.extensions; // ['pdf','doc','docx']
+const ALLOWED_MIMES = CHAT_ATTACHMENT_RULES.mimeTypes;
 const isImageName = (name = "", type = "") =>
   /^image\//.test(type) || /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(name);
 const fileExt = (name = "") => name.split(".").pop()?.toLowerCase() || "";
@@ -255,13 +308,22 @@ const humanSize = (bytes) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 // Validate a chosen file; returns an error string or null when acceptable.
-// All formats are permitted — only the size ceiling is enforced.
+// CHAT_022: unsupported types blocked. CHAT_023: oversize blocked with the limit.
 const validateUploadFile = (file) => {
   if (!file) return "No file selected.";
+  const ext = fileExt(file.name);
+  const typeOk =
+    ALLOWED_EXTS.includes(ext) &&
+    (!file.type || ALLOWED_MIMES.includes(file.type));
+  if (!typeOk) {
+    return `"${file.name}" is not a supported file type. Allowed: ${ALLOWED_EXTS.map(
+      (e) => "." + e
+    ).join(", ")} (PDF, DOC, DOCX).`;
+  }
   if (file.size > MAX_UPLOAD_BYTES) {
     return `"${file.name}" is too large (${humanSize(
       file.size
-    )}). Maximum is ${humanSize(MAX_UPLOAD_BYTES)}.`;
+    )}). The maximum attachment size is ${humanSize(MAX_UPLOAD_BYTES)}.`;
   }
   return null;
 };
@@ -446,11 +508,40 @@ function StatusTick({ status }) {
   );
 }
 
-function Attachment({ url, name, type }) {
+function Attachment({ attachmentId, url, name, type }) {
+  const [busy, setBusy] = useState(false);
+
+  // CHAT_024 — resolve a fresh presigned download URL on click. The URL baked
+  // into the message list can expire; re-fetching guarantees the download works.
+  const handleDownload = useCallback(
+    async (e) => {
+      if (!attachmentId) return; // fall through to the href (optimistic/local)
+      e.preventDefault();
+      if (busy) return;
+      setBusy(true);
+      try {
+        const res = await getAttachmentDownload(attachmentId);
+        const fresh = (res?.data || res)?.downloadUrl || url;
+        if (fresh) window.open(fresh, "_blank", "noopener,noreferrer");
+      } catch {
+        if (url) window.open(url, "_blank", "noopener,noreferrer");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [attachmentId, url, busy]
+  );
+
   const isImg = isImageName(name || url, type);
   if (isImg) {
     return (
-      <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: "block" }}>
+      <a
+        href={url || "#"}
+        onClick={handleDownload}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{ display: "block" }}
+      >
         <img
           src={url}
           alt={name || "attachment"}
@@ -468,7 +559,8 @@ function Attachment({ url, name, type }) {
   }
   return (
     <a
-      href={url}
+      href={url || "#"}
+      onClick={handleDownload}
       target="_blank"
       rel="noopener noreferrer"
       download={name || true}
@@ -483,6 +575,7 @@ function Attachment({ url, name, type }) {
         color: "var(--rf-txt)",
         textDecoration: "none",
         maxWidth: 260,
+        opacity: busy ? 0.6 : 1,
       }}
     >
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -697,13 +790,24 @@ function MessageBubble({
           ) : (
             <>
               {msg.body && <ChatMessageBody message={msg} />}
-              {msg.attachmentUrl && (
-                <div style={{ marginTop: msg.body ? 6 : 0 }}>
-                  <Attachment
-                    url={msg.attachmentUrl}
-                    name={msg.attachmentName}
-                    type={msg.attachmentType}
-                  />
+              {msg.attachments?.length > 0 && (
+                <div
+                  style={{
+                    marginTop: msg.body ? 6 : 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                  }}
+                >
+                  {msg.attachments.map((att, i) => (
+                    <Attachment
+                      key={att.id || i}
+                      attachmentId={att.id}
+                      url={att.url}
+                      name={att.name}
+                      type={att.type}
+                    />
+                  ))}
                 </div>
               )}
             </>
@@ -774,7 +878,7 @@ function MessageBubble({
             </svg>
             Forward
           </button>
-          {msg.canDelete && !msg.attachmentUrl && (
+          {msg.canDelete && msg.body && (
             <button
               onClick={() => onEdit?.(msg)}
               title="Edit message"
@@ -1730,6 +1834,7 @@ export default function Chat() {
   const notifiedIdsRef = useRef(new Set()); // de-dupe in-app notifications
   const typingTimersRef = useRef({}); // { userId: timeoutId } to expire typing indicators
   const typingSentRef = useRef(0); // throttle outbound typing-start signals
+  const membersByIdRef = useRef({}); // { userId: { name } } for typing-name lookup
   const flashSuccess = useCallback((text) => {
     setSuccessMsg(text);
     setTimeout(() => setSuccessMsg((cur) => (cur === text ? null : cur)), 3000);
@@ -1927,6 +2032,15 @@ export default function Chat() {
     roomsRef.current = rooms;
   }, [rooms]);
 
+  // Keep a userId → name map for the typing indicator (which only gets a
+  // userId on the wire). Sourced from loaded members + message senders.
+  useEffect(() => {
+    const map = { ...membersByIdRef.current };
+    for (const m of roomMembers) if (m.id) map[m.id] = { name: m.name };
+    for (const m of messages) if (m.senderId) map[m.senderId] = { name: m.senderName };
+    membersByIdRef.current = map;
+  }, [roomMembers, messages]);
+
   // ── Incoming message handling (shared by socket + poll) ─────────────────────
   const ingestIncoming = useCallback(
     (rawMsg, roomId) => {
@@ -1964,96 +2078,166 @@ export default function Chat() {
   useEffect(() => {
     if (!socket || !currentUser) return;
     const offs = [];
+
     const onCreated = ({ data }) => {
       const msg = data?.message || data;
       const roomId = data?.roomId || msg?.roomId || msg?.chatRoomId;
-      if (roomId) ingestIncoming(msg, roomId);
+      if (!roomId) return;
+      ingestIncoming(msg, roomId);
+      // CHAT_009 — acknowledge delivery for messages from others. If the room is
+      // focused this also re-marks read; markDelivered just advances the
+      // delivery watermark so the sender sees "Delivered" even when unfocused.
+      const senderId = msg?.senderUserId || msg?.senderId;
+      if (senderId && senderId !== currentUser.id) {
+        markRoomDelivered(roomId).catch(() => {});
+      }
     };
+
+    const onUpdated = ({ data }) => {
+      const msg = data?.message || data;
+      const id = data?.messageId || msg?.id;
+      if (!id) return;
+      // Apply the edit live to whichever room it belongs to (CHAT_025).
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === id
+            ? normaliseMessage({ ...msg, id, pending: false }, currentUser)
+            : m
+        )
+      );
+    };
+
     const onDeleted = ({ data }) => {
       const id = data?.messageId || data?.id;
       if (id) setMessages((prev) => prev.filter((m) => m.id !== id));
     };
+
     const onTyping = ({ data }) => {
       const roomId = data?.roomId;
       if (roomId !== activeRoomIdRef.current) return;
       const uid = data?.userId;
       if (!uid || uid === currentUser.id) return;
-      const name = data?.userName || data?.name || "Someone";
-      if (data?.stopped) {
+      const name =
+        membersByIdRef.current?.[uid]?.name || data?.userName || data?.name || "Someone";
+      // Backend payload: { roomId, userId, isTyping }. isTyping === false stops.
+      if (data?.isTyping === false) {
+        clearTimeout(typingTimersRef.current[uid]);
         setTypingNames((prev) => prev.filter((n) => n !== name));
         return;
       }
       setTypingNames((prev) => (prev.includes(name) ? prev : [...prev, name]));
       clearTimeout(typingTimersRef.current[uid]);
+      // Auto-expire if no stop/refresh arrives (the indicator must disappear
+      // shortly after typing stops — CHAT_011).
       typingTimersRef.current[uid] = setTimeout(() => {
         setTypingNames((prev) => prev.filter((n) => n !== name));
       }, 4000);
     };
-    const onReceipt = () => refreshReceipts();
 
-    // The backend's exact channel names aren't referenced elsewhere in the
-    // frontend; we subscribe to the conventional `domain.event` names and also
-    // poll (below) so behaviour is correct even if a name differs.
-    for (const ev of ["chat.message.created", "chat.message", "message.created"]) {
-      offs.push(onEnvelope(socket, ev, onCreated));
-    }
-    for (const ev of ["chat.message.deleted", "message.deleted"]) {
-      offs.push(onEnvelope(socket, ev, onDeleted));
-    }
-    for (const ev of ["chat.typing", "typing"]) {
-      offs.push(onEnvelope(socket, ev, onTyping));
-    }
-    for (const ev of ["chat.read", "chat.receipt", "read.receipt"]) {
-      offs.push(onEnvelope(socket, ev, onReceipt));
-    }
-    return () => offs.forEach((off) => off && off());
-  }, [socket, currentUser, ingestIncoming, refreshReceipts]);
-
-  // ── Presence: track which users are online (socket-driven, best-effort) ──────
-  useEffect(() => {
-    if (!socket || !currentUser) return;
-    const offs = [];
-    const setOnline = (id, on) =>
-      setOnlineUserIds((prev) => {
-        if (!id) return prev;
-        if (on === prev.has(id)) return prev; // no-op
-        const next = new Set(prev);
-        if (on) next.add(id);
-        else next.delete(id);
-        return next;
-      });
-    const idOf = (x) => x?.userId || x?.id || (typeof x === "string" ? x : null);
-    const onOnline = ({ data }) => setOnline(idOf(data), true);
-    const onOffline = ({ data }) => setOnline(idOf(data), false);
-    // A full snapshot of currently-online users (sent on connect / request).
-    const onSync = ({ data }) => {
-      const list =
-        data?.userIds || data?.online || data?.users || (Array.isArray(data) ? data : null);
-      if (Array.isArray(list)) {
-        setOnlineUserIds(new Set(list.map(idOf).filter(Boolean)));
+    // CHAT_009/010 — a receipt advances the read watermark for the room. The
+    // sender's own messages flip Delivered → Read off this signal.
+    const onReceipt = ({ data }) => {
+      if (data?.roomId !== activeRoomIdRef.current) return;
+      if (!data?.userId || data.userId === currentUser.id) return;
+      if (data?.kind === "read" && data?.at) {
+        setOthersReadAt((prev) =>
+          !prev || new Date(data.at) > new Date(prev) ? data.at : prev
+        );
+      } else {
+        // Delivery-only receipt — refresh from the authoritative endpoint.
+        refreshReceipts();
       }
     };
 
-    for (const ev of ["presence.online", "user.online", "chat.presence.online"]) {
-      offs.push(onEnvelope(socket, ev, onOnline));
-    }
-    for (const ev of ["presence.offline", "user.offline", "chat.presence.offline"]) {
-      offs.push(onEnvelope(socket, ev, onOffline));
-    }
-    for (const ev of ["presence.sync", "presence.state", "chat.presence"]) {
-      offs.push(onEnvelope(socket, ev, onSync));
-    }
+    offs.push(onEnvelope(socket, "chat.message.created", onCreated));
+    offs.push(onEnvelope(socket, "chat.message.updated", onUpdated));
+    offs.push(onEnvelope(socket, "chat.message.deleted", onDeleted));
+    offs.push(onEnvelope(socket, "chat.typing", onTyping));
+    offs.push(onEnvelope(socket, "chat.receipt.updated", onReceipt));
 
-    // Announce ourselves and request the current roster. Harmless if the
-    // backend ignores these channels — the indicators just stay "offline".
-    try {
-      socket.emit?.("presence.subscribe", {});
-      socket.emit?.("presence.ping", {});
-    } catch {
-      /* stub socket — ignore */
-    }
     return () => offs.forEach((off) => off && off());
+  }, [socket, currentUser, ingestIncoming, refreshReceipts]);
+
+  // ── Join the active room's socket channel ───────────────────────────────────
+  // The gateway only fans chat events to subscribers of `chatroom:<roomId>`;
+  // we must explicitly subscribe (and re-subscribe on reconnect) or no live
+  // message/typing/receipt events arrive for the open room.
+  //
+  // IMPORTANT: subscribe only AFTER the server confirms auth via its `connected`
+  // event. Emitting `subscribe:chatroom` on the raw socket.io `connect` races
+  // the gateway's handleConnection (which sets socket.data.auth) and is rejected
+  // as "Unauthenticated" — which silently breaks live typing/receipts for the
+  // room (presence still works because that channel is joined server-side).
+  useEffect(() => {
+    if (!socket || !activeRoomId) return;
+    const join = () => socket.emit?.("subscribe:chatroom", { roomId: activeRoomId });
+    // If the socket is already authenticated (we've been connected a while),
+    // join right away; the `connected` handler covers fresh/reconnect cases.
+    if (socket.connected) join();
+    socket.on?.("connected", join); // server-confirmed auth (gateway emits this)
+    return () => {
+      socket.emit?.("unsubscribe", { channel: `chatroom:${activeRoomId}` });
+      socket.off?.("connected", join);
+    };
+  }, [socket, activeRoomId]);
+
+  // ── Presence: who's online (CHAT_012/013) ──────────────────────────────────
+  // Live edge updates arrive on the org channel as `chat.presence.changed`
+  // { userId, online }. The gateway joins the caller's org channel on connect,
+  // so no extra subscribe is needed. We also send a 25s heartbeat so our own
+  // presence key never expires while the tab is open.
+  useEffect(() => {
+    if (!socket || !currentUser) return;
+    const onChanged = ({ data }) => {
+      const id = data?.userId;
+      const online = !!data?.online;
+      if (!id) return;
+      setOnlineUserIds((prev) => {
+        if (online === prev.has(id)) return prev;
+        const next = new Set(prev);
+        if (online) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    };
+    const off = onEnvelope(socket, "chat.presence.changed", onChanged);
+
+    const beat = () => socket.emit?.("presence:heartbeat", {});
+    beat();
+    const hb = setInterval(beat, 25000);
+    return () => {
+      off && off();
+      clearInterval(hb);
+    };
   }, [socket, currentUser]);
+
+  // Seed the presence snapshot for the open room's members (CHAT_012/013), then
+  // live `chat.presence.changed` events keep it current. Re-seed on room switch.
+  useEffect(() => {
+    if (!activeRoomId || !currentUser) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getRoomPresence(activeRoomId);
+        const list = Array.isArray(res) ? res : res?.data || [];
+        if (cancelled) return;
+        setOnlineUserIds((prev) => {
+          const next = new Set(prev);
+          for (const row of list) {
+            if (!row?.userId) continue;
+            if (row.online) next.add(row.userId);
+            else next.delete(row.userId);
+          }
+          return next;
+        });
+      } catch {
+        /* presence is best-effort — dots just stay as they were */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeRoomId, currentUser]);
 
   // ── Polling fallback: active-room messages + room unread (no refresh needed) ─
   useEffect(() => {
@@ -2198,48 +2382,31 @@ export default function Chat() {
     });
   };
 
-  // ── Upload one attachment through the Documents presign → S3 → confirm flow ──
-  // Chat has no upload endpoint of its own, so files are stored as Documents
-  // linked back to the chat room, then a fresh download URL is attached to the
-  // message. Returns { url, name, type }.
+  // ── Upload one attachment via the chat presign → S3 → confirm flow ──────────
+  // CHAT_020–023: init validates type+size on the server BEFORE issuing a URL;
+  // we PUT to S3, then confirm. Returns the attachmentId to bind on postMessage.
   const uploadOneAttachment = useCallback(
     async (file, room) => {
-      if (!room?.projectId) {
-        throw new Error(
-          "This conversation isn't linked to a project, so files can't be attached here."
-        );
-      }
-      const meta = {
-        title: file.name,
-        projectId: room.projectId,
-        // siteId / subProjectId are only sent when the room carries them.
-        ...(room.siteId ? { siteId: room.siteId } : {}),
-        ...(room.subProjectId ? { subProjectId: room.subProjectId } : {}),
+      // 1. Validate + reserve (server rejects bad type/size here with a message).
+      const init = await initAttachment(room.id, {
         fileName: file.name,
         mimeType: file.type || "application/octet-stream",
         fileSize: file.size,
-        category: "CHAT_ATTACHMENT",
-        linkedToType: "ChatRoom",
-        linkedToId: room.id,
-      };
-      const res = await requestUploadUrl(meta);
-      const data = res?.data || res || {};
-      const uploadUrl = data.uploadUrl || data.url;
-      const docId =
-        data.documentId || data.id || data.document?.id || data.document?.documentId;
-      if (!uploadUrl) throw new Error("Upload could not be started (no upload URL).");
-
-      await uploadFileToS3(uploadUrl, file, (p) => setUploadProgress(p));
-      if (docId) await confirmUpload(docId);
-
-      // Prefer a stable URL the server may return; else fetch a download URL.
-      let url = data.fileUrl || data.downloadUrl || data.publicUrl || null;
-      if (!url && docId) {
-        const dl = await getDownloadUrl(docId);
-        url = (dl?.data || dl)?.downloadUrl || null;
+      });
+      const data = init?.data || init || {};
+      const attachmentId = data.attachmentId;
+      const uploadUrl = data.uploadUrl;
+      if (!attachmentId || !uploadUrl) {
+        throw new Error("Upload could not be started.");
       }
-      if (!url) throw new Error("File uploaded but no download URL was returned.");
-      return { url, name: file.name, type: file.type || "" };
+
+      // 2. PUT the binary straight to S3.
+      await uploadFileToS3(uploadUrl, file, (p) => setUploadProgress(p));
+
+      // 3. Confirm so the server marks it ready to bind (CHAT_020/021).
+      await confirmAttachment(attachmentId);
+
+      return { attachmentId, name: file.name, type: file.type || "" };
     },
     []
   );
@@ -2290,59 +2457,31 @@ export default function Chat() {
     setSending(true);
 
     try {
-      // Upload any attachments first (Documents presign → S3 → confirm).
-      const attachments = [];
+      // Upload any attachments first (chat presign → S3 → confirm). Each returns
+      // an attachmentId we bind to the single outgoing message (CHAT_020/021).
+      const attachmentIds = [];
       if (filesToSend.length > 0) {
         setUploadProgress(0);
         for (const pf of filesToSend) {
-          attachments.push(await uploadOneAttachment(pf.file, room));
+          const { attachmentId } = await uploadOneAttachment(pf.file, room);
+          if (attachmentId) attachmentIds.push(attachmentId);
         }
         setUploadProgress(100);
       }
 
-      // The postMessage API carries a single attachmentUrl, so the text (and the
-      // reply reference) ride with the first file; any extra files are sent as
-      // their own follow-up messages.
-      const firstAtt = attachments[0];
+      // One message carries the text, the reply ref (parentId), and all files.
       const res = await postMessage(activeRoomId, {
         body,
-        attachmentUrl: firstAtt?.url || undefined,
-        attachmentName: firstAtt?.name || undefined,
-        attachmentType: firstAtt?.type || undefined,
-        replyToId: replyRef?.id || undefined,
+        parentId: replyRef?.id || undefined,
+        attachmentIds: attachmentIds.length ? attachmentIds : undefined,
       });
-      for (let i = 1; i < attachments.length; i++) {
-        const a = attachments[i];
-        await postMessage(activeRoomId, {
-          body: "",
-          attachmentUrl: a.url,
-          attachmentName: a.name,
-          attachmentType: a.type,
-        });
-      }
 
       const saved = res?.data || res;
-      if (attachments.length > 1) {
-        // Multiple messages were created — drop the optimistic stand-in and let
-        // the next fetch reconcile the authoritative list.
-        setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-        fetchMessages(activeRoomId);
-      } else if (saved?.id) {
+      if (saved?.id) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === optimistic.id
-              ? normaliseMessage(
-                  {
-                    ...saved,
-                    canDelete: true,
-                    // Keep the client-side reply context if the server didn't echo it.
-                    replyToId:
-                      saved.replyToId || saved.parentMessageId || replyRef?.id || null,
-                    replyToBody: saved.replyToBody || replyRef?.body || "",
-                    replyToSender: saved.replyToSender || replyRef?.senderName || "",
-                  },
-                  currentUser
-                )
+              ? normaliseMessage({ ...saved, canDelete: true }, currentUser)
               : m
           )
         );
@@ -2402,7 +2541,18 @@ export default function Chat() {
     );
     cancelEdit();
     try {
-      await editChatMessage(activeRoomId, id, newBody);
+      const res = await editChatMessage(activeRoomId, id, newBody);
+      const saved = res?.data || res;
+      // Reconcile with the server's authoritative row (real editedAt, etc.).
+      if (saved?.id) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === id
+              ? normaliseMessage({ ...saved, canDelete: true }, currentUser)
+              : m
+          )
+        );
+      }
       flashSuccess("Message updated.");
     } catch (err) {
       // Restore the original so an edit never silently sticks on failure.
@@ -2442,13 +2592,15 @@ export default function Chat() {
   };
 
   // ── Forward a message to another room (uses the confirmed postMessage API) ──
+  // Forwards the text body. Attachments aren't re-bound across rooms (each is
+  // tied to its original room/message), so a forwarded copy carries the text.
   const handleForward = async (targetRoomId) => {
     if (!forwardMsg || !targetRoomId) return;
     try {
-      await postMessage(targetRoomId, {
-        body: forwardMsg.body,
-        attachmentUrl: forwardMsg.attachmentUrl || undefined,
-      });
+      const fwdBody =
+        forwardMsg.body ||
+        (forwardMsg.attachments?.length ? `[Attachment: ${forwardMsg.attachments[0].name}]` : "");
+      await postMessage(targetRoomId, { body: fwdBody });
       setForwardMsg(null);
       const room = rooms.find((r) => r.id === targetRoomId);
       flashSuccess(`Message forwarded to ${room?.name || "conversation"}.`);
@@ -3157,15 +3309,24 @@ export default function Chat() {
               const showDay =
                 msg.createdAt &&
                 (!prev || dayKey(prev.createdAt) !== dayKey(msg.createdAt));
+              // Status for the sender's own messages (CHAT_009/010). Combine two
+              // signals and take the furthest-along: (a) the live read watermark
+              // `othersReadAt` (advanced by chat.receipt.updated), and (b) the
+              // server-derived per-message `msg.status`. Either alone is correct;
+              // together they stay right whether the update arrived via socket or
+              // the last fetch.
               let status = null;
               if (msg.pending) status = "sending";
-              else if (msg.isOwn)
-                status =
+              else if (msg.isOwn) {
+                const readByWatermark =
                   othersReadAt &&
                   msg.createdAt &&
-                  new Date(othersReadAt) >= new Date(msg.createdAt)
-                    ? "read"
-                    : "delivered";
+                  new Date(othersReadAt) >= new Date(msg.createdAt);
+                const rank = { sent: 0, delivered: 1, read: 2 };
+                const fromServer = msg.status === "read" || msg.status === "delivered" ? msg.status : "delivered";
+                const fromWatermark = readByWatermark ? "read" : "delivered";
+                status = rank[fromServer] >= rank[fromWatermark] ? fromServer : fromWatermark;
+              }
               return (
                 <Fragment key={msg.id}>
                   {showDay && (
