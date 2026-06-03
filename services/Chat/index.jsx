@@ -1,117 +1,138 @@
 import sendRequest from "../instance/sendRequest";
+import { getUser } from "../instance/tokenService";
 
-// ── PR-C: Chat Rooms ──────────────────────────────────────────────────────────
-// Base: /chat-rooms
-// Room visibility is scoped by org membership server-side — clients never
-// filter by orgId manually; just pass projectId when creating PROJECT rooms.
+// ── Chat Rooms (single UI, dual endpoint) ─────────────────────────────────────
+// There is ONE chat UI (containers/Chat). The backend exposes the SAME chat
+// service behind two controller paths because tenant rooms are org-scoped and
+// reject org-less platform users:
+//   • tenant users  → /chat-rooms/*
+//   • SUPERADMIN     → /platform/chat-rooms/*   (cross-org rooms + DMs)
+// This service detects the caller and routes to the right base. The container
+// is unchanged and works for both. A few enhancements (typing, receipts,
+// archive, project-scoped rooms) exist only on the tenant path; for a platform
+// user they degrade to safe no-ops so the shared UI never errors.
 
-/** Create a new chat room.
- *  payload: {
- *    name: string,
- *    roomType: "INTERNAL" | "CROSS" | "HORIZONTAL" | "PROJECT",
- *    cxProjectId?: uuid        // required for CROSS, HORIZONTAL, PROJECT
- *    participantOrgIds?: uuid[] // required for CROSS (exactly 1), HORIZONTAL (≥ 1)
- *  }
- *  INTERNAL  — same org only
- *  CROSS     — two specific orgs (GC ↔ OEM); needs cxProjectId + 1 participantOrgId
- *  HORIZONTAL — multi-party; needs cxProjectId + ≥1 participantOrgIds
- *  PROJECT   — all orgs on a project; auto-provisioned on project creation
+const isPlatformUser = () => {
+  try {
+    const u = JSON.parse(getUser() || "null");
+    return Boolean(u?.isPlatformUser);
+  } catch {
+    return false;
+  }
+};
+
+// Base path for the current caller. Platform users (SUPERADMIN) talk to the
+// platform surface; everyone else to the org-scoped surface.
+const base = () => (isPlatformUser() ? "/platform/chat-rooms" : "/chat-rooms");
+
+// A resolved no-op for platform-unsupported enhancements (keeps the shared UI
+// from throwing on features the platform surface doesn't expose).
+const noop = async (value = null) => value;
+
+/** Create a chat room.
+ *  Tenant payload: { name, roomType, cxProjectId?, participantOrgIds?, participantUserIds? }
+ *  Platform payload: { name, participantUserIds? }  (always a platform-owned room)
  */
 export const createChatRoom = async (payload) =>
-  sendRequest({ url: "/chat-rooms", method: "POST", data: payload });
+  sendRequest({ url: base(), method: "POST", data: payload });
 
-/** List rooms visible to the caller.
- *  params: { cxProjectId?, roomType?, includeArchived? }
- */
+/** List rooms visible to the caller. params: { cxProjectId?, roomType?, includeArchived? } */
 export const listChatRooms = async (params = {}) =>
-  sendRequest({ url: "/chat-rooms", method: "GET", params });
+  sendRequest({ url: base(), method: "GET", params });
 
 /** Get a single room by ID (includes members list). */
 export const getChatRoom = async (id) =>
-  sendRequest({ url: `/chat-rooms/${id}`, method: "GET" });
+  sendRequest({ url: `${base()}/${id}`, method: "GET" });
 
-/** Soft-archive a room (owner only). Archived rooms are hidden from list by default. */
-export const archiveChatRoom = async (id) =>
-  sendRequest({ url: `/chat-rooms/${id}/archive`, method: "POST" });
+/** Soft-archive a room (tenant owner only). Platform rooms aren't archivable → no-op. */
+export const archiveChatRoom = async (id) => {
+  if (isPlatformUser()) return noop();
+  return sendRequest({ url: `/chat-rooms/${id}/archive`, method: "POST" });
+};
 
 /** List resolved members visible in a room (with names + role). */
 export const listRoomMembers = async (roomId) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/members`, method: "GET" });
+  sendRequest({ url: `${base()}/${roomId}/members`, method: "GET" });
 
-/** Add explicit member userIds to a room (owner org only). */
+/** Add explicit member userIds to a room. Tenant: same-org only; platform: any org. */
 export const addRoomMembers = async (roomId, userIds) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/members`, method: "POST", data: { userIds } });
+  sendRequest({ url: `${base()}/${roomId}/members`, method: "POST", data: { userIds } });
 
-/** Remove a single member from a room (owner org only). */
-export const removeRoomMember = async (roomId, userId) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/members/${userId}`, method: "DELETE" });
+/** Remove a single member from a room (tenant owner only). Not supported on platform path → no-op. */
+export const removeRoomMember = async (roomId, userId) => {
+  if (isPlatformUser()) return noop();
+  return sendRequest({ url: `/chat-rooms/${roomId}/members/${userId}`, method: "DELETE" });
+};
 
-/** List users in the caller's organization (for member-picker).
- *  Hits the chat-scoped directory endpoint so non-admin users can still
- *  add teammates to rooms they own.
+/** Users available for the member-picker.
+ *  Tenant: teammates in the caller's org. Platform: active users across ALL orgs.
  */
-export const listOrgUsers = async () =>
-  sendRequest({ url: "/chat-rooms/_directory/users", method: "GET" });
+export const listOrgUsers = async () => {
+  if (isPlatformUser()) {
+    const res = await sendRequest({ url: "/platform/chat-rooms/_directory/users", method: "GET" });
+    return Array.isArray(res) ? res : res?.data || [];
+  }
+  return sendRequest({ url: "/chat-rooms/_directory/users", method: "GET" });
+};
 
-/** Open (find or create) a DIRECT 1:1 chat with another user.
- *  Returns the ChatRoom DTO. Idempotent — repeated calls return the same room.
- */
+/** Open (find or create) a DIRECT 1:1 chat. Tenant: same-org peer; platform: any user. Idempotent. */
 export const openDirectRoom = async (peerUserId) =>
-  sendRequest({ url: `/chat-rooms/direct/${peerUserId}`, method: "POST" });
+  sendRequest({ url: `${base()}/direct/${peerUserId}`, method: "POST" });
 
-/** Projects the caller can use to scope cross-org chat rooms.
- *  Each entry has { id, projectName, memberOrgs:[{id,name,role,isOwner}] }
- *  so the picker doesn't need a second request per project.
- */
-export const listChatProjects = async () =>
-  sendRequest({ url: "/chat-rooms/_directory/projects", method: "GET" });
+/** Projects for scoping cross-org rooms (tenant only). Platform rooms aren't project-scoped → []. */
+export const listChatProjects = async () => {
+  if (isPlatformUser()) return noop([]);
+  return sendRequest({ url: "/chat-rooms/_directory/projects", method: "GET" });
+};
 
-/** Paginated message history.
- *  params: { before?: ISO8601-cursor, limit?: number (default 50) }
- *  Returns messages newest-first; use `before` for infinite-scroll upward.
- */
+/** Paginated message history. params: { page?, limit?, before? } */
 export const listMessages = async (roomId, params = {}) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/messages`, method: "GET", params });
+  sendRequest({ url: `${base()}/${roomId}/messages`, method: "GET", params });
 
-/** Post a new message.
- *  payload: { body: string, attachmentUrl?: string }
- */
+/** Post a new message. payload: { body, parentId?, mentionedUserIds? } */
 export const postMessage = async (roomId, payload) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/messages`, method: "POST", data: payload });
+  sendRequest({ url: `${base()}/${roomId}/messages`, method: "POST", data: payload });
 
-/** Delete a message (own messages only).
- *  Soft-delete — row is preserved for audit, body is hidden.
- */
-export const deleteChatMessage = async (_roomId, msgId) =>
-  sendRequest({ url: `/chat-rooms/messages/${msgId}`, method: "DELETE" });
+/** Delete a message (own messages only). Tenant path only (platform DM/rooms reuse the same store
+ *  but the platform controller doesn't expose delete) → no-op on the platform path. */
+export const deleteChatMessage = async (_roomId, msgId) => {
+  if (isPlatformUser()) return noop();
+  return sendRequest({ url: `/chat-rooms/messages/${msgId}`, method: "DELETE" });
+};
 
-// ── Phase 4 PR-5: Presence · read receipts · typing · entity rooms ────────────
+// ── Presence · read receipts · typing · entity rooms (tenant-only enhancements) ──
+// These exist only on the org-scoped surface. For platform users they degrade
+// to no-ops so the shared chat UI behaves identically without 404s.
 
 /** Mark all messages in a room as read up to `atIso` (defaults to now). */
-export const markRoomRead = async (roomId, atIso) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/read`, method: "POST", data: { atIso } });
+export const markRoomRead = async (roomId, atIso) => {
+  if (isPlatformUser()) return noop();
+  return sendRequest({ url: `/chat-rooms/${roomId}/read`, method: "POST", data: { atIso } });
+};
 
 /** Get per-member read receipt timestamps for a room. */
-export const getRoomReceipts = async (roomId) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/receipts`, method: "GET" });
+export const getRoomReceipts = async (roomId) => {
+  if (isPlatformUser()) return noop({ receipts: [] });
+  return sendRequest({ url: `/chat-rooms/${roomId}/receipts`, method: "GET" });
+};
 
 /** Signal typing start (call on first keystroke per compose session). */
-export const startTyping = async (roomId) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/typing/start`, method: "POST" });
+export const startTyping = async (roomId) => {
+  if (isPlatformUser()) return noop();
+  return sendRequest({ url: `/chat-rooms/${roomId}/typing/start`, method: "POST" });
+};
 
 /** Signal typing stop (call on send or blur). */
-export const stopTyping = async (roomId) =>
-  sendRequest({ url: `/chat-rooms/${roomId}/typing/stop`, method: "POST" });
+export const stopTyping = async (roomId) => {
+  if (isPlatformUser()) return noop();
+  return sendRequest({ url: `/chat-rooms/${roomId}/typing/stop`, method: "POST" });
+};
 
 /**
- * Create or retrieve a chat room linked to a platform entity.
- * body: {
- *   entityType: "Issue" | "CommissioningTest" | "Communication" | "Artifact" | "Procurement",
- *   entityId: string,
- *   participantOrgIds?: string[],
- *   participantUserIds?: string[]
- * }
- * Returns: { roomId, created, name }
+ * Create or retrieve a chat room linked to a platform entity (tenant only).
+ * body: { entityType, entityId, participantOrgIds?, participantUserIds? }
  */
-export const openEntityRoom = async (body) =>
-  sendRequest({ url: "/chat-rooms/linked", method: "POST", data: body });
+export const openEntityRoom = async (body) => {
+  if (isPlatformUser()) return noop(null);
+  return sendRequest({ url: "/chat-rooms/linked", method: "POST", data: body });
+};
