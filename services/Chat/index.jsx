@@ -93,12 +93,19 @@ export const listMessages = async (roomId, params = {}) =>
 export const postMessage = async (roomId, payload) =>
   sendRequest({ url: `${base()}/${roomId}/messages`, method: "POST", data: payload });
 
-/** Delete a message (own messages only). Tenant path only (platform DM/rooms reuse the same store
- *  but the platform controller doesn't expose delete) → no-op on the platform path. */
-export const deleteChatMessage = async (_roomId, msgId) => {
-  if (isPlatformUser()) return noop();
-  return sendRequest({ url: `/chat-rooms/messages/${msgId}`, method: "DELETE" });
-};
+/** Edit a message body (own messages only).
+ *  Mirrors the delete route; the server stamps an editedAt timestamp which the
+ *  client surfaces as an "edited" indicator.
+ *  payload echoed back: { id, body, editedAt, ... }
+ */
+export const editChatMessage = async (_roomId, msgId, body) =>
+  sendRequest({ url: `/chat-rooms/messages/${msgId}`, method: "PATCH", data: { body } });
+
+/** Delete a message (own messages only).
+ *  Soft-delete — row is preserved for audit, body is hidden.
+ */
+export const deleteChatMessage = async (_roomId, msgId) =>
+  sendRequest({ url: `/chat-rooms/messages/${msgId}`, method: "DELETE" });
 
 // ── Presence · read receipts · typing · entity rooms (tenant-only enhancements) ──
 // These exist only on the org-scoped surface. For platform users they degrade

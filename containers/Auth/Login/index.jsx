@@ -28,15 +28,57 @@ const LoginPage = () => {
   const EMAIL_MAX = 254; // RFC 5321
   const PASSWORD_MAX = 64;
 
+  // Single source of truth for per-field validation — reused by submit and blur.
+  const fieldError = (name, raw) => {
+    if (name === "email") {
+      const email = (raw ?? "").trim();
+      if (!email) return "Email is required";
+      if (email.length > EMAIL_MAX)
+        return `Email must be ${EMAIL_MAX} characters or fewer`;
+      if (!EMAIL_RE.test(email))
+        return "Enter a valid email address, e.g. name@company.com";
+      return "";
+    }
+    if (name === "password") {
+      const pw = raw ?? "";
+      if (!pw) return "Password is required";
+      if (pw.length > PASSWORD_MAX)
+        return `Password must be ${PASSWORD_MAX} characters or fewer`;
+      return "";
+    }
+    return "";
+  };
+
   const validate = () => {
-    const next = { email: "", password: "" };
-    const email = formData.email.trim();
-    if (!email) next.email = "Email is required";
-    else if (!EMAIL_RE.test(email))
-      next.email = "Enter a valid email address, e.g. name@company.com";
-    if (!formData.password) next.password = "Password is required";
+    const next = {
+      email: fieldError("email", formData.email),
+      password: fieldError("password", formData.password),
+    };
     setErrors(next);
     return !next.email && !next.password;
+  };
+
+  // Turn whatever the auth API throws into a clear, user-facing message.
+  // sendRequest throws the backend body (e.g. { message, statusCode }) or, for
+  // transport failures, the raw axios error.
+  const extractAuthError = (error) => {
+    if (error?.code === "ERR_NETWORK" || error?.message === "Network Error")
+      return "Unable to reach the server. Check your connection and try again.";
+    const raw = error?.message ?? error?.error;
+    if (Array.isArray(raw))
+      return raw.find((m) => typeof m === "string" && m.trim()) || "Login failed.";
+    if (typeof raw === "string" && raw.trim()) return raw;
+    const status = error?.statusCode ?? error?.status ?? error?.response?.status;
+    if (status === 400) return "Please check your email and password and try again.";
+    if (status === 401) return "Invalid email or password.";
+    if (status === 403)
+      return "Your account doesn't have access. Contact your administrator.";
+    if (status === 404) return "Account not found. Please check your email.";
+    if (status === 429)
+      return "Too many attempts. Please wait a moment and try again.";
+    if (typeof status === "number" && status >= 500)
+      return "Server error. Please try again shortly.";
+    return "An error occurred during login. Please try again.";
   };
 
   // Load saved credentials on component mount
@@ -160,9 +202,7 @@ const LoginPage = () => {
     } catch (error) {
       setMessage({
         type: "error",
-        text: Array.isArray(error?.message)
-          ? error?.message?.[0]
-          : error?.message || "An error occurred during login.",
+        text: extractAuthError(error),
       });
 
       // Don't save credentials on error
@@ -550,14 +590,17 @@ const LoginPage = () => {
                     : "0 0 0 2px rgba(0,212,255,0.18), inset 0 0 8px rgba(0,212,255,0.04)";
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = errors.email
+                  const err = fieldError("email", e.target.value);
+                  setErrors((prev) => ({ ...prev, email: err }));
+                  e.target.style.borderColor = err
                     ? "#ff6464"
                     : "rgba(0,180,220,0.22)";
                   e.target.style.boxShadow = "none";
                 }}
               />
-              {errors.email && (
+              {errors.email ? (
                 <p
+                  role="alert"
                   style={{
                     fontFamily: "'Share Tech Mono', monospace",
                     color: "var(--rf-red)",
@@ -568,6 +611,20 @@ const LoginPage = () => {
                 >
                   {errors.email}
                 </p>
+              ) : (
+                formData.email.length >= EMAIL_MAX && (
+                  <p
+                    style={{
+                      fontFamily: "'Share Tech Mono', monospace",
+                      color: "#5a9ab5",
+                      fontSize: "0.62rem",
+                      letterSpacing: "0.04em",
+                      marginTop: "5px",
+                    }}
+                  >
+                    Maximum {EMAIL_MAX} characters reached.
+                  </p>
+                )
               )}
             </div>
 
@@ -615,7 +672,9 @@ const LoginPage = () => {
                     : "0 0 0 2px rgba(0,212,255,0.18), inset 0 0 8px rgba(0,212,255,0.04)";
                 }}
                 onBlur={(e) => {
-                  e.target.style.borderColor = errors.password
+                  const err = fieldError("password", e.target.value);
+                  setErrors((prev) => ({ ...prev, password: err }));
+                  e.target.style.borderColor = err
                     ? "#ff6464"
                     : "rgba(0,180,220,0.22)";
                   e.target.style.boxShadow = "none";
@@ -630,8 +689,9 @@ const LoginPage = () => {
               >
                 {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
               </button>
-              {errors.password && (
+              {errors.password ? (
                 <p
+                  role="alert"
                   style={{
                     fontFamily: "'Share Tech Mono', monospace",
                     color: "var(--rf-red)",
@@ -642,6 +702,20 @@ const LoginPage = () => {
                 >
                   {errors.password}
                 </p>
+              ) : (
+                formData.password.length >= PASSWORD_MAX && (
+                  <p
+                    style={{
+                      fontFamily: "'Share Tech Mono', monospace",
+                      color: "#5a9ab5",
+                      fontSize: "0.62rem",
+                      letterSpacing: "0.04em",
+                      marginTop: "5px",
+                    }}
+                  >
+                    Maximum {PASSWORD_MAX} characters reached.
+                  </p>
+                )
               )}
             </div>
 
@@ -699,8 +773,9 @@ const LoginPage = () => {
 
             {/* Submit Button */}
             {(() => {
-              const isDisabled =
-                loading || !formData.email.trim() || !formData.password;
+              // Only block while a request is in flight — empty/invalid fields
+              // are caught by validate() on submit so their messages can show.
+              const isDisabled = loading;
               return (
             <button
               type="submit"

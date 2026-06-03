@@ -9,7 +9,14 @@ function toArray(res) {
   return Array.isArray(res) ? res : (res?.data ?? []);
 }
 
+const softBg = (token, pct = 16) =>
+  `color-mix(in srgb, ${token} ${pct}%, transparent)`;
+
 const IMPACT_TYPES = ["COST", "SCHEDULE", "BOTH", "NONE"];
+
+const inputClass =
+  "w-full px-4 py-2 rounded-lg focus:outline-none bg-[var(--rf-bg3)] border border-[var(--rf-border2)] text-[var(--rf-txt)] focus:border-[var(--rf-accent)]";
+const labelStyle = { color: "var(--rf-txt2)" };
 
 const EMPTY = {
   title: "",
@@ -77,31 +84,34 @@ export default function ChangeRequestAdd() {
   const showDays = form.impactType === "SCHEDULE" || form.impactType === "BOTH";
 
   return (
-    <div className="min-h-screen text-white p-6">
+    <div className="min-h-screen p-6" style={{ color: "var(--rf-txt)" }}>
       <div className="mx-auto">
         <button
           onClick={() => router.back()}
-          className="text-sm text-gray-400 hover:text-white mb-4 flex items-center gap-1"
+          className="text-sm mb-4 flex items-center gap-1 transition-colors text-[var(--rf-txt2)] hover:text-[var(--rf-txt)]"
         >
           ← Back
         </button>
         <h1 className="text-2xl font-bold mb-6">New Change Request</h1>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-900/40 border border-red-700/40 rounded-lg text-red-300 text-sm">
+          <div
+            className="mb-4 p-3 rounded-lg text-sm"
+            style={{ background: softBg("var(--rf-red)", 14), border: `1px solid ${softBg("var(--rf-red)", 40)}`, color: "var(--rf-red)" }}
+          >
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Project <span className="text-red-400">*</span>
+            <label className="block text-sm mb-1" style={labelStyle}>
+              Project <span style={{ color: "var(--rf-red)" }}>*</span>
             </label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 [&_option]:bg-gray-700"
+              className={`${inputClass} [&_option]:bg-[var(--rf-bg2)]`}
             >
               <option value="">Select project…</option>
               {projects.map((p) => (
@@ -113,11 +123,11 @@ export default function ChangeRequestAdd() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
-              Title <span className="text-red-400">*</span>
+            <label className="block text-sm mb-1" style={labelStyle}>
+              Title <span style={{ color: "var(--rf-red)" }}>*</span>
             </label>
             <input
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className={inputClass}
               value={form.title}
               onChange={(e) => set("title", e.target.value)}
               placeholder="Additional rack installation"
@@ -125,11 +135,11 @@ export default function ChangeRequestAdd() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
+            <label className="block text-sm mb-1" style={labelStyle}>
               Description
             </label>
             <textarea
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 resize-none"
+              className={`${inputClass} resize-none`}
               rows={3}
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
@@ -138,7 +148,7 @@ export default function ChangeRequestAdd() {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">
+            <label className="block text-sm mb-1" style={labelStyle}>
               Impact Type
             </label>
             <div className="flex gap-2 flex-wrap">
@@ -147,7 +157,7 @@ export default function ChangeRequestAdd() {
                   key={t}
                   type="button"
                   onClick={() => set("impactType", t)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${form.impactType === t ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"}`}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${form.impactType === t ? "bg-[var(--rf-accent)] text-white" : "bg-[var(--rf-bg3)] text-[var(--rf-txt2)] hover:bg-[var(--rf-bg4)]"}`}
                 >
                   {t}
                 </button>
@@ -159,14 +169,14 @@ export default function ChangeRequestAdd() {
             <div className="grid grid-cols-2 gap-4">
               {showCost && (
                 <div>
-                  <label className="block text-sm text-gray-300 mb-1">
+                  <label className="block text-sm mb-1" style={labelStyle}>
                     Cost Impact ($)
                   </label>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                    className={inputClass}
                     value={form.costImpact}
                     onChange={(e) => set("costImpact", e.target.value)}
                     placeholder="0.00"
@@ -175,13 +185,13 @@ export default function ChangeRequestAdd() {
               )}
               {showDays && (
                 <div>
-                  <label className="block text-sm text-gray-300 mb-1">
+                  <label className="block text-sm mb-1" style={labelStyle}>
                     Schedule Impact (days)
                   </label>
                   <input
                     type="number"
                     min="0"
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                    className={inputClass}
                     value={form.scheduleDays}
                     onChange={(e) => set("scheduleDays", e.target.value)}
                     placeholder="0"
@@ -195,14 +205,14 @@ export default function ChangeRequestAdd() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium disabled:opacity-50 transition-colors"
+              className="flex-1 py-2.5 rounded-lg font-medium text-white transition-colors disabled:opacity-50 bg-[var(--rf-accent)] hover:bg-[var(--rf-accent2)]"
             >
               {loading ? "Creating…" : "Submit Change Request"}
             </button>
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"
+              className="px-6 py-2.5 rounded-lg font-medium transition-colors bg-[var(--rf-bg3)] hover:bg-[var(--rf-bg4)] text-[var(--rf-txt)]"
             >
               Cancel
             </button>

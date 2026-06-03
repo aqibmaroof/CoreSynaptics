@@ -473,20 +473,20 @@ export default function ModuleGrantMatrix() {
               </div>
             ) : (
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-[var(--rf-bg3)] z-10">
+                <thead className="sticky top-0 bg-[var(--rf-accent)] z-10">
                   <tr>
-                    <th className="text-left py-3 px-5 text-[var(--rf-txt3)] font-semibold text-xs uppercase tracking-wider">
+                    <th className="text-left py-3 px-5 text-white font-semibold text-xs uppercase tracking-wider">
                       Module
                     </th>
                     {TENANT_ACTIONS.map((a) => (
                       <th
                         key={a}
-                        className="text-center py-3 px-3 text-[var(--rf-txt3)] font-semibold text-xs uppercase tracking-wider"
+                        className="text-center py-3 px-3 text-white font-semibold text-xs uppercase tracking-wider"
                       >
                         {a}
                       </th>
                     ))}
-                    <th className="text-right py-3 px-5 text-[var(--rf-txt3)] font-semibold text-xs uppercase tracking-wider">
+                    <th className="text-right py-3 px-5 text-white font-semibold text-xs uppercase tracking-wider">
                       Level
                     </th>
                   </tr>
@@ -545,7 +545,9 @@ export default function ModuleGrantMatrix() {
                           <td key={a} className="py-3 px-3 text-center">
                             <input
                               type="checkbox"
-                              className="checkbox checkbox-sm border-[var(--rf-border2)] [--chkbg:var(--rf-accent)]"
+                              // DaisyUI 5: --input-color drives the checked fill
+                              // & border; `color` drives the checkmark (white).
+                              className="checkbox checkbox-sm border-2 border-gray-400 text-white checked:[--input-color:var(--rf-green)] checked:border-[var(--rf-green)]"
                               checked={acts.includes(a)}
                               disabled={saving}
                               onChange={() => toggle(key, a)}

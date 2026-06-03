@@ -2249,6 +2249,14 @@ export default function ProjectWizard() {
   const [siteForm, setSiteForm] = useState({ metadata: {} });
   const [zoneForm, setZoneForm] = useState({ metadata: {} });
   const [metadataErrors, setMetadataErrors] = useState({});
+  // Per-step validation messages for the current step, keyed by field.
+  const [stepErrors, setStepErrors] = useState({});
+  // Transient success toast for in-step actions (add contact / RFI, etc.).
+  const [wizSuccess, setWizSuccess] = useState("");
+  // "Remove all" confirmation for a team (holds the teamId awaiting confirm).
+  const [confirmClearTeam, setConfirmClearTeam] = useState(null);
+  // Per-team member-load error messages.
+  const [teamMembersError, setTeamMembersError] = useState({});
   const [typeValidation, setTypeValidation] = useState(null);
   const [equipmentTypeDetails, setEquipmentTypeDetails] = useState(null);
   const [currentTypeDetails, setCurrentTypeDetails] = useState(null);
@@ -2449,6 +2457,7 @@ export default function ProjectWizard() {
         fromCompanyCode: "",
         toCompanyCode: "",
       });
+      flashWizSuccess("Communication added successfully.");
     } catch (err) {
       setAddCommError(err?.message || "Failed to create communication.");
     } finally {
@@ -2499,6 +2508,10 @@ export default function ProjectWizard() {
       setAddContactError("First name, last name, and email are required.");
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newContact.email.trim())) {
+      setAddContactError("Enter a valid email address, e.g. name@company.com.");
+      return;
+    }
     setAddingContact(true);
     setAddContactError(null);
     try {
@@ -2519,6 +2532,7 @@ export default function ProjectWizard() {
         phone: "",
         jobTitle: "",
       });
+      flashWizSuccess("Contact added successfully.");
     } catch (err) {
       setAddContactError(err?.message || "Failed to create contact.");
     } finally {
@@ -2544,6 +2558,7 @@ export default function ProjectWizard() {
       upd((s) => ({ ...s, customer: created.name, customerId: created.id }));
       setShowAddCompany(false);
       setNewCompany({ name: "", type: "CLIENT", region: "" });
+      flashWizSuccess("Company added successfully.");
     } catch (err) {
       setAddCompanyError(err?.message || "Failed to create company.");
     } finally {
@@ -2555,15 +2570,159 @@ export default function ProjectWizard() {
     setState((prev) => (typeof fn === "function" ? fn(prev) : fn));
   }, []);
 
+  const flashWizSuccess = useCallback((text) => {
+    setWizSuccess(text);
+    setTimeout(
+      () => setWizSuccess((cur) => (cur === text ? "" : cur)),
+      3000,
+    );
+  }, []);
+
   const cur = state.step;
   const stepDef = STEPS[cur];
 
+  // Steps that hard-block the Next button until a minimum is met. The team step
+  // must have at least one member selected before the user can proceed.
+  const nextBlocked =
+    stepDef.key === "team" &&
+    Object.values(state.teamMemberSel || {}).reduce(
+      (acc, t) => acc + Object.values(t).filter(Boolean).length,
+      0,
+    ) === 0;
+
   const goBack = () => {
-    if (cur > 0) upd((s) => ({ ...s, step: s.step - 1 }));
+    if (cur > 0) {
+      setStepErrors({});
+      upd((s) => ({ ...s, step: s.step - 1 }));
+    }
+  };
+
+  // Inline error message renderer for a given field key on the current step.
+  const fieldErr = (k) =>
+    stepErrors[k] ? (
+      <div
+        role="alert"
+        style={{
+          color: "var(--rf-red, #e53e3e)",
+          fontSize: 12,
+          fontWeight: 500,
+          marginTop: 6,
+        }}
+      >
+        {stepErrors[k]}
+      </div>
+    ) : null;
+
+  // Per-step validation. Returns { errors, focusId }; empty errors → may proceed.
+  const validateStep = (key, s) => {
+    const errors = {};
+    let focusId = null;
+    const fail = (k, msg, id) => {
+      if (!errors[k]) {
+        errors[k] = msg;
+        if (!focusId && id) focusId = id;
+      }
+    };
+
+    if (key === "basics") {
+      if (!s.projectName?.trim())
+        fail("projectName", "Project name is required.", "wiz-projectName");
+      const rawVal = String(s.contractValue ?? "").trim();
+      if (rawVal) {
+        const numeric = Number(rawVal.replace(/[$,\s]/g, ""));
+        if (!Number.isFinite(numeric) || numeric < 0)
+          fail(
+            "contractValue",
+            "Enter a valid amount — numbers only.",
+            "wiz-contractValue",
+          );
+        else if (numeric > 1e12)
+          fail(
+            "contractValue",
+            "Amount exceeds the maximum allowed (1,000,000,000,000).",
+            "wiz-contractValue",
+          );
+      }
+      if (
+        s.startDate &&
+        s.endDate &&
+        new Date(s.endDate) < new Date(s.startDate)
+      )
+        fail(
+          "endDate",
+          "End date must be on or after the start date.",
+          "wiz-endDate",
+        );
+    }
+
+    if (key === "scope") {
+      const anyScoped = EQUIPMENT_SCOPE.some(
+        (eq) => s.scopeSel?.[eq.id] || (s.scopeHours?.[eq.id] || 0) > 0,
+      );
+      if (!anyScoped)
+        fail("scope", "Select a scope for at least one system before continuing.");
+      if (EQUIPMENT_SCOPE.some((eq) => (s.scopeHours?.[eq.id] || 0) < 0))
+        fail("hours", "Hours cannot be negative.");
+    }
+
+    if (key === "assets") {
+      if (s.tagScheme === "cust" && !s.customTagFormat?.trim())
+        fail(
+          "customTagFormat",
+          "Enter a custom tag format, e.g. DC3-{TYPE}-{SEQ}.",
+          "wiz-customTagFormat",
+        );
+    }
+
+    if (key === "schedule") {
+      let anyDated = false;
+      for (const p of schedulePhases) {
+        const d = phaseDates[p.id] || {};
+        if (d.start || d.end) {
+          anyDated = true;
+          if (!d.start || !d.end)
+            fail(`phase-${p.id}`, `Set both a start and end date for "${p.name}".`);
+          else if (new Date(d.end) < new Date(d.start))
+            fail(
+              `phase-${p.id}`,
+              `"${p.name}": end date must be on or after the start date.`,
+            );
+        }
+      }
+      if (schedulePhases.length > 0 && !anyDated)
+        fail("schedule", "Set target dates for at least one phase.");
+    }
+
+    if (key === "team") {
+      const count = Object.values(s.teamMemberSel || {}).reduce(
+        (acc, t) => acc + Object.values(t).filter(Boolean).length,
+        0,
+      );
+      if (count === 0)
+        fail("team", "Select at least one team member to assign to this project.");
+    }
+
+    return { errors, focusId };
   };
 
   const goNext = async () => {
     if (cur >= STEPS.length - 1) return;
+    // Validate the current step first — block navigation (and the save) on failure.
+    const { errors, focusId } = validateStep(stepDef.key, state);
+    if (Object.keys(errors).length > 0) {
+      setStepErrors(errors);
+      if (focusId) {
+        requestAnimationFrame(() => {
+          const el = document.getElementById(focusId);
+          if (el) {
+            el.focus();
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        });
+      }
+      return;
+    }
+    setStepErrors({});
     setSaving(true);
     setApiError(null);
     try {
@@ -2846,15 +3005,23 @@ export default function ProjectWizard() {
       </div>
       <div className="form-grid">
         <div className="form-grid-full">
-          <label className="input-label">Project Name</label>
+          <label className="input-label">
+            Project Name <span style={{ color: "var(--rf-red)" }}>*</span>
+          </label>
           <input
+            id="wiz-projectName"
             className="input-field"
             value={state.projectName}
-            onChange={(e) =>
-              upd((s) => ({ ...s, projectName: e.target.value }))
-            }
+            maxLength={120}
+            aria-invalid={stepErrors.projectName ? "true" : "false"}
+            onChange={(e) => {
+              upd((s) => ({ ...s, projectName: e.target.value }));
+              if (stepErrors.projectName)
+                setStepErrors((p) => ({ ...p, projectName: "" }));
+            }}
             placeholder="e.g. Delta DC3 Atlanta — Phase 2 Commissioning"
           />
+          {fieldErr("projectName")}
         </div>
         <div>
           <label className="input-label">Customer</label>
@@ -3018,23 +3185,40 @@ export default function ProjectWizard() {
         <div>
           <label className="input-label">Target End Date</label>
           <input
+            id="wiz-endDate"
             className="input-field"
             type="date"
             value={state.endDate || ""}
-            onChange={(e) => upd((s) => ({ ...s, endDate: e.target.value }))}
+            min={state.startDate || undefined}
+            aria-invalid={stepErrors.endDate ? "true" : "false"}
+            onChange={(e) => {
+              upd((s) => ({ ...s, endDate: e.target.value }));
+              if (stepErrors.endDate)
+                setStepErrors((p) => ({ ...p, endDate: "" }));
+            }}
           />
+          {fieldErr("endDate")}
         </div>
 
         <div>
           <label className="input-label">Contract Value (USD)</label>
           <input
+            id="wiz-contractValue"
             className="input-field"
             value={state.contractValue}
-            onChange={(e) =>
-              upd((s) => ({ ...s, contractValue: e.target.value }))
-            }
+            inputMode="decimal"
+            aria-invalid={stepErrors.contractValue ? "true" : "false"}
+            onChange={(e) => {
+              // Numbers only — strip anything that isn't a digit, comma or dot
+              // so invalid input (letters/symbols) is prevented as you type.
+              const cleaned = e.target.value.replace(/[^\d.,]/g, "");
+              upd((s) => ({ ...s, contractValue: cleaned }));
+              if (stepErrors.contractValue)
+                setStepErrors((p) => ({ ...p, contractValue: "" }));
+            }}
             placeholder="6,500,000"
           />
+          {fieldErr("contractValue")}
         </div>
       </div>
 
@@ -3090,6 +3274,8 @@ export default function ProjectWizard() {
           in the SOPs step.
         </div>
       </div>
+      {fieldErr("scope")}
+      {fieldErr("hours")}
       {EQUIPMENT_SCOPE.map((eq) => (
         <div key={eq.id} className="sow-item">
           <div className="sow-icon">
@@ -3162,13 +3348,15 @@ export default function ProjectWizard() {
           <div className="sow-hours">
             <input
               type="number"
+              min={0}
               value={state.scopeHours[eq.id] || 0}
               onChange={(e) =>
                 upd((s) => ({
                   ...s,
                   scopeHours: {
                     ...s.scopeHours,
-                    [eq.id]: parseInt(e.target.value) || 0,
+                    // Clamp to non-negative so invalid input can't be entered.
+                    [eq.id]: Math.max(0, parseInt(e.target.value, 10) || 0),
                   },
                 }))
               }
@@ -3226,6 +3414,38 @@ export default function ProjectWizard() {
           </div>
         </div>
 
+        {/* Always-visible link to the full phases list (distinct, clickable). */}
+        <div style={{ margin: "2px 0 12px" }}>
+          <a
+            className="wiz-link"
+            href="/Phases/List"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            View all phases
+          </a>
+        </div>
+
+        {fieldErr("schedule")}
+
         {schedulePhasesLoading ? (
           <div
             className="phase-card"
@@ -3266,9 +3486,10 @@ export default function ProjectWizard() {
               <div className="callout-t">No phases found</div>
               Create org phases in{" "}
               <a
+                className="wiz-link"
                 href="/Phases/List"
                 target="_blank"
-                style={{ color: "var(--ac)" }}
+                rel="noopener noreferrer"
               >
                 Phases → List
               </a>{" "}
@@ -3351,6 +3572,7 @@ export default function ProjectWizard() {
                     />
                   </div>
                 </div>
+                {fieldErr(`phase-${phase.id}`)}
 
                 {isOpen && (
                   <div
@@ -3498,18 +3720,28 @@ export default function ProjectWizard() {
 
     setExpandedTeam(teamId);
     if (!teamMembersCache[teamId]) {
-      setTeamMembersLoading(teamId);
-      try {
-        const res = await GetTeamMembers(team.id);
-        setTeamMembersCache((prev) => ({
-          ...prev,
-          [teamId]: res?.data || res || [],
-        }));
-      } catch {
-        setTeamMembersCache((prev) => ({ ...prev, [teamId]: [] }));
-      } finally {
-        setTeamMembersLoading(null);
-      }
+      fetchTeamMembers(team);
+    }
+  };
+
+  const fetchTeamMembers = async (team) => {
+    const teamId = String(team.id);
+    setTeamMembersLoading(teamId);
+    setTeamMembersError((prev) => ({ ...prev, [teamId]: null }));
+    try {
+      const res = await GetTeamMembers(team.id);
+      setTeamMembersCache((prev) => ({
+        ...prev,
+        [teamId]: res?.data || res || [],
+      }));
+    } catch (err) {
+      setTeamMembersError((prev) => ({
+        ...prev,
+        [teamId]:
+          err?.message || "Couldn't load team members. Please try again.",
+      }));
+    } finally {
+      setTeamMembersLoading(null);
     }
   };
 
@@ -3566,6 +3798,30 @@ export default function ProjectWizard() {
             }}
           >
             Loading teams…
+          </div>
+        )}
+
+        {/* Required-selection validation — visible while nothing is selected,
+            mirroring the disabled Next button so the user knows why. */}
+        {!teamsLoading && teams.length > 0 && selectedCount === 0 && (
+          <div
+            role="alert"
+            className="callout"
+            style={{
+              gap: 10,
+              borderColor: "var(--rf-red, #e53e3e)",
+              marginBottom: 10,
+            }}
+          >
+            <span
+              className="callout-icon"
+              style={{ color: "var(--rf-red, #e53e3e)" }}
+            >
+              !
+            </span>
+            <div style={{ color: "var(--rf-red, #e53e3e)", fontWeight: 500 }}>
+              Select at least one team member to assign before continuing.
+            </div>
           </div>
         )}
 
@@ -3652,21 +3908,30 @@ export default function ProjectWizard() {
                           padding: "6px 10px",
                           color: "var(--rf-red, #e53e3e)",
                         }}
-                        onClick={() => clearTeamMembers(teamId)}
+                        onClick={() => setConfirmClearTeam(teamId)}
                       >
                         Remove all
                       </button>
                     )}
                     <button
                       className={isExpanded ? "nav-btn" : "nav-btn primary"}
-                      style={{ fontSize: 12, padding: "6px 14px" }}
+                      style={{
+                        fontSize: 12,
+                        padding: "6px 14px",
+                        fontWeight: 600,
+                        // Guarantee readable contrast for the add label regardless
+                        // of theme token values.
+                        ...(isExpanded
+                          ? {}
+                          : { background: "var(--navy)", color: "#ffffff" }),
+                      }}
                       onClick={() => handleTeamToggle(team)}
                     >
                       {isExpanded
                         ? "▲ Close"
                         : hasSelected
-                          ? "▼ Edit"
-                          : "+ Add"}
+                          ? "▼ Edit members"
+                          : "+ Add team member"}
                     </button>
                   </div>
                 </div>
@@ -3690,6 +3955,29 @@ export default function ProjectWizard() {
                         }}
                       >
                         Loading members…
+                      </div>
+                    ) : teamMembersError[teamId] ? (
+                      <div
+                        role="alert"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "8px 0",
+                          color: "var(--rf-red, #e53e3e)",
+                          fontSize: 12,
+                        }}
+                      >
+                        <span style={{ flex: 1 }}>
+                          {teamMembersError[teamId]}
+                        </span>
+                        <button
+                          className="nav-btn"
+                          style={{ fontSize: 11, padding: "4px 10px" }}
+                          onClick={() => fetchTeamMembers(team)}
+                        >
+                          Retry
+                        </button>
                       </div>
                     ) : members.length === 0 ? (
                       <div
@@ -3841,6 +4129,88 @@ export default function ProjectWizard() {
             </div>
           </div>
         )}
+
+        {/* Confirmation popup before removing all selected members of a team */}
+        {confirmClearTeam && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 1100,
+              background: "rgba(0,0,0,0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+            }}
+            onClick={(e) =>
+              e.target === e.currentTarget && setConfirmClearTeam(null)
+            }
+          >
+            <div
+              style={{
+                background: "var(--wcard, #fff)",
+                border: "1px solid var(--stone-dark)",
+                borderRadius: 14,
+                width: "100%",
+                maxWidth: 380,
+                padding: 22,
+                boxShadow: "0 24px 48px rgba(0,0,0,0.3)",
+              }}
+            >
+              <h3
+                style={{
+                  margin: "0 0 8px",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "var(--navy)",
+                }}
+              >
+                Remove all members?
+              </h3>
+              <p
+                style={{
+                  margin: "0 0 18px",
+                  fontSize: 13,
+                  color: "var(--smoke)",
+                  lineHeight: 1.5,
+                }}
+              >
+                This clears every member you selected from{" "}
+                <strong>
+                  {teams.find((t) => String(t.id) === confirmClearTeam)?.name ||
+                    "this team"}
+                </strong>
+                . You can re-add them at any time.
+              </p>
+              <div
+                style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}
+              >
+                <button
+                  className="nav-btn"
+                  onClick={() => setConfirmClearTeam(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="nav-btn"
+                  style={{
+                    background: "var(--rf-red, #e53e3e)",
+                    color: "#ffffff",
+                    border: "none",
+                    fontWeight: 600,
+                  }}
+                  onClick={() => {
+                    clearTeamMembers(confirmClearTeam);
+                    setConfirmClearTeam(null);
+                  }}
+                >
+                  Remove all
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -3858,25 +4228,75 @@ export default function ProjectWizard() {
         marginTop: 12,
       }}
     >
-      <div style={{ fontWeight: 600, fontSize: 13, color: "var(--rf-txt)" }}>
-        New Contact
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <div style={{ fontWeight: 600, fontSize: 13, color: "var(--rf-txt)" }}>
+          New Contact
+        </div>
+        {/* Close shown as an arrow icon (not text) for consistent UI/UX */}
+        <button
+          type="button"
+          aria-label="Close"
+          title="Close"
+          disabled={addingContact}
+          onClick={() => {
+            setShowAddContact(false);
+            setAddContactError(null);
+            setNewContact({
+              firstName: "",
+              lastName: "",
+              email: "",
+              phone: "",
+              jobTitle: "",
+            });
+          }}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: addingContact ? "not-allowed" : "pointer",
+            color: "var(--rf-txt2, #475569)",
+            display: "inline-flex",
+            padding: 2,
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+        </button>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <input
           className="input-field"
           placeholder="First name *"
+          aria-label="First name (required)"
+          maxLength={50}
           value={newContact.firstName}
           onChange={(e) =>
-            setNewContact((p) => ({ ...p, firstName: e.target.value }))
+            // Reject numeric input in names — strip digits as typed.
+            setNewContact((p) => ({
+              ...p,
+              firstName: e.target.value.replace(/[0-9]/g, ""),
+            }))
           }
           style={{ flex: 1 }}
         />
         <input
           className="input-field"
           placeholder="Last name *"
+          aria-label="Last name (required)"
+          maxLength={50}
           value={newContact.lastName}
           onChange={(e) =>
-            setNewContact((p) => ({ ...p, lastName: e.target.value }))
+            setNewContact((p) => ({
+              ...p,
+              lastName: e.target.value.replace(/[0-9]/g, ""),
+            }))
           }
           style={{ flex: 1 }}
         />
@@ -3884,7 +4304,9 @@ export default function ProjectWizard() {
       <input
         className="input-field"
         placeholder="Email *"
+        aria-label="Email (required)"
         type="email"
+        maxLength={254}
         value={newContact.email}
         onChange={(e) =>
           setNewContact((p) => ({ ...p, email: e.target.value }))
@@ -3894,15 +4316,21 @@ export default function ProjectWizard() {
         <input
           className="input-field"
           placeholder="Phone"
+          maxLength={20}
           value={newContact.phone}
           onChange={(e) =>
-            setNewContact((p) => ({ ...p, phone: e.target.value }))
+            // Phone is digits and common separators only.
+            setNewContact((p) => ({
+              ...p,
+              phone: e.target.value.replace(/[^\d+()\-\s]/g, ""),
+            }))
           }
           style={{ flex: 1 }}
         />
         <input
           className="input-field"
           placeholder="Job title"
+          maxLength={80}
           value={newContact.jobTitle}
           onChange={(e) =>
             setNewContact((p) => ({ ...p, jobTitle: e.target.value }))
@@ -3910,27 +4338,53 @@ export default function ProjectWizard() {
           style={{ flex: 1 }}
         />
       </div>
+      <div style={{ fontSize: 11, color: "var(--rf-txt3, #94a3b8)" }}>
+        <span style={{ color: "var(--rf-red)" }}>*</span> Required fields
+      </div>
       {addContactError && (
-        <div style={{ fontSize: 12, color: "var(--rf-red)" }}>
+        <div role="alert" style={{ fontSize: 12, color: "var(--rf-red)" }}>
           {addContactError}
         </div>
       )}
       <div style={{ display: "flex", gap: 8 }}>
         <button
           className="rf-btn rf-btn-primary"
-          style={{ flex: 1 }}
-          disabled={addingContact}
+          style={{
+            flex: 1,
+            background: "var(--rf-accent, #2563eb)",
+            color: "#ffffff",
+            fontWeight: 600,
+          }}
+          disabled={
+            addingContact ||
+            !newContact.firstName.trim() ||
+            !newContact.lastName.trim() ||
+            !newContact.email.trim()
+          }
           onClick={handleAddContact}
         >
           {addingContact ? "Saving…" : "Save Contact"}
         </button>
         <button
           className="rf-btn"
-          style={{ flex: 1 }}
+          style={{
+            flex: 1,
+            background: "var(--rf-bg3, #e2e8f0)",
+            color: "var(--rf-txt, #0f172a)",
+            border: "1px solid var(--rf-border, #cbd5e1)",
+            fontWeight: 600,
+          }}
           disabled={addingContact}
           onClick={() => {
             setShowAddContact(false);
             setAddContactError(null);
+            setNewContact({
+              firstName: "",
+              lastName: "",
+              email: "",
+              phone: "",
+              jobTitle: "",
+            });
           }}
         >
           Cancel
@@ -4300,16 +4754,23 @@ export default function ProjectWizard() {
       </div>
       {state.tagScheme === "cust" && (
         <div className="wiz-section">
-          <label className="input-label">Custom format</label>
+          <label className="input-label">
+            Custom format <span style={{ color: "var(--rf-red)" }}>*</span>
+          </label>
           <input
+            id="wiz-customTagFormat"
             className="input-field"
             value={state.customTagFormat}
-            onChange={(e) =>
-              upd((s) => ({ ...s, customTagFormat: e.target.value }))
-            }
+            aria-invalid={stepErrors.customTagFormat ? "true" : "false"}
+            onChange={(e) => {
+              upd((s) => ({ ...s, customTagFormat: e.target.value }));
+              if (stepErrors.customTagFormat)
+                setStepErrors((p) => ({ ...p, customTagFormat: "" }));
+            }}
             placeholder="e.g. DC3-{TYPE}-{SEQ}"
             style={{ maxWidth: 340 }}
           />
+          {fieldErr("customTagFormat")}
         </div>
       )}
       <div className="callout callout-teal">
@@ -4785,10 +5246,40 @@ export default function ProjectWizard() {
               style={{
                 display: "flex",
                 justifyContent: "space-between",
+                alignItems: "center",
+                gap: 8,
                 marginBottom: 4,
               }}
             >
-              <div style={{ fontWeight: 500, color: "var(--navy)" }}>
+              <div
+                style={{
+                  fontWeight: 500,
+                  color: "var(--navy)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                {state.qualitySel[q.id] && (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 16,
+                      height: 16,
+                      borderRadius: "50%",
+                      background: "var(--electric)",
+                      color: "#fff",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}
+                  >
+                    ✓
+                  </span>
+                )}
                 {q.name}
               </div>
               <span
@@ -5340,13 +5831,15 @@ export default function ProjectWizard() {
             <div style={{ textAlign: "right" }}>
               <input
                 type="number"
+                min={0}
                 value={cc.budget}
                 onChange={(e) =>
                   upd((s) => {
                     const ccs = [...s.costCodes];
                     ccs[i] = {
                       ...ccs[i],
-                      budget: parseInt(e.target.value) || 0,
+                      // Restrict to non-negative amounts.
+                      budget: Math.max(0, parseInt(e.target.value, 10) || 0),
                     };
                     return { ...s, costCodes: ccs };
                   })
@@ -5603,10 +6096,15 @@ export default function ProjectWizard() {
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
               <button
                 className="rf-btn rf-btn-primary"
-                style={{ flex: 1 }}
+                style={{
+                  flex: 1,
+                  background: "var(--rf-accent, #2563eb)",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                }}
                 disabled={addingComm}
                 onClick={handleAddComm}
               >
@@ -5614,7 +6112,14 @@ export default function ProjectWizard() {
               </button>
               <button
                 className="rf-btn"
-                style={{ flex: 1 }}
+                style={{
+                  flex: 1,
+                  // High-contrast surface so Cancel never blends with the form bg.
+                  background: "var(--rf-bg3, #e2e8f0)",
+                  color: "var(--rf-txt, #0f172a)",
+                  border: "1px solid var(--rf-border, #cbd5e1)",
+                  fontWeight: 600,
+                }}
                 disabled={addingComm}
                 onClick={() => {
                   setShowAddComm(false);
@@ -7267,6 +7772,46 @@ export default function ProjectWizard() {
         </div>
       )}
 
+      {/* Success toast */}
+      {wizSuccess && (
+        <div
+          role="status"
+          style={{
+            position: "fixed",
+            top: 16,
+            right: 16,
+            zIndex: 2000,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "var(--rf-green, #16a34a)",
+            color: "#ffffff",
+            borderRadius: 8,
+            padding: "10px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            maxWidth: 420,
+            boxShadow: "0 10px 24px rgba(0,0,0,0.25)",
+          }}
+        >
+          <span style={{ flex: 1 }}>{wizSuccess}</span>
+          <button
+            onClick={() => setWizSuccess("")}
+            aria-label="Dismiss"
+            style={{
+              background: "none",
+              border: "none",
+              color: "#fff",
+              cursor: "pointer",
+              fontSize: 16,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Error */}
       {apiError && (
         <div className="callout callout-amber" style={{ marginBottom: 12 }}>
@@ -7299,7 +7844,10 @@ export default function ProjectWizard() {
               <div
                 key={s.key}
                 className={cls}
-                onClick={() => upd((st) => ({ ...st, step: i }))}
+                onClick={() => {
+                  setStepErrors({});
+                  upd((st) => ({ ...st, step: i }));
+                }}
               >
                 <span className="sdn">{i < cur ? "" : i + 1}</span>
                 <span className="hidden sm:inline">{s.label}</span>
@@ -7342,7 +7890,12 @@ export default function ProjectWizard() {
             <button
               className="nav-btn primary"
               onClick={goNext}
-              disabled={saving}
+              disabled={saving || nextBlocked}
+              title={
+                nextBlocked
+                  ? "Select at least one team member to continue"
+                  : undefined
+              }
             >
               {saving ? "Saving…" : "Next →"}
             </button>

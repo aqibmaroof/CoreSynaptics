@@ -8,6 +8,7 @@ import {
   archiveChatRoom,
   listMessages,
   postMessage,
+  editChatMessage,
   deleteChatMessage,
   listRoomMembers,
   addRoomMembers,
@@ -20,6 +21,12 @@ import {
   startTyping,
   stopTyping,
 } from "@/services/Chat";
+import {
+  requestUploadUrl,
+  uploadFileToS3,
+  confirmUpload,
+  getDownloadUrl,
+} from "@/services/Documents";
 import { useRealtimeSocket } from "@/lib/realtime/useRealtimeSocket";
 import { onEnvelope } from "@/lib/realtime/envelope";
 import ChatReactionsBar from "@/components/ChatReactionsBar";
@@ -43,6 +50,11 @@ const normaliseRoom = (r) => ({
   section: SECTION_BY_TYPE[r.roomType || r.type?.toUpperCase()] || "OTHER",
   organizationId: r.organizationId || null,
   participantUserIds: r.participantUserIds || [],
+  // Project linkage — needed to scope attachment uploads through the Documents
+  // service (which requires a project hierarchy). INTERNAL rooms have none.
+  projectId: r.cxProjectId || r.projectId || null,
+  siteId: r.siteId || null,
+  subProjectId: r.subProjectId || null,
 });
 
 const normaliseMessage = (m, currentUser) => {
@@ -161,6 +173,15 @@ const AVATAR_COLORS = [
 const colorFor = (str) =>
   AVATAR_COLORS[(str?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
 
+// Curated quick-pick emojis for the composer picker. Native unicode — the
+// message body renderer emits them as-is, so they display correctly everywhere.
+const EMOJIS = [
+  "😀", "😄", "😁", "😂", "🤣", "😊", "😍", "😎", "🤩", "😘",
+  "🙂", "😉", "😅", "😇", "🤔", "🤗", "🙌", "👏", "👍", "👎",
+  "👌", "🙏", "💪", "🔥", "✨", "🎉", "🚀", "✅", "❌", "⚠️",
+  "❤️", "🧡", "💛", "💚", "💙", "💜", "💯", "👀", "😴", "🤝",
+];
+
 const formatTime = (iso) => {
   if (!iso) return "";
   const diff = Math.floor((Date.now() - new Date(iso)) / 60000);
@@ -268,6 +289,26 @@ function Avatar({ initials, color, size = 36 }) {
     >
       {initials}
     </div>
+  );
+}
+
+// Small presence dot: green when online, hollow grey when offline.
+function PresenceDot({ online, size = 9, title }) {
+  return (
+    <span
+      title={title || (online ? "Online" : "Offline")}
+      aria-label={online ? "Online" : "Offline"}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        flexShrink: 0,
+        display: "inline-block",
+        background: online ? "#22c55e" : "var(--rf-bg3)",
+        border: online ? "1px solid #16a34a" : "1.5px solid var(--rf-txt3)",
+        boxShadow: online ? "0 0 0 2px rgba(34,197,94,0.25)" : "none",
+      }}
+    />
   );
 }
 
@@ -471,11 +512,18 @@ function MessageBubble({
   msg,
   onDelete,
   onForward,
+  onReply,
   onReplyClick,
+  onEdit,
   currentUserId,
   status,
   registerRef,
   highlighted,
+  isEditing,
+  editValue,
+  onEditChange,
+  onEditSave,
+  onEditCancel,
 }) {
   const [hover, setHover] = useState(false);
   const isOwn = !!msg.isOwn;
@@ -580,15 +628,85 @@ function MessageBubble({
             maxWidth: "100%",
           }}
         >
-          {msg.body && <ChatMessageBody message={msg} />}
-          {msg.attachmentUrl && (
-            <div style={{ marginTop: msg.body ? 6 : 0 }}>
-              <Attachment
-                url={msg.attachmentUrl}
-                name={msg.attachmentName}
-                type={msg.attachmentType}
+          {isEditing ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 220 }}>
+              <textarea
+                value={editValue}
+                autoFocus
+                onChange={(e) => onEditChange?.(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    onEditSave?.();
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    onEditCancel?.();
+                  }
+                }}
+                rows={2}
+                style={{
+                  width: "100%",
+                  resize: "vertical",
+                  borderRadius: 8,
+                  border: "1px solid var(--rf-border)",
+                  background: "var(--rf-bg)",
+                  color: "var(--rf-txt)",
+                  fontSize: 13,
+                  fontFamily: "inherit",
+                  padding: "6px 8px",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
               />
+              <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                <button
+                  onClick={() => onEditCancel?.()}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid var(--rf-border)",
+                    color: "var(--rf-txt2)",
+                    borderRadius: 7,
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => onEditSave?.()}
+                  style={{
+                    background: "var(--rf-accent)",
+                    border: "none",
+                    color: "#fff",
+                    borderRadius: 7,
+                    padding: "4px 12px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+              <div style={{ fontSize: 10, color: metaColor }}>
+                Enter to save · Esc to cancel
+              </div>
             </div>
+          ) : (
+            <>
+              {msg.body && <ChatMessageBody message={msg} />}
+              {msg.attachmentUrl && (
+                <div style={{ marginTop: msg.body ? 6 : 0 }}>
+                  <Attachment
+                    url={msg.attachmentUrl}
+                    name={msg.attachmentName}
+                    type={msg.attachmentType}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -621,7 +739,7 @@ function MessageBubble({
       </div>
 
       {/* Hover action bar */}
-      {hover && !msg.pending && (
+      {hover && !msg.pending && !isEditing && (
         <div
           style={{
             position: "absolute",
@@ -632,6 +750,18 @@ function MessageBubble({
             gap: 4,
           }}
         >
+          <button
+            onClick={() => onReply?.(msg)}
+            title="Reply"
+            aria-label="Reply to message"
+            style={hoverActionStyle}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="9 17 4 12 9 7" />
+              <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+            </svg>
+            Reply
+          </button>
           <button
             onClick={() => onForward?.(msg)}
             title="Forward message"
@@ -644,6 +774,20 @@ function MessageBubble({
             </svg>
             Forward
           </button>
+          {msg.canDelete && !msg.attachmentUrl && (
+            <button
+              onClick={() => onEdit?.(msg)}
+              title="Edit message"
+              aria-label="Edit message"
+              style={hoverActionStyle}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+              Edit
+            </button>
+          )}
           {msg.canDelete && (
             <button
               onClick={() => onDelete(msg.id)}
@@ -1567,6 +1711,11 @@ export default function Chat() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [forwardMsg, setForwardMsg] = useState(null); // message being forwarded
   const [highlightId, setHighlightId] = useState(null);
+  const [onlineUserIds, setOnlineUserIds] = useState(() => new Set()); // presence
+  const [replyTo, setReplyTo] = useState(null); // message being replied to
+  const [editingId, setEditingId] = useState(null); // message id being edited
+  const [editingValue, setEditingValue] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
   // Attachment compose state — multiple files, each individually removable.
   const [pendingFiles, setPendingFiles] = useState([]); // [{ id, file, previewUrl }]
   const [uploadError, setUploadError] = useState("");
@@ -1860,6 +2009,52 @@ export default function Chat() {
     return () => offs.forEach((off) => off && off());
   }, [socket, currentUser, ingestIncoming, refreshReceipts]);
 
+  // ── Presence: track which users are online (socket-driven, best-effort) ──────
+  useEffect(() => {
+    if (!socket || !currentUser) return;
+    const offs = [];
+    const setOnline = (id, on) =>
+      setOnlineUserIds((prev) => {
+        if (!id) return prev;
+        if (on === prev.has(id)) return prev; // no-op
+        const next = new Set(prev);
+        if (on) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+    const idOf = (x) => x?.userId || x?.id || (typeof x === "string" ? x : null);
+    const onOnline = ({ data }) => setOnline(idOf(data), true);
+    const onOffline = ({ data }) => setOnline(idOf(data), false);
+    // A full snapshot of currently-online users (sent on connect / request).
+    const onSync = ({ data }) => {
+      const list =
+        data?.userIds || data?.online || data?.users || (Array.isArray(data) ? data : null);
+      if (Array.isArray(list)) {
+        setOnlineUserIds(new Set(list.map(idOf).filter(Boolean)));
+      }
+    };
+
+    for (const ev of ["presence.online", "user.online", "chat.presence.online"]) {
+      offs.push(onEnvelope(socket, ev, onOnline));
+    }
+    for (const ev of ["presence.offline", "user.offline", "chat.presence.offline"]) {
+      offs.push(onEnvelope(socket, ev, onOffline));
+    }
+    for (const ev of ["presence.sync", "presence.state", "chat.presence"]) {
+      offs.push(onEnvelope(socket, ev, onSync));
+    }
+
+    // Announce ourselves and request the current roster. Harmless if the
+    // backend ignores these channels — the indicators just stay "offline".
+    try {
+      socket.emit?.("presence.subscribe", {});
+      socket.emit?.("presence.ping", {});
+    } catch {
+      /* stub socket — ignore */
+    }
+    return () => offs.forEach((off) => off && off());
+  }, [socket, currentUser]);
+
   // ── Polling fallback: active-room messages + room unread (no refresh needed) ─
   useEffect(() => {
     if (!currentUser) return;
@@ -2003,10 +2198,58 @@ export default function Chat() {
     });
   };
 
+  // ── Upload one attachment through the Documents presign → S3 → confirm flow ──
+  // Chat has no upload endpoint of its own, so files are stored as Documents
+  // linked back to the chat room, then a fresh download URL is attached to the
+  // message. Returns { url, name, type }.
+  const uploadOneAttachment = useCallback(
+    async (file, room) => {
+      if (!room?.projectId) {
+        throw new Error(
+          "This conversation isn't linked to a project, so files can't be attached here."
+        );
+      }
+      const meta = {
+        title: file.name,
+        projectId: room.projectId,
+        // siteId / subProjectId are only sent when the room carries them.
+        ...(room.siteId ? { siteId: room.siteId } : {}),
+        ...(room.subProjectId ? { subProjectId: room.subProjectId } : {}),
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        fileSize: file.size,
+        category: "CHAT_ATTACHMENT",
+        linkedToType: "ChatRoom",
+        linkedToId: room.id,
+      };
+      const res = await requestUploadUrl(meta);
+      const data = res?.data || res || {};
+      const uploadUrl = data.uploadUrl || data.url;
+      const docId =
+        data.documentId || data.id || data.document?.id || data.document?.documentId;
+      if (!uploadUrl) throw new Error("Upload could not be started (no upload URL).");
+
+      await uploadFileToS3(uploadUrl, file, (p) => setUploadProgress(p));
+      if (docId) await confirmUpload(docId);
+
+      // Prefer a stable URL the server may return; else fetch a download URL.
+      let url = data.fileUrl || data.downloadUrl || data.publicUrl || null;
+      if (!url && docId) {
+        const dl = await getDownloadUrl(docId);
+        url = (dl?.data || dl)?.downloadUrl || null;
+      }
+      if (!url) throw new Error("File uploaded but no download URL was returned.");
+      return { url, name: file.name, type: file.type || "" };
+    },
+    []
+  );
+
   // ── Send message ───────────────────────────────────────────────────────────
   const handleSend = async () => {
     const body = inputValue.trim();
     const filesToSend = pendingFiles;
+    const replyRef = replyTo;
+    const room = activeRoom;
     if (
       (!body && filesToSend.length === 0) ||
       sending ||
@@ -2016,6 +2259,7 @@ export default function Chat() {
       return;
 
     stopTypingNow();
+    setShowEmoji(false);
     const nowIso = new Date().toISOString();
     const first = filesToSend[0]?.file;
     const optimistic = normaliseMessage(
@@ -2028,6 +2272,9 @@ export default function Chat() {
         attachmentUrl: filesToSend[0]?.previewUrl || null,
         attachmentName: first?.name || "",
         attachmentType: first?.type || "",
+        replyToId: replyRef?.id || null,
+        replyToBody: replyRef?.body || replyRef?.attachmentName || "",
+        replyToSender: replyRef?.senderName || "",
         pending: true,
       },
       currentUser
@@ -2038,31 +2285,74 @@ export default function Chat() {
     // Detach the array from state without revoking the object URLs yet — we may
     // need to restore them if the send fails.
     setPendingFiles([]);
+    setReplyTo(null);
     inputRef.current?.focus();
     setSending(true);
 
     try {
-      let attachmentUrl;
+      // Upload any attachments first (Documents presign → S3 → confirm).
+      const attachments = [];
       if (filesToSend.length > 0) {
-        // The confirmed chat API accepts a stored attachmentUrl on postMessage,
-        // but there is no chat-scoped upload endpoint in services/Chat. Until
-        // one exists we surface a clear message rather than silently dropping
-        // the files. (See audit notes — backend gap.)
         setUploadProgress(0);
-        throw new Error(
-          `Attachment uploads are not yet supported by the chat API (no upload endpoint). ${filesToSend.length} file(s) were not sent.`
-        );
+        for (const pf of filesToSend) {
+          attachments.push(await uploadOneAttachment(pf.file, room));
+        }
+        setUploadProgress(100);
       }
-      const res = await postMessage(activeRoomId, { body, attachmentUrl });
+
+      // The postMessage API carries a single attachmentUrl, so the text (and the
+      // reply reference) ride with the first file; any extra files are sent as
+      // their own follow-up messages.
+      const firstAtt = attachments[0];
+      const res = await postMessage(activeRoomId, {
+        body,
+        attachmentUrl: firstAtt?.url || undefined,
+        attachmentName: firstAtt?.name || undefined,
+        attachmentType: firstAtt?.type || undefined,
+        replyToId: replyRef?.id || undefined,
+      });
+      for (let i = 1; i < attachments.length; i++) {
+        const a = attachments[i];
+        await postMessage(activeRoomId, {
+          body: "",
+          attachmentUrl: a.url,
+          attachmentName: a.name,
+          attachmentType: a.type,
+        });
+      }
+
       const saved = res?.data || res;
-      if (saved?.id) {
+      if (attachments.length > 1) {
+        // Multiple messages were created — drop the optimistic stand-in and let
+        // the next fetch reconcile the authoritative list.
+        setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+        fetchMessages(activeRoomId);
+      } else if (saved?.id) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === optimistic.id
-              ? normaliseMessage({ ...saved, canDelete: true }, currentUser)
+              ? normaliseMessage(
+                  {
+                    ...saved,
+                    canDelete: true,
+                    // Keep the client-side reply context if the server didn't echo it.
+                    replyToId:
+                      saved.replyToId || saved.parentMessageId || replyRef?.id || null,
+                    replyToBody: saved.replyToBody || replyRef?.body || "",
+                    replyToSender: saved.replyToSender || replyRef?.senderName || "",
+                  },
+                  currentUser
+                )
               : m
           )
         );
+      }
+      if (filesToSend.length > 0) {
+        flashSuccess(
+          `${filesToSend.length} file${filesToSend.length > 1 ? "s" : ""} uploaded.`
+        );
+        // Safe to release the local previews now that the upload succeeded.
+        filesToSend.forEach((p) => p.previewUrl && URL.revokeObjectURL(p.previewUrl));
       }
     } catch (err) {
       // Roll the optimistic message back so the user sees the failure, and
@@ -2070,10 +2360,84 @@ export default function Chat() {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       if (body) setInputValue(body);
       if (filesToSend.length > 0) setPendingFiles(filesToSend);
+      if (replyRef) setReplyTo(replyRef);
       setLastError(extractErrorMessage(err, "Failed to send message"));
     } finally {
       setSending(false);
       setUploadProgress(null);
+    }
+  };
+
+  // ── Edit a message (inline) ─────────────────────────────────────────────────
+  const startEdit = (msg) => {
+    if (!msg?.id) return;
+    setEditingId(msg.id);
+    setEditingValue(msg.body || "");
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingValue("");
+  };
+  const saveEdit = async () => {
+    const id = editingId;
+    const newBody = editingValue.trim();
+    if (!id) return;
+    const target = messages.find((m) => m.id === id);
+    if (!target) {
+      cancelEdit();
+      return;
+    }
+    if (!newBody) {
+      setLastError("Message can't be empty — delete it instead.");
+      return;
+    }
+    if (newBody === target.body) {
+      cancelEdit();
+      return;
+    }
+    const snapshot = messages;
+    const nowIso = new Date().toISOString();
+    setMessages((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, body: newBody, editedAt: nowIso } : m))
+    );
+    cancelEdit();
+    try {
+      await editChatMessage(activeRoomId, id, newBody);
+      flashSuccess("Message updated.");
+    } catch (err) {
+      // Restore the original so an edit never silently sticks on failure.
+      setMessages(snapshot);
+      setLastError(extractErrorMessage(err, "Failed to update message"));
+    }
+  };
+
+  // ── Begin a reply (focus composer; preview banner shows above the input) ─────
+  const beginReply = (msg) => {
+    if (!msg?.id) return;
+    setReplyTo(msg);
+    setEditingId(null);
+    inputRef.current?.focus();
+  };
+
+  // ── Insert an emoji at the caret in the message input ───────────────────────
+  const insertEmoji = (emoji) => {
+    const el = inputRef.current;
+    if (el && typeof el.selectionStart === "number") {
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      setInputValue((v) => v.slice(0, start) + emoji + v.slice(end));
+      // Restore the caret just after the inserted emoji on the next tick.
+      requestAnimationFrame(() => {
+        try {
+          el.focus();
+          const pos = start + emoji.length;
+          el.setSelectionRange(pos, pos);
+        } catch {
+          /* ignore */
+        }
+      });
+    } else {
+      setInputValue((v) => v + emoji);
     }
   };
 
@@ -2541,11 +2905,32 @@ export default function Chat() {
                           (e.currentTarget.style.background = "transparent")
                         }
                       >
-                        <Avatar
-                          initials={nameToInitials(name)}
-                          color={colorFor(name)}
-                          size={24}
-                        />
+                        <div style={{ position: "relative", flexShrink: 0 }}>
+                          <Avatar
+                            initials={nameToInitials(name)}
+                            color={colorFor(name)}
+                            size={24}
+                          />
+                          <span
+                            style={{
+                              position: "absolute",
+                              bottom: -1,
+                              right: -1,
+                              borderRadius: "50%",
+                              padding: 1,
+                              background: "var(--rf-bg2)",
+                              display: "inline-flex",
+                            }}
+                          >
+                            <PresenceDot
+                              online={onlineUserIds.has(u.id)}
+                              size={8}
+                              title={`${name} is ${
+                                onlineUserIds.has(u.id) ? "online" : "offline"
+                              }`}
+                            />
+                          </span>
+                        </div>
                         <span
                           style={{
                             flex: 1,
@@ -2630,13 +3015,22 @@ export default function Chat() {
                 fontWeight: 800,
                 color: "var(--rf-txt)",
                 fontFamily: "monospace",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
               }}
             >
               {activeRoom?.name || ""}
+              {activeRoom?.roomType === "DIRECT" && activeRoom?.peerId && (
+                <PresenceDot online={onlineUserIds.has(activeRoom.peerId)} />
+              )}
             </div>
             <div
               style={{ fontSize: 11, color: "var(--rf-txt3)", marginTop: 1 }}
             >
+              {activeRoom?.roomType === "DIRECT" && activeRoom?.peerId
+                ? `${onlineUserIds.has(activeRoom.peerId) ? "Online" : "Offline"} · `
+                : ""}
               {activeRoom?.subtitle || ""}
               {activeRoom?.roomType ? ` · ${activeRoom.roomType}` : ""} ·{" "}
               {messages.length} messages
@@ -2800,10 +3194,17 @@ export default function Chat() {
                     msg={msg}
                     onDelete={(id) => setConfirmDeleteId(id)}
                     onForward={(m) => setForwardMsg(m)}
+                    onReply={beginReply}
                     onReplyClick={scrollToMessage}
+                    onEdit={startEdit}
                     currentUserId={currentUser?.id}
                     status={status}
                     highlighted={highlightId === msg.id}
+                    isEditing={editingId === msg.id}
+                    editValue={editingValue}
+                    onEditChange={setEditingValue}
+                    onEditSave={saveEdit}
+                    onEditCancel={cancelEdit}
                     registerRef={(el) => {
                       if (el) messageRefs.current[msg.id] = el;
                     }}
@@ -2998,6 +3399,66 @@ export default function Chat() {
             </div>
           )}
 
+          {/* Reply preview — shows which message the next send will reference */}
+          {replyTo && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 8,
+                padding: "6px 10px",
+                borderLeft: "3px solid var(--rf-accent)",
+                background: "var(--rf-bg)",
+                border: "1px solid var(--rf-border)",
+                borderRadius: 8,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: "var(--rf-accent)", flexShrink: 0 }}>
+                <polyline points="9 17 4 12 9 7" />
+                <path d="M20 18v-2a4 4 0 0 0-4-4H4" />
+              </svg>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--rf-txt2)" }}>
+                  Replying to {replyTo.senderName || "message"}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--rf-txt3)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {replyTo.body || replyTo.attachmentName || "Attachment"}
+                </div>
+              </div>
+              <button
+                onClick={() => setReplyTo(null)}
+                aria-label="Cancel reply"
+                title="Cancel reply"
+                style={{
+                  background: "var(--rf-bg3)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 20,
+                  height: 20,
+                  cursor: "pointer",
+                  color: "var(--rf-txt2)",
+                  fontSize: 14,
+                  lineHeight: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                ×
+              </button>
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
             <input
               ref={fileInputRef}
@@ -3029,6 +3490,86 @@ export default function Chat() {
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
               </svg>
             </button>
+
+            {/* Emoji picker */}
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                onClick={() => setShowEmoji((v) => !v)}
+                title="Emoji"
+                aria-label="Insert emoji"
+                aria-expanded={showEmoji}
+                disabled={sending}
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 10,
+                  border: "1px solid var(--rf-border)",
+                  background: showEmoji ? "var(--rf-bg3)" : "var(--rf-bg)",
+                  color: "var(--rf-txt2)",
+                  cursor: sending ? "default" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  lineHeight: 1,
+                }}
+              >
+                😊
+              </button>
+              {showEmoji && (
+                <>
+                  {/* click-away backdrop */}
+                  <div
+                    onClick={() => setShowEmoji(false)}
+                    style={{ position: "fixed", inset: 0, zIndex: 40 }}
+                  />
+                  <div
+                    role="menu"
+                    style={{
+                      position: "absolute",
+                      bottom: 50,
+                      left: 0,
+                      zIndex: 50,
+                      width: 248,
+                      padding: 8,
+                      background: "var(--rf-bg2)",
+                      border: "1px solid var(--rf-border)",
+                      borderRadius: 12,
+                      boxShadow: "0 16px 32px rgba(0,0,0,0.3)",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(8, 1fr)",
+                      gap: 2,
+                    }}
+                  >
+                    {EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => insertEmoji(emoji)}
+                        title={emoji}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          borderRadius: 6,
+                          cursor: "pointer",
+                          fontSize: 18,
+                          lineHeight: 1,
+                          padding: "5px 0",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = "var(--rf-bg3)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
             <div
               style={{
                 flex: 1,

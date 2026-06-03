@@ -9,8 +9,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getAccessToken, clearTokens } from "@/services/instance/tokenService";
-import { Logout } from "@/services/auth";
+import {
+  getAccessToken,
+  clearTokens,
+  setUser,
+  setOrganization,
+} from "@/services/instance/tokenService";
+import { GetOrganization, GetUser, Logout } from "@/services/auth";
 import GlobalSearchBar from "@/components/GlobalSearchBar";
 import NotificationBell from "@/components/NotificationBell";
 import OnboardingTourOverlay from "@/components/OnboardingTourOverlay";
@@ -21,6 +26,7 @@ import {
   useUserPermissions,
   useRequirePermission,
 } from "@/Utils/rbac";
+import { getRoles } from "@/services/Roles";
 
 // ─── Route → (module, action) permission map ─────────────────────────────
 // Layout is mounted by every page.* route in /app, so we centralise the
@@ -428,7 +434,7 @@ function buildSections(projectCode) {
         },
         {
           title: "Change requests",
-          href: "/ChangeRequests/List",
+          href: "/ChangeRequests",
           module: MODULE.PROJECTS,
         },
         {
@@ -773,6 +779,31 @@ export default function CxLayout({ children }) {
     }
     clearTokens();
     router.replace("/Auth/Login");
+  };
+
+  useEffect(() => {
+    getRolesList();
+    getUserFromApi();
+  }, []);
+
+  const getUserFromApi = async () => {
+    const [userResponse, orgResponse] = await Promise.all([
+      GetUser(),
+      GetOrganization().catch(() => null),
+    ]);
+    if (orgResponse && userResponse) {
+      setUser({ user: userResponse });
+      setOrganization({ organization: orgResponse });
+    }
+  };
+
+  const getRolesList = async () => {
+    try {
+      const res = await getRoles();
+      localStorage.setItem("roles", JSON.stringify(res));
+    } catch (error) {
+      console.log("Error Fetching Roles:", error);
+    }
   };
 
   return (
