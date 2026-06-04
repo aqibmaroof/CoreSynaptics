@@ -11,7 +11,7 @@ import {
   completeDelegation,
   cancelDelegation,
   DELEGATION_STATUS_STYLE,
-} from "@/services/ChecklistDelegation";
+} from "@/services/ChecklistDelegations";
 
 export default function ChecklistDelegationHistory({ checklistId, currentUserId, onChange }) {
   const [rows, setRows] = useState([]);

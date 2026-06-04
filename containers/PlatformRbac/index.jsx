@@ -21,6 +21,9 @@ import {
   platformGrantModules,
   platformAssignUserRoles,
   platformRevokeUserRoles,
+  platformCreateOrgRole,
+  platformUpdateOrgRole,
+  platformDeleteOrgRole,
   deriveLevel,
   levelToActions,
   sanitizeActions,
@@ -124,36 +127,76 @@ export default function PlatformRbac() {
     setTimeout(() => setFlash(null), 4000);
   };
 
-  // load roles + grantable when org changes
-  useEffect(() => {
+  // load roles + grantable for the selected org
+  const loadOrgData = useCallback(async () => {
     if (allowed !== true || !orgId) return;
-    (async () => {
-      setLoading(true);
-      setBatchError("");
-      try {
-        const [r, g, u] = await Promise.all([
-          platformOrgRoles(orgId),
-          platformOrgGrantableModules(orgId),
-          platformOrgUsers(orgId),
-        ]);
-        const roleList = Array.isArray(r) ? r : [];
-        // exclude the resolved admin role (AUTHORITY_BOUND on write)
-        const selectable = roleList.filter((x) => !x.isResolvedAdmin);
-        setRoles(selectable);
-        setGrantable(g?.modules || []);
-        setUsers(Array.isArray(u) ? u : []);
-        setSelectedRoleId((cur) =>
-          selectable.some((x) => x.id === cur) ? cur : selectable[0]?.id ?? null,
-        );
-      } catch (e) {
-        setRoles([]);
-        setGrantable([]);
-        setUsers([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    setLoading(true);
+    setBatchError("");
+    try {
+      const [r, g, u] = await Promise.all([
+        platformOrgRoles(orgId),
+        platformOrgGrantableModules(orgId),
+        platformOrgUsers(orgId),
+      ]);
+      const roleList = Array.isArray(r) ? r : [];
+      // exclude the resolved admin role (AUTHORITY_BOUND on write)
+      const selectable = roleList.filter((x) => !x.isResolvedAdmin);
+      setRoles(selectable);
+      setGrantable(g?.modules || []);
+      setUsers(Array.isArray(u) ? u : []);
+      setSelectedRoleId((cur) =>
+        selectable.some((x) => x.id === cur) ? cur : selectable[0]?.id ?? null,
+      );
+    } catch (e) {
+      setRoles([]);
+      setGrantable([]);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
   }, [allowed, orgId]);
+
+  useEffect(() => {
+    loadOrgData();
+  }, [loadOrgData]);
+
+  // ── Role CRUD (SUPERADMIN, target org) ─────────────────────────────────────
+  const [newRoleName, setNewRoleName] = useState("");
+  const [roleBusy, setRoleBusy] = useState(false);
+  const [roleError, setRoleError] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  const createRole = async () => {
+    const name = newRoleName.trim();
+    if (!name || !orgId || roleBusy) return;
+    setRoleBusy(true);
+    setRoleError("");
+    try {
+      await platformCreateOrgRole(orgId, { name });
+      setNewRoleName("");
+      await loadOrgData();
+    } catch (err) {
+      setRoleError(errorBody(err)?.message || "Failed to create role.");
+    } finally {
+      setRoleBusy(false);
+    }
+  };
+
+  const deleteRole = async (roleId) => {
+    if (!orgId || roleBusy) return;
+    setRoleBusy(true);
+    setRoleError("");
+    try {
+      await platformDeleteOrgRole(orgId, roleId);
+      setConfirmDeleteId(null);
+      if (selectedRoleId === roleId) setSelectedRoleId(null);
+      await loadOrgData();
+    } catch (err) {
+      setRoleError(errorBody(err)?.message || "Failed to delete role.");
+    } finally {
+      setRoleBusy(false);
+    }
+  };
 
   // load the selected role's current module grants
   const loadRoleModules = useCallback(async (roleId) => {
@@ -426,6 +469,36 @@ export default function PlatformRbac() {
             <div className="px-4 py-3 border-b border-[var(--rf-border)] bg-[var(--rf-bg3)]/40 text-sm font-bold text-[var(--rf-txt)]">
               Roles
             </div>
+            {/* Create a new role for the selected org (SUPERADMIN) */}
+            {orgId ? (
+              <div className="px-3 py-2 border-b border-[var(--rf-border)] flex gap-2">
+                <input
+                  type="text"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") createRole();
+                  }}
+                  placeholder="New role name…"
+                  disabled={roleBusy}
+                  className="flex-1 min-w-0 px-2 py-1.5 text-sm rounded-md border border-[var(--rf-border)] bg-[var(--rf-bg)] text-[var(--rf-txt)]"
+                />
+                <button
+                  type="button"
+                  onClick={createRole}
+                  disabled={roleBusy || !newRoleName.trim()}
+                  className="px-3 py-1.5 text-sm font-semibold rounded-md text-white disabled:opacity-50"
+                  style={{ background: "var(--rf-accent)" }}
+                >
+                  Add
+                </button>
+              </div>
+            ) : null}
+            {roleError ? (
+              <div className="px-3 py-2 text-xs text-[var(--rf-red)]">
+                {roleError}
+              </div>
+            ) : null}
             <div className="max-h-[60vh] overflow-y-auto p-2">
               {loading ? (
                 <div className="p-4 text-sm text-[var(--rf-txt3)]">Loading…</div>
@@ -436,20 +509,53 @@ export default function PlatformRbac() {
               ) : (
                 roles.map((r) => {
                   const active = r.id === selectedRoleId;
+                  const confirming = confirmDeleteId === r.id;
                   return (
-                    <button
+                    <div
                       key={r.id}
-                      onClick={() => setSelectedRoleId(r.id)}
-                      className="w-full text-left px-3 py-2.5 rounded-lg mb-1 transition-colors"
+                      className="flex items-center gap-1 mb-1 rounded-lg"
                       style={{
                         background: active ? "var(--rf-accent)" : "transparent",
-                        color: active ? "#fff" : "var(--rf-txt)",
                       }}
                     >
-                      <div className="text-sm font-semibold truncate">
-                        {r.name}
-                      </div>
-                    </button>
+                      <button
+                        onClick={() => setSelectedRoleId(r.id)}
+                        className="flex-1 min-w-0 text-left px-3 py-2.5 transition-colors"
+                        style={{ color: active ? "#fff" : "var(--rf-txt)" }}
+                      >
+                        <div className="text-sm font-semibold truncate">
+                          {r.name}
+                        </div>
+                      </button>
+                      {confirming ? (
+                        <div className="flex items-center gap-1 pr-2">
+                          <button
+                            onClick={() => deleteRole(r.id)}
+                            disabled={roleBusy}
+                            className="px-2 py-1 text-xs font-semibold rounded text-white disabled:opacity-50"
+                            style={{ background: "var(--rf-red)" }}
+                          >
+                            Delete
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="px-2 py-1 text-xs rounded"
+                            style={{ color: active ? "#fff" : "var(--rf-txt2)" }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(r.id)}
+                          title="Delete role"
+                          className="px-2 py-1 mr-1 text-xs rounded opacity-70 hover:opacity-100"
+                          style={{ color: active ? "#fff" : "var(--rf-txt3)" }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                   );
                 })
               )}

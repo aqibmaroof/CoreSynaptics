@@ -150,6 +150,29 @@ export const platformListTenants = () =>
 export const platformOrgRoles = (orgId) =>
   sendRequest({ url: `/platform/rbac/roles/orgs/${orgId}/roles`, method: "GET" });
 
+/** Create a tenant role in a target org. body: { name, description } */
+export const platformCreateOrgRole = (orgId, body) =>
+  sendRequest({
+    url: `/platform/rbac/roles/orgs/${orgId}/roles`,
+    method: "POST",
+    data: body,
+  });
+
+/** Update a tenant role's name/description in a target org. */
+export const platformUpdateOrgRole = (orgId, roleId, body) =>
+  sendRequest({
+    url: `/platform/rbac/roles/orgs/${orgId}/roles/${roleId}`,
+    method: "PATCH",
+    data: body,
+  });
+
+/** Delete a tenant role in a target org. */
+export const platformDeleteOrgRole = (orgId, roleId) =>
+  sendRequest({
+    url: `/platform/rbac/roles/orgs/${orgId}/roles/${roleId}`,
+    method: "DELETE",
+  });
+
 /** → a target org's users: [{ id, email, firstName, lastName, roleId, roleName }] */
 export const platformOrgUsers = (orgId) =>
   sendRequest({ url: `/platform/rbac/roles/orgs/${orgId}/users`, method: "GET" });

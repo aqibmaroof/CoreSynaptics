@@ -23,6 +23,8 @@ import {
 } from "@/services/RbacAdmin";
 import { useRealtimeSocket } from "@/lib/realtime/useRealtimeSocket";
 import { onEnvelope } from "@/lib/realtime/envelope";
+import { isSuperUser } from "@/Utils/rbac";
+import { getUser } from "@/services/instance/tokenService";
 
 const moduleLabel = (key) =>
   String(key || "")
@@ -50,6 +52,19 @@ const LEVEL_BADGE = {
 export default function ModuleGrantMatrix() {
   const router = useRouter();
   const socket = useRealtimeSocket();
+
+  // Platform users (SUPERADMIN) have no org context — this org-scoped screen
+  // would 403 ("Admin access required") and any grant would fail NO_CALLER_ORG.
+  // Send them to the platform RBAC screen, which scopes by an explicit target org.
+  useEffect(() => {
+    let u = null;
+    try {
+      u = JSON.parse(getUser() ?? "null");
+    } catch {
+      u = null;
+    }
+    if (isSuperUser(u)) router.replace("/PlatformRbac");
+  }, [router]);
 
   const [roles, setRoles] = useState([]);
   const [rolesLoading, setRolesLoading] = useState(true);

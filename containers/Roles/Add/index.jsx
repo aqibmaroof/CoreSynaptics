@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CreateRoles, GetRolesById, UpdateRoles } from "@/services/Roles";
-import { useRequirePermission, MODULE } from "@/Utils/rbac";
+import { useRequirePermission, MODULE, isSuperUser } from "@/Utils/rbac";
+import { getUser } from "@/services/instance/tokenService";
 
 const defaultForm = {
   name: "",
@@ -15,6 +16,18 @@ export default function AddSubscription() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
   const guard = useRequirePermission(MODULE.ADMIN, "edit");
+
+  // Platform users (SUPERADMIN) have no org context to attach a new role to.
+  // Route them to the platform RBAC screen (org-scoped role mgmt happens there).
+  useEffect(() => {
+    let u = null;
+    try {
+      u = JSON.parse(getUser() ?? "null");
+    } catch {
+      u = null;
+    }
+    if (isSuperUser(u)) router.replace("/PlatformRbac");
+  }, [router]);
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

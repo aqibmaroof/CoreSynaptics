@@ -67,7 +67,7 @@ const ROUTE_PERMISSIONS = [
 
   // ── Meetings / Chat ──────────────────────────────────────────────────
   {
-    match: /^\/Meeting\/(?:Add|Edit)/,
+    match: /^\/Meetings\/(?:Add|Edit)/,
     module: MODULE.MEETINGS,
     action: "edit",
   },
@@ -164,7 +164,7 @@ const ROUTE_PERMISSIONS = [
     action: "view",
   },
   { match: /^\/PSSR/, module: MODULE.PSSR, action: "view" },
-  { match: /^\/Risk(\/|$)/, module: MODULE.RISK, action: "view" },
+  { match: /^\/RiskRegister(\/|$)/, module: MODULE.RISK, action: "view" },
   { match: /^\/CxScore/, module: MODULE.CX_SCORE, action: "view" },
   { match: /^\/CrossLens/, module: MODULE.CX_SCORE, action: "view" },
 
@@ -376,7 +376,7 @@ function buildSections(projectCode) {
         { title: "Announcements", href: "/Announcements", module: null },
         { title: "Projects", href: "/Projects", module: MODULE.PROJECTS },
         { title: "Tasks", href: "/Tasks/List", module: MODULE.TASKS },
-        { title: "Meetings", href: "/Meeting/List", module: MODULE.MEETINGS },
+        { title: "Meetings", href: "/Meetings/List", module: MODULE.MEETINGS },
         { title: "Chat", href: "/Chat", module: MODULE.CHAT },
         {
           title: "Daily field log",
@@ -496,7 +496,7 @@ function buildSections(projectCode) {
           module: MODULE.COMMISSIONING,
         },
         { title: "PSSR · Pre-Startup", href: "/PSSR", module: MODULE.PSSR },
-        { title: "Risk Register", href: "/Risk", module: MODULE.RISK },
+        { title: "Risk Register", href: "/RiskRegister", module: MODULE.RISK },
         {
           title: "Turnover Package",
           href: "/Turnover",

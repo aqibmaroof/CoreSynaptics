@@ -4,11 +4,24 @@ import { useEffect, useState } from "react";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { DeleteRoles, getRoles } from "@/services/Roles";
-import { useUserPermissions, useRequirePermission, MODULE, permissionProps } from "@/Utils/rbac";
+import { useUserPermissions, useRequirePermission, MODULE, permissionProps, isSuperUser } from "@/Utils/rbac";
+import { getUser } from "@/services/instance/tokenService";
 
 export default function PricingPlans() {
   const router = useRouter();
   const guard = useRequirePermission(MODULE.ADMIN, "view");
+
+  // Platform users (SUPERADMIN) have no org — the org-scoped /roles list/CRUD
+  // can't attach a role to any org for them. Route to platform RBAC instead.
+  useEffect(() => {
+    let u = null;
+    try {
+      u = JSON.parse(getUser() ?? "null");
+    } catch {
+      u = null;
+    }
+    if (isSuperUser(u)) router.replace("/PlatformRbac");
+  }, [router]);
   const { canCreate, canEdit, canDelete } = useUserPermissions();
   const [roles, setRoles] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
