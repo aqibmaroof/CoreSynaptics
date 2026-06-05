@@ -2582,9 +2582,14 @@ export default function ProjectWizard() {
   const stepDef = STEPS[cur];
 
   // Steps that hard-block the Next button until a minimum is met. The team step
-  // must have at least one member selected before the user can proceed.
+  // nudges the user to pick at least one member — but ONLY when the org actually
+  // has teams to choose from. A freshly-onboarded org has no teams yet, and the
+  // backend accepts an empty team assignment at finalize (team members are
+  // optional — they can be assigned later from the Teams module), so blocking
+  // here would trap the user on an impossible step. Gate the block on teams.
   const nextBlocked =
     stepDef.key === "team" &&
+    teams.length > 0 &&
     Object.values(state.teamMemberSel || {}).reduce(
       (acc, t) => acc + Object.values(t).filter(Boolean).length,
       0,
@@ -2693,7 +2698,10 @@ export default function ProjectWizard() {
         fail("schedule", "Set target dates for at least one phase.");
     }
 
-    if (key === "team") {
+    if (key === "team" && teams.length > 0) {
+      // Only require a member when the org has teams to choose from. With no
+      // teams configured the step is unsatisfiable and team assignment is
+      // optional at finalize, so let the user proceed and assign later.
       const count = Object.values(s.teamMemberSel || {}).reduce(
         (acc, t) => acc + Object.values(t).filter(Boolean).length,
         0,
@@ -7548,19 +7556,29 @@ export default function ProjectWizard() {
           Object.values(state.assignments).flat().length > 0,
       },
       {
+        // Optional enhancement — only "incomplete" when templates exist to pick
+        // from. A newly-onboarded org has an empty org catalog, so requiring a
+        // selection would make launch impossible (the backend does not require
+        // workflows at finalize). Treat as satisfied when nothing is available.
         label: "Workflows",
-        sub: `${wfCount} workflows selected`,
-        done: wfCount > 0,
+        sub: orgWorkflows.length
+          ? `${wfCount} workflows selected`
+          : "No workflow templates yet — optional",
+        done: wfCount > 0 || orgWorkflows.length === 0,
       },
       {
         label: "SOPs & forms",
-        sub: `${sopCount} SOPs selected`,
-        done: sopCount > 0,
+        sub: orgSOPs.length
+          ? `${sopCount} SOPs selected`
+          : "No SOP templates yet — optional",
+        done: sopCount > 0 || orgSOPs.length === 0,
       },
       {
         label: "Partner network",
-        sub: `${partCount} partners selected`,
-        done: partCount > 0,
+        sub: orgPartners.length
+          ? `${partCount} partners selected`
+          : "No partners in directory yet — optional",
+        done: partCount > 0 || orgPartners.length === 0,
       },
     ];
 
