@@ -13,7 +13,7 @@ import {
   cancelDelegation,
   DELEGATION_STATUS_STYLE,
   DELEGATION_STATUSES,
-} from "@/services/ChecklistDelegation";
+} from "@/services/ChecklistDelegations";
 
 export default function ChecklistDelegationsView({ currentUserId }) {
   const [rows, setRows] = useState([]);
