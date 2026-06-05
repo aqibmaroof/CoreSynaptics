@@ -2870,7 +2870,17 @@ export default function ProjectWizard() {
             <div
               key={o.id}
               className={`start-option${state.startMode === o.id ? " sel" : ""}`}
+              role="button"
+              tabIndex={0}
+              aria-pressed={state.startMode === o.id}
+              aria-label={`${o.n}. ${o.d}`}
               onClick={() => upd((s) => ({ ...s, startMode: o.id }))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+                  e.preventDefault();
+                  upd((s) => ({ ...s, startMode: o.id }));
+                }
+              }}
             >
               <div className="start-option-icon">
                 {o.id === "template" && (

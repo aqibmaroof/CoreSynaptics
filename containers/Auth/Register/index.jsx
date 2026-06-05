@@ -5721,13 +5721,47 @@ export default function RegisterPage() {
     return true;
   };
 
+  // Turn the backend error envelope into a clear, specific message. The API
+  // (HttpExceptionFilter) returns per-field detail under `errors` for a
+  // VALIDATION_ERROR while keeping `message` a generic summary — surface the
+  // specific fields so the user knows exactly what to fix instead of the vague
+  // "Some fields have errors." sentence. sendRequest throws error.response.data.
+  const extractStepError = (error) => {
+    if (error?.code === "ERR_NETWORK" || error?.message === "Network Error")
+      return "Unable to reach the server. Check your connection and try again.";
+    const fieldErrors = error?.errors;
+    if (fieldErrors && typeof fieldErrors === "object") {
+      const msgs = Object.values(fieldErrors)
+        .flat()
+        .filter((m) => typeof m === "string" && m.trim());
+      if (msgs.length) return msgs.join(" ");
+    }
+    const raw = error?.message;
+    if (Array.isArray(raw)) return raw.filter(Boolean).join(" ");
+    if (typeof raw === "string" && raw.trim()) return raw;
+    return "Failed to save. Please try again.";
+  };
+
   // Per-step API call then advance
   const handleNext = async () => {
     setStepError("");
     setStepLoading(true);
     try {
-      const sid =
+      // Every /setup step requires a sessionId. The mount effect only creates
+      // one for brand-new (unauthenticated) users, so if a stale access token
+      // is present (e.g. a logged-in user opening Register) no session exists
+      // and step 1 would fail with "SessionId is required." Lazily create the
+      // session here so the wizard works regardless of auth state.
+      let sid =
         sessionId || sessionStorage.getItem("cxcontrol_session_id") || "";
+      if (!sid) {
+        const s = await createOnboardingSession(wizard.companyName || "");
+        sid = s.sessionId;
+        try {
+          sessionStorage.setItem("cxcontrol_session_id", sid);
+        } catch {}
+        setSessionId(sid);
+      }
 
       if (step === 0) {
         await SaveCompany({
@@ -5794,7 +5828,7 @@ export default function RegisterPage() {
 
       setStep((s) => s + 1);
     } catch (error) {
-      setStepError(error?.message || "Failed to save. Please try again.");
+      setStepError(extractStepError(error));
     } finally {
       setStepLoading(false);
     }
@@ -5867,7 +5901,7 @@ export default function RegisterPage() {
     } catch (error) {
       setMsg({
         type: "error",
-        text: error?.message || "Network error. Please try again.",
+        text: extractStepError(error),
       });
       setLoading(false);
     }
