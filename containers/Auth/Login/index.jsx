@@ -58,6 +58,17 @@ const LoginPage = () => {
     return !next.email && !next.password;
   };
 
+  // The backend deliberately returns the same opaque "Invalid credentials" for
+  // an unregistered email, a missing password hash, AND a wrong password — so an
+  // attacker can't tell which one failed (account enumeration defence). That
+  // message is too terse to show verbatim, so we map it to the friendlier
+  // status-based copy below instead of surfacing it. Any OTHER backend message
+  // (e.g. "Account is suspended", "Account is not active…") is specific and
+  // safe to show as-is.
+  const isOpaqueCredentialMessage = (msg) =>
+    typeof msg === "string" &&
+    msg.trim().toLowerCase() === "invalid credentials";
+
   // Turn whatever the auth API throws into a clear, user-facing message.
   // sendRequest throws the backend body (e.g. { message, statusCode }) or, for
   // transport failures, the raw axios error.
@@ -67,7 +78,10 @@ const LoginPage = () => {
     const raw = error?.message ?? error?.error;
     if (Array.isArray(raw))
       return raw.find((m) => typeof m === "string" && m.trim()) || "Login failed.";
-    if (typeof raw === "string" && raw.trim()) return raw;
+    // Surface a specific backend message verbatim, but fall through to the
+    // status-based copy for the opaque credential message (LOGIN_007 / LOGIN_032).
+    if (typeof raw === "string" && raw.trim() && !isOpaqueCredentialMessage(raw))
+      return raw;
     const status = error?.statusCode ?? error?.status ?? error?.response?.status;
     if (status === 400) return "Please check your email and password and try again.";
     if (status === 401) return "Invalid email or password.";
@@ -546,7 +560,11 @@ const LoginPage = () => {
             Enter your credentials to access the platform
           </p>
 
-          <form className="space-y-4" onSubmit={handleLogin}>
+          {/* noValidate: the app owns validation via validate()/fieldError so the
+              custom inline messages (LOGIN_006/006b) render instead of the
+              browser's native constraint bubble, which would otherwise pre-empt
+              handleLogin on an invalid type="email" value. */}
+          <form className="space-y-4" onSubmit={handleLogin} noValidate>
             {/* Email Field */}
             <div className="mb-4">
               <label

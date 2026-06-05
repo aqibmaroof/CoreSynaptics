@@ -1,4 +1,4 @@
-import Profile from "../../containers/UserProdile";
+import Profile from "../../containers/UserProfile";
 import Layout from "@/containers/Layout";
 
 export default function List() {

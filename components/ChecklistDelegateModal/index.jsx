@@ -4,7 +4,7 @@
 // Server enforces: one active delegation per checklist. UI surfaces 409s.
 
 import { useState } from "react";
-import { delegateChecklist } from "@/services/ChecklistDelegation";
+import { delegateChecklist } from "@/services/ChecklistDelegations";
 
 export default function ChecklistDelegateModal({
   open,

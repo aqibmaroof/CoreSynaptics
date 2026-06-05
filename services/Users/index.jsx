@@ -3,7 +3,7 @@ import sendRequest from "../instance/sendRequest";
 export const getUsers = async (limit = 25, currentPage) => {
   try {
     const data = await sendRequest({
-      url: `/Users`,
+      url: `/users`,
       method: "GET",
     });
     return data;

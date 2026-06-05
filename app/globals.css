@@ -1680,9 +1680,13 @@ html {
   text-align: left;
 }
 .wiz-wrap .start-option:hover {
-  border-color: var(--navy-soft);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px);
+  /* Base border is already --navy-soft, so hovering must move to the accent
+     colour to read as a real hover state (CP_S1_016). Pair the border shift
+     with a tinted background + stronger lift so the affordance is unmistakable. */
+  border-color: var(--electric);
+  background: var(--electric-soft);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transform: translateY(-2px);
 }
 .wiz-wrap .start-option.sel {
   border: 2px solid var(--electric);

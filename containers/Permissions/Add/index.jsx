@@ -20,6 +20,7 @@ import {
 } from "@/services/RbacAdmin";
 import { useRealtimeSocket } from "@/lib/realtime/useRealtimeSocket";
 import { onEnvelope } from "@/lib/realtime/envelope";
+import { isSuperUser } from "@/Utils/rbac";
 
 const userName = (u) =>
   u?.name ||
@@ -40,6 +41,18 @@ const initials = (name) =>
 export default function AssignRolesToUsers() {
   const router = useRouter();
   const socket = useRealtimeSocket();
+
+  // Platform users (SUPERADMIN) have no org context — org-scoped role assignment
+  // would 403 / NO_CALLER_ORG. Route them to the platform RBAC screen instead.
+  useEffect(() => {
+    let u = null;
+    try {
+      u = JSON.parse(getUser() ?? "null");
+    } catch {
+      u = null;
+    }
+    if (isSuperUser(u)) router.replace("/PlatformRbac");
+  }, [router]);
 
   const [currentUserId, setCurrentUserId] = useState(null);
   const [roles, setRoles] = useState([]);

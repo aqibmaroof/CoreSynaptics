@@ -46,7 +46,7 @@ const SECTIONS = [
       { icon: "≡", title: "Commissioning Score", href: "/CxScore" },
       { icon: "▣", title: "Test Results", href: "/Commissioning/Tests" },
       { icon: "", title: "PSSR Inspections", href: "/PSSR" },
-      { icon: "▲", title: "Risk Register", href: "/Risk" },
+      { icon: "▲", title: "Risk Register", href: "/RiskRegister" },
     ],
   },
   {
@@ -64,7 +64,7 @@ const SECTIONS = [
       { icon: "", title: "Tasks", href: "/Tasks/List" },
       { icon: "", title: "Daily Reports", href: "/DailyReports" },
       { icon: "", title: "Crew", href: "/Field/Dashboard" },
-      { icon: "", title: "Meetings", href: "/Meeting/List" },
+      { icon: "", title: "Meetings", href: "/Meetings/List" },
     ],
   },
   {
