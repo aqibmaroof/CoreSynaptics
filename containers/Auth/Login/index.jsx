@@ -560,7 +560,11 @@ const LoginPage = () => {
             Enter your credentials to access the platform
           </p>
 
-          <form className="space-y-4" onSubmit={handleLogin}>
+          {/* noValidate: the app owns validation via validate()/fieldError so the
+              custom inline messages (LOGIN_006/006b) render instead of the
+              browser's native constraint bubble, which would otherwise pre-empt
+              handleLogin on an invalid type="email" value. */}
+          <form className="space-y-4" onSubmit={handleLogin} noValidate>
             {/* Email Field */}
             <div className="mb-4">
               <label
