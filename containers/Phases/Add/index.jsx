@@ -81,7 +81,7 @@ export default function PhaseAdd() {
             </svg>
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-white">New Phase</h1>
+            <h1 className="text-3xl font-bold text-dark">New Phase</h1>
             <p className="text-gray-400 text-sm mt-1">Leave Project blank to create a global org-level template.</p>
           </div>
         </div>
