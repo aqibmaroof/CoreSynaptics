@@ -165,6 +165,14 @@ export default function PlatformRbac() {
   const [roleBusy, setRoleBusy] = useState(false);
   const [roleError, setRoleError] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [roleSearch, setRoleSearch] = useState("");
+
+  // Roles filtered by the search box (case-insensitive match on name).
+  const filteredRoles = useMemo(() => {
+    const q = roleSearch.trim().toLowerCase();
+    if (!q) return roles;
+    return roles.filter((r) => (r.name || "").toLowerCase().includes(q));
+  }, [roles, roleSearch]);
 
   const createRole = async () => {
     const name = newRoleName.trim();
@@ -469,6 +477,26 @@ export default function PlatformRbac() {
             <div className="px-4 py-3 border-b border-[var(--rf-border)] bg-[var(--rf-bg3)]/40 text-sm font-bold text-[var(--rf-txt)]">
               Roles
             </div>
+            {/* Search / filter the roles list */}
+            <div className="px-3 py-2 border-b border-[var(--rf-border)] relative">
+              <input
+                type="text"
+                value={roleSearch}
+                onChange={(e) => setRoleSearch(e.target.value)}
+                placeholder="Search roles…"
+                className="w-full px-2 py-1.5 pr-7 text-sm rounded-md border border-[var(--rf-border)] bg-[var(--rf-bg)] text-[var(--rf-txt)]"
+              />
+              {roleSearch ? (
+                <button
+                  type="button"
+                  onClick={() => setRoleSearch("")}
+                  aria-label="Clear search"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--rf-txt3)] hover:text-[var(--rf-txt)] text-sm leading-none"
+                >
+                  ✕
+                </button>
+              ) : null}
+            </div>
             {/* Create a new role for the selected org (SUPERADMIN) */}
             {orgId ? (
               <div className="px-3 py-2 border-b border-[var(--rf-border)] flex gap-2">
@@ -506,8 +534,12 @@ export default function PlatformRbac() {
                 <div className="p-4 text-sm text-[var(--rf-txt3)]">
                   No roles found.
                 </div>
+              ) : filteredRoles.length === 0 ? (
+                <div className="p-4 text-sm text-[var(--rf-txt3)]">
+                  No roles match &ldquo;{roleSearch}&rdquo;.
+                </div>
               ) : (
-                roles.map((r) => {
+                filteredRoles.map((r) => {
                   const active = r.id === selectedRoleId;
                   const confirming = confirmDeleteId === r.id;
                   return (
