@@ -1773,11 +1773,22 @@ function buildApiCalls(key, s, extras = {}) {
     contactsList = [],
     orgSafetyPlans = [],
     orgPartners = [],
+    companiesList = [],
   } = extras;
 
   switch (key) {
     // ── basics ──────────────────────────────────────────────────────────────
-    case "basics":
+    case "basics": {
+      // Resolve the customer name defensively. The dropdown binds to customerId;
+      // s.customer (the name string the backend requires) can lag behind after an
+      // inline "+ Add new company" because the create + state update is async.
+      // Fall back to looking the name up from customerId so the required customer
+      // is never dropped from the basics payload (else finalize blocks on
+      // "Customer is required").
+      const customerName =
+        s.customer ||
+        companiesList.find((c) => c.id === s.customerId)?.name ||
+        undefined;
       return [
         {
           step: "basics",
@@ -1785,7 +1796,7 @@ function buildApiCalls(key, s, extras = {}) {
             projectName: s.projectName,
             projectNature: s.projectNature || undefined,
             description: s.description || undefined,
-            customer: s.customer || undefined,
+            customer: customerName,
             contractNumber: s.contractNumber || undefined,
             siteAddress: s.siteAddress || undefined,
             startDate: s.startDate || undefined,
@@ -1794,6 +1805,7 @@ function buildApiCalls(key, s, extras = {}) {
           },
         },
       ];
+    }
 
     // ── assets (org asset selection + tagging convention) ────────────────────
     case "assets": {
@@ -2762,6 +2774,7 @@ export default function ProjectWizard() {
           contactsList,
           orgSafetyPlans,
           orgPartners,
+          companiesList,
         });
         const currentCall = calls[0];
         if (currentCall?.data && Object.keys(currentCall.data).length > 0) {
