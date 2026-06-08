@@ -35,4 +35,12 @@ export const clearTokens = () => {
   if (typeof window === "undefined") return;
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
+  // Clear per-user cached state so it can't leak into the next session on a
+  // shared browser. The project-wizard draft is the important one: a draftId
+  // left behind belongs to the previous user's org and 404s on save for the
+  // next user (tenant isolation), wedging the wizard.
+  localStorage.removeItem("user");
+  localStorage.removeItem("organization");
+  localStorage.removeItem("cxcontrol_wizard_draftId");
+  localStorage.removeItem("cxcontrol_project_wizard_v4");
 };

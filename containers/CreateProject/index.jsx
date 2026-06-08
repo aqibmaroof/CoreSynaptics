@@ -2733,18 +2733,26 @@ export default function ProjectWizard() {
     setStepErrors({});
     setSaving(true);
     setApiError(null);
+
+    // Create a fresh draft and persist its id locally. Used both for the first
+    // advance and to self-heal a stale/foreign draftId (see below).
+    const createFreshDraft = async () => {
+      const res = await startWizardDraft({ startMode: state?.startMode });
+      const newId = res?.props?.id || res?.id;
+      if (newId) {
+        setDraftId(newId);
+        try {
+          localStorage.setItem("cxcontrol_wizard_draftId", newId);
+        } catch {}
+      }
+      return newId;
+    };
+
     try {
       let id = draftId;
-      // Create a draft the first time the user advances past the "start" screen
+      // Create a draft the first time the user advances past the "start" screen.
       if (!id && cur === 0) {
-        const res = await startWizardDraft({ startMode: state?.startMode });
-        id = res?.props?.id || res?.id;
-        if (id) {
-          setDraftId(id);
-          try {
-            localStorage.setItem("cxcontrol_wizard_draftId", id);
-          } catch {}
-        }
+        id = await createFreshDraft();
       }
       if (id) {
         const calls = buildApiCalls(stepDef.key, state, {
@@ -2757,7 +2765,27 @@ export default function ProjectWizard() {
         });
         const currentCall = calls[0];
         if (currentCall?.data && Object.keys(currentCall.data).length > 0) {
-          await saveWizardStep(id, currentCall.step, currentCall.data);
+          try {
+            await saveWizardStep(id, currentCall.step, currentCall.data);
+          } catch (saveErr) {
+            // A draftId persisted in localStorage can outlive its owner — e.g.
+            // a different user logs in on the same browser, or the draft was
+            // finalized/expired server-side. The backend correctly 404s a draft
+            // that doesn't belong to the caller's org (tenant isolation). Don't
+            // get stuck: drop the stale id, mint a fresh draft for THIS user,
+            // and retry the save once.
+            if (saveErr?.statusCode === 404 || saveErr?.status === 404) {
+              const freshId = await createFreshDraft();
+              if (freshId) {
+                id = freshId;
+                await saveWizardStep(freshId, currentCall.step, currentCall.data);
+              } else {
+                throw saveErr;
+              }
+            } else {
+              throw saveErr;
+            }
+          }
         }
       }
       upd((s) => ({ ...s, step: s.step + 1 }));
