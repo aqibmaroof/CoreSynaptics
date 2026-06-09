@@ -256,6 +256,56 @@ const iso = (d) => (d ? new Date(d).toISOString() : undefined);
 const clean = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== ""));
 
+// Map a backend field path (e.g. "stakeholders.0.email") to a human-readable
+// label so the user knows exactly which wizard field to fix.
+const STEP_FOR_FIELD = {
+  projectName: "Identity",
+  customer: "Identity",
+  projectCode: "Identity",
+  siteAddress: "Identity",
+  projectType: "Identity",
+  oprSnapshot: "Facility (OPR)",
+  cxScope: "Scope & Levels",
+  milestones: "Baseline & Milestones",
+  assets: "Asset Register",
+  stakeholders: "Stakeholders",
+  documents: "Documents & Contracts",
+};
+function humanizeFieldError(raw) {
+  // raw e.g. "stakeholders.0.email must be an email"
+  const m = /^([a-zA-Z0-9_.[\]]+)\s+(.*)$/.exec(raw);
+  if (!m) return raw;
+  const [, path, rest] = m;
+  const root = path.split(".")[0];
+  const leaf = path.split(".").filter((p) => !/^\d+$/.test(p)).pop() || path;
+  const step = STEP_FOR_FIELD[root];
+  const label = leaf.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+  return `${step ? step + " — " : ""}${label}: ${rest}`;
+}
+
+/**
+ * Flatten a backend ValidationError body into readable, field-aware lines.
+ * Backend shape: { message, errors: { general?: string[], <field>?: string[] } }.
+ */
+function extractApiErrors(e) {
+  const lines = [];
+  const errs = e?.errors || e?.response?.data?.errors;
+  if (errs && typeof errs === "object") {
+    for (const [key, val] of Object.entries(errs)) {
+      const items = Array.isArray(val) ? val : [val];
+      for (const item of items) {
+        lines.push(key === "general" ? humanizeFieldError(String(item)) : `${key}: ${item}`);
+      }
+    }
+  }
+  if (lines.length) return lines;
+  // No structured errors — fall back to the top-level message.
+  const msg = e?.message || e?.error || e?.response?.data?.message;
+  if (Array.isArray(msg)) return msg.map(humanizeFieldError);
+  if (typeof msg === "string" && msg) return [msg];
+  return ["Failed to create project. Please review the fields and try again."];
+}
+
 /**
  * Map the wizard's local state → FinalizeCxProjectV2Dto.
  * Only fields the backend accepts are sent; org/project ids are derived server-side.
@@ -765,12 +815,9 @@ export default function NewProjectsModule() {
       cancel();
       loadProjects();
     } catch (e) {
-      const msg =
-        e?.message ||
-        e?.error ||
-        (Array.isArray(e?.message) ? e.message.join(", ") : "") ||
-        "Failed to create project. Please review the fields and try again.";
-      setError(typeof msg === "string" ? msg : "Failed to create project.");
+      // Surface the backend's specific field errors (e.g. "Stakeholders — Email:
+      // must be an email"), not just the generic top-level message.
+      setError(extractApiErrors(e));
     } finally {
       setSubmitting(false);
     }
@@ -1406,16 +1453,33 @@ export default function NewProjectsModule() {
 
           {STEP_BODIES[step]()}
 
-          {error && (
+          {error && (error.length ?? 0) > 0 && (
             <div
-              className="mt-6 px-4 py-3 rounded-xl text-sm font-semibold"
+              className="mt-6 px-4 py-3 rounded-xl text-sm"
               style={{
                 background: "var(--rf-red-soft, #fee2e2)",
                 color: "var(--rf-red, #b91c1c)",
                 border: "1px solid var(--rf-red, #b91c1c)",
               }}
             >
-              {error}
+              {(() => {
+                const lines = Array.isArray(error) ? error : [error];
+                if (lines.length === 1) {
+                  return <span className="font-semibold">{lines[0]}</span>;
+                }
+                return (
+                  <>
+                    <p className="font-semibold mb-1.5">
+                      Please fix the following {lines.length} fields:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-0.5 font-medium">
+                      {lines.map((l, i) => (
+                        <li key={i}>{l}</li>
+                      ))}
+                    </ul>
+                  </>
+                );
+              })()}
             </div>
           )}
 
