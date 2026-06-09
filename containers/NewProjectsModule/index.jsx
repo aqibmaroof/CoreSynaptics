@@ -1,7 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  getV2Catalog,
+  listV2Projects,
+  finalizeV2Direct,
+} from "../../services/CxProjectsV2";
 
 /* ------------------------------------------------------------------ *
  * Static config
@@ -166,19 +171,203 @@ const TEAM_ROLES = [
   "Safety Officer",
 ];
 
-const SEED_PROJECTS = [
-  {
-    id: "seed-msft-dc1",
-    name: "MSFT-DC1 · Atlanta",
-    meta: "Atlanta, GA · GC: HITT · Cust: Microsoft",
-    status: "ACTIVE",
+const SEED_PROJECTS = [];
+
+/* ------------------------------------------------------------------ *
+ * Backend (V2 API) mapping
+ * ------------------------------------------------------------------ *
+ * The wizard's display labels are normalized to the values the V2 API's
+ * ValidationPipe accepts. Where the backend /catalog is reachable we prefer its
+ * lists (loaded at runtime); these maps are the safety net for any FE label that
+ * is not a 1:1 match with a backend enum.
+ */
+
+// FE cooling labels → backend COOLING_TYPE_OPTIONS [Air, Chilled Water, Liquid / DLC, Immersion]
+const COOLING_TO_API = {
+  "Chilled Water": "Chilled Water",
+  "Air-Cooled (DX)": "Air",
+  Air: "Air",
+  "Liquid / Immersion": "Liquid / DLC",
+  "Liquid / DLC": "Liquid / DLC",
+  Immersion: "Immersion",
+  Evaporative: "Air",
+  Hybrid: "Chilled Water",
+};
+
+// FE redundancy labels → backend REDUNDANCY_OPTIONS [N, N+1, 2N, 2N+1]
+const REDUNDANCY_TO_API = {
+  N: "N",
+  "N+1": "N+1",
+  "N+2": "N+1",
+  "2N": "2N",
+  "2N+1": "2N+1",
+};
+
+// FE sampling labels → backend VERIFICATION_SAMPLING_OPTIONS
+const SAMPLING_TO_API = {
+  "100% witness (every unit)": "100% witness (every unit)",
+  "First-of-type + 25% sample": "FOK + 25% spot witness",
+  "First-of-type + 10% sample": "FOK + 10% spot witness",
+  "Document review only": "First-of-Kind (FOK) — 1 per batch",
+};
+
+// FE stakeholder-role labels → backend STAKEHOLDER_ROLE_OPTIONS
+const STAKEHOLDER_ROLE_TO_API = {
+  Owner: "Owner",
+  Architect: "Architect",
+  "MEP Engineer": "MEP Engineer",
+  "Structural Engineer": "Structural Engineer",
+  "Owner Vendor": "Owner Vendor",
+  "Construction Manager (CM)": "Construction Manager",
+  AHJ: "AHJ / Inspector",
+};
+
+// FE doc-status pills → backend DocReadinessStatus
+const DOC_STATUS_TO_API = {
+  "In hand": "IN_HAND",
+  "Under review": "UNDER_REVIEW",
+  Pending: "PENDING",
+  "N/A": "NA",
+};
+
+// FE doc-item label → backend ProjectDocType enum value
+const DOC_LABEL_TO_TYPE = {
+  "IFP drawings": "IFP_DRAWINGS",
+  "IFC drawings": "IFC_DRAWINGS",
+  Specifications: "SPECIFICATIONS",
+  "Submittals register": "SUBMITTALS_REGISTER",
+  "RFI register": "RFI_REGISTER",
+  "Change Requests (CR) register": "CR_REGISTER",
+  "MOP / Method of Procedure": "MOP",
+  "CR-MOP register": "CR_MOP_REGISTER",
+  "Contract documents": "CONTRACT_DOCUMENTS",
+  "Permits & inspections": "PERMITS_INSPECTIONS",
+  "Subcontracts executed (all trades)": "SUBCONTRACTS_EXECUTED",
+  "Kickoff (KO) call held": "KICKOFF_CALL_HELD",
+  "As-built drawings (closeout)": "AS_BUILT_DRAWINGS",
+};
+
+const num = (v) => {
+  if (v === "" || v === null || v === undefined) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+};
+const iso = (d) => (d ? new Date(d).toISOString() : undefined);
+const clean = (obj) =>
+  Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== ""));
+
+/**
+ * Map the wizard's local state → FinalizeCxProjectV2Dto.
+ * Only fields the backend accepts are sent; org/project ids are derived server-side.
+ */
+// NOTE: `team` is intentionally not sent to finalize. The backend's
+// ProjectAssignment.userId is required, but the wizard's Team step captures
+// free-text Name/Company (people who may not yet be platform users). Mirroring
+// V1, only the creator is auto-assigned at finalize; named team members are
+// added on the project's Team page once resolved to real users.
+function buildFinalizePayload({ identity, facility, stakeholders, scope, assets, docs, milestones }) {
+  // Step 5 — selected asset types become ProjectAsset rows (qty default 1; the
+  // detailed qty/furnish/PO editing happens on the project page post-create).
+  const assetRows = Object.keys(assets)
+    .filter((k) => assets[k])
+    .map((name) => ({
+      abbr: name.slice(0, 50),
+      name,
+      assetType: "General",
+      quantity: 1,
+      procurementOwner: "OFCI",
+    }));
+
+  // Step 6 — documents the user touched (status != default) are sent explicitly.
+  const docRows = Object.entries(docs)
+    .filter(([label]) => DOC_LABEL_TO_TYPE[label])
+    .map(([label, row]) =>
+      clean({
+        docType: DOC_LABEL_TO_TYPE[label],
+        status: DOC_STATUS_TO_API[row.status],
+        note: row.note,
+      }),
+    );
+
+  // Step 3 — stakeholders with a name.
+  const stakeholderRows = stakeholders
+    .filter((s) => (s.name || s.company || "").trim())
+    .map((s) =>
+      clean({
+        name: (s.name || s.company || "Unnamed").trim(),
+        role: STAKEHOLDER_ROLE_TO_API[s.role] || s.role,
+        company: s.company,
+        email: s.email,
+        phone: s.phone,
+      }),
+    );
+
+  const opr = clean({
+    criticalItCapacityMw: num(facility.criticalCapacity),
+    whiteSpaceSqFt: num(facility.whiteSpace),
+    dataHalls: num(facility.dataHalls),
+    redundancy: REDUNDANCY_TO_API[facility.redundancy],
+    uptimeTarget: facility.uptime,
+    coolingType: COOLING_TO_API[facility.cooling],
+    designPue: num(facility.pue),
+    voltageClasses: facility.voltages,
+    tccfInScope: !!facility.tccf,
+  });
+
+  const cxScope = clean({
+    commissioningLevels: scope.levels,
+    verificationSamplingRate: SAMPLING_TO_API[scope.sampling],
+    ownerCxaWitnessesL4L5: !!scope.ownerWitness,
+  });
+
+  const anchors = clean({
+    ntpIssued: iso(milestones.ntp),
+    gcMobilization: iso(milestones.gcMob),
+    startupCx: iso(milestones.startup),
+    substantialCompletion: iso(milestones.substantial),
+    finalCompletion: iso(milestones.final),
+    baselineScheduleReference: milestones.baselineRef,
+  });
+  const freezeWindows = (milestones.freezes || [])
+    .filter((f) => f.label || f.from || f.to)
+    .map((f) => clean({ label: f.label, startDate: iso(f.from), endDate: iso(f.to) }));
+
+  return clean({
+    projectName: (identity.projectName || "").trim(),
+    customer: (identity.owner || "").trim() || "Unspecified",
+    projectCode: identity.projectCode,
+    siteAddress: identity.location,
+    projectType: facility.uptime ? "Data Center" : "Data Center",
+    oprSnapshot: Object.keys(opr).length ? opr : undefined,
+    cxScope: Object.keys(cxScope).length ? cxScope : undefined,
+    milestones:
+      Object.keys(anchors).length || freezeWindows.length
+        ? clean({ anchors: Object.keys(anchors).length ? anchors : undefined, freezeWindows })
+        : undefined,
+    numDataHalls: num(facility.dataHalls),
+    assets: assetRows.length ? assetRows : undefined,
+    stakeholders: stakeholderRows.length ? stakeholderRows : undefined,
+    documents: docRows.length ? docRows : undefined,
+  });
+}
+
+// Map a V2 aggregate/list row → the list-card view model.
+function toCard(p) {
+  const proj = p.project || p;
+  const loc = proj.siteAddress ? ` · ${String(proj.siteAddress).split(",")[0]}` : "";
+  const bits = [proj.siteAddress, proj.customer && `Cust: ${proj.customer}`].filter(Boolean);
+  return {
+    id: proj.id,
+    name: `${proj.projectName}${loc}`,
+    meta: bits.join(" · ") || "Commissioning project",
+    status: proj.status || "ACTIVE",
     phase: "In progress",
     comm: "0%",
-    assets: 2,
+    assets: (p.assets && p.assets.length) || 0,
     overdue: 0,
     subs: 0,
-  },
-];
+  };
+}
 
 /* ------------------------------------------------------------------ *
  * Shared styles
@@ -415,6 +604,10 @@ export default function NewProjectsModule() {
   const [view, setView] = useState("list"); // "list" | "wizard"
   const [step, setStep] = useState(0);
   const [projects, setProjects] = useState(SEED_PROJECTS);
+  const [catalog, setCatalog] = useState(null);
+  const [loadingList, setLoadingList] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const [identity, setIdentity] = useState({});
   const [facility, setFacility] = useState({
@@ -453,6 +646,57 @@ export default function NewProjectsModule() {
     [assets],
   );
 
+  // Normalize the paginated/array response shapes the API may return.
+  const rowsFrom = (res) =>
+    (res?.data?.data ?? res?.data ?? res?.results ?? (Array.isArray(res) ? res : [])) || [];
+
+  const loadProjects = async () => {
+    setLoadingList(true);
+    try {
+      const res = await listV2Projects({ limit: 50 });
+      const rows = rowsFrom(res);
+      setProjects(rows.map(toCard));
+    } catch (e) {
+      // Non-fatal: leave the list empty and let the user still create.
+      setProjects([]);
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const cat = await getV2Catalog();
+        if (alive) setCatalog(cat?.data ?? cat ?? null);
+      } catch {
+        /* fall back to local option constants */
+      }
+    })();
+    loadProjects();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Option lists prefer the backend catalog (guaranteed to match the API), else
+  // fall back to the local constants so the wizard still renders offline.
+  const opts = useMemo(() => {
+    const c = catalog || {};
+    return {
+      redundancy: c?.opr?.redundancy || REDUNDANCY_OPTS,
+      uptime: c?.opr?.uptimeTarget || UPTIME_OPTS,
+      cooling: c?.opr?.coolingType || COOLING_OPTS,
+      voltages: c?.opr?.voltageClasses || VOLTAGE_CLASSES,
+      levels: c?.scope?.commissioningLevels || CX_LEVELS,
+      sampling: c?.scope?.verificationSamplingRates || SAMPLING_OPTS,
+      stakeholderRoles: c?.stakeholderRoles || STAKEHOLDER_ROLES,
+      teamRoles: c?.teamRoles || TEAM_ROLES,
+    };
+  }, [catalog]);
+
   const resetWizard = () => {
     setStep(0);
     setIdentity({});
@@ -488,32 +732,48 @@ export default function NewProjectsModule() {
 
   const cancel = () => {
     resetWizard();
+    setError("");
     setView("list");
   };
 
-  const createProject = () => {
-    const name = identity.projectName?.trim() || "Untitled Project";
-    const bits = [];
-    if (identity.location) bits.push(identity.location);
-    if (identity.gc) bits.push(`GC: ${identity.gc}`);
-    if (identity.owner) bits.push(`Cust: ${identity.owner}`);
-    setProjects((prev) => [
-      {
-        id: `p-${prev.length + 1}-${name}`,
-        name: identity.location
-          ? `${name} · ${identity.location.split(",")[0]}`
-          : name,
-        meta: bits.join(" · ") || "New commissioning project",
-        status: "ACTIVE",
-        phase: "In progress",
-        comm: "0%",
-        assets: assetCount,
-        overdue: 0,
-        subs: 0,
-      },
-      ...prev,
-    ]);
-    cancel();
+  const createProject = async () => {
+    setError("");
+    if (!identity.projectName?.trim()) {
+      setError("Project name is required.");
+      setStep(0);
+      return;
+    }
+    const payload = buildFinalizePayload({
+      identity,
+      facility,
+      stakeholders,
+      scope,
+      assets,
+      docs,
+      milestones,
+    });
+
+    setSubmitting(true);
+    try {
+      // The ONLY V2 create path — one atomic finalize (no stored draft needed).
+      const res = await finalizeV2Direct(payload);
+      const created = res?.data ?? res;
+      // Optimistically prepend, then refresh from the server for the source of truth.
+      if (created?.project?.id) {
+        setProjects((prev) => [toCard(created), ...prev]);
+      }
+      cancel();
+      loadProjects();
+    } catch (e) {
+      const msg =
+        e?.message ||
+        e?.error ||
+        (Array.isArray(e?.message) ? e.message.join(", ") : "") ||
+        "Failed to create project. Please review the fields and try again.";
+      setError(typeof msg === "string" ? msg : "Failed to create project.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /* --------------------------- step bodies --------------------------- */
@@ -583,7 +843,7 @@ export default function NewProjectsModule() {
               setFacility((p) => ({ ...p, redundancy: e.target.value }))
             }
           >
-            {REDUNDANCY_OPTS.map((o) => (
+            {opts.redundancy.map((o) => (
               <option key={o}>{o}</option>
             ))}
           </SelectInput>
@@ -595,7 +855,7 @@ export default function NewProjectsModule() {
               setFacility((p) => ({ ...p, uptime: e.target.value }))
             }
           >
-            {UPTIME_OPTS.map((o) => (
+            {opts.uptime.map((o) => (
               <option key={o}>{o}</option>
             ))}
           </SelectInput>
@@ -607,7 +867,7 @@ export default function NewProjectsModule() {
               setFacility((p) => ({ ...p, cooling: e.target.value }))
             }
           >
-            {COOLING_OPTS.map((o) => (
+            {opts.cooling.map((o) => (
               <option key={o}>{o}</option>
             ))}
           </SelectInput>
@@ -628,7 +888,7 @@ export default function NewProjectsModule() {
           Voltage Classes Present
         </label>
         <div className="flex flex-wrap gap-2">
-          {VOLTAGE_CLASSES.map((v) => (
+          {opts.voltages.map((v) => (
             <Chip
               key={v}
               active={facility.voltages.includes(v)}
@@ -680,7 +940,7 @@ export default function NewProjectsModule() {
               value={s.role}
               onChange={(e) => updateStakeholder(i, "role", e.target.value)}
             >
-              {STAKEHOLDER_ROLES.map((r) => (
+              {opts.stakeholderRoles.map((r) => (
                 <option key={r}>{r}</option>
               ))}
             </SelectInput>
@@ -750,7 +1010,7 @@ export default function NewProjectsModule() {
         Commissioning Levels in Scope
       </label>
       <div className="flex flex-wrap gap-2">
-        {CX_LEVELS.map((l) => (
+        {opts.levels.map((l) => (
           <Chip
             key={l}
             active={scope.levels.includes(l)}
@@ -773,7 +1033,7 @@ export default function NewProjectsModule() {
               setScope((p) => ({ ...p, sampling: e.target.value }))
             }
           >
-            {SAMPLING_OPTS.map((o) => (
+            {opts.sampling.map((o) => (
               <option key={o}>{o}</option>
             ))}
           </SelectInput>
@@ -1043,7 +1303,7 @@ export default function NewProjectsModule() {
                 value={t.role}
                 onChange={(e) => updateTeam(i, "role", e.target.value)}
               >
-                {TEAM_ROLES.map((r) => (
+                {opts.teamRoles.map((r) => (
                   <option key={r}>{r}</option>
                 ))}
               </SelectInput>
@@ -1146,6 +1406,19 @@ export default function NewProjectsModule() {
 
           {STEP_BODIES[step]()}
 
+          {error && (
+            <div
+              className="mt-6 px-4 py-3 rounded-xl text-sm font-semibold"
+              style={{
+                background: "var(--rf-red-soft, #fee2e2)",
+                color: "var(--rf-red, #b91c1c)",
+                border: "1px solid var(--rf-red, #b91c1c)",
+              }}
+            >
+              {error}
+            </div>
+          )}
+
           {/* Footer */}
           <div
             className="flex items-center justify-between mt-8 pt-5"
@@ -1176,13 +1449,19 @@ export default function NewProjectsModule() {
               )}
               <button
                 type="button"
+                disabled={submitting}
                 onClick={() =>
                   isLast ? createProject() : setStep((s) => s + 1)
                 }
                 className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
-                style={{ background: "var(--rf-accent)", color: "#fff" }}
+                style={{
+                  background: "var(--rf-accent)",
+                  color: "#fff",
+                  opacity: submitting ? 0.6 : 1,
+                  cursor: submitting ? "not-allowed" : "pointer",
+                }}
               >
-                {isLast ? "Create project" : "Next"}
+                {isLast ? (submitting ? "Creating…" : "Create project") : "Next"}
               </button>
             </div>
           </div>
@@ -1190,6 +1469,19 @@ export default function NewProjectsModule() {
       )}
 
       {/* Projects list */}
+      {view === "list" && !loadingList && projects.length === 0 && (
+        <div
+          className="rounded-2xl p-8 text-center text-sm"
+          style={{
+            background: "var(--rf-bg2)",
+            border: "1px dashed var(--rf-border2, #adbbd8)",
+            color: "var(--rf-txt3)",
+          }}
+        >
+          No projects yet. Click <strong>+ New Project</strong> to stand up your
+          first data-center commissioning project.
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {projects.map((p) => (
           <div
