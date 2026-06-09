@@ -1,10 +1,10 @@
-import Projects from "../../containers/NewProjectsModule";
+import ProjectDetail from "../../containers/NewProjectDetail";
 import Layout from "@/containers/Layout";
 
 export default function List() {
   return (
     <Layout>
-      <Projects />
+      <ProjectDetail />
     </Layout>
   );
 }
