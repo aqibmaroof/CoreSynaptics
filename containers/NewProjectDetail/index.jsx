@@ -1,6 +1,34 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  listV2Projects,
+  getPlaybookSummary,
+  advanceAssetPhase,
+  revertAssetPhase,
+  listLookahead,
+  createLookahead,
+  updateLookahead,
+  removeLookahead,
+  flagLookaheadConstraint,
+  clearLookaheadConstraint,
+  listTeamCompanies,
+  revokeTeamCompany,
+  updatePlaybookRail,
+  listV2Stakeholders,
+} from "../../services/CxProjectsV2";
+import { getIssues, verifyAndCloseIssue } from "../../services/Issues";
+import { getChecklists, updateChecklist } from "../../services/Checklist";
+import {
+  listCommissioningTests,
+  recordTestResult,
+} from "../../services/CommissioningTests";
+import { listMilestones } from "../../services/ScheduleMilestones";
+import { getSubmittals } from "../../services/Submittals";
+import { getTARFs } from "../../services/TARF";
+import { getProcurementItems } from "../../services/Procurement";
+import { getProjectFeed } from "../../services/OperationalFeed";
+import { getAllTasks, updateTask } from "../../services/Tasks";
 
 /* ================================================================== *
  * Project Playbook — the whole project on one screen, scoped to the
@@ -1450,6 +1478,7 @@ export default function NewProjectDetail() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [laAdd, setLaAdd] = useState(null); // { wk, trade, area } when add-activity modal open
   const [toast, setToast] = useState("");
+  const [projectId, setProjectId] = useState(null);
 
   const role = COMPANY_TYPES[ct].roles[ri] || COMPANY_TYPES[ct].roles[0];
   const can = (p) => (mode === "standalone" ? true : role.perms.includes(p));
@@ -1466,6 +1495,129 @@ export default function NewProjectDetail() {
       fn(next);
       return next;
     });
+
+  /* ---------- backend integration (Playbook V2 APIs) ---------- */
+  const norm = (r) => r?.data ?? r;
+  const isoMonday = (d = new Date()) => {
+    const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const day = x.getUTCDay();
+    x.setUTCDate(x.getUTCDate() + (day === 0 ? -6 : 1 - day));
+    return x;
+  };
+  const ago = (ts) => {
+    const ms = Date.now() - new Date(ts).getTime();
+    const m = Math.floor(ms / 60000), h = Math.floor(ms / 3600000), dy = Math.floor(ms / 86400000);
+    return dy > 0 ? `${dy}d ago` : h > 0 ? `${h}h ago` : m > 0 ? `${m}m ago` : "just now";
+  };
+  const CHK_FROM = { NOT_STARTED: "not_started", IN_PROGRESS: "in_progress", COMPLETED: "complete", VERIFIED: "verified" };
+  const CHK_TO = { not_started: "NOT_STARTED", in_progress: "IN_PROGRESS", complete: "COMPLETED", verified: "VERIFIED" };
+  const FND_TYPE = { NCR: "NCR", HOLD_POINT: "HoldPoint", WITNESS_POINT: "HoldPoint", PUNCH_LIST: "Punch", SNAG: "Deficiency", GENERAL: "Deficiency" };
+  const SEV_FROM = { CRITICAL: "Critical", HIGH: "Major", MEDIUM: "Minor", LOW: "Minor" };
+  const CHKTYPE_ROLE = { VENDOR: "OEM", GC: "GC", CX_AGENT: "CXA", TRADE: "TRADE", INTERNAL: "GC" };
+  const TASK_FROM = { PENDING: "open", IN_PROGRESS: "in_progress", COMPLETED: "done" };
+  const TASK_TO = { open: "PENDING", in_progress: "IN_PROGRESS", done: "COMPLETED" };
+
+  const refresh = async (pid) => {
+    const [summaryR, issuesR, chksR, testsR, laR, teamR, stakeR, milesR, subsR, tarfR, procR, feedR, tasksR] =
+      await Promise.allSettled([
+        getPlaybookSummary(pid),
+        getIssues({ projectId: pid, limit: 200 }),
+        getChecklists({ cxProjectId: pid }),
+        listCommissioningTests({ cxProjectId: pid, limit: 200 }),
+        listLookahead(pid, { limit: 200 }),
+        listTeamCompanies(pid),
+        listV2Stakeholders(pid),
+        listMilestones({ projectId: pid }),
+        getSubmittals({ cxProjectId: pid, limit: 100 }),
+        getTARFs({ cxProjectId: pid }),
+        getProcurementItems({ projectId: pid }),
+        getProjectFeed(pid, { limit: 50 }),
+        getAllTasks({ projectId: pid }),
+      ]);
+    const val = (r, fb) => (r.status === "fulfilled" ? norm(r.value) ?? fb : fb);
+    const rows = (r) => {
+      const v = val(r, []);
+      return Array.isArray(v) ? v : (v?.data ?? v?.items ?? []);
+    };
+
+    const summary = val(summaryR, null);
+    if (!summary) {
+      flash("Could not load project playbook");
+      // data load settled
+      return;
+    }
+
+    // equipment: display code per asset, keep assetId for API calls
+    const codeCount = {};
+    const equipment = (summary.equipmentGlance ?? []).map((a) => {
+      codeCount[a.abbr] = (codeCount[a.abbr] ?? 0) + 1;
+      const code = codeCount[a.abbr] > 1 ? `${a.abbr}-${String(codeCount[a.abbr]).padStart(2, "0")}` : a.abbr;
+      return { id: code, assetId: a.assetId, name: a.name, disc: a.assetType, sys: null, phase: a.currentPhase, furnish: a.procurementOwner, blocked: a.blocked };
+    });
+    const codeOf = {};
+    equipment.forEach((e) => { codeOf[e.assetId] = e.id; });
+    const eq = (projectAssetId) => (projectAssetId && codeOf[projectAssetId]) || "—";
+    const discOf = (projectAssetId) => equipment.find((e) => e.assetId === projectAssetId)?.disc ?? "Electrical";
+
+    const monday = isoMonday();
+    const next = {
+      project: { name: summary.projectName, phase: summary.projectPhase },
+      rail: summary.rail?.moduleOrder?.length ? summary.rail.moduleOrder : structuredClone(SEED.rail),
+      fieldProgress: (summary.tradeProgress ?? []).map((t) => ({ disc: t.trade, pct: t.pct, note: t.note ?? "" })),
+      equipment,
+      systems: [],
+      checklists: rows(chksR).map((c) => ({ id: c.id, eq: eq(c.projectAssetId), level: c.phase === "NONE" ? "L0" : c.phase, role: CHKTYPE_ROLE[c.checklistType] ?? "GC", name: c.title, status: CHK_FROM[c.status] ?? "not_started" })),
+      findings: rows(issuesR).map((f) => ({ id: f.id, eq: eq(f.projectAssetId), type: FND_TYPE[f.kind] ?? "Deficiency", sev: SEV_FROM[f.severity] ?? "Minor", title: f.title, status: f.status === "CLOSED" ? "resolved" : "open", disc: discOf(f.projectAssetId) })),
+      tests: rows(testsR).map((t) => ({ id: t.id, eq: eq(t.projectAssetId), name: t.testName, status: t.result === "PASS" ? "passed" : "pending" })),
+      lookahead: rows(laR).map((a) => {
+        const wk = Math.round((new Date(a.weekStartDate).getTime() - monday.getTime()) / (7 * 86400000)) + 1;
+        return { id: a.id, wk: Math.min(6, Math.max(1, wk)), trade: a.trade, area: a.description, pct: a.pct, status: (a.status ?? "PLANNED").toLowerCase(), blocked: !!a.blocked, constraint: a.constraintNote ?? "" };
+      }),
+      team: [
+        { ct: "gc", company: summary.lens?.isHost ? "Your organization (host)" : "Host organization", role: "GC — runs the project", access: "Full control", status: "host" },
+        ...(val(teamR, []) ?? []).filter((m) => m.status !== "REVOKED").map((m) => ({ membershipId: m.id, ct: (m.companyType ?? "gc").toLowerCase(), company: m.companyName, role: m.companyRole, access: `${m.companyRole} scope`, status: (m.status ?? "active").toLowerCase() })),
+      ],
+      stakeholders: (val(stakeR, []) ?? []).map((s) => ({ nm: s.name, sc: s.role ?? "", own: s.company ?? "" })),
+      milestones: rows(milesR).map((m) => ({ d: m.date ? String(m.date).slice(0, 10) : "TBD", ph: m.type ?? "", name: m.name, status: m.date && new Date(m.date) < new Date() ? "done" : "todo" })),
+      submittals: rows(subsR).map((s) => ({ name: s.title ?? s.name, eq: "", by: s.specSection ?? "", status: s.status ?? "" })),
+      tarf: rows(tarfR).map((t) => ({ crew: t.personName ?? t.crew, co: t.companyName ?? "", date: t.expectedStart ? String(t.expectedStart).slice(0, 10) : "", badge: t.approvalStage ?? "", orient: t.safetyOrientationComplete ? "Complete" : "Pending" })),
+      procurement: rows(procR).map((p) => ({ item: p.itemName ?? p.name ?? p.title ?? "Item", vendor: p.vendorName ?? "", po: p.poNumber ?? "", furnish: p.ownership ?? p.furnish ?? "", status: p.status ?? "", need: p.expectedDelivery ? String(p.expectedDelivery).slice(0, 10) : "" })),
+      activity: rows(feedR).map((e) => ({ when: ago(e.createdAt ?? Date.now()), who: e.actorDisplayName ?? "system", ct: (e.actorCompanyCode ?? "gc").toLowerCase(), text: [e.action, e.target].filter(Boolean).join(" — ") })),
+      tasks: rows(tasksR).map((t) => ({ id: t.id, ct: ct, title: t.title, due: t.dueDate ? String(t.dueDate).slice(0, 10) : "", status: TASK_FROM[t.status] ?? "open" })),
+      drawings: [],
+      safety: [],
+    };
+    setDb((prev) => ({ ...structuredClone(SEED), ...prev, ...next }));
+    if (summary.lens?.companyType) {
+      const lens = summary.lens.companyType.toLowerCase();
+      if (COMPANY_TYPES[lens]) setCt(lens);
+    }
+    // data load settled
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const fromUrl = new URLSearchParams(window.location.search).get("id");
+        let pid = fromUrl;
+        if (!pid) {
+          const list = norm(await listV2Projects({ limit: 1 }));
+          pid = (list?.data ?? list ?? [])[0]?.id ?? null;
+        }
+        if (!pid) {
+          flash("No V2 project found — create one from the Projects wizard");
+          // data load settled
+          return;
+        }
+        setProjectId(pid);
+        await refresh(pid);
+      } catch {
+        flash("Could not load project playbook");
+        // data load settled
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const ci = PHASES.indexOf(db.project.phase);
   const g = useMemo(() => gateAll(db), [db]);
@@ -1508,35 +1660,62 @@ export default function NewProjectDetail() {
     maxWidth: 230,
   };
 
-  /* ---------- mutations ---------- */
-  const advance = (dir) => {
+  /* ---------- mutations (wired to Playbook V2 + module APIs) ---------- */
+  const apiErr = (err, fallback) =>
+    flash(err?.response?.data?.message ?? err?.message ?? fallback);
+
+  const advance = async (dir) => {
     const u = unit(db, SELV);
     if (u.kind !== "equipment") return;
-    mutate((d) => {
-      const e = d.equipment.find((x) => x.id === u.id);
-      const k = PHASES.indexOf(e.phase);
-      if (dir === "advance" && k < PHASES.length - 1) e.phase = PHASES[k + 1];
-      if (dir === "revert" && k > 0) e.phase = PHASES[k - 1];
-      d.activity.unshift({
-        when: "just now",
-        who: "You",
-        ct,
-        text: `Gate ${dir === "advance" ? "advanced" : "reverted"}: ${e.id} → ${e.phase}`,
+    const e = db.equipment.find((x) => x.id === u.id);
+    if (!e?.assetId || !projectId) return;
+    try {
+      const call = dir === "advance" ? advanceAssetPhase : revertAssetPhase;
+      const res = norm(await call(projectId, e.assetId, { expectedPhase: e.phase }));
+      mutate((d) => {
+        const x = d.equipment.find((y) => y.id === u.id);
+        if (x) x.phase = res?.currentPhase ?? x.phase;
+        d.activity.unshift({
+          when: "just now",
+          who: "You",
+          ct,
+          text: `Gate ${dir === "advance" ? "advanced" : "reverted"}: ${x.id} → ${x.phase}`,
+        });
       });
-    });
-    flash(dir === "advance" ? "Gate advanced" : "Gate reverted");
+      flash(dir === "advance" ? "Gate advanced" : "Gate reverted");
+    } catch (err) {
+      apiErr(err, "Gate is blocked — resolve outstanding items first");
+    }
   };
-  const setChk = (id, status) =>
+  const setChk = (id, status) => {
+    const prev = db.checklists.find((x) => x.id === id)?.status;
     mutate((d) => {
       const c = d.checklists.find((x) => x.id === id);
       if (c) c.status = status;
     });
+    updateChecklist(id, { status: CHK_TO[status] ?? "NOT_STARTED" }).catch((err) => {
+      mutate((d) => {
+        const c = d.checklists.find((x) => x.id === id);
+        if (c && prev) c.status = prev;
+      });
+      apiErr(err, "Could not update checklist");
+    });
+  };
   const resolveFinding = (id) => {
     mutate((d) => {
       const f = d.findings.find((x) => x.id === id);
       if (f) f.status = "resolved";
     });
-    flash("Finding resolved");
+    verifyAndCloseIssue(id, {}).then(
+      () => flash("Finding resolved"),
+      (err) => {
+        mutate((d) => {
+          const f = d.findings.find((x) => x.id === id);
+          if (f) f.status = "open";
+        });
+        apiErr(err, "Could not close finding (it may need verification first)");
+      },
+    );
   };
   const passTest = (id) => {
     mutate((d) => {
@@ -1551,7 +1730,16 @@ export default function NewProjectDetail() {
         });
       }
     });
-    flash("Test passed");
+    recordTestResult(id, { result: "PASS" }).then(
+      () => flash("Test passed"),
+      (err) => {
+        mutate((d) => {
+          const t = d.tests.find((x) => x.id === id);
+          if (t) t.status = "pending";
+        });
+        apiErr(err, "Could not record test result");
+      },
+    );
   };
   const verifyDrawing = (name) => {
     mutate((d) => {
@@ -1560,33 +1748,67 @@ export default function NewProjectDetail() {
     });
     flash("Drawing verified");
   };
-  const cycleTask = (id) =>
+  const cycleTask = (id) => {
+    let nextStatus;
     mutate((d) => {
       const t = d.tasks.find((x) => x.id === id);
       if (!t) return;
       const o = ["open", "in_progress", "done"];
       t.status =
         t.status === "done" ? "open" : o[Math.min(o.indexOf(t.status) + 1, 2)];
+      nextStatus = t.status;
     });
+    if (nextStatus) {
+      updateTask(id, { status: TASK_TO[nextStatus] ?? "PENDING" }).catch((err) =>
+        apiErr(err, "Could not update task"),
+      );
+    }
+  };
+  const syncRail = (rail) => {
+    if (!projectId) return;
+    updatePlaybookRail(projectId, rail).catch((err) =>
+      apiErr(err, "Could not save module rail"),
+    );
+  };
   const removeMod = (id) => {
+    const rail = db.rail.filter((x) => x !== id);
     mutate((d) => {
-      d.rail = d.rail.filter((x) => x !== id);
+      d.rail = rail;
     });
     if (mod === id) setMod("overview");
+    syncRail(rail);
   };
   const addMod = (id) => {
+    const rail = db.rail.includes(id) ? db.rail : [...db.rail, id];
     mutate((d) => {
-      if (!d.rail.includes(id)) d.rail.push(id);
+      d.rail = rail;
     });
     setMod(id);
     setAddOpen(false);
     flash("Module added");
+    syncRail(rail);
   };
   const revoke = (i) => {
+    const member = db.team[i];
+    if (!member) return;
+    if (!member.membershipId || !projectId) {
+      flash("This company is managed by the host org");
+      return;
+    }
     mutate((d) => d.team.splice(i, 1));
-    flash("Access revoked");
+    revokeTeamCompany(projectId, member.membershipId).then(
+      () => flash("Access revoked"),
+      (err) => {
+        refresh(projectId);
+        apiErr(err, "Could not revoke access (host only)");
+      },
+    );
   };
   const invite = (k) => {
+    // Real invites need a registered tenant organization to link
+    // (POST /v2/cx-projects/:id/team-companies { organizationId, companyRole }).
+    // The modal only picks a company TYPE, so record the intent locally until
+    // the org-directory picker lands.
     mutate((d) => {
       d.team.push({
         ct: k,
@@ -1603,54 +1825,98 @@ export default function NewProjectDetail() {
       });
     });
     setInviteOpen(false);
-    flash("Company invited");
+    flash("Invite recorded — link a registered organization to grant access");
   };
-  const laStep = (id, delta) =>
+  const laPatch = (id, payload, revertFn) =>
+    projectId &&
+    updateLookahead(projectId, id, payload).catch((err) => {
+      if (revertFn) mutate(revertFn);
+      apiErr(err, "Could not update activity");
+    });
+  const laStep = (id, delta) => {
+    let pct;
     mutate((d) => {
       const a = d.lookahead.find((x) => x.id === id);
       if (!a) return;
       a.pct = Math.max(0, Math.min(100, a.pct + delta));
       a.status = a.pct === 100 ? "done" : a.pct > 0 ? "active" : "planned";
+      pct = a.pct;
     });
-  const laCycle = (id) =>
+    if (pct !== undefined) laPatch(id, { pct });
+  };
+  const laCycle = (id) => {
+    let status;
     mutate((d) => {
       const a = d.lookahead.find((x) => x.id === id);
       if (!a) return;
       const o = ["planned", "active", "done"];
       a.status = o[(o.indexOf(a.status) + 1) % 3];
       a.pct = a.status === "done" ? 100 : a.status === "planned" ? 0 : a.pct;
+      status = a.status;
     });
-  const laBlock = (id) =>
+    if (status) laPatch(id, { status: status.toUpperCase() });
+  };
+  const laBlock = (id) => {
+    const a = db.lookahead.find((x) => x.id === id);
+    if (!a || !projectId) return;
+    const blocking = !a.blocked;
     mutate((d) => {
-      const a = d.lookahead.find((x) => x.id === id);
-      if (a) {
-        a.blocked = !a.blocked;
-        a.constraint = a.blocked ? a.constraint || "Blocked" : "";
+      const x = d.lookahead.find((y) => y.id === id);
+      if (x) {
+        x.blocked = blocking;
+        x.constraint = blocking ? x.constraint || "Blocked" : "";
       }
     });
-  const laRemove = (id) =>
+    const call = blocking
+      ? flagLookaheadConstraint(projectId, id, a.constraint || "Blocked")
+      : clearLookaheadConstraint(projectId, id);
+    call.catch((err) => apiErr(err, "Could not update constraint"));
+  };
+  const laRemove = (id) => {
     mutate((d) => {
       d.lookahead = d.lookahead.filter((x) => x.id !== id);
     });
+    if (projectId) {
+      removeLookahead(projectId, id).catch((err) =>
+        apiErr(err, "Could not remove activity"),
+      );
+    }
+  };
   const LA_TRADES = ["EC", "MC", "Controls", "OEM", "NETA", "FIRE", "GC", "CXA"];
-  const submitActivity = () => {
+  const submitActivity = async () => {
     const area = (laAdd.area || "").trim();
     if (!area) {
       flash("Enter an activity / area");
       return;
     }
-    mutate((d) => {
-      d.lookahead.push({
-        id: nid("la"),
-        wk: Number(laAdd.wk),
-        trade: laAdd.trade,
-        area,
-        pct: 0,
-        status: "planned",
+    const wk = Number(laAdd.wk);
+    if (!projectId) return;
+    try {
+      const weekOf = new Date(isoMonday().getTime() + (wk - 1) * 7 * 86400000)
+        .toISOString()
+        .slice(0, 10);
+      const created = norm(
+        await createLookahead(projectId, {
+          weekOf,
+          trade: laAdd.trade,
+          description: area,
+        }),
+      );
+      mutate((d) => {
+        d.lookahead.push({
+          id: created?.id ?? nid("la"),
+          wk,
+          trade: laAdd.trade,
+          area,
+          pct: 0,
+          status: "planned",
+        });
       });
-    });
-    setLaAdd(null);
-    flash("Activity added");
+      setLaAdd(null);
+      flash("Activity added");
+    } catch (err) {
+      apiErr(err, "Could not add activity");
+    }
   };
 
   /* ============================ panels ============================ */

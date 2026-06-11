@@ -124,3 +124,103 @@ export const addV2TeamMember = async (id, payload) =>
 
 export const removeV2TeamMember = async (id, userId) =>
   sendRequest({ url: `${PROJECTS}/${id}/team/${userId}`, method: "DELETE" });
+
+// ─── Project Playbook ─────────────────────────────────────────────────────────
+// Per-project dashboard surface: summary snapshot, per-asset gate ladder,
+// 6-week lookahead, trade field progress, team companies, per-user rail.
+
+/** GET /v2/cx-projects/:id/playbook — one consistent summary snapshot. */
+export const getPlaybookSummary = async (id) =>
+  sendRequest({ url: `${PROJECTS}/${id}/playbook`, method: "GET" });
+
+/** GET /v2/cx-projects/:id/playbook/readiness?assetId= — per-asset gate detail. */
+export const getPlaybookReadiness = async (id, assetId) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/playbook/readiness?assetId=${assetId}`,
+    method: "GET",
+  });
+
+/** GET /v2/cx-projects/:id/playbook/phase-log */
+export const getPlaybookPhaseLog = async (id, assetId) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/playbook/phase-log${assetId ? `?assetId=${assetId}` : ""}`,
+    method: "GET",
+  });
+
+/** POST /v2/cx-projects/:id/assets/:assetId/phase/advance (409 when blocked). */
+export const advanceAssetPhase = async (id, assetId, payload = {}) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/assets/${assetId}/phase/advance`,
+    method: "POST",
+    data: payload,
+  });
+
+/** POST /v2/cx-projects/:id/assets/:assetId/phase/revert */
+export const revertAssetPhase = async (id, assetId, payload = {}) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/assets/${assetId}/phase/revert`,
+    method: "POST",
+    data: payload,
+  });
+
+// Lookahead board
+export const listLookahead = async (id, params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return sendRequest({
+    url: `${PROJECTS}/${id}/lookahead${query ? `?${query}` : ""}`,
+    method: "GET",
+  });
+};
+export const createLookahead = async (id, payload) =>
+  sendRequest({ url: `${PROJECTS}/${id}/lookahead`, method: "POST", data: payload });
+export const updateLookahead = async (id, activityId, payload) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/lookahead/${activityId}`,
+    method: "PATCH",
+    data: payload,
+  });
+export const removeLookahead = async (id, activityId) =>
+  sendRequest({ url: `${PROJECTS}/${id}/lookahead/${activityId}`, method: "DELETE" });
+export const flagLookaheadConstraint = async (id, activityId, note) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/lookahead/${activityId}/constraint`,
+    method: "POST",
+    data: { note },
+  });
+export const clearLookaheadConstraint = async (id, activityId) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/lookahead/${activityId}/constraint`,
+    method: "DELETE",
+  });
+
+// Trade field progress (field completion % by trade)
+export const getTradeProgress = async (id) =>
+  sendRequest({ url: `${PROJECTS}/${id}/playbook/trade-progress`, method: "GET" });
+export const upsertTradeProgress = async (id, payload) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/playbook/trade-progress`,
+    method: "PUT",
+    data: payload,
+  });
+
+// Team companies (ProjectMembership: INVITED → ACTIVE → REVOKED)
+export const listTeamCompanies = async (id) =>
+  sendRequest({ url: `${PROJECTS}/${id}/team-companies`, method: "GET" });
+export const inviteTeamCompany = async (id, payload) =>
+  sendRequest({ url: `${PROJECTS}/${id}/team-companies`, method: "POST", data: payload });
+export const activateTeamCompany = async (id, membershipId) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/team-companies/${membershipId}/activate`,
+    method: "POST",
+  });
+export const revokeTeamCompany = async (id, membershipId) =>
+  sendRequest({
+    url: `${PROJECTS}/${id}/team-companies/${membershipId}`,
+    method: "DELETE",
+  });
+
+// Per-user rail preference
+export const getPlaybookRail = async (id) =>
+  sendRequest({ url: `${PROJECTS}/${id}/playbook/rail`, method: "GET" });
+export const updatePlaybookRail = async (id, rail) =>
+  sendRequest({ url: `${PROJECTS}/${id}/playbook/rail`, method: "PUT", data: { rail } });
