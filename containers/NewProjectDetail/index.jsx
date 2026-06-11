@@ -1,869 +1,3535 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
-/* ------------------------------------------------------------------ *
- * Theme colors — every border token carries a hex fallback because the
- * cx theme remap defines --rf-accent / bg / txt but NOT --rf-border*,
- * so a bare var(--rf-border) would drop the whole border declaration.
- * ------------------------------------------------------------------ */
-const C = {
-  txt: "var(--rf-txt, #08142e)",
-  txt2: "var(--rf-txt2, #3a5070)",
-  txt3: "var(--rf-txt3, #6b84a0)",
-  bg: "var(--rf-bg, #dde6f5)",
-  bg2: "var(--rf-bg2, #ffffff)",
-  bg3: "var(--rf-bg3, #e8f0fa)",
-  border: "var(--rf-border, #c5d2ea)",
-  border2: "var(--rf-border2, #adbbd8)",
-  border3: "var(--rf-border3, #8daacf)",
-  accent: "var(--rf-accent, #0070bb)",
-  green: "var(--rf-green, #16a34a)",
-  greenSoft: "var(--rf-green-soft, #dcfce7)",
-  red: "var(--rf-red, #dc2626)",
-  redSoft: "var(--rf-red-soft, #fee2e2)",
-  amber: "#d97706",
-  amberSoft: "#fef3c7",
-  amberBorder: "#fcd34d",
-  amberText: "#92400e",
-  teal: "#0d9488",
-  tealSoft: "#ccfbf1",
+/* ================================================================== *
+ * Project Playbook — the whole project on one screen, scoped to the
+ * signed-in company type + role. Ported from the CxControl playbook.
+ * Base surfaces use --rf-* tokens (with hex fallbacks so borders show in
+ * the cx theme); semantic status colors are fixed hexes.
+ * ================================================================== */
+
+const P = {
+  paper: "var(--rf-bg, #eef1f4)",
+  card: "var(--rf-bg2, #ffffff)",
+  soft: "var(--rf-bg3, #eef1f4)",
+  ink: "var(--rf-txt, #111a24)",
+  smoke: "var(--rf-txt3, #5c6773)",
+  line: "var(--rf-border3, #d6dce2)",
+  navy: "#0c447c",
+  teal: "#0f7a5e",
+  amber: "#b6791c",
+  rust: "#b23b2e",
+  electric: "#2563c9",
+  violet: "#3b2a66",
 };
 
-/* ------------------------------------------------------------------ *
- * Mock data
- * ------------------------------------------------------------------ */
+const P_ALL = ["view", "create", "close", "advance", "verify", "admin"];
+const R = (role, icon, blurb, perms) => ({ role, icon, blurb, perms });
 
-const SYSTEMS = [
-  "CHL-01 — Chilled-Water System — CHL-01",
-  "AHU-02 — Air-Handling Unit — AHU-02",
-  "UPS-A — UPS System — UPS-A",
+const COMPANY_TYPES = {
+  gc: {
+    name: "General Contractor",
+    roles: [
+      R("Project Manager", "📋", "Full project view, all modules", P_ALL),
+      R("MEP Superintendent", "🛠️", "MEP field oversight + QA/QC", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("QA/QC Manager", "🔍", "Findings, gates, drawing checks", [
+        "view",
+        "create",
+        "close",
+        "verify",
+      ]),
+      R("Safety Manager", "🦺", "Safety program, AHAs, inspections", [
+        "view",
+        "create",
+      ]),
+      R("Foreman", "👷", "Crew lead, daily production", ["view", "create"]),
+      R("Scheduler / Planner", "📅", "Schedule across the project", [
+        "view",
+        "create",
+      ]),
+      R("Subcontractor", "🔗", "Lane-scoped — admin defines access", ["view"]),
+      R("Company Admin", "🔑", "Manages users & access", P_ALL),
+    ],
+  },
+  cxa: {
+    name: "Commissioning Authority (CxA)",
+    roles: [
+      R("Cx Lead", "✅", "Cx authority, gate sign-off", [
+        "view",
+        "create",
+        "close",
+        "advance",
+        "verify",
+        "admin",
+      ]),
+      R("Commissioning Agent", "🔎", "Phase advancement, witness points", [
+        "view",
+        "create",
+        "close",
+        "advance",
+        "verify",
+      ]),
+      R("Cx PM", "📋", "Cx scope, schedule, reporting", ["view", "create"]),
+      R("Cx Tech", "🧰", "Field witness & verification", ["view", "verify"]),
+    ],
+  },
+  ec: {
+    name: "Electrical Contractor",
+    roles: [
+      R("Electrical Lead", "⚡", "Electrical checklists & tests", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Project Manager", "📋", "EC scope, schedule, billing", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Field Engineer", "📐", "Terminations, QC, coordination", [
+        "view",
+        "create",
+      ]),
+      R("QC", "🔍", "Discipline quality checks", ["view", "create", "close"]),
+      R("Company Admin", "🔑", "Manages users & access", P_ALL),
+    ],
+  },
+  mc: {
+    name: "Mechanical Contractor",
+    roles: [
+      R("Mechanical Lead", "🔧", "Mechanical checklists & tests", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Project Manager", "📋", "MC scope, schedule, billing", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Field Engineer", "📐", "Piping, QC, coordination", ["view", "create"]),
+      R("QC", "🔍", "Discipline quality checks", ["view", "create", "close"]),
+    ],
+  },
+  controls: {
+    name: "Controls / BMS",
+    roles: [
+      R("Controls Lead", "🎛️", "Sensors, actuation, BMS", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("BMS Integrator", "🖥️", "Point-to-point, integration", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Field Engineer", "📐", "I/O, terminations, QC", ["view", "create"]),
+      R("QC", "🔍", "Points verification", ["view", "create", "close"]),
+    ],
+  },
+  oem: {
+    name: "OEM / Vendor",
+    roles: [
+      R("OEM Project Manager", "📋", "Unit status, integrator handoff", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Field Service Manager", "🗂️", "Tasks FSEs to sites, manpower", [
+        "view",
+        "create",
+      ]),
+      R("Field Service Engineer", "⚙️", "On-site startup, PFC, load bank", [
+        "view",
+        "create",
+      ]),
+      R("Logistics / Spares", "📦", "Shipping, RMA, parts to site", [
+        "view",
+        "create",
+      ]),
+      R("Scheduler / Planner", "📅", "FSE dispatch & forecast", [
+        "view",
+        "create",
+      ]),
+    ],
+  },
+  owner: {
+    name: "Owner / Operator",
+    roles: [
+      R("Owner's Project Manager", "📋", "Owner-side delivery lead", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Construction Manager", "🏗️", "Owner's construction oversight", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Owner Representative", "🏢", "Oversight, scores, turnover", [
+        "view",
+        "close",
+      ]),
+      R("Facilities / Operations", "🏭", "Ops readiness & turnover", ["view"]),
+      R("Owner's Cx Authority", "✅", "Owner-held Cx authority", [
+        "view",
+        "close",
+        "advance",
+        "verify",
+      ]),
+    ],
+  },
+  neta: {
+    name: "NETA Testing",
+    roles: [
+      R("NETA Test Tech", "🔬", "Acceptance testing on gear", [
+        "view",
+        "create",
+      ]),
+      R("Project Manager", "📋", "Test scope & scheduling", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("QC", "🔍", "Report QA, data review", ["view", "create", "close"]),
+    ],
+  },
+  integrator: {
+    name: "Integrator (Pod/Skid)",
+    roles: [
+      R("Integration PM", "🏗️", "Pod/skid build, FAT, ship to site", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Production / Shop Manager", "🏭", "Shop floor, throughput, schedule", [
+        "view",
+        "create",
+      ]),
+      R("QA/QC Inspector", "🔍", "In-shop QC + factory acceptance", [
+        "view",
+        "create",
+        "close",
+        "verify",
+      ]),
+      R("Logistics / Shipping", "📦", "Crating, transport, delivery", [
+        "view",
+        "create",
+      ]),
+    ],
+  },
+  fls: {
+    name: "Fire / Life Safety",
+    roles: [
+      R("FLS PM", "🧯", "Fire alarm / suppression scope", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Fire Alarm Technician", "🚨", "FACP install + programming", [
+        "view",
+        "create",
+      ]),
+      R("NICET Technician", "📋", "Certified test / inspection (ITM)", [
+        "view",
+        "create",
+        "verify",
+      ]),
+      R("Inspector", "🔍", "AHJ inspections, acceptance", ["view", "verify"]),
+    ],
+  },
+  security: {
+    name: "Security / Access",
+    roles: [
+      R("Security PM", "🛡️", "CCTV / access control scope", [
+        "view",
+        "create",
+        "close",
+      ]),
+      R("Access Control Technician", "🚪", "Door controllers, readers, locks", [
+        "view",
+        "create",
+      ]),
+      R(
+        "Security Systems Programmer",
+        "💻",
+        "Head-end, integration, credentials",
+        ["view", "create"],
+      ),
+    ],
+  },
+  staffing: {
+    name: "Staffing / Labor",
+    roles: [
+      R("Account Manager", "🤝", "Client accounts, fulfillment", [
+        "view",
+        "create",
+      ]),
+      R("Dispatcher / Coordinator", "📞", "Assign & dispatch labor to sites", [
+        "view",
+        "create",
+      ]),
+      R("Field Supervisor", "👷", "On-site oversight of placed crews", [
+        "view",
+        "create",
+      ]),
+    ],
+  },
+};
+
+const MODULES = [
+  { id: "overview", ic: "◎", name: "Project Overview", types: "all" },
+  { id: "activity", ic: "▤", name: "Activity / Updates", types: "all" },
+  { id: "completion", ic: "◇", name: "To Completion", types: "all" },
+  { id: "mypart", ic: "⌖", name: "Your Part", types: "all" },
+  { id: "schedule", ic: "▦", name: "Schedule & Milestones", types: "all" },
+  {
+    id: "lookahead",
+    ic: "▥",
+    name: "6-Week Lookahead",
+    types: [
+      "gc",
+      "ec",
+      "mc",
+      "controls",
+      "oem",
+      "neta",
+      "fls",
+      "security",
+      "integrator",
+      "staffing",
+    ],
+  },
+  { id: "readiness", ic: "◈", name: "Equipment Readiness", types: "all" },
+  { id: "issues", ic: "⚠", name: "Issues / NCRs", types: "all", hot: true },
+  { id: "punch", ic: "☑", name: "Punch List", types: "all" },
+  { id: "holds", ic: "⊘", name: "Hold Points", types: ["gc", "cxa", "owner"] },
+  {
+    id: "tests",
+    ic: "⚗",
+    name: "Test Records",
+    types: ["gc", "cxa", "ec", "mc", "controls", "neta", "owner"],
+  },
+  { id: "drawings", ic: "▧", name: "Drawings & P&ID", types: "all" },
+  {
+    id: "submittals",
+    ic: "▣",
+    name: "Submittals",
+    types: ["gc", "cxa", "ec", "mc", "controls", "oem", "owner"],
+  },
+  {
+    id: "fsr",
+    ic: "▢",
+    name: "Field Service Reports",
+    types: ["oem", "cxa", "gc", "owner"],
+  },
+  {
+    id: "manpower",
+    ic: "⚒",
+    name: "Manpower / Crew",
+    types: ["gc", "ec", "mc", "controls", "oem", "staffing", "integrator"],
+  },
+  {
+    id: "procurement",
+    ic: "▦",
+    name: "Procurement / Long-Lead",
+    types: ["gc", "oem", "owner", "integrator", "ec", "mc", "controls"],
+  },
+  {
+    id: "tarf",
+    ic: "▭",
+    name: "Site Arrivals (TARF)",
+    types: [
+      "gc",
+      "ec",
+      "mc",
+      "controls",
+      "oem",
+      "neta",
+      "fls",
+      "security",
+      "staffing",
+      "integrator",
+    ],
+  },
+  { id: "safety", ic: "✚", name: "Safety", types: "all" },
+  { id: "team", ic: "▥", name: "Project Team", types: "all" },
+  { id: "stakeholders", ic: "⬡", name: "Key Stakeholders", types: "all" },
+  {
+    id: "turnover",
+    ic: "✦",
+    name: "Turnover & Acceptance",
+    types: ["gc", "cxa", "owner"],
+  },
 ];
 
-// Tag color follows the selected phase: L1 red · L2 yellow · L3 green · L4 blue · L5 white
-const PHASE_TAG = {
-  L1: { color: C.red, label: "Red tag" },
-  L2: { color: "#ca8a04", label: "Yellow tag" },
-  L3: { color: C.green, label: "Green tag" },
-  L4: { color: "#2563eb", label: "Blue tag" },
-  L5: { color: "#64748b", label: "White tag", dot: "#ffffff", dotBorder: true },
-};
-
-const SYSTEM_TAGS = [
-  { label: "P&ID", ok: true },
-  { label: "One-Line", ok: true },
-  { label: "Submittal", ok: true },
-  { label: "CR-014", ok: true },
-  { label: "RFI-022 (open)", ok: false },
-  { label: "Floor Plan", ok: true },
+const LIFECYCLE = [
+  { ph: "L0", nm: "Pre-Construction", meta: "Kickoff, design, mobilization" },
+  { ph: "L1", nm: "FAT", meta: "Factory acceptance — cleared to ship" },
+  { ph: "L2", nm: "Install", meta: "Receipt & installation verified" },
+  { ph: "L3", nm: "Energize", meta: "Energization readiness & PFC" },
+  { ph: "L4", nm: "Functional", meta: "Load bank / fault scenarios" },
+  { ph: "L5", nm: "Integrated (IST)", meta: "System-level integrated test" },
+  { ph: "L6", nm: "Turnover", meta: "O&M, training, acceptance" },
 ];
+const PHASES = ["L0", "L1", "L2", "L3", "L4", "L5"];
 
-const INITIAL_ITEMS = {
-  Mechanical: [
-    {
-      id: "M1",
-      type: "WORK",
-      ref: 'P&ID 3"-CHWS/CHWR',
-      code: "M1",
-      status: "done",
-      text: "Chilled-water supply & return piped to CHL-01 per P&ID",
-    },
-    {
-      id: "M2",
-      type: "WORK",
-      ref: "P&ID FV-CHL-01B",
-      code: "M2",
-      status: "flag",
-      tier: "Mitigating",
-      text: "Isolation valves FV-CHL-01A/B installed at locations shown",
-      note: "FV-CHL-01B (pneumatic actuated) not roughed in — missed in install. Still construction, logging as mitigating; mechanical to install before L3.",
-    },
-    {
-      id: "M3",
-      type: "WORK",
-      ref: "Spec 23 21 13",
-      code: "M3",
-      status: "done",
-      text: "Pipe supports per spec (max 10 ft spacing), labeled",
-    },
-    {
-      id: "M4",
-      type: "TEST",
-      ref: "Hydrostatic",
-      code: "M4",
-      status: "open",
-      text: "Hydrostatic pressure test @150% design, hold 2h — report on file",
-    },
-    {
-      id: "M5",
-      type: "TEST",
-      ref: "Leak detect",
-      code: "M5",
-      status: "open",
-      text: "Glycol loop leak-detection check — report on file",
-    },
+const PART = {
+  gc: {
+    owns: ["L0", "L2", "L6"],
+    role: "Runs the project",
+    recv: "Design, submittals, and trade mobilization",
+    does: "Coordinates site, sequences trades, verifies L2 install, manages punch & schedule",
+    hand: "Assembled turnover package → Owner; controls who else is invited & what they access",
+  },
+  cxa: {
+    owns: ["L4", "L5"],
+    role: "Independent verification & gate authority",
+    recv: "Completed checklists & test data from the trades",
+    does: "Witnesses L4, leads L5 IST, dispositions NCRs, signs off each phase gate",
+    hand: "Verified gates → next phase; commissioning certificate → Owner",
+  },
+  ec: {
+    owns: ["L3"],
+    role: "Power distribution",
+    recv: "Installed gear from GC / integrator (L2 complete)",
+    does: "Terminations, torque, megger, energization readiness",
+    hand: "Energized gear → OEM for PFC and NETA for acceptance testing",
+  },
+  mc: {
+    owns: ["L2"],
+    role: "Cooling & piping",
+    recv: "Delivered mechanical equipment",
+    does: "Sets equipment, piping, P&ID verification, pressure test",
+    hand: "Installed mechanical → EC/Controls and CxA for verification",
+  },
+  controls: {
+    owns: ["L5"],
+    role: "Integration brain",
+    recv: "Energized equipment + field devices from EC/MC",
+    does: "Point-to-point, BMS/DCIM integration, alarm mapping",
+    hand: "Integrated system → CxA for L5 IST",
+  },
+  oem: {
+    owns: ["L1", "L4"],
+    role: "Equipment maker & startup",
+    recv: "Installed + energized unit (L3 complete)",
+    does: "FAT (L1), PFC, OEM startup (L4), load bank",
+    hand: "Started-up unit → CxA (L4 witness) and Controls (L5 integration)",
+  },
+  owner: {
+    owns: ["L6"],
+    role: "Final acceptance",
+    recv: "Turnover package from GC + commissioning cert from CxA",
+    does: "Reviews scores, ops-readiness walk, O&M training",
+    hand: "Signed customer acceptance — project closeout",
+  },
+  neta: {
+    owns: ["L3"],
+    role: "Acceptance testing",
+    recv: "Energized gear from EC",
+    does: "NETA acceptance tests, protective relay, insulation",
+    hand: "NETA reports → EC/CxA (releases the energization hold points)",
+  },
+  integrator: {
+    owns: ["L1"],
+    role: "Pod/skid builder",
+    recv: "OEM units + integration BOM",
+    does: "Builds pod/skid, in-shop QC, factory acceptance test",
+    hand: "Integrated pod → site for GC L2 install",
+  },
+  fls: {
+    owns: ["L4"],
+    role: "Fire / life safety",
+    recv: "Building & devices ready",
+    does: "FACP install, programming, NICET ITM testing",
+    hand: "FLS acceptance → CxA and AHJ inspection",
+  },
+  security: {
+    owns: ["L5"],
+    role: "Access & surveillance",
+    recv: "Building & network ready",
+    does: "Access control, CCTV, head-end integration",
+    hand: "Security acceptance → Owner / Facilities",
+  },
+  staffing: {
+    owns: ["L0"],
+    role: "Skilled labor supply",
+    recv: "Manpower requests & forecast from the trades",
+    does: "Sources, vets, dispatches skilled crews to site",
+    hand: "Placed crews → GC / trade contractors",
+  },
+};
+
+const DISC_CT = {
+  Electrical: "ec",
+  Mechanical: "mc",
+  Controls: "controls",
+  BMS: "controls",
+  Fire: "fls",
+  Plumbing: "mc",
+};
+const ROLE_CT = {
+  OEM: "oem",
+  GC: "gc",
+  EC: "ec",
+  MC: "mc",
+  BMS: "controls",
+  NETA: "neta",
+  CXA: "cxa",
+  FIRE: "fls",
+  TAB: "mc",
+  LOADBANK: "ec",
+};
+const TRADE_OF = {
+  gc: "GC",
+  ec: "EC",
+  mc: "MC",
+  controls: "Controls",
+  oem: "OEM",
+  neta: "NETA",
+  fls: "FIRE",
+  cxa: "CXA",
+};
+const ctName = (k) => (COMPANY_TYPES[k] || {}).name || k;
+
+const FOCUS = {
+  gc: [
+    "Overall schedule vs. milestones — are we on track for turnover",
+    "Which trade is behind / holding a gate right now",
+    "Open NCRs & punch across ALL trades, by accountable company",
+    "Turnover-package readiness as L5 closes",
   ],
-  Electrical: [
-    {
-      id: "E1",
-      type: "WORK",
-      ref: "One-Line FDR-A",
-      code: "E1",
-      status: "done",
-      text: "Feeder MSB-A → CHL-01 pulled & terminated per one-line",
-    },
-    {
-      id: "E2",
-      type: "WORK",
-      ref: "Submittal/CR-014",
-      code: "E2",
-      status: "flag",
-      tier: "Mitigating",
-      text: "Disconnect switch rated & located per submittal",
-      note: "Switch frame size per CR-014 pending vendor confirmation — logging as mitigating; close before gate.",
-    },
-    {
-      id: "E3",
-      type: "TEST",
-      ref: "Megger",
-      code: "E3",
-      status: "open",
-      text: "Insulation resistance (megger) test — report on file",
-    },
+  cxa: [
+    "Gate readiness per asset/system — can I sign this phase off",
+    "Checklists verified vs. failed (evidence complete?)",
+    "NCR disposition + open hold points",
+    "Witness points & IST scheduled and witnessed",
   ],
-  Controls: [
-    {
-      id: "C1",
-      type: "WORK",
-      ref: "BMS Points",
-      code: "C1",
-      status: "done",
-      text: "BMS controller mounted, powered & discovered on network",
-    },
-    {
-      id: "C3",
-      type: "WORK",
-      ref: "BMS I/O",
-      code: "C3",
-      status: "flag",
-      tier: "Mitigating",
-      text: "All I/O points wired & labeled per points list",
-      note: "3 analog inputs not yet landed — logging as mitigating; close before gate.",
-    },
-    {
-      id: "C4",
-      type: "TEST",
-      ref: "Cal/stroke",
-      code: "C4",
-      status: "open",
-      text: "Valve calibration & stroke test — report on file",
-    },
+  ec: [
+    "My electrical checklists & energization readiness",
+    "Megger / torque / phase-rotation records on file",
+    "Open electrical NCRs & punch in my lane",
+    "NETA hold points blocking energization",
+  ],
+  mc: [
+    "Mechanical install & P&ID verification status",
+    "Pressure-test / flush records complete",
+    "Open mechanical punch & deficiencies",
+    "Chilled-water / cooling readiness for IST",
+  ],
+  controls: [
+    "Point-to-point progress (every sensor/actuator)",
+    "Alarm points mapped vs. points list",
+    "Integration NCRs & comms faults",
+    "BMS/DCIM ready for L5 IST",
+  ],
+  oem: [
+    "Where each of my units sits by phase (serial-by-serial)",
+    "FSE dispatch & manpower vs. the GC schedule",
+    "FSRs published; PFC / startup / load-bank done",
+    "RMA / spares queue and warranty start dates",
+  ],
+  owner: [
+    "% commissioned (L5) and the overall Cx score",
+    "Outstanding gating items — what stands between me and acceptance",
+    "Turnover package readiness (the 7 sections)",
+    "Acceptance criteria met — ready for blue tag",
+  ],
+  neta: [
+    "Which gear is energized and ready for acceptance testing",
+    "Test requirements vs. results",
+    "Report QA / data review before submission",
+    "Hold points my reports release",
+  ],
+  integrator: [
+    "Build & FAT status per pod/skid",
+    "Shop throughput & ship dates vs. site need",
+    "In-shop QC + factory acceptance results",
+    "Integration BOM & long-lead items",
+  ],
+  fls: [
+    "Device install & FACP programming progress",
+    "NICET ITM test results",
+    "AHJ inspection status",
+    "FLS acceptance sign-off",
+  ],
+  security: [
+    "Access-control & CCTV install progress",
+    "Head-end integration & credentials",
+    "Coverage / commissioning acceptance",
+    "Handoff to Facilities",
+  ],
+  staffing: [
+    "Open manpower requests vs. forecast",
+    "Placements by site & trade",
+    "Certs / onboarding / safety compliance",
+    "Dispatch coverage gaps",
   ],
 };
 
-/* ------------------------------------------------------------------ *
- * Small building blocks
- * ------------------------------------------------------------------ */
+let _id = 0;
+const nid = (p) => `${p}${(_id += 1)}`;
+const cl = (eq, level, role, name, status) => ({
+  id: nid("cl"),
+  eq,
+  level,
+  role,
+  name,
+  status,
+});
+const fd = (eq, type, sev, title, status, disc) => ({
+  id: nid("fd"),
+  eq,
+  type,
+  sev,
+  title,
+  status,
+  disc,
+});
+const tk = (ct, title, due, status) => ({
+  id: nid("tk"),
+  ct,
+  title,
+  due,
+  status,
+});
 
-function Tag({ ok, label }) {
-  const color = ok ? C.green : C.amber;
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
-      style={{ border: `1px solid ${color}`, color, background: C.bg2 }}
-    >
-      <span
-        className="rounded-full"
-        style={{ width: 6, height: 6, background: color }}
-      />
-      {label} {ok ? "✓" : "!"}
-    </span>
-  );
-}
+const SEED = {
+  project: { name: "Hyperscale DC · ATL-04", phase: "L3" },
+  activity: [
+    {
+      when: "1d ago",
+      who: "PM · Iconicx Critical Solutions",
+      ct: "gc",
+      text: "Project created — Hyperscale DC · ATL-04",
+    },
+    {
+      when: "1h ago",
+      who: "Cx Lead · coreSynaptics",
+      ct: "cxa",
+      text: "Logged Critical NCR on HS-ATS-01 (auto-transfer failed)",
+    },
+    {
+      when: "30m ago",
+      who: "Superintendent · Iconicx",
+      ct: "gc",
+      text: "Flagged constraint: switchgear delivery delayed to Wk2",
+    },
+  ],
+  tasks: [
+    tk("gc", "Close out L2 punch with trades", "Wk 1", "in_progress"),
+    tk("gc", "Coordinate Train A energization sequence", "Wk 2", "open"),
+    tk("cxa", "Disposition ATS auto-transfer NCR", "Wk 1", "open"),
+    tk("cxa", "Witness L4 generator startup", "Wk 4", "open"),
+    tk("ec", "Rework ATS energization readiness (failed)", "Wk 1", "open"),
+    tk("mc", "P&ID verification — chiller", "Wk 1", "open"),
+    tk("controls", "Map 12 unmapped BMS alarm points", "Wk 1", "open"),
+    tk("oem", "Generator PFC + OEM startup", "Wk 4", "open"),
+    tk("owner", "Review Cx scorecard", "Wk 6", "open"),
+    tk("neta", "Acceptance test switchgear", "Wk 3", "open"),
+    tk("fls", "FACP programming", "Wk 2", "open"),
+    tk("staffing", "Dispatch 8 electricians to DH01", "Wk 1", "in_progress"),
+    tk("integrator", "FAT pod/skid #3", "Wk 1", "in_progress"),
+  ],
+  equipment: [
+    {
+      id: "HS-GEN-01",
+      name: "Generator 2.5MW",
+      disc: "Electrical",
+      sys: "sys-power-a",
+      phase: "L4",
+      furnish: "OFCI",
+    },
+    {
+      id: "HS-UPS-01",
+      name: "UPS System 500kVA",
+      disc: "Electrical",
+      sys: "sys-power-a",
+      phase: "L3",
+      furnish: "OFCI",
+    },
+    {
+      id: "HS-ATS-01",
+      name: "Automatic Transfer Switch",
+      disc: "Electrical",
+      sys: "sys-power-a",
+      phase: "L3",
+      furnish: "CFCI",
+    },
+    {
+      id: "HS-CHL-01",
+      name: "Chiller 400-ton",
+      disc: "Mechanical",
+      sys: "sys-cooling",
+      phase: "L2",
+      furnish: "OFCI",
+    },
+    {
+      id: "HS-CRAC-01",
+      name: "CRAH Unit",
+      disc: "Mechanical",
+      sys: "sys-cooling",
+      phase: "L1",
+      furnish: "CFCI",
+    },
+    {
+      id: "HS-BMS-01",
+      name: "BMS / DCIM Head-End",
+      disc: "Controls",
+      sys: null,
+      phase: "L3",
+      furnish: "CFCI",
+    },
+  ],
+  systems: [
+    { id: "sys-power-a", name: "Critical Power Train A" },
+    { id: "sys-cooling", name: "Cooling Plant" },
+  ],
+  checklists: [
+    cl("HS-GEN-01", "L4", "OEM", "PFT / OEM Startup", "in_progress"),
+    cl("HS-GEN-01", "L4", "NETA", "Load Bank Test", "not_started"),
+    cl("HS-UPS-01", "L3", "EC", "Energization Readiness", "in_progress"),
+    cl("HS-UPS-01", "L3", "EC", "Terminations & Torque", "complete"),
+    cl("HS-ATS-01", "L3", "EC", "Energization Readiness", "failed"),
+    cl("HS-CHL-01", "L2", "MC", "Mechanical Install", "in_progress"),
+    cl("HS-CHL-01", "L2", "MC", "P&ID Verification", "not_started"),
+    cl("HS-CRAC-01", "L1", "OEM", "Factory Acceptance Test", "complete"),
+    cl("HS-BMS-01", "L3", "BMS", "Points List Verification", "in_progress"),
+  ],
+  findings: [
+    fd(
+      "HS-ATS-01",
+      "NCR",
+      "Critical",
+      "ATS fails auto-transfer on utility loss",
+      "open",
+      "Controls",
+    ),
+    fd(
+      "HS-UPS-01",
+      "HoldPoint",
+      "Major",
+      "Hold: NETA report required before L4",
+      "open",
+      "Electrical",
+    ),
+    fd(
+      "HS-UPS-01",
+      "Punch",
+      "Minor",
+      "Cable labeling incomplete Section B",
+      "open",
+      "Electrical",
+    ),
+    fd(
+      "HS-GEN-01",
+      "Deficiency",
+      "Minor",
+      "Day-tank gauge reads 5% low",
+      "open",
+      "Mechanical",
+    ),
+    fd(
+      "HS-BMS-01",
+      "NCR",
+      "Major",
+      "12 alarm points unmapped vs points list",
+      "open",
+      "Controls",
+    ),
+  ],
+  tests: [
+    {
+      id: "t1",
+      eq: "HS-GEN-01",
+      name: "Load bank @ 100% rated kW",
+      status: "pending",
+    },
+    {
+      id: "t2",
+      eq: "HS-UPS-01",
+      name: "Battery runtime full load",
+      status: "pending",
+    },
+    { id: "t3", eq: "HS-GEN-01", name: "Black start", status: "passed" },
+  ],
+  milestones: [
+    {
+      d: "Wk 1",
+      ph: "L0",
+      name: "Customer kickoff + mobilization",
+      status: "done",
+    },
+    {
+      d: "Wk 4",
+      ph: "L1",
+      name: "FAT complete — all units cleared to ship",
+      status: "done",
+    },
+    {
+      d: "Wk 9",
+      ph: "L2",
+      name: "Install verified (electrical + mechanical)",
+      status: "done",
+    },
+    {
+      d: "Wk 12",
+      ph: "L3",
+      name: "Energization readiness — Train A",
+      status: "cur",
+    },
+    {
+      d: "Wk 15",
+      ph: "L4",
+      name: "Load bank / functional testing",
+      status: "todo",
+    },
+    {
+      d: "Wk 18",
+      ph: "L5",
+      name: "Integrated systems test (IST)",
+      status: "todo",
+    },
+    {
+      d: "Wk 20",
+      ph: "L6",
+      name: "Turnover + customer acceptance",
+      status: "todo",
+    },
+  ],
+  stakeholders: [
+    {
+      nm: "General Contractor",
+      sc: "Site coordination, QA/QC, schedule",
+      own: "Owns L2 install verification + punch",
+    },
+    {
+      nm: "Commissioning Authority (CxA)",
+      sc: "Independent verification",
+      own: "Owns L4 witness, L5 IST lead, gate sign-off",
+    },
+    {
+      nm: "Electrical Contractor",
+      sc: "Power distribution, terminations",
+      own: "Owns L3 energization readiness",
+    },
+    {
+      nm: "Mechanical Contractor",
+      sc: "Cooling, piping, P&ID",
+      own: "Owns L2 mechanical install",
+    },
+    {
+      nm: "Controls / BMS",
+      sc: "Sensors, integration, points",
+      own: "Owns L5 BMS/DCIM integration",
+    },
+    {
+      nm: "OEM / Vendor (FSE)",
+      sc: "Equipment startup & PFC",
+      own: "Owns L1 FAT, L4 PFT/startup",
+    },
+    {
+      nm: "NETA Testing",
+      sc: "Acceptance testing on gear",
+      own: "Owns L3/L4 NETA reports",
+    },
+    {
+      nm: "Owner / Operator",
+      sc: "Acceptance, ops readiness",
+      own: "Owns L6 turnover acceptance",
+    },
+  ],
+  safety: [
+    {
+      item: "AHA — Energized work / arc-flash (EC)",
+      type: "AHA",
+      status: "Approved",
+    },
+    {
+      item: "JHA — Rigging & lifting chiller (MC)",
+      type: "JHA",
+      status: "Approved",
+    },
+    {
+      item: "Daily site safety inspection",
+      type: "Inspection",
+      status: "Open",
+    },
+    {
+      item: "Hot-work permit — exhaust welding",
+      type: "Permit",
+      status: "Pending",
+    },
+    {
+      item: "Recordable incidents (this project)",
+      type: "Incident",
+      status: "0 to date",
+    },
+  ],
+  procurement: [
+    {
+      item: "UPS units (4)",
+      vendor: "Vertiv",
+      po: "PO-1042",
+      furnish: "OFCI",
+      status: "Delivered",
+      need: "Wk 0",
+    },
+    {
+      item: "Generator 2.5MW",
+      vendor: "Cummins",
+      po: "PO-1051",
+      furnish: "OFCI",
+      status: "Delivered",
+      need: "Wk 0",
+    },
+    {
+      item: "Switchgear lineup",
+      vendor: "Schneider",
+      po: "PO-1077",
+      furnish: "CFCI",
+      status: "Shipped",
+      need: "Wk 2",
+    },
+    {
+      item: "Chiller 400-ton",
+      vendor: "Trane",
+      po: "PO-1090",
+      furnish: "OFCI",
+      status: "Delivered",
+      need: "Wk 1",
+    },
+    {
+      item: "BMS controllers + I/O",
+      vendor: "Schneider",
+      po: "PO-1101",
+      furnish: "CFCI",
+      status: "Ordered",
+      need: "Wk 3",
+    },
+    {
+      item: "Load bank (rental)",
+      vendor: "Tower Electric",
+      po: "PO-1120",
+      furnish: "CFCI",
+      status: "Long-lead",
+      need: "Wk 5",
+    },
+  ],
+  tarf: [
+    {
+      crew: "CEC electrical crew (8)",
+      co: "Inglett & Stubbs",
+      date: "Mon",
+      badge: "Approved",
+      orient: "Complete",
+    },
+    {
+      crew: "Shermco NETA techs (3)",
+      co: "Shermco",
+      date: "Wk 3",
+      badge: "Submitted",
+      orient: "Pending",
+    },
+    {
+      crew: "Vertiv FSE (2)",
+      co: "Vertiv",
+      date: "Wk 4",
+      badge: "Submitted",
+      orient: "Pending",
+    },
+    {
+      crew: "TDI mechanical crew (6)",
+      co: "TDIndustries",
+      date: "Mon",
+      badge: "Approved",
+      orient: "Complete",
+    },
+  ],
+  fieldProgress: [
+    { disc: "Electrical", pct: 78, note: "Feeders + branch rough-in" },
+    { disc: "Mechanical", pct: 64, note: "CHW piping + equipment sets" },
+    { disc: "Controls", pct: 41, note: "BMS device rough-in + P2P" },
+    { disc: "Fire", pct: 55, note: "Device rough-in + FACP" },
+    { disc: "Plumbing", pct: 70, note: "Condensate + make-up water" },
+  ],
+  lookahead: [
+    {
+      id: "la1",
+      wk: 1,
+      trade: "EC",
+      area: "DH01 — Level 2 conduit & cable",
+      pct: 90,
+      status: "active",
+    },
+    {
+      id: "la2",
+      wk: 1,
+      trade: "MC",
+      area: "CHW piping — Cooling Plant",
+      pct: 75,
+      status: "active",
+    },
+    {
+      id: "la3",
+      wk: 1,
+      trade: "Controls",
+      area: "BMS device rough-in",
+      pct: 40,
+      status: "active",
+      blocked: true,
+      constraint: "Points list not yet approved",
+    },
+    {
+      id: "la4",
+      wk: 2,
+      trade: "EC",
+      area: "Feeder pull + terminations to gear",
+      pct: 20,
+      status: "active",
+      blocked: true,
+      constraint: "Switchgear delivery delayed to Wk2",
+    },
+    {
+      id: "la5",
+      wk: 2,
+      trade: "MC",
+      area: "Pump set + pressure test",
+      pct: 0,
+      status: "planned",
+    },
+    {
+      id: "la6",
+      wk: 2,
+      trade: "FIRE",
+      area: "Fire device rough-in DH01",
+      pct: 30,
+      status: "active",
+    },
+    {
+      id: "la7",
+      wk: 3,
+      trade: "EC",
+      area: "Energization readiness — Train A",
+      pct: 0,
+      status: "planned",
+    },
+    {
+      id: "la8",
+      wk: 3,
+      trade: "NETA",
+      area: "Acceptance testing — switchgear",
+      pct: 0,
+      status: "planned",
+    },
+    {
+      id: "la9",
+      wk: 3,
+      trade: "Controls",
+      area: "Point-to-point start",
+      pct: 0,
+      status: "planned",
+    },
+    {
+      id: "la10",
+      wk: 4,
+      trade: "OEM",
+      area: "UPS / GEN startup + PFC",
+      pct: 0,
+      status: "planned",
+    },
+    {
+      id: "la12",
+      wk: 5,
+      trade: "OEM",
+      area: "Load bank — Generator",
+      pct: 0,
+      status: "planned",
+    },
+    {
+      id: "la14",
+      wk: 6,
+      trade: "CXA",
+      area: "L4 functional witness",
+      pct: 0,
+      status: "planned",
+    },
+  ],
+  drawings: [
+    {
+      name: "One-Line Diagram — Critical Power",
+      type: "One-Line",
+      eq: "HS-UPS-01",
+      verified: true,
+    },
+    {
+      name: "P&ID — Chilled Water Plant",
+      type: "P&ID",
+      eq: "HS-CHL-01",
+      verified: false,
+    },
+    {
+      name: "BMS Points & Riser",
+      type: "Riser",
+      eq: "HS-BMS-01",
+      verified: false,
+    },
+    {
+      name: "Generator Fuel System P&ID",
+      type: "P&ID",
+      eq: "HS-GEN-01",
+      verified: true,
+    },
+  ],
+  submittals: [
+    {
+      name: "UPS System — product data & cut sheets",
+      eq: "HS-UPS-01",
+      by: "Vertiv",
+      status: "Approved",
+    },
+    {
+      name: "Chiller — performance & seismic",
+      eq: "HS-CHL-01",
+      by: "Trane",
+      status: "Approved as Noted",
+    },
+    {
+      name: "ATS — controller spec",
+      eq: "HS-ATS-01",
+      by: "ASCO",
+      status: "Revise & Resubmit",
+    },
+    {
+      name: "BMS — points list & architecture",
+      eq: "HS-BMS-01",
+      by: "Schneider",
+      status: "Under Review",
+    },
+  ],
+  team: [
+    {
+      ct: "gc",
+      company: "Iconicx Critical Solutions",
+      role: "GC — runs the project",
+      access: "Full control",
+      status: "host",
+    },
+    {
+      ct: "cxa",
+      company: "coreSynaptics",
+      role: "Commissioning Authority",
+      access: "Gates, witness, verify",
+      status: "active",
+    },
+    {
+      ct: "ec",
+      company: "Inglett & Stubbs",
+      role: "Electrical Contractor",
+      access: "Electrical scope",
+      status: "active",
+    },
+    {
+      ct: "mc",
+      company: "TDIndustries",
+      role: "Mechanical Contractor",
+      access: "Mechanical scope",
+      status: "active",
+    },
+    {
+      ct: "controls",
+      company: "Schneider Electric",
+      role: "Controls / BMS",
+      access: "Controls scope",
+      status: "active",
+    },
+    {
+      ct: "oem",
+      company: "Vertiv",
+      role: "OEM / Vendor",
+      access: "Their equipment only",
+      status: "active",
+    },
+    {
+      ct: "neta",
+      company: "Shermco Industries",
+      role: "NETA Testing",
+      access: "Test records",
+      status: "invited",
+    },
+    {
+      ct: "owner",
+      company: "Hyperscale Owner Co.",
+      role: "Owner / Operator",
+      access: "Scores & turnover",
+      status: "active",
+    },
+  ],
+  rail: [
+    "overview",
+    "activity",
+    "completion",
+    "lookahead",
+    "mypart",
+    "schedule",
+    "readiness",
+    "issues",
+    "punch",
+    "procurement",
+    "tarf",
+    "safety",
+    "drawings",
+    "submittals",
+    "team",
+    "stakeholders",
+  ],
+};
 
-function StatusIcon({ status }) {
-  if (status === "done") {
-    return (
-      <span
-        className="flex items-center justify-center flex-shrink-0"
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: 6,
-          background: C.greenSoft,
-          border: `1.5px solid ${C.green}`,
-        }}
-      >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={C.green}
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </span>
-    );
+const isDone = (s) => s === "complete" || s === "verified";
+const isOpen = (s) => s !== "resolved" && s !== "closed";
+const isGate = (f) =>
+  f.type === "NCR" ||
+  f.type === "HoldPoint" ||
+  f.sev === "Critical" ||
+  f.sev === "Major";
+
+function unit(db, val) {
+  const [k, id] = (val || "").split(":");
+  if (k === "sys") {
+    const s = db.systems.find((x) => x.id === id);
+    return {
+      kind: "system",
+      id,
+      name: s ? s.name : id,
+      ids: db.equipment.filter((e) => e.sys === id).map((e) => e.id),
+    };
   }
-  if (status === "flag") {
-    return (
-      <span
-        className="flex items-center justify-center flex-shrink-0 font-bold"
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: 6,
-          background: C.amberSoft,
-          border: `1.5px solid ${C.amber}`,
-          color: C.amber,
-          fontSize: 13,
-        }}
-      >
-        !
-      </span>
-    );
-  }
-  return (
-    <span
-      className="flex-shrink-0"
-      style={{
-        width: 20,
-        height: 20,
-        borderRadius: "50%",
-        border: `2px solid ${C.border3}`,
-        background: C.bg2,
-      }}
-    />
-  );
+  const e = db.equipment.find((x) => x.id === id);
+  return {
+    kind: "equipment",
+    id,
+    name: e ? `${e.id} — ${e.name}` : id,
+    ids: id ? [id] : [],
+    eq: e,
+  };
 }
+function gateOf(db, u) {
+  const cls = db.checklists.filter((c) => u.ids.includes(c.eq));
+  const open = db.findings.filter(
+    (f) => u.ids.includes(f.eq) && isOpen(f.status),
+  );
+  const gk = open.filter(isGate);
+  const mit = open.filter((f) => !isGate(f));
+  const phase =
+    u.kind === "system"
+      ? PHASES[
+          Math.min(
+            ...u.ids.map((id) => {
+              const e = db.equipment.find((x) => x.id === id);
+              return PHASES.indexOf(e ? e.phase : "L0");
+            }),
+          )
+        ]
+      : u.eq
+        ? u.eq.phase
+        : "L0";
+  const phaseCls = cls.filter((c) => c.level === phase);
+  const workDone = phaseCls.filter((c) => isDone(c.status)).length;
+  const failed = cls.filter((c) => c.status === "failed");
+  const tests = db.tests.filter((t) => u.ids.includes(t.eq));
+  const blocked =
+    gk.length > 0 ||
+    failed.length > 0 ||
+    (phaseCls.length > 0 && workDone < phaseCls.length);
+  return {
+    cls,
+    open,
+    gk,
+    mit,
+    phase,
+    phaseCls,
+    workDone,
+    failed,
+    tests,
+    blocked,
+  };
+}
+const gateAll = (db) => {
+  const open = db.findings.filter((f) => isOpen(f.status));
+  return { gk: open.filter(isGate), mit: open.filter((f) => !isGate(f)) };
+};
 
-function TypeBadge({ type }) {
-  const isTest = type === "TEST";
+/* ------------------------------ atoms ------------------------------ */
+const eyebrow = {
+  fontFamily: "monospace",
+  fontSize: 9,
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: P.smoke,
+};
+const PILL = {
+  lvl: { background: P.soft, color: P.smoke, border: `1px solid ${P.line}` },
+  role: { background: "#eaf1fa", color: P.navy },
+  crit: { background: P.rust, color: "#fff" },
+  major: { background: "#d9682e", color: "#fff" },
+  minor: { background: P.amber, color: "#fff" },
+  ncr: { background: "#7a1f18", color: "#fff" },
+  hold: { background: P.violet, color: "#fff" },
+  punch: { background: P.amber, color: "#fff" },
+};
+function Pill({ kind = "lvl", children, title }) {
   return (
     <span
-      className="uppercase font-bold tracking-wider"
+      title={title}
+      className="font-mono font-bold"
       style={{
         fontSize: 9,
-        padding: "2px 6px",
-        borderRadius: 4,
-        background: isTest ? C.tealSoft : C.bg3,
-        color: isTest ? C.teal : C.txt3,
+        padding: "2px 7px",
+        borderRadius: 6,
+        whiteSpace: "nowrap",
+        ...PILL[kind],
       }}
     >
-      {type}
+      {children}
     </span>
   );
 }
-
-function TierBtn({ active, color, children, onClick }) {
+const STCLR = {
+  not_started: P.smoke,
+  in_progress: P.electric,
+  complete: P.teal,
+  verified: P.teal,
+  failed: P.rust,
+};
+function St({ s, children }) {
+  return (
+    <span
+      className="font-mono"
+      style={{
+        fontSize: 10,
+        color: STCLR[s] || P.smoke,
+        fontWeight:
+          s === "complete" || s === "verified" || s === "failed" ? 700 : 400,
+      }}
+    >
+      {children ?? String(s).replace("_", " ")}
+    </span>
+  );
+}
+function Card({ children, style }) {
+  return (
+    <div
+      style={{
+        background: P.card,
+        border: `1px solid ${P.line}`,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 14,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+function SectLab({ children, style }) {
+  return (
+    <div style={{ ...eyebrow, fontSize: 9, margin: "2px 0 9px", ...style }}>
+      {children}
+    </div>
+  );
+}
+function Row({ children, style }) {
+  return (
+    <div
+      className="flex items-center gap-2"
+      style={{
+        padding: "9px 4px",
+        borderTop: `1px solid ${P.line}`,
+        fontSize: 13,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+const Grow = ({ children }) => (
+  <span className="flex-1 min-w-0 truncate">{children}</span>
+);
+function Kpi({ v, l, tone }) {
+  const c =
+    tone === "bad"
+      ? P.rust
+      : tone === "warn"
+        ? P.amber
+        : tone === "good"
+          ? P.teal
+          : P.ink;
+  return (
+    <div
+      style={{
+        border: `1px solid ${P.line}`,
+        borderRadius: 10,
+        padding: 10,
+        textAlign: "center",
+      }}
+    >
+      <div style={{ fontSize: 23, fontWeight: 800, lineHeight: 1, color: c }}>
+        {v}
+      </div>
+      <div style={{ ...eyebrow, fontSize: 8, marginTop: 4 }}>{l}</div>
+    </div>
+  );
+}
+const Kpis = ({ children }) => (
+  <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
+    {children}
+  </div>
+);
+function Mark({ children, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="px-3 py-1.5 rounded-md text-xs font-bold transition-all"
-      style={
-        active
-          ? { background: color, color: "#fff", border: `1px solid ${color}` }
-          : {
-              background: C.bg2,
-              color: C.txt2,
-              border: `1px solid ${C.border2}`,
-            }
-      }
+      className="font-mono"
+      style={{
+        fontSize: 10,
+        color: P.teal,
+        border: "1px solid #bee0d3",
+        borderRadius: 6,
+        padding: "2px 7px",
+        background: "#f3faf7",
+        cursor: "pointer",
+      }}
     >
       {children}
     </button>
   );
 }
-
-function StatBox({ value, label, color }) {
+const Empty = ({ children }) => (
+  <div style={{ color: P.smoke, fontSize: 12, padding: "14px 4px" }}>
+    {children}
+  </div>
+);
+function LockMsg({ children, style }) {
   return (
     <div
-      className="text-center rounded-xl py-3"
-      style={{ border: `1px solid ${C.border2}`, background: C.bg2 }}
+      style={{
+        fontSize: 12,
+        color: P.smoke,
+        background: P.soft,
+        border: `1px solid ${P.line}`,
+        borderRadius: 9,
+        padding: 11,
+        ...style,
+      }}
     >
-      <p className="font-bold text-xl" style={{ color }}>
-        {value}
-      </p>
-      <p
-        className="text-[10px] uppercase tracking-wide mt-0.5"
-        style={{ color: C.txt3 }}
-      >
-        {label}
-      </p>
+      {children}
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ *
- * Main component
- * ------------------------------------------------------------------ */
-
-const BLANK_SYSTEM = {
-  tag: "",
-  name: "",
-  location: "",
-  phase: "L2 — current phase",
-};
-
+/* ============================== component ============================== */
 export default function NewProjectDetail() {
-  const router = useRouter();
-  const [systems, setSystems] = useState(SYSTEMS);
-  const [system, setSystem] = useState(SYSTEMS[0]);
-  const [phase, setPhase] = useState("L1");
-  const [activeDiscipline, setActiveDiscipline] = useState("Mechanical");
-  const [items, setItems] = useState(INITIAL_ITEMS);
-  const [showAddSystem, setShowAddSystem] = useState(false);
-  const [newSystem, setNewSystem] = useState(BLANK_SYSTEM);
+  const [db, setDb] = useState(() => structuredClone(SEED));
+  const [ct, setCt] = useState("gc");
+  const [ri, setRi] = useState(0);
+  const [mod, setMod] = useState("overview");
+  const [sel, setSel] = useState(null);
+  const [mode, setMode] = useState("project");
+  const [actf, setActf] = useState("all");
+  const [addOpen, setAddOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [laAdd, setLaAdd] = useState(null); // { wk, trade, area } when add-activity modal open
+  const [toast, setToast] = useState("");
 
-  const disciplines = Object.keys(items);
-  const allItems = useMemo(
-    () => disciplines.flatMap((d) => items[d]),
-    [items, disciplines],
-  );
+  const role = COMPANY_TYPES[ct].roles[ri] || COMPANY_TYPES[ct].roles[0];
+  const can = (p) => (mode === "standalone" ? true : role.perms.includes(p));
+  const moduleAllowed = (m) =>
+    mode === "standalone" ? true : m.types === "all" || m.types.includes(ct);
+  const flash = (m) => {
+    setToast(m);
+    window.clearTimeout(flash._t);
+    flash._t = window.setTimeout(() => setToast(""), 1700);
+  };
+  const mutate = (fn) =>
+    setDb((prev) => {
+      const next = structuredClone(prev);
+      fn(next);
+      return next;
+    });
 
-  const gate = useMemo(() => {
-    const work = allItems.filter((i) => i.type === "WORK");
-    const tests = allItems.filter((i) => i.type === "TEST");
-    const workDone = work.filter((i) => i.status === "done").length;
-    const testDone = tests.filter((i) => i.status === "done").length;
-    const flagged = allItems.filter((i) => i.status === "flag");
-    const mitigating = flagged.filter((i) => i.tier === "Mitigating").length;
-    const gatekeeping = flagged.filter((i) => i.tier === "Gatekeeping").length;
-    const outstandingTests = tests.filter((i) => i.status !== "done");
-    const blocked = outstandingTests.length > 0 || flagged.length > 0;
-    return {
-      workDone,
-      workTotal: work.length,
-      testDone,
-      testTotal: tests.length,
-      mitigating,
-      gatekeeping,
-      outstandingTests,
-      flagged,
-      blocked,
-    };
-  }, [allItems]);
+  const ci = PHASES.indexOf(db.project.phase);
+  const g = useMemo(() => gateAll(db), [db]);
+  const defaultSel = db.equipment[0] ? `eq:${db.equipment[0].id}` : "";
+  const SELV = sel || defaultSel;
 
-  const updateItem = (discipline, id, patch) =>
-    setItems((prev) => ({
-      ...prev,
-      [discipline]: prev[discipline].map((it) =>
-        it.id === id ? { ...it, ...patch } : it,
-      ),
-    }));
+  const counts = {
+    issues: g.gk.length,
+    punch: g.mit.length,
+    holds: db.findings.filter((f) => f.type === "HoldPoint" && isOpen(f.status))
+      .length,
+    readiness: db.equipment.length,
+    tests: db.tests.length,
+    schedule: db.milestones.length,
+  };
+  const railMods = db.rail
+    .map((id) => MODULES.find((m) => m.id === id))
+    .filter(Boolean);
 
-  const removeItem = (discipline, id) =>
-    setItems((prev) => ({
-      ...prev,
-      [discipline]: prev[discipline].filter((it) => it.id !== id),
-    }));
-
-  const addSystem = () => {
-    const tag = newSystem.tag.trim() || "NEW-01";
-    const name = newSystem.name.trim() || "New System";
-    const label = `${tag} — ${name} — ${tag}`;
-    setSystems((prev) => [label, ...prev]);
-    setSystem(label);
-    setNewSystem(BLANK_SYSTEM);
-    setShowAddSystem(false);
+  const selWrap = {
+    flex: 1,
+    minWidth: 240,
+    height: 38,
+    border: `1px solid ${P.line}`,
+    borderRadius: 9,
+    background: P.card,
+    padding: "0 11px",
+    fontSize: 14,
+    fontWeight: 600,
+    color: P.ink,
+  };
+  const topSel = {
+    background: P.card,
+    color: P.ink,
+    border: `1px solid ${P.line}`,
+    height: 32,
+    padding: "0 8px",
+    fontSize: 13,
+    borderRadius: 6,
+    maxWidth: 230,
   };
 
-  const selectStyle = {
-    background: C.bg2,
-    border: `1.5px solid ${C.border3}`,
-    color: C.txt,
-    borderRadius: 10,
+  /* ---------- mutations ---------- */
+  const advance = (dir) => {
+    const u = unit(db, SELV);
+    if (u.kind !== "equipment") return;
+    mutate((d) => {
+      const e = d.equipment.find((x) => x.id === u.id);
+      const k = PHASES.indexOf(e.phase);
+      if (dir === "advance" && k < PHASES.length - 1) e.phase = PHASES[k + 1];
+      if (dir === "revert" && k > 0) e.phase = PHASES[k - 1];
+      d.activity.unshift({
+        when: "just now",
+        who: "You",
+        ct,
+        text: `Gate ${dir === "advance" ? "advanced" : "reverted"}: ${e.id} → ${e.phase}`,
+      });
+    });
+    flash(dir === "advance" ? "Gate advanced" : "Gate reverted");
   };
-  const inputStyle = {
-    background: C.bg2,
-    border: `1.5px solid ${C.border3}`,
-    color: C.txt,
-    borderRadius: 12,
+  const setChk = (id, status) =>
+    mutate((d) => {
+      const c = d.checklists.find((x) => x.id === id);
+      if (c) c.status = status;
+    });
+  const resolveFinding = (id) => {
+    mutate((d) => {
+      const f = d.findings.find((x) => x.id === id);
+      if (f) f.status = "resolved";
+    });
+    flash("Finding resolved");
   };
-  const outlineBtn = {
-    background: C.bg2,
-    border: `1px solid ${C.border2}`,
-    color: C.txt2,
+  const passTest = (id) => {
+    mutate((d) => {
+      const t = d.tests.find((x) => x.id === id);
+      if (t) {
+        t.status = "passed";
+        d.activity.unshift({
+          when: "just now",
+          who: "You",
+          ct,
+          text: `Test passed: ${t.name}`,
+        });
+      }
+    });
+    flash("Test passed");
+  };
+  const verifyDrawing = (name) => {
+    mutate((d) => {
+      const x = d.drawings.find((y) => y.name === name);
+      if (x) x.verified = true;
+    });
+    flash("Drawing verified");
+  };
+  const cycleTask = (id) =>
+    mutate((d) => {
+      const t = d.tasks.find((x) => x.id === id);
+      if (!t) return;
+      const o = ["open", "in_progress", "done"];
+      t.status =
+        t.status === "done" ? "open" : o[Math.min(o.indexOf(t.status) + 1, 2)];
+    });
+  const removeMod = (id) => {
+    mutate((d) => {
+      d.rail = d.rail.filter((x) => x !== id);
+    });
+    if (mod === id) setMod("overview");
+  };
+  const addMod = (id) => {
+    mutate((d) => {
+      if (!d.rail.includes(id)) d.rail.push(id);
+    });
+    setMod(id);
+    setAddOpen(false);
+    flash("Module added");
+  };
+  const revoke = (i) => {
+    mutate((d) => d.team.splice(i, 1));
+    flash("Access revoked");
+  };
+  const invite = (k) => {
+    mutate((d) => {
+      d.team.push({
+        ct: k,
+        company: `${COMPANY_TYPES[k].name} (invited)`,
+        role: COMPANY_TYPES[k].roles[0].role,
+        access: `${COMPANY_TYPES[k].name} scope`,
+        status: "invited",
+      });
+      d.activity.unshift({
+        when: "just now",
+        who: "You",
+        ct,
+        text: `Company invited: ${COMPANY_TYPES[k].name}`,
+      });
+    });
+    setInviteOpen(false);
+    flash("Company invited");
+  };
+  const laStep = (id, delta) =>
+    mutate((d) => {
+      const a = d.lookahead.find((x) => x.id === id);
+      if (!a) return;
+      a.pct = Math.max(0, Math.min(100, a.pct + delta));
+      a.status = a.pct === 100 ? "done" : a.pct > 0 ? "active" : "planned";
+    });
+  const laCycle = (id) =>
+    mutate((d) => {
+      const a = d.lookahead.find((x) => x.id === id);
+      if (!a) return;
+      const o = ["planned", "active", "done"];
+      a.status = o[(o.indexOf(a.status) + 1) % 3];
+      a.pct = a.status === "done" ? 100 : a.status === "planned" ? 0 : a.pct;
+    });
+  const laBlock = (id) =>
+    mutate((d) => {
+      const a = d.lookahead.find((x) => x.id === id);
+      if (a) {
+        a.blocked = !a.blocked;
+        a.constraint = a.blocked ? a.constraint || "Blocked" : "";
+      }
+    });
+  const laRemove = (id) =>
+    mutate((d) => {
+      d.lookahead = d.lookahead.filter((x) => x.id !== id);
+    });
+  const LA_TRADES = ["EC", "MC", "Controls", "OEM", "NETA", "FIRE", "GC", "CXA"];
+  const submitActivity = () => {
+    const area = (laAdd.area || "").trim();
+    if (!area) {
+      flash("Enter an activity / area");
+      return;
+    }
+    mutate((d) => {
+      d.lookahead.push({
+        id: nid("la"),
+        wk: Number(laAdd.wk),
+        trade: laAdd.trade,
+        area,
+        pct: 0,
+        status: "planned",
+      });
+    });
+    setLaAdd(null);
+    flash("Activity added");
   };
 
-  return (
-    <div className="min-h-screen font-gilroy p-6" style={{ color: C.txt }}>
-      {/* ── Header ───────────────────────────────────────────── */}
-      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
-        <div>
-          <p
-            className="uppercase tracking-wider mb-1"
-            style={{ fontSize: 10, fontWeight: 700, color: C.txt3 }}
-          >
-            QA/QC · Commissioning · MSFT-DC1 · Atlanta
-          </p>
-          <h1 className="font-bold text-2xl">
-            Cx Readiness — Findings &amp; Gate
-          </h1>
-          <p className="text-sm mt-1" style={{ color: C.txt2 }}>
-            Drawing-driven verification with severity-tiered findings —
-            mitigating vs gatekeeping
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+  /* ============================ panels ============================ */
+  function Overview() {
+    const verified = db.checklists.filter((c) => isDone(c.status)).length;
+    return (
+      <>
+        <Card>
+          <SectLab>Project Overview · {db.project.name}</SectLab>
+          <Kpis>
+            <Kpi v={db.equipment.length} l="Equipment" />
+            <Kpi
+              v={`${verified}/${db.checklists.length}`}
+              l="Checklists done"
+              tone="good"
+            />
+            <Kpi v={g.gk.length} l="Gatekeeping" tone="bad" />
+            <Kpi v={g.mit.length} l="Mitigating" tone="warn" />
+          </Kpis>
+        </Card>
+        <Card>
+          <SectLab>Equipment at a glance</SectLab>
+          {db.equipment.map((e, i) => {
+            const gg = gateOf(db, unit(db, `eq:${e.id}`));
+            return (
+              <Row key={e.id} style={i === 0 ? { borderTop: 0 } : undefined}>
+                <Pill kind="lvl">{e.phase}</Pill>
+                {e.furnish && (
+                  <Pill
+                    kind={e.furnish === "OFCI" ? "hold" : "role"}
+                    title={
+                      e.furnish === "OFCI"
+                        ? "Owner-Furnished, Contractor-Installed"
+                        : "Contractor-Furnished & Installed"
+                    }
+                  >
+                    {e.furnish}
+                  </Pill>
+                )}
+                <Grow>
+                  {e.id} — {e.name}
+                </Grow>
+                <St s={gg.blocked ? "failed" : "complete"}>
+                  {gg.blocked ? "blocked" : "clear"}
+                </St>
+              </Row>
+            );
+          })}
+        </Card>
+      </>
+    );
+  }
+
+  function Schedule() {
+    return (
+      <Card>
+        <SectLab>Schedule &amp; Milestones</SectLab>
+        {db.milestones.map((m, i) => {
+          const c =
+            m.status === "done"
+              ? P.teal
+              : m.status === "cur"
+                ? P.electric
+                : "#c3ccd5";
+          return (
+            <Row key={m.name} style={i === 0 ? { borderTop: 0 } : undefined}>
+              <span
+                className="font-mono"
+                style={{ fontSize: 11, color: P.smoke, width: 62 }}
+              >
+                {m.d}
+              </span>
+              <span
+                style={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: "50%",
+                  background: c,
+                }}
+              />
+              <Pill kind="lvl">{m.ph}</Pill>
+              <Grow>{m.name}</Grow>
+              <St
+                s={
+                  m.status === "done"
+                    ? "complete"
+                    : m.status === "cur"
+                      ? "in_progress"
+                      : "not_started"
+                }
+              >
+                {m.status === "cur" ? "in progress" : m.status}
+              </St>
+            </Row>
+          );
+        })}
+      </Card>
+    );
+  }
+
+  function Readiness() {
+    const u = unit(db, SELV);
+    const gg = gateOf(db, u);
+    const k = PHASES.indexOf(gg.phase);
+    const next = PHASES[Math.min(k + 1, PHASES.length - 1)];
+    const STAT = [
+      ["not_started", "Not Started"],
+      ["in_progress", "In Progress"],
+      ["complete", "Complete"],
+      ["verified", "CxA Verified"],
+    ];
+    const canAdv = can("advance") && u.kind === "equipment";
+    return (
+      <>
+        <div className="flex gap-2 flex-wrap" style={{ marginBottom: 12 }}>
           <select
-            value={system}
-            onChange={(e) => setSystem(e.target.value)}
-            className="px-3 py-2 text-sm outline-none cursor-pointer"
-            style={selectStyle}
+            value={SELV}
+            onChange={(e) => setSel(e.target.value)}
+            style={selWrap}
           >
-            {systems.map((s) => (
-              <option key={s}>{s}</option>
+            {db.equipment.map((e) => (
+              <option key={e.id} value={`eq:${e.id}`}>
+                {e.id} — {e.name}
+              </option>
+            ))}
+            {db.systems.map((s) => (
+              <option key={s.id} value={`sys:${s.id}`}>
+                ▣ {s.name}
+              </option>
             ))}
           </select>
-          <button
-            type="button"
-            onClick={() => setShowAddSystem((v) => !v)}
-            className="px-3.5 py-2 rounded-lg text-sm font-bold"
-            style={{ background: C.accent, color: "#fff" }}
-          >
-            + New system
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/drawingAnalyzer")}
-            className="px-3.5 py-2 rounded-lg text-sm font-semibold cursor-pointer"
-            style={outlineBtn}
-          >
-            ↻ From a drawing
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/phaseQueue")}
-            className="px-3.5 py-2 rounded-lg text-sm font-semibold cursor-pointer"
-            style={outlineBtn}
-          >
-            ↗ Phase Queue
-          </button>
         </div>
-      </div>
-
-      {/* ── Add a system panel ───────────────────────────────── */}
-      {showAddSystem && (
         <div
-          className="rounded-2xl p-5 mb-6"
-          style={{ background: C.bg2, border: `1px solid ${C.border2}` }}
+          style={{
+            background: gg.blocked ? "#fcf4f2" : "#f3faf7",
+            border: `1px solid ${gg.blocked ? "#e6c2bc" : "#bee0d3"}`,
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 14,
+          }}
         >
-          <p
-            className="uppercase tracking-wider mb-3"
-            style={{ fontSize: 10, fontWeight: 700, color: C.txt3 }}
+          <div
+            className="flex items-center gap-2"
+            style={{ fontSize: 16, fontWeight: 800, marginBottom: 11 }}
           >
-            Add a system / asset to MSFT-DC1 · Atlanta
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <input
-              placeholder="Tag (e.g. CHL-02)"
-              value={newSystem.tag}
-              onChange={(e) =>
-                setNewSystem((p) => ({ ...p, tag: e.target.value }))
-              }
-              className="px-3.5 py-2.5 text-sm outline-none"
-              style={inputStyle}
-            />
-            <input
-              placeholder="Name"
-              value={newSystem.name}
-              onChange={(e) =>
-                setNewSystem((p) => ({ ...p, name: e.target.value }))
-              }
-              className="px-3.5 py-2.5 text-sm outline-none"
-              style={inputStyle}
-            />
-            <input
-              placeholder="Hall / location"
-              value={newSystem.location}
-              onChange={(e) =>
-                setNewSystem((p) => ({ ...p, location: e.target.value }))
-              }
-              className="px-3.5 py-2.5 text-sm outline-none"
-              style={inputStyle}
-            />
-            <select
-              value={newSystem.phase}
-              onChange={(e) =>
-                setNewSystem((p) => ({ ...p, phase: e.target.value }))
-              }
-              className="px-3.5 py-2.5 text-sm outline-none cursor-pointer"
-              style={inputStyle}
-            >
-              {["L1", "L2", "L3", "L4", "L5"].map((l) => (
-                <option key={l}>{l} — current phase</option>
-              ))}
-            </select>
+            {gg.blocked ? "⛔" : "✔"}{" "}
+            {gg.blocked ? "Gate Blocked" : "Gate Clear — ready to advance"}
           </div>
-          <div className="flex items-center gap-2 mt-4">
-            <button
-              type="button"
-              onClick={addSystem}
-              className="px-4 py-2 rounded-lg text-sm font-bold"
-              style={{ background: C.accent, color: "#fff" }}
-            >
-              Add system
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowAddSystem(false);
-                setNewSystem(BLANK_SYSTEM);
-              }}
-              className="px-4 py-2 rounded-lg text-sm font-semibold"
-              style={{
-                background: C.bg2,
-                color: C.txt2,
-                border: `1px solid ${C.border2}`,
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── System info card ─────────────────────────────────── */}
-      <div
-        className="rounded-2xl p-5 mb-6"
-        style={{ background: C.bg2, border: `1px solid ${C.border2}` }}
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <p
-            className="uppercase tracking-wider"
-            style={{ fontSize: 10, fontWeight: 700, color: C.txt3 }}
+          <Kpis>
+            <Kpi
+              v={`${gg.workDone}/${gg.phaseCls.length}`}
+              l={`Work (${gg.phase})`}
+            />
+            <Kpi
+              v={`${gg.tests.filter((t) => t.status === "passed").length}/${gg.tests.length}`}
+              l="Tests passed"
+            />
+            <Kpi
+              v={gg.gk.length}
+              l="Gatekeeping"
+              tone={gg.gk.length ? "bad" : undefined}
+            />
+            <Kpi
+              v={gg.mit.length}
+              l="Mitigating"
+              tone={gg.mit.length ? "warn" : undefined}
+            />
+          </Kpis>
+          <div
+            className="flex items-center gap-2 flex-wrap"
+            style={{
+              marginTop: 13,
+              paddingTop: 13,
+              borderTop: `1px dashed ${P.line}`,
+            }}
           >
-            Chilled-Water System — CHL-01 · Mech-Yard · Sample Project P&amp;ID
-            (Synthetic)
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <span
-              className="uppercase tracking-wider"
-              style={{ fontSize: 10, fontWeight: 700, color: C.txt3 }}
-            >
-              Phase
-            </span>
-            <select
-              value={phase}
-              onChange={(e) => setPhase(e.target.value)}
-              className="px-2.5 py-1.5 text-xs font-semibold outline-none cursor-pointer"
-              style={selectStyle}
-            >
-              {["L1", "L2", "L3", "L4", "L5"].map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </select>
-            {(() => {
-              const t = PHASE_TAG[phase] || PHASE_TAG.L1;
-              return (
+            <span style={eyebrow}>Phase</span>
+            {PHASES.map((L, idx) => (
+              <span key={L} className="flex items-center gap-2">
                 <span
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+                  className="font-mono font-bold"
                   style={{
-                    border: `1px solid ${t.color}`,
-                    color: t.color,
-                    background: C.bg2,
+                    fontSize: 11,
+                    padding: "5px 8px",
+                    borderRadius: 7,
+                    whiteSpace: "nowrap",
+                    ...(idx < k
+                      ? {
+                          background: "#e6f3ee",
+                          color: P.teal,
+                          border: "1px solid #bee0d3",
+                        }
+                      : idx === k
+                        ? {
+                            background: P.electric,
+                            color: "#fff",
+                            border: `1px solid ${P.electric}`,
+                          }
+                        : {
+                            background: P.soft,
+                            color: "#9aa6b2",
+                            border: `1px solid ${P.line}`,
+                          }),
                   }}
                 >
-                  <span
-                    className="rounded-full"
-                    style={{
-                      width: 6,
-                      height: 6,
-                      background: t.dot || t.color,
-                      border: t.dotBorder ? `1px solid ${t.color}` : "none",
-                    }}
-                  />
-                  {t.label}
+                  {L}
                 </span>
-              );
-            })()}
-            <span className="text-xs" style={{ color: C.txt3 }}>
-              L1 · FAT → L2 · Install
-            </span>
-            <button
-              type="button"
-              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold"
-              style={outlineBtn}
-            >
-              Delete system
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mt-4">
-          {SYSTEM_TAGS.map((t) => (
-            <Tag key={t.label} ok={t.ok} label={t.label} />
-          ))}
-        </div>
-      </div>
-
-      {/* ── Body: findings (left) + gate (right) ─────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left — findings */}
-        <div className="lg:col-span-3">
-          {/* Discipline tabs */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {disciplines.map((d) => {
-              const count = items[d].filter((i) => i.type === "WORK").length;
-              const active = d === activeDiscipline;
-              return (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setActiveDiscipline(d)}
-                  className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
-                  style={
-                    active
-                      ? {
-                          background: C.accent,
-                          color: "#fff",
-                          border: `1px solid ${C.accent}`,
-                        }
-                      : {
-                          background: C.bg2,
-                          color: C.txt2,
-                          border: `1px solid ${C.border2}`,
-                        }
-                  }
-                >
-                  {d} · {count}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Finding items */}
-          <div className="flex flex-col gap-2.5">
-            {items[activeDiscipline].map((it) => (
-              <div
-                key={it.id}
-                className="rounded-2xl p-4"
-                style={{ background: C.bg2, border: `1px solid ${C.border2}` }}
-              >
-                <div className="flex gap-3">
-                  <StatusIcon status={it.status} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <TypeBadge type={it.type} />
-                      <span
-                        className="text-xs font-semibold"
-                        style={{ color: C.accent }}
-                      >
-                        {it.ref}
-                      </span>
-                      <span
-                        className="text-xs font-bold"
-                        style={{ color: C.txt3 }}
-                      >
-                        {it.code}
-                      </span>
-                    </div>
-                    <p className="text-sm" style={{ color: C.txt }}>
-                      {it.text}
-                    </p>
-
-                    {it.note && (
-                      <div
-                        className="mt-3 rounded-xl p-3"
-                        style={{
-                          background: C.amberSoft,
-                          border: `1px solid ${C.amberBorder}`,
-                        }}
-                      >
-                        <p className="text-sm" style={{ color: C.amberText }}>
-                          {it.note}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-2 mt-3">
-                          <span
-                            className="uppercase tracking-wider mr-1"
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 700,
-                              color: C.amber,
-                            }}
-                          >
-                            Tier
-                          </span>
-                          <TierBtn
-                            active={it.tier === "Mitigating"}
-                            color={C.amber}
-                            onClick={() =>
-                              updateItem(activeDiscipline, it.id, {
-                                tier: "Mitigating",
-                              })
-                            }
-                          >
-                            Mitigating
-                          </TierBtn>
-                          <TierBtn
-                            active={it.tier === "Gatekeeping"}
-                            color={C.red}
-                            onClick={() =>
-                              updateItem(activeDiscipline, it.id, {
-                                tier: "Gatekeeping",
-                              })
-                            }
-                          >
-                            Gatekeeping
-                          </TierBtn>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateItem(activeDiscipline, it.id, {
-                                status: "done",
-                                note: undefined,
-                                tier: undefined,
-                              })
-                            }
-                            className="px-3 py-1.5 rounded-md text-xs font-bold"
-                            style={{
-                              background: C.bg2,
-                              color: C.txt2,
-                              border: `1px solid ${C.border2}`,
-                            }}
-                          >
-                            Mark resolved
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                {idx < PHASES.length - 1 && (
+                  <span style={{ color: "#c3ccd5" }}>→</span>
+                )}
+              </span>
+            ))}
+            <span className="ml-auto flex gap-2">
+              {u.kind === "equipment" ? (
+                <>
+                  {k > 0 && canAdv && (
+                    <button
+                      type="button"
+                      onClick={() => advance("revert")}
+                      className="font-mono"
+                      style={{
+                        height: 33,
+                        padding: "0 12px",
+                        borderRadius: 8,
+                        border: `1px solid ${P.line}`,
+                        background: P.card,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        color: P.smoke,
+                      }}
+                    >
+                      ← Revert
+                    </button>
+                  )}
                   <button
                     type="button"
-                    onClick={() => removeItem(activeDiscipline, it.id)}
-                    className="flex-shrink-0 text-lg leading-none"
-                    style={{ color: C.txt3 }}
-                    title="Remove"
+                    onClick={() => advance("advance")}
+                    disabled={!canAdv || gg.blocked || k >= PHASES.length - 1}
+                    className="font-mono"
+                    style={{
+                      height: 33,
+                      padding: "0 12px",
+                      borderRadius: 8,
+                      border: `1px solid ${P.teal}`,
+                      background: P.teal,
+                      color: "#fff",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      opacity:
+                        !canAdv || gg.blocked || k >= PHASES.length - 1
+                          ? 0.4
+                          : 1,
+                    }}
                   >
-                    ×
+                    {!can("advance")
+                      ? "View only"
+                      : k >= PHASES.length - 1
+                        ? "Commissioned"
+                        : `Advance → ${next}`}
                   </button>
+                </>
+              ) : (
+                <span style={eyebrow}>
+                  system advances when all members clear
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+        <Card>
+          <SectLab>Checklists · {u.name}</SectLab>
+          {gg.cls.length ? (
+            gg.cls.map((c, i) => (
+              <Row key={c.id} style={i === 0 ? { borderTop: 0 } : undefined}>
+                <Pill kind="lvl">{c.level}</Pill>
+                <Pill kind="role">{c.role}</Pill>
+                <Grow>{c.name}</Grow>
+                {c.status === "failed" ? (
+                  <St s="failed">failed</St>
+                ) : can("create") ? (
+                  <select
+                    value={c.status}
+                    onChange={(e) => setChk(c.id, e.target.value)}
+                    className="font-mono"
+                    style={{
+                      height: 26,
+                      fontSize: 10,
+                      border: `1px solid ${P.line}`,
+                      borderRadius: 6,
+                      background: P.card,
+                      color: STCLR[c.status],
+                    }}
+                  >
+                    {STAT.map(([v, l]) => (
+                      <option key={v} value={v}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <St s={c.status} />
+                )}
+              </Row>
+            ))
+          ) : (
+            <Empty>No checklists.</Empty>
+          )}
+        </Card>
+      </>
+    );
+  }
+
+  function Findings({ arr, title, note }) {
+    return (
+      <Card>
+        <LockMsg style={{ marginBottom: 10 }}>{note}</LockMsg>
+        <SectLab>{title}</SectLab>
+        {arr.length ? (
+          arr.map((f, i) => (
+            <Row key={f.id} style={i === 0 ? { borderTop: 0 } : undefined}>
+              <Pill
+                kind={f.type === "HoldPoint" ? "hold" : f.type.toLowerCase()}
+              >
+                {f.type === "HoldPoint" ? "HOLD" : f.type.toUpperCase()}
+              </Pill>
+              <Pill kind={f.sev.toLowerCase()}>{f.sev}</Pill>
+              <Grow>{f.title}</Grow>
+              {can("close") ? (
+                <Mark onClick={() => resolveFinding(f.id)}>Mark resolved</Mark>
+              ) : (
+                <St s="not_started">view only</St>
+              )}
+            </Row>
+          ))
+        ) : (
+          <Empty>None.</Empty>
+        )}
+      </Card>
+    );
+  }
+
+  function Tests() {
+    return (
+      <Card>
+        <SectLab>Test Records</SectLab>
+        {db.tests.map((t, i) => (
+          <Row key={t.id} style={i === 0 ? { borderTop: 0 } : undefined}>
+            <Grow>
+              {t.name} <span style={eyebrow}>· {t.eq}</span>
+            </Grow>
+            <St s={t.status === "passed" ? "complete" : "in_progress"}>
+              {t.status}
+            </St>
+            {t.status !== "passed" && can("verify") && (
+              <Mark onClick={() => passTest(t.id)}>Mark passed</Mark>
+            )}
+          </Row>
+        ))}
+      </Card>
+    );
+  }
+
+  function Drawings() {
+    return (
+      <Card>
+        <SectLab>Drawings &amp; P&amp;ID</SectLab>
+        {db.drawings.map((d, i) => (
+          <Row key={d.name} style={i === 0 ? { borderTop: 0 } : undefined}>
+            <Pill kind="lvl">{d.type}</Pill>
+            <Grow>
+              {d.name} <span style={eyebrow}>· {d.eq}</span>
+            </Grow>
+            <St s={d.verified ? "complete" : "in_progress"}>
+              {d.verified ? "verified" : "unverified"}
+            </St>
+            {!d.verified && can("verify") && (
+              <Mark onClick={() => verifyDrawing(d.name)}>Verify</Mark>
+            )}
+          </Row>
+        ))}
+      </Card>
+    );
+  }
+
+  function Submittals() {
+    const sc = (s) =>
+      /Approved/.test(s)
+        ? "complete"
+        : /Revise/.test(s)
+          ? "failed"
+          : "in_progress";
+    return (
+      <Card>
+        <SectLab>Submittals — review &amp; approval</SectLab>
+        {db.submittals.map((s, i) => (
+          <Row key={s.name} style={i === 0 ? { borderTop: 0 } : undefined}>
+            <Pill kind="role">{s.by}</Pill>
+            <Grow>
+              {s.name} <span style={eyebrow}>· {s.eq}</span>
+            </Grow>
+            <St s={sc(s.status)}>{s.status}</St>
+          </Row>
+        ))}
+      </Card>
+    );
+  }
+
+  function Procurement() {
+    const sc = (s) => (/Delivered/.test(s) ? "complete" : "in_progress");
+    const ofci = db.procurement.filter((p) => p.furnish === "OFCI").length;
+    const cfci = db.procurement.filter((p) => p.furnish === "CFCI").length;
+    return (
+      <Card>
+        <SectLab>Procurement &amp; Long-Lead Log</SectLab>
+        <LockMsg style={{ marginBottom: 10 }}>
+          <b>Furnish responsibility:</b> {ofci} OFCI (Owner-Furnished,
+          Contractor-Installed) · {cfci} CFCI (Contractor-Furnished &amp;
+          Installed). OFCI items are the Owner&apos;s to deliver — a common
+          schedule risk the GC tracks here.
+        </LockMsg>
+        {db.procurement.map((p, i) => (
+          <Row key={p.item} style={i === 0 ? { borderTop: 0 } : undefined}>
+            <Pill kind={p.furnish === "OFCI" ? "hold" : "role"}>
+              {p.furnish}
+            </Pill>
+            <Grow>
+              {p.item}{" "}
+              <span style={eyebrow}>
+                · {p.vendor} · {p.po}
+              </span>
+            </Grow>
+            <span
+              className="font-mono"
+              style={{ fontSize: 10, color: P.smoke }}
+            >
+              need {p.need}
+            </span>
+            <St s={sc(p.status)}>{p.status}</St>
+          </Row>
+        ))}
+      </Card>
+    );
+  }
+
+  function Tarf() {
+    const sc = (s) =>
+      /Approved|Complete/.test(s)
+        ? "complete"
+        : /Submitted|Pending/.test(s)
+          ? "in_progress"
+          : "not_started";
+    return (
+      <Card>
+        <SectLab>Site Arrivals — TARF (badging &amp; access)</SectLab>
+        <LockMsg style={{ marginBottom: 10 }}>
+          Who&apos;s arriving on site, badging/access status, and safety
+          orientation. No crew works the floor until badged and oriented.
+        </LockMsg>
+        {db.tarf.map((t, i) => (
+          <Row key={t.crew} style={i === 0 ? { borderTop: 0 } : undefined}>
+            <Pill kind="role">{t.date}</Pill>
+            <Grow>
+              {t.crew} <span style={eyebrow}>· {t.co}</span>
+            </Grow>
+            <St s={sc(t.badge)}>badge: {t.badge}</St>
+            <St s={sc(t.orient)}>orient: {t.orient}</St>
+          </Row>
+        ))}
+      </Card>
+    );
+  }
+
+  function Safety() {
+    const sc = (s) =>
+      /Approved|0 to date/.test(s)
+        ? "complete"
+        : /Open|Pending/.test(s)
+          ? "in_progress"
+          : "not_started";
+    return (
+      <Card>
+        <SectLab>
+          Safety — AHAs / JHAs · permits · inspections · incidents
+        </SectLab>
+        {db.safety.map((s, i) => (
+          <Row key={s.item} style={i === 0 ? { borderTop: 0 } : undefined}>
+            <Pill kind="role">{s.type}</Pill>
+            <Grow>{s.item}</Grow>
+            <St s={sc(s.status)}>{s.status}</St>
+          </Row>
+        ))}
+        <LockMsg style={{ marginTop: 10 }}>
+          Safety gates the field: an activity can&apos;t start until its AHA/JHA
+          is approved and the crew is badged &amp; oriented.
+        </LockMsg>
+      </Card>
+    );
+  }
+
+  function Stakeholders() {
+    return (
+      <Card>
+        <SectLab>Key Stakeholders — who owns what across the lifecycle</SectLab>
+        <div className="grid gap-2" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          {db.stakeholders.map((s) => (
+            <div
+              key={s.nm}
+              style={{
+                border: `1px solid ${P.line}`,
+                borderRadius: 9,
+                padding: 10,
+                background: P.paper,
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 13 }}>{s.nm}</div>
+              <div style={{ fontSize: 11, color: P.smoke, marginTop: 2 }}>
+                {s.sc}
+              </div>
+              <div
+                className="font-mono"
+                style={{ fontSize: 10, color: P.navy, marginTop: 5 }}
+              >
+                {s.own}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
+  function Activity() {
+    const a = db.activity || [];
+    const cts = [...new Set(a.map((x) => x.ct).filter(Boolean))];
+    const filtered = actf === "all" ? a : a.filter((x) => x.ct === actf);
+    return (
+      <Card>
+        <div className="flex items-center justify-between gap-2">
+          <SectLab style={{ margin: 0 }}>
+            Activity / Updates — what&apos;s changed on the project
+          </SectLab>
+          <select
+            value={actf}
+            onChange={(e) => setActf(e.target.value)}
+            style={{ ...selWrap, flex: "none", minWidth: 0, maxWidth: 200 }}
+          >
+            <option value="all">All companies</option>
+            {cts.map((c) => (
+              <option key={c} value={c}>
+                {ctName(c)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <LockMsg style={{ margin: "10px 0" }}>
+          Every gate advance, task update, constraint, verification and invite
+          lands here — the GC&apos;s running log of who did what.
+        </LockMsg>
+        {filtered.length ? (
+          filtered.map((x, i) => (
+            <Row key={i}>
+              <Pill kind="role">{x.when}</Pill>
+              <Grow>{x.text}</Grow>
+              <span
+                className="font-mono"
+                style={{ fontSize: 10, color: P.smoke }}
+              >
+                {x.who}
+              </span>
+            </Row>
+          ))
+        ) : (
+          <Empty>No activity for this filter.</Empty>
+        )}
+      </Card>
+    );
+  }
+
+  function outstanding() {
+    const items = [];
+    db.findings
+      .filter((f) => isOpen(f.status))
+      .forEach((f) => {
+        const eq = db.equipment.find((e) => e.id === f.eq);
+        items.push({
+          ct: DISC_CT[f.disc] || "gc",
+          what: `${f.type === "HoldPoint" ? "Hold point" : f.type}: ${f.title}`,
+          eq: f.eq,
+          gates: eq ? eq.phase : "",
+          kind: isGate(f) ? "gate" : "punch",
+        });
+      });
+    db.checklists
+      .filter((c) => c.status === "failed")
+      .forEach((c) =>
+        items.push({
+          ct: ROLE_CT[c.role] || "gc",
+          what: `Failed checklist: ${c.name}`,
+          eq: c.eq,
+          gates: c.level,
+          kind: "gate",
+        }),
+      );
+    db.equipment.forEach((e) => {
+      db.checklists
+        .filter(
+          (c) =>
+            c.eq === e.id &&
+            c.level === e.phase &&
+            !isDone(c.status) &&
+            c.status !== "failed",
+        )
+        .forEach((c) =>
+          items.push({
+            ct: ROLE_CT[c.role] || "gc",
+            what: `Open checklist: ${c.name}`,
+            eq: e.id,
+            gates: c.level,
+            kind: "work",
+          }),
+        );
+    });
+    db.tests
+      .filter((t) => t.status !== "passed")
+      .forEach((t) => {
+        const eq = db.equipment.find((e) => e.id === t.eq);
+        items.push({
+          ct: eq && eq.disc ? DISC_CT[eq.disc] : "neta",
+          what: `Pending test: ${t.name}`,
+          eq: t.eq,
+          gates: eq ? eq.phase : "",
+          kind: "test",
+        });
+      });
+    return items;
+  }
+  function Completion() {
+    const items = outstanding();
+    const byCt = {};
+    items.forEach((it) => {
+      (byCt[it.ct] = byCt[it.ct] || []).push(it);
+    });
+    const remaining = LIFECYCLE.slice(ci);
+    const gateItems = items.filter(
+      (i) => i.kind === "gate" || i.kind === "work",
+    ).length;
+    return (
+      <>
+        <Card>
+          <SectLab>
+            To Completion — what it takes to finish {db.project.name}
+          </SectLab>
+          <Kpis>
+            <Kpi v={`${db.project.phase}→L6`} l="Phases left" />
+            <Kpi v={gateItems} l="Gating items" tone="bad" />
+            <Kpi v={items.length} l="Total outstanding" tone="warn" />
+            <Kpi v={Object.keys(byCt).length} l="Companies on hook" />
+          </Kpis>
+          <LockMsg style={{ marginTop: 12 }}>
+            Every open item is tagged to the <b>company accountable</b> for
+            closing it and the <b>gate it holds</b>. Clear them in order and the
+            project walks to L6 turnover.
+          </LockMsg>
+        </Card>
+        <Card>
+          <SectLab>Path to completion — remaining gates</SectLab>
+          {remaining.map((s, i) => (
+            <Row key={s.ph} style={i === 0 ? { borderTop: 0 } : undefined}>
+              <Pill kind="lvl">{s.ph}</Pill>
+              <Grow>
+                {s.nm} — {s.meta}
+              </Grow>
+            </Row>
+          ))}
+        </Card>
+        <SectLab style={{ margin: "0 2px 8px" }}>
+          Outstanding by accountable company
+        </SectLab>
+        {Object.entries(byCt)
+          .sort((a, b) => b[1].length - a[1].length)
+          .map(([k, arr]) => (
+            <Card key={k} style={{ padding: 12 }}>
+              <div
+                className="flex items-center gap-2"
+                style={{ marginBottom: 6 }}
+              >
+                <Pill kind="role">{ctName(k)}</Pill>
+                <span style={eyebrow}>
+                  owes {arr.length} item{arr.length > 1 ? "s" : ""}
+                </span>
+              </div>
+              {arr.map((it, i) => (
+                <Row key={i} style={i === 0 ? { borderTop: 0 } : undefined}>
+                  <Pill
+                    kind={
+                      it.kind === "gate"
+                        ? "crit"
+                        : it.kind === "punch"
+                          ? "minor"
+                          : "lvl"
+                    }
+                  >
+                    {it.kind}
+                  </Pill>
+                  <Grow>
+                    {it.what} <span style={eyebrow}>· {it.eq}</span>
+                  </Grow>
+                  <St s="in_progress">gates {it.gates}</St>
+                </Row>
+              ))}
+            </Card>
+          ))}
+        {!Object.keys(byCt).length && (
+          <Card>
+            <Empty>Nothing outstanding — ready for turnover. 🎉</Empty>
+          </Card>
+        )}
+      </>
+    );
+  }
+
+  function MyPart() {
+    const p = PART[ct] || { owns: [], role: "", recv: "", does: "", hand: "" };
+    const cur = db.project.phase;
+    const tr = TRADE_OF[ct];
+    const myLa = tr ? db.lookahead.filter((a) => a.trade === tr) : [];
+    const myTasks = db.tasks.filter((t) => t.ct === ct);
+    return (
+      <>
+        <Card>
+          <SectLab>Your Part — {ctName(ct)}</SectLab>
+          <LockMsg style={{ marginBottom: 12 }}>
+            <b>{p.role}.</b> Here&apos;s where you fit, how your work bridges to
+            the next company, and what&apos;s on your plate.
+          </LockMsg>
+          <div
+            className="grid gap-2"
+            style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
+          >
+            {[
+              ["⬇ You receive", p.recv, "upstream hand-off", P.electric],
+              [
+                "⚙ You do",
+                p.does,
+                `your scope · phases ${p.owns.join(", ")}`,
+                P.navy,
+              ],
+              ["⬆ You hand off", p.hand, "downstream hand-off", P.teal],
+            ].map(([t, s, o, c]) => (
+              <div
+                key={t}
+                style={{
+                  border: `1px solid ${P.line}`,
+                  borderLeft: `3px solid ${c}`,
+                  borderRadius: 9,
+                  padding: 10,
+                  background: P.paper,
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: 13 }}>{t}</div>
+                <div style={{ fontSize: 11, color: P.smoke, marginTop: 2 }}>
+                  {s}
+                </div>
+                <div
+                  className="font-mono"
+                  style={{ fontSize: 10, color: P.navy, marginTop: 5 }}
+                >
+                  {o}
                 </div>
               </div>
             ))}
           </div>
+        </Card>
+        <Card>
+          <SectLab>Phase overview — where the project is</SectLab>
+          {LIFECYCLE.map((s, i) => {
+            const isCur = s.ph === cur;
+            const own = p.owns.includes(s.ph);
+            return (
+              <Row
+                key={s.ph}
+                style={{
+                  ...(i === 0 ? { borderTop: 0 } : {}),
+                  ...(isCur ? { background: "#eaf1fa", borderRadius: 8 } : {}),
+                }}
+              >
+                <Pill kind={isCur ? "lvl" : own ? "role" : "lvl"}>{s.ph}</Pill>
+                <Grow>
+                  <b>{s.nm}</b> — {s.meta}
+                  {own && (
+                    <span style={{ ...eyebrow, color: P.teal }}>
+                      {" "}
+                      · you own this phase
+                    </span>
+                  )}
+                </Grow>
+                {isCur && <St s="in_progress">current</St>}
+              </Row>
+            );
+          })}
+        </Card>
+        <Card>
+          <SectLab>Where you fit in the schedule</SectLab>
+          {myLa.length ? (
+            myLa.map((a, i) => (
+              <Row key={a.id} style={i === 0 ? { borderTop: 0 } : undefined}>
+                <Pill kind="role">Week {a.wk}</Pill>
+                <Grow>
+                  {a.area}
+                  {a.blocked && (
+                    <span style={{ ...eyebrow, color: P.rust }}>
+                      {" "}
+                      · ⚠ {a.constraint}
+                    </span>
+                  )}
+                </Grow>
+                <St
+                  s={
+                    a.status === "done"
+                      ? "complete"
+                      : a.status === "active"
+                        ? "in_progress"
+                        : "not_started"
+                  }
+                >
+                  {a.status === "active" ? `${a.pct}%` : a.status}
+                </St>
+              </Row>
+            ))
+          ) : (
+            <Empty>
+              No scheduled field activities — your work centers on phases{" "}
+              <b>{p.owns.join(", ") || "—"}</b>.
+            </Empty>
+          )}
+        </Card>
+        <Card>
+          <SectLab>My Work — your assignments</SectLab>
+          {myTasks.length ? (
+            myTasks.map((t, i) => (
+              <Row key={t.id} style={i === 0 ? { borderTop: 0 } : undefined}>
+                <St
+                  s={
+                    t.status === "done"
+                      ? "complete"
+                      : t.status === "in_progress"
+                        ? "in_progress"
+                        : "not_started"
+                  }
+                >
+                  {t.status === "in_progress" ? "in progress" : t.status}
+                </St>
+                <Grow>{t.title}</Grow>
+                <span
+                  className="font-mono"
+                  style={{ fontSize: 10, color: P.smoke }}
+                >
+                  {t.due}
+                </span>
+                {can("create") && (
+                  <Mark onClick={() => cycleTask(t.id)}>
+                    {t.status === "done" ? "reopen" : "advance"}
+                  </Mark>
+                )}
+              </Row>
+            ))
+          ) : (
+            <Empty>No tasks assigned.</Empty>
+          )}
+        </Card>
+        <Card>
+          <SectLab>What you&apos;re looking for — your priorities</SectLab>
+          {(FOCUS[ct] || []).map((f) => (
+            <Row key={f}>
+              <Pill kind="role">watch</Pill>
+              <Grow>{f}</Grow>
+            </Row>
+          ))}
+        </Card>
+      </>
+    );
+  }
 
+  function Lookahead() {
+    const fp = db.fieldProgress || [];
+    const overall = fp.length
+      ? Math.round(fp.reduce((a, b) => a + b.pct, 0) / fp.length)
+      : 0;
+    const blockedN = db.lookahead.filter((a) => a.blocked).length;
+    const edit = can("create");
+    const weeks = [1, 2, 3, 4, 5, 6];
+    const bar = (pct, color) => (
+      <div
+        style={{
+          height: 6,
+          borderRadius: 4,
+          background: P.soft,
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ width: `${pct}%`, height: "100%", background: color }} />
+      </div>
+    );
+    return (
+      <>
+        <Card>
+          <SectLab>Field Completion Rate — rough-in by trade</SectLab>
+          <Kpis>
+            <Kpi
+              v={`${overall}%`}
+              l="Field complete"
+              tone={overall >= 75 ? "good" : overall >= 50 ? "warn" : "bad"}
+            />
+            <Kpi
+              v={
+                db.lookahead.filter((a) => a.wk <= 2 && a.status === "active")
+                  .length
+              }
+              l="Active fortnight"
+            />
+            <Kpi
+              v={blockedN}
+              l="Constraints"
+              tone={blockedN ? "bad" : undefined}
+            />
+            <Kpi v={fp.length} l="Trades on site" />
+          </Kpis>
+          <div style={{ marginTop: 12 }}>
+            {fp.map((d) => (
+              <div key={d.disc} style={{ marginBottom: 8 }}>
+                <div className="flex justify-between" style={{ fontSize: 12 }}>
+                  <span style={{ fontWeight: 700 }}>{d.disc}</span>
+                  <span
+                    className="font-mono"
+                    style={{ fontSize: 11, color: P.smoke }}
+                  >
+                    {d.pct}% · {d.note}
+                  </span>
+                </div>
+                <div style={{ marginTop: 3 }}>
+                  {bar(
+                    d.pct,
+                    d.pct >= 75 ? P.teal : d.pct >= 50 ? P.amber : P.rust,
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+        <Card>
+          <div className="flex items-center justify-between">
+            <SectLab style={{ margin: 0 }}>
+              6-Week Lookahead — what&apos;s coming on the floor
+            </SectLab>
+            {edit && (
+              <button
+                type="button"
+                onClick={() => setLaAdd({ wk: 1, trade: "EC", area: "" })}
+                className="font-mono"
+                style={{
+                  fontSize: 10,
+                  border: `1px dashed ${P.line}`,
+                  background: "none",
+                  borderRadius: 6,
+                  padding: "3px 9px",
+                  cursor: "pointer",
+                  color: P.navy,
+                }}
+              >
+                + Add activity
+              </button>
+            )}
+          </div>
+          <div
+            className="grid gap-2"
+            style={{
+              gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
+              marginTop: 8,
+            }}
+          >
+            {weeks.map((w) => {
+              const acts = db.lookahead.filter((a) => a.wk === w);
+              const near = w <= 2;
+              return (
+                <div
+                  key={w}
+                  style={{
+                    border: `1px solid ${P.line}`,
+                    borderRadius: 9,
+                    background: near ? "#f3faf7" : P.paper,
+                    padding: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      ...eyebrow,
+                      marginBottom: 6,
+                      color: near ? P.teal : P.smoke,
+                    }}
+                  >
+                    Week {w}
+                    {w === 1 ? " · now" : ""}
+                  </div>
+                  {acts.length ? (
+                    acts.map((a) => (
+                      <div
+                        key={a.id}
+                        style={{
+                          background: P.card,
+                          border: `1px solid ${a.blocked ? "#e6c2bc" : P.line}`,
+                          borderRadius: 7,
+                          padding: 6,
+                          marginBottom: 6,
+                        }}
+                      >
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <Pill kind="role">{a.trade}</Pill>
+                          {a.status === "done" && (
+                            <span
+                              className="font-mono"
+                              style={{
+                                fontSize: 8,
+                                padding: "2px 6px",
+                                borderRadius: 6,
+                                background: "#e6f3ee",
+                                color: P.teal,
+                              }}
+                            >
+                              done
+                            </span>
+                          )}
+                          {a.blocked && (
+                            <span
+                              className="font-mono"
+                              style={{
+                                fontSize: 8,
+                                padding: "2px 6px",
+                                borderRadius: 6,
+                                background: P.rust,
+                                color: "#fff",
+                              }}
+                            >
+                              ⚠
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            margin: "3px 0",
+                            lineHeight: 1.25,
+                          }}
+                        >
+                          {a.area}
+                        </div>
+                        {a.blocked && (
+                          <div
+                            className="font-mono"
+                            style={{
+                              fontSize: 9,
+                              color: P.rust,
+                              marginBottom: 3,
+                            }}
+                          >
+                            ↳ {a.constraint || "blocked"}
+                          </div>
+                        )}
+                        {bar(
+                          a.pct,
+                          a.status === "done"
+                            ? P.teal
+                            : a.status === "active"
+                              ? P.electric
+                              : "#c3ccd5",
+                        )}
+                        <div
+                          className="flex items-center gap-1"
+                          style={{ marginTop: 4 }}
+                        >
+                          <span
+                            className="font-mono"
+                            style={{ fontSize: 9, color: P.smoke, flex: 1 }}
+                          >
+                            {a.pct}% · {a.status}
+                          </span>
+                          {edit &&
+                            [
+                              ["−", () => laStep(a.id, -10)],
+                              ["+", () => laStep(a.id, 10)],
+                              ["⟳", () => laCycle(a.id)],
+                              ["⚠", () => laBlock(a.id)],
+                              ["×", () => laRemove(a.id)],
+                            ].map(([t, fn], j) => (
+                              <button
+                                key={j}
+                                type="button"
+                                onClick={fn}
+                                style={{
+                                  width: 20,
+                                  height: 20,
+                                  border: `1px solid ${P.line}`,
+                                  background: P.card,
+                                  borderRadius: 5,
+                                  fontSize: 11,
+                                  cursor: "pointer",
+                                  lineHeight: 1,
+                                  padding: 0,
+                                  color:
+                                    t === "⚠" && a.blocked ? P.rust : P.smoke,
+                                }}
+                              >
+                                {t}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ color: P.smoke, fontSize: 11, padding: 4 }}>
+                      —
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </>
+    );
+  }
+
+  function Team() {
+    const isGCadmin = mode === "standalone" || (ct === "gc" && can("admin"));
+    return (
+      <Card>
+        <LockMsg style={{ marginBottom: 12 }}>
+          {isGCadmin ? (
+            <>
+              As the GC you <b>control the project team</b>. Invite a company
+              and it gets a Playbook scoped to its role.
+            </>
+          ) : (
+            <>
+              Your access on this project is <b>managed by the GC</b>. Your
+              company&apos;s row is highlighted — that&apos;s your lane.
+            </>
+          )}
+        </LockMsg>
+        <SectLab>Project Team — invited companies &amp; their access</SectLab>
+        {db.team.map((t, i) => {
+          const mine = t.ct === ct;
+          const st =
+            t.status === "active" || t.status === "host"
+              ? "complete"
+              : t.status === "invited"
+                ? "in_progress"
+                : "not_started";
+          return (
+            <Row
+              key={i}
+              style={{
+                ...(i === 0 ? { borderTop: 0 } : {}),
+                ...(mine ? { background: "#eaf1fa", borderRadius: 8 } : {}),
+              }}
+            >
+              <Pill kind="role">{ctName(t.ct).split(" ")[0]}</Pill>
+              <Grow>
+                <b>{t.company}</b> <span style={eyebrow}>· {t.role}</span>
+                <br />
+                <span style={{ fontSize: 11, color: P.smoke }}>
+                  access: {t.access}
+                </span>
+              </Grow>
+              <St s={st}>{t.status}</St>
+              {isGCadmin && t.status !== "host" && (
+                <Mark onClick={() => revoke(i)}>Revoke</Mark>
+              )}
+            </Row>
+          );
+        })}
+        {isGCadmin && (
+          <div style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              style={{
+                height: 33,
+                padding: "0 12px",
+                borderRadius: 8,
+                border: `1px solid ${P.teal}`,
+                background: P.teal,
+                color: "#fff",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "monospace",
+              }}
+            >
+              + Invite company
+            </button>
+          </div>
+        )}
+      </Card>
+    );
+  }
+
+  function Turnover() {
+    const secs = [
+      "Project Overview",
+      "Commissioning Documentation",
+      "Test & Inspection Records",
+      "NCRs & Issues — Disposition",
+      "As-Built Documentation",
+      "O&M Manuals & Training",
+      "Customer Acceptance",
+    ];
+    return (
+      <Card>
+        <LockMsg style={{ marginBottom: 10 }}>
+          The turnover package is assembled at <b>L6</b>.{" "}
+          {can("close")
+            ? "You can sign off sections."
+            : "View only for your role."}
+        </LockMsg>
+        <SectLab>Turnover &amp; Acceptance Package</SectLab>
+        {secs.map((s, i) => (
+          <Row key={s} style={i === 0 ? { borderTop: 0 } : undefined}>
+            <Pill kind="lvl">{i + 1}</Pill>
+            <Grow>{s}</Grow>
+            <St s="not_started">pending</St>
+          </Row>
+        ))}
+      </Card>
+    );
+  }
+
+  function Placeholder({ id }) {
+    const n = (MODULES.find((x) => x.id === id) || {}).name || id;
+    return (
+      <Card>
+        <SectLab>{n}</SectLab>
+        <Empty>
+          In your live app this is the {n} workspace scoped to this project.
+          (Module wired; demo records not seeded.)
+        </Empty>
+      </Card>
+    );
+  }
+
+  const activeMod = MODULES.find((m) => m.id === mod);
+  let body;
+  if (activeMod && !moduleAllowed(activeMod)) {
+    body = (
+      <Card>
+        <LockMsg>
+          🔒 <b>{activeMod.name}</b> isn&apos;t part of the {ctName(ct)} portal.
+          Your visible modules are scoped to your company type. Switch company
+          type up top to see its modules.
+        </LockMsg>
+      </Card>
+    );
+  } else {
+    switch (mod) {
+      case "overview":
+        body = Overview();
+        break;
+      case "activity":
+        body = Activity();
+        break;
+      case "completion":
+        body = Completion();
+        break;
+      case "mypart":
+        body = MyPart();
+        break;
+      case "schedule":
+        body = Schedule();
+        break;
+      case "lookahead":
+        body = Lookahead();
+        break;
+      case "readiness":
+        body = Readiness();
+        break;
+      case "issues":
+        body = Findings({
+          arr: g.gk,
+          title: "Issues / NCRs — gatekeeping",
+          note: "These block phase gates.",
+        });
+        break;
+      case "punch":
+        body = Findings({
+          arr: g.mit,
+          title: "Punch List — mitigating",
+          note: "Carry-forward items; they do not block gates.",
+        });
+        break;
+      case "holds":
+        body = Findings({
+          arr: db.findings.filter(
+            (f) => f.type === "HoldPoint" && isOpen(f.status),
+          ),
+          title: "Hold Points",
+          note: "Must be released before the gate clears.",
+        });
+        break;
+      case "tests":
+        body = Tests();
+        break;
+      case "drawings":
+        body = Drawings();
+        break;
+      case "submittals":
+        body = Submittals();
+        break;
+      case "procurement":
+        body = Procurement();
+        break;
+      case "tarf":
+        body = Tarf();
+        break;
+      case "safety":
+        body = Safety();
+        break;
+      case "team":
+        body = Team();
+        break;
+      case "stakeholders":
+        body = Stakeholders();
+        break;
+      case "turnover":
+        body = Turnover();
+        break;
+      default:
+        body = Placeholder({ id: mod });
+    }
+  }
+
+  /* ============================ shell ============================ */
+  return (
+    <div
+      className="font-gilroy"
+      style={{
+        background: P.paper,
+        color: P.ink,
+        minHeight: "100vh",
+        padding: 16,
+      }}
+    >
+      {/* Lens toolbar 
+      <div
+        className="flex items-center gap-2 flex-wrap"
+        style={{ marginBottom: 12, justifyContent: "flex-end" }}
+      >
+        <span style={{ ...eyebrow }}>viewing as</span>
+        <select
+          value={mode}
+          onChange={(e) => setMode(e.target.value)}
+          style={topSel}
+        >
+          <option value="project">Hosted by GC (project)</option>
+          <option value="standalone">Standalone (my own)</option>
+        </select>
+        <select
+          value={ct}
+          onChange={(e) => {
+            setCt(e.target.value);
+            setRi(0);
+          }}
+          style={topSel}
+        >
+          {Object.entries(COMPANY_TYPES).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={ri}
+          onChange={(e) => setRi(+e.target.value)}
+          style={topSel}
+        >
+          {COMPANY_TYPES[ct].roles.map((r, i) => (
+            <option key={i} value={i}>
+              {r.role}
+            </option>
+          ))}
+        </select>
+      </div>
+*/}
+      <h1
+        className="flex items-center gap-2"
+        style={{
+          fontSize: 21,
+          fontWeight: 800,
+          letterSpacing: "-0.02em",
+          margin: "2px 0",
+        }}
+      >
+        📖 Project <span style={{ color: P.navy }}>Playbook</span>
+      </h1>
+      <div
+        style={{
+          color: P.smoke,
+          fontSize: 13,
+          marginBottom: 14,
+          maxWidth: 820,
+        }}
+      >
+        The whole project on one screen, through your company&apos;s lens —
+        lifecycle, schedule, readiness gates, findings, stakeholders, turnover.
+        What you can see and do is scoped to your role&apos;s permissions, just
+        like the left-hand nav.
+      </div>
+
+      {/* Rolebar */}
+      <div
+        className="flex items-center gap-3 flex-wrap"
+        style={{
+          background: P.card,
+          border: `1px solid ${P.line}`,
+          borderRadius: 12,
+          padding: "11px 14px",
+          marginBottom: 14,
+        }}
+      >
+        <span style={{ fontSize: 22 }}>{role.icon}</span>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 800 }}>
+            {role.role} · {ctName(ct)}
+            {mode === "standalone" && (
+              <span
+                className="font-mono"
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  borderRadius: 6,
+                  padding: "3px 8px",
+                  background: "#e6f3ee",
+                  color: P.teal,
+                  border: "1px solid #bee0d3",
+                  marginLeft: 8,
+                }}
+              >
+                standalone
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 12, color: P.smoke }}>
+            {mode === "standalone"
+              ? "You own this Playbook — every module is available."
+              : role.blurb}
+          </div>
+        </div>
+        <div className="flex gap-1 flex-wrap" style={{ marginLeft: "auto" }}>
+          {(mode === "standalone" ? P_ALL : role.perms).map((p) => (
+            <span
+              key={p}
+              className="font-mono"
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                borderRadius: 6,
+                padding: "3px 8px",
+                ...(p === "admin"
+                  ? {
+                      background: "#f0eafb",
+                      color: P.violet,
+                      border: "1px solid #dccff5",
+                    }
+                  : {
+                      background: "#eaf1fa",
+                      color: P.navy,
+                      border: "1px solid #cfe0f3",
+                    }),
+              }}
+            >
+              {p}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Lifecycle spine */}
+      <div
+        style={{
+          background: P.card,
+          border: `1px solid ${P.line}`,
+          borderRadius: 12,
+          padding: 14,
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ ...eyebrow, marginBottom: 10 }}>
+          Project Lifecycle — {db.project.name}
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {LIFECYCLE.map((s, i) => {
+            const cls = i < ci ? "done" : i === ci ? "cur" : "todo";
+            const sx =
+              cls === "done"
+                ? { background: "#e6f3ee", borderColor: "#bee0d3" }
+                : cls === "cur"
+                  ? {
+                      background: P.electric,
+                      borderColor: P.electric,
+                      color: "#fff",
+                    }
+                  : { opacity: 0.72 };
+            const phC =
+              cls === "done" ? P.teal : cls === "cur" ? "#fff" : P.ink;
+            const mC = cls === "cur" ? "#fff" : P.smoke;
+            return (
+              <div
+                key={s.ph}
+                style={{
+                  flex: 1,
+                  minWidth: 120,
+                  border: `1px solid ${P.line}`,
+                  borderRadius: 9,
+                  padding: 9,
+                  background: P.paper,
+                  ...sx,
+                }}
+              >
+                <div
+                  className="font-mono"
+                  style={{ fontSize: 10, fontWeight: 700, color: phC }}
+                >
+                  {s.ph}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    margin: "2px 0",
+                    color: cls === "cur" ? "#fff" : P.ink,
+                  }}
+                >
+                  {s.nm}
+                </div>
+                <div style={{ fontSize: 10, color: mC }}>{s.meta}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Rail + main */}
+      <div
+        className="grid gap-4 items-start"
+        style={{ gridTemplateColumns: "222px 1fr" }}
+      >
+        <div
+          style={{
+            background: P.card,
+            border: `1px solid ${P.line}`,
+            borderRadius: 12,
+            padding: 6,
+            position: "sticky",
+            top: 16,
+          }}
+        >
+          <div
+            className="flex items-center justify-between"
+            style={{ padding: "8px 8px 4px" }}
+          >
+            <span style={eyebrow}>Modules</span>
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              className="font-mono"
+              style={{
+                fontSize: 10,
+                border: `1px dashed ${P.line}`,
+                background: "none",
+                borderRadius: 6,
+                padding: "2px 7px",
+                cursor: "pointer",
+                color: P.navy,
+              }}
+            >
+              + Add
+            </button>
+          </div>
+          {railMods.map((m) => {
+            const allowed = moduleAllowed(m);
+            const on = mod === m.id;
+            const cnt = counts[m.id];
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setMod(m.id)}
+                className="flex items-center gap-2 w-full text-left"
+                style={{
+                  border: 0,
+                  borderRadius: 9,
+                  padding: "9px 10px",
+                  fontSize: 13,
+                  cursor: "pointer",
+                  background: on ? "#eaf1fa" : "none",
+                  color: on ? P.navy : P.ink,
+                  fontWeight: on ? 700 : 400,
+                  opacity: allowed ? 1 : 0.45,
+                }}
+              >
+                <span style={{ width: 16, textAlign: "center" }}>{m.ic}</span>
+                <span className="flex-1 truncate">{m.name}</span>
+                {allowed && cnt !== undefined && (
+                  <span
+                    className="font-mono"
+                    style={{
+                      fontSize: 10,
+                      borderRadius: 20,
+                      padding: "1px 7px",
+                      ...(m.hot && cnt
+                        ? { background: "#fbeae7", color: P.rust }
+                        : { background: P.soft, color: P.smoke }),
+                    }}
+                  >
+                    {cnt}
+                  </span>
+                )}
+                {!allowed && (
+                  <span style={{ fontSize: 11, opacity: 0.6 }}>🔒</span>
+                )}
+                {m.id !== "overview" && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeMod(m.id);
+                    }}
+                    title="Remove"
+                    style={{ marginLeft: 4, color: "#c3ccd5", fontSize: 13 }}
+                  >
+                    ×
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="min-w-0">{body}</div>
+      </div>
+
+      {/* Add module modal */}
+      {addOpen && (
+        <Modal
+          onClose={() => setAddOpen(false)}
+          title="Add a module to your Playbook"
+        >
+          {MODULES.filter((m) => !db.rail.includes(m.id)).map((m) => (
+            <div
+              key={m.id}
+              onClick={() => addMod(m.id)}
+              className="flex items-center gap-2"
+              style={{
+                padding: 9,
+                border: `1px solid ${P.line}`,
+                borderRadius: 9,
+                marginBottom: 7,
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              <span>{m.ic}</span>
+              <span className="flex-1">{m.name}</span>
+              {moduleAllowed(m) ? (
+                <span
+                  className="font-mono"
+                  style={{
+                    fontSize: 9,
+                    background: "#eaf1fa",
+                    color: P.navy,
+                    padding: "3px 8px",
+                    borderRadius: 6,
+                  }}
+                >
+                  visible
+                </span>
+              ) : (
+                <span style={{ fontSize: 11, opacity: 0.6 }}>
+                  🔒 other portal
+                </span>
+              )}
+            </div>
+          ))}
+          {MODULES.filter((m) => !db.rail.includes(m.id)).length === 0 && (
+            <Empty>All modules already added.</Empty>
+          )}
+        </Modal>
+      )}
+
+      {/* Invite modal */}
+      {inviteOpen && (
+        <Modal
+          onClose={() => setInviteOpen(false)}
+          title="Invite a company to this project"
+        >
+          <LockMsg style={{ marginBottom: 10 }}>
+            Pick the company type. They get a Playbook scoped to that role.
+          </LockMsg>
+          {Object.entries(COMPANY_TYPES).map(([k, v]) => (
+            <div
+              key={k}
+              onClick={() => invite(k)}
+              className="flex items-center gap-2"
+              style={{
+                padding: 9,
+                border: `1px solid ${P.line}`,
+                borderRadius: 9,
+                marginBottom: 7,
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              <span>{v.roles[0].icon}</span>
+              <span className="flex-1">{v.name}</span>
+              <span
+                className="font-mono"
+                style={{
+                  fontSize: 9,
+                  background: "#eaf1fa",
+                  color: P.navy,
+                  padding: "3px 8px",
+                  borderRadius: 6,
+                }}
+              >
+                scoped portal
+              </span>
+            </div>
+          ))}
+        </Modal>
+      )}
+
+      {/* Add lookahead activity modal */}
+      {laAdd && (
+        <div
+          onClick={() => setLaAdd(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 40 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 12, padding: 16, width: "100%", maxWidth: 420 }}
+          >
+            <SectLab>Add a lookahead activity</SectLab>
+
+            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>Week</label>
+            <select
+              value={laAdd.wk}
+              onChange={(e) => setLaAdd((p) => ({ ...p, wk: e.target.value }))}
+              style={{ ...selWrap, width: "100%", marginBottom: 12, fontWeight: 700 }}
+            >
+              {[1, 2, 3, 4, 5, 6].map((w) => (
+                <option key={w} value={w}>Week {w}</option>
+              ))}
+            </select>
+
+            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>Trade</label>
+            <select
+              value={laAdd.trade}
+              onChange={(e) => setLaAdd((p) => ({ ...p, trade: e.target.value }))}
+              style={{ ...selWrap, width: "100%", marginBottom: 12 }}
+            >
+              {LA_TRADES.map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+
+            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>Activity / Area</label>
+            <input
+              autoFocus
+              value={laAdd.area}
+              onChange={(e) => setLaAdd((p) => ({ ...p, area: e.target.value }))}
+              onKeyDown={(e) => e.key === "Enter" && submitActivity()}
+              placeholder="e.g. DH02 branch conduit rough-in"
+              style={{ width: "100%", height: 38, border: `1px solid ${P.line}`, borderRadius: 9, background: P.card, padding: "0 11px", fontSize: 14, color: P.ink, marginBottom: 14 }}
+            />
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setLaAdd(null)}
+                style={{ height: 36, padding: "0 14px", borderRadius: 8, border: `1px solid ${P.line}`, background: P.card, fontSize: 13, fontWeight: 700, cursor: "pointer", color: P.ink }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitActivity}
+                style={{ height: 36, padding: "0 16px", borderRadius: 8, border: `1px solid ${P.teal}`, background: P.teal, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+              >
+                Add activity
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 18,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: P.ink,
+            color: "#fff",
+            padding: "9px 16px",
+            borderRadius: 9,
+            fontSize: 13,
+            zIndex: 50,
+          }}
+        >
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Modal({ title, children, onClose }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        zIndex: 40,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: P.card,
+          border: `1px solid ${P.line}`,
+          borderRadius: 12,
+          padding: 16,
+          width: "100%",
+          maxWidth: 420,
+          maxHeight: "80vh",
+          overflow: "auto",
+        }}
+      >
+        <SectLab>{title}</SectLab>
+        {children}
+        <div style={{ textAlign: "right", marginTop: 8 }}>
           <button
             type="button"
-            className="mt-3 text-sm font-bold"
-            style={{ color: C.accent }}
+            onClick={onClose}
+            style={{
+              height: 33,
+              padding: "0 12px",
+              borderRadius: 8,
+              border: `1px solid ${P.line}`,
+              background: P.card,
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+              fontFamily: "monospace",
+              color: P.ink,
+            }}
           >
-            + Add {activeDiscipline} item
+            Close
           </button>
-        </div>
-
-        {/* Right — gate + legend */}
-        <div className="lg:col-span-2 flex flex-col gap-5">
-          {/* Gate card */}
-          <div
-            className="rounded-2xl p-5"
-            style={{ background: C.bg2, border: `1px solid ${C.border2}` }}
-          >
-            <p
-              className="uppercase tracking-wider mb-3"
-              style={{ fontSize: 10, fontWeight: 700, color: C.txt3 }}
-            >
-              {phase} · FAT → L2 · Install Gate
-            </p>
-
-            <div
-              className="rounded-2xl py-6 text-center mb-4"
-              style={{ background: C.redSoft, border: `1px solid ${C.red}` }}
-            >
-              <p
-                className="font-bold text-2xl tracking-wide"
-                style={{ color: C.red }}
-              >
-                {gate.blocked ? "GATE BLOCKED" : "GATE OPEN"}
-              </p>
-              <p className="text-sm mt-1" style={{ color: C.txt2 }}>
-                {gate.blocked
-                  ? "Resolve items below before advancing"
-                  : "All gate criteria met"}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              <StatBox
-                value={`${gate.workDone}/${gate.workTotal}`}
-                label="Work"
-                color={C.accent}
-              />
-              <StatBox
-                value={`${gate.testDone}/${gate.testTotal}`}
-                label="Tests"
-                color={C.txt3}
-              />
-              <StatBox
-                value={gate.mitigating}
-                label="Mitigating"
-                color={C.amber}
-              />
-              <StatBox
-                value={gate.gatekeeping}
-                label="Gatekeeping"
-                color={C.green}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              {gate.outstandingTests.map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-                  style={{ background: C.redSoft, color: C.red }}
-                >
-                  <span className="font-bold">✕</span>
-                  Test outstanding: {t.ref} ({t.code})
-                </div>
-              ))}
-              {gate.flagged.map((f) => (
-                <div
-                  key={f.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-                  style={{ background: C.amberSoft, color: C.amberText }}
-                >
-                  <span className="font-bold" style={{ color: C.amber }}>
-                    !
-                  </span>
-                  Close before gate: {f.code} {f.ref}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Severity legend */}
-          <div
-            className="rounded-2xl p-5"
-            style={{ background: C.bg2, border: `1px solid ${C.border2}` }}
-          >
-            <p
-              className="uppercase tracking-wider mb-3"
-              style={{ fontSize: 10, fontWeight: 700, color: C.txt3 }}
-            >
-              How severity works
-            </p>
-            <p className="text-sm mb-3" style={{ color: C.txt2 }}>
-              <span className="font-bold" style={{ color: C.amber }}>
-                Mitigating
-              </span>{" "}
-              — a real deviation found during construction. Informs the trade;
-              does <strong>not</strong> create an Issue/NCR and does{" "}
-              <strong>not</strong> block today, but must close before the gate.
-            </p>
-            <p className="text-sm" style={{ color: C.txt2 }}>
-              <span className="font-bold" style={{ color: C.red }}>
-                Gatekeeping
-              </span>{" "}
-              — escalates now: hard-blocks the gate and spawns an Issue/NCR.
-            </p>
-          </div>
         </div>
       </div>
     </div>
