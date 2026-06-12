@@ -424,7 +424,7 @@ export default function ChecklistAdd() {
                     onChange={handleChange}
                     options={projects.map((p) => ({
                       value: p.id,
-                      label: p.name,
+                      label: p.name ?? p.projectName,
                     }))}
                     placeholder="— Select Project —"
                   />

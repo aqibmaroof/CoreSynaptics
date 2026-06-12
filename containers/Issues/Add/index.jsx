@@ -227,7 +227,7 @@ export default function IssuesAdd() {
                   <select value={form.projectId} onChange={set("projectId")}
                     className={`${INPUT_CLS} ${errors.projectId ? "border-red-500" : ""}`}>
                     <option value="">Select project...</option>
-                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name ?? p.projectName}</option>)}
                   </select>
                 </div>
 
