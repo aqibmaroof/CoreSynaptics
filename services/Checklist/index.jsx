@@ -33,10 +33,25 @@ export const getChecklistById = async (id) => {
 /**
  * Editable fields: title, description, phase, checklistType, zoneId,
  * assetId, projectAssetId. Locked/signed checklists cannot be updated.
+ * Status is NOT editable here — use changeChecklistStatus / signChecklist.
  */
 export const updateChecklist = async (id, payload) => {
   try {
     return await sendRequest({ url: `/checklists/${id}`, method: "PATCH", data: payload });
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Transition checklist status. Forward-only:
+ * NOT_STARTED → IN_PROGRESS → COMPLETED.
+ * VERIFIED is rejected by the API — use signChecklist instead.
+ * payload: { status: "NOT_STARTED"|"IN_PROGRESS"|"COMPLETED" }
+ */
+export const changeChecklistStatus = async (id, payload) => {
+  try {
+    return await sendRequest({ url: `/checklists/${id}/status`, method: "PATCH", data: payload });
   } catch (error) {
     throw error;
   }

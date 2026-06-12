@@ -17,8 +17,9 @@ import {
   updatePlaybookRail,
   listV2Stakeholders,
 } from "../../services/CxProjectsV2";
-import { getIssues, verifyAndCloseIssue } from "../../services/Issues";
-import { getChecklists, updateChecklist } from "../../services/Checklist";
+import { getIssues, getIssueById, changeIssueStatus, verifyAndCloseIssue } from "../../services/Issues";
+import { getUser } from "../../services/instance/tokenService";
+import { getChecklists, changeChecklistStatus, signChecklist } from "../../services/Checklist";
 import {
   listCommissioningTests,
   recordTestResult,
@@ -1521,9 +1522,9 @@ export default function NewProjectDetail() {
     const [summaryR, issuesR, chksR, testsR, laR, teamR, stakeR, milesR, subsR, tarfR, procR, feedR, tasksR] =
       await Promise.allSettled([
         getPlaybookSummary(pid),
-        getIssues({ projectId: pid, limit: 200 }),
+        getIssues({ projectId: pid, limit: 100 }),
         getChecklists({ cxProjectId: pid }),
-        listCommissioningTests({ cxProjectId: pid, limit: 200 }),
+        listCommissioningTests({ cxProjectId: pid, limit: 100 }),
         listLookahead(pid, { limit: 200 }),
         listTeamCompanies(pid),
         listV2Stakeholders(pid),
@@ -1693,7 +1694,13 @@ export default function NewProjectDetail() {
       const c = d.checklists.find((x) => x.id === id);
       if (c) c.status = status;
     });
-    updateChecklist(id, { status: CHK_TO[status] ?? "NOT_STARTED" }).catch((err) => {
+    // VERIFIED goes through the sign endpoint (approval rights + required
+    // items enforced server-side); other moves use the status transition API.
+    const call =
+      status === "verified"
+        ? signChecklist(id)
+        : changeChecklistStatus(id, { status: CHK_TO[status] ?? "NOT_STARTED" });
+    call.catch((err) => {
       mutate((d) => {
         const c = d.checklists.find((x) => x.id === id);
         if (c && prev) c.status = prev;
@@ -1701,21 +1708,34 @@ export default function NewProjectDetail() {
       apiErr(err, "Could not update checklist");
     });
   };
-  const resolveFinding = (id) => {
+  const resolveFinding = async (id) => {
     mutate((d) => {
       const f = d.findings.find((x) => x.id === id);
       if (f) f.status = "resolved";
     });
-    verifyAndCloseIssue(id, {}).then(
-      () => flash("Finding resolved"),
-      (err) => {
-        mutate((d) => {
-          const f = d.findings.find((x) => x.id === id);
-          if (f) f.status = "open";
-        });
-        apiErr(err, "Could not close finding (it may need verification first)");
-      },
-    );
+    try {
+      // Closing requires the full lifecycle: NEW/DEFERRED → IN_PROGRESS →
+      // READY_FOR_VERIFICATION → verify-close (with the verifier's user id).
+      let me = null;
+      try { me = JSON.parse(getUser() || "null")?.id ?? null; } catch { me = null; }
+      const detail = norm(await getIssueById(id, projectId));
+      let st = detail?.status;
+      if (st === "NEW" || st === "DEFERRED") {
+        await changeIssueStatus(id, { status: "IN_PROGRESS" }, projectId);
+        st = "IN_PROGRESS";
+      }
+      if (st === "IN_PROGRESS") {
+        await changeIssueStatus(id, { status: "READY_FOR_VERIFICATION" }, projectId);
+      }
+      await verifyAndCloseIssue(id, { closeVerifiedBy: me }, projectId);
+      flash("Finding resolved");
+    } catch (err) {
+      mutate((d) => {
+        const f = d.findings.find((x) => x.id === id);
+        if (f) f.status = "open";
+      });
+      apiErr(err, "Could not close finding (it may need verification first)");
+    }
   };
   const passTest = (id) => {
     mutate((d) => {

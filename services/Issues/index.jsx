@@ -10,9 +10,13 @@ export const getIssues = async (params = {}) => {
   return sendRequest({ url: `/issues${query ? `?${query}` : ""}`, method: "GET" });
 };
 
-/** Get a single issue by ID */
-export const getIssueById = async (id) => {
-  return sendRequest({ url: `/issues/${id}`, method: "GET" });
+/** Get a single issue by ID.
+ *  cxProjectId (optional) provides project scope for authorization on
+ *  id-only routes — pass it when you know the issue's project.
+ */
+export const getIssueById = async (id, cxProjectId) => {
+  const q = cxProjectId ? `?cxProjectId=${cxProjectId}` : "";
+  return sendRequest({ url: `/issues/${id}${q}`, method: "GET" });
 };
 
 /** Create a new issue.
@@ -47,8 +51,9 @@ export const deleteIssue = async (id) => {
  *   DEFERRED → NEW | IN_PROGRESS
  * Do NOT use this to close — use verifyAndCloseIssue instead.
  */
-export const changeIssueStatus = async (id, payload) => {
-  return sendRequest({ url: `/issues/${id}/status`, method: "PATCH", data: payload });
+export const changeIssueStatus = async (id, payload, cxProjectId) => {
+  const q = cxProjectId ? `?cxProjectId=${cxProjectId}` : "";
+  return sendRequest({ url: `/issues/${id}/status${q}`, method: "PATCH", data: payload });
 };
 
 /** Assign or reassign issue to a user and/or company via PATCH.
@@ -66,8 +71,9 @@ export const assignIssue = async (id, payload) => {
  * Issue must be in READY_FOR_VERIFICATION. Sets status=CLOSED, resolvedAt, closeVerifiedBy.
  * CLOSED is terminal — no further changes allowed.
  */
-export const verifyAndCloseIssue = async (id, payload) => {
-  return sendRequest({ url: `/issues/${id}/verify-close`, method: "POST", data: payload });
+export const verifyAndCloseIssue = async (id, payload, cxProjectId) => {
+  const q = cxProjectId ? `?cxProjectId=${cxProjectId}` : "";
+  return sendRequest({ url: `/issues/${id}/verify-close${q}`, method: "POST", data: payload });
 };
 
 /**
