@@ -1,8 +1,9 @@
 import sendRequest from "../instance/sendRequest";
 
 /** List issues with optional filters and pagination.
- *  params: { projectId, assetId, status, severity, assignedToUserId,
- *            assignedToCompanyId, raisedBy, search, fromDate, toDate, page, limit }
+ *  params: { projectId, assetId, projectAssetId, kind, status, severity,
+ *            assignedToUserId, assignedToCompanyId, raisedBy, search,
+ *            fromDate, toDate, page, limit }
  */
 export const getIssues = async (params = {}) => {
   const query = new URLSearchParams(params).toString();
@@ -15,9 +16,10 @@ export const getIssueById = async (id) => {
 };
 
 /** Create a new issue.
- *  payload: { projectId?, assetId?, title, description?, severity,
- *             assignedToCompanyId?, assignedToUserId? }
- *  At least one of projectId or assetId is required.
+ *  payload: { cxProjectId?, assetId?, projectAssetId?, kind?, title,
+ *             description?, severity, assignedToCompanyId?, assignedToUserId? }
+ *  At least one of cxProjectId or assetId is required. projectAssetId links
+ *  the issue to V2 project equipment for Playbook gate evaluation.
  */
 export const createIssue = async (payload) => {
   return sendRequest({ url: `/issues`, method: "POST", data: payload });

@@ -7,6 +7,7 @@ import { getProjects } from "@/services/Projects";
 import { getCompanies } from "@/services/Companies";
 import { getUsers } from "@/services/Users";
 import { getAssets } from "../../../services/AssetManagement";
+import { listV2Assets, listV2Projects } from "@/services/CxProjectsV2";
 import CompanySelect from "@/components/CRM/CompanySelect";
 
 const fetchAssets = async () => [];
@@ -34,6 +35,7 @@ export default function IssuesAdd() {
 
   const [projects, setProjects]   = useState([]);
   const [assets, setAssets]       = useState([]);
+  const [equipment, setEquipment] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [users, setUsers]         = useState([]);
 
@@ -47,12 +49,25 @@ export default function IssuesAdd() {
     severity:            "MEDIUM",
     projectId:           "",
     assetId:             "",
+    projectAssetId:      "",
     assignedToCompanyId: "",
     assignedToUserId:    "",
   });
 
   useEffect(() => {
-    getProjects().then((res) => setProjects(res?.projects || [])).catch(() => {});
+    // Legacy /projects has no backend route; cx-projects (V2 list) is the
+    // source of truth. Keep the legacy call as a fallback shape only.
+    getProjects()
+      .then((res) => {
+        const list = res?.projects || [];
+        if (list.length) setProjects(list);
+        else return listV2Projects({ limit: 100 }).then((v2) => setProjects(v2?.data ?? []));
+      })
+      .catch(() =>
+        listV2Projects({ limit: 100 })
+          .then((v2) => setProjects(v2?.data ?? []))
+          .catch(() => {}),
+      );
     getAssets().then((res) => setAssets(res?.data || [])).catch(() => {});
     getCompanies().then((res) => setCompanies(Array.isArray(res) ? res : res?.data || [])).catch(() => {});
     getUsers()
@@ -65,6 +80,17 @@ export default function IssuesAdd() {
     const t = setTimeout(() => setMessage(null), 4000);
     return () => clearTimeout(t);
   }, [message]);
+
+  // Project → V2 equipment (ProjectAsset). Linking an issue to equipment
+  // feeds the Playbook gate ladder for that asset.
+  useEffect(() => {
+    setEquipment([]);
+    setForm((prev) => ({ ...prev, projectAssetId: "" }));
+    if (!form.projectId) return;
+    listV2Assets(form.projectId, { limit: 100 })
+      .then((res) => setEquipment(res?.data ?? []))
+      .catch(() => {});
+  }, [form.projectId]);
 
   const set = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -93,8 +119,9 @@ export default function IssuesAdd() {
         title:               form.title,
         description:         form.description || undefined,
         severity:            form.severity,
-        projectId:           form.projectId           || undefined,
+        cxProjectId:         form.projectId           || undefined,
         assetId:             form.assetId             || undefined,
+        projectAssetId:      form.projectAssetId      || undefined,
         assignedToCompanyId: form.assignedToCompanyId || undefined,
         assignedToUserId:    form.assignedToUserId    || undefined,
       });
@@ -194,7 +221,7 @@ export default function IssuesAdd() {
                 <span className="text-gray-500 text-xs">At least one required</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                   <FieldLabel>Project</FieldLabel>
                   <select value={form.projectId} onChange={set("projectId")}
@@ -210,6 +237,24 @@ export default function IssuesAdd() {
                     <option value="">Select asset...</option>
                     {assets.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
+                </div>
+
+                <div>
+                  <FieldLabel>Equipment</FieldLabel>
+                  <select value={form.projectAssetId} onChange={set("projectAssetId")}
+                    className={INPUT_CLS} disabled={!equipment.length}>
+                    <option value="">
+                      {form.projectId
+                        ? equipment.length ? "Select equipment..." : "No equipment on this project"
+                        : "Select a project first"}
+                    </option>
+                    {equipment.map((a) => (
+                      <option key={a.id} value={a.id}>{a.abbr} — {a.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-gray-500 text-xs mt-1">
+                    Linking equipment makes this issue gate its phase in the Project Playbook
+                  </p>
                 </div>
               </div>
               {errors.projectId && (

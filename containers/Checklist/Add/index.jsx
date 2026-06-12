@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createChecklist, addChecklistItem } from "@/services/Checklist";
 import { getProjects } from "@/services/Projects";
-import { GetSites } from "@/services/Sites";
-import { GetZones } from "@/services/Zones";
-import { GetEquipments } from "@/services/Equipment";
+import { getCxProjectZones } from "@/services/CxProjects";
+import { getAssets } from "@/services/AssetManagement";
+import { listV2Assets, listV2Projects } from "@/services/CxProjectsV2";
 
 const PHASES = ["NONE", "L1", "L2", "L3", "L4", "L5", "IST"];
 const CHECKLIST_TYPES = ["VENDOR", "GC", "CX_AGENT", "TRADE", "INTERNAL"];
@@ -162,83 +162,60 @@ export default function ChecklistAdd() {
 
   // ── Cascade lists ─────────────────────────────────────────────────────────
   const [projects, setProjects] = useState([]);
-  const [sites, setSites] = useState([]);
-  const [subProjects, setSubProjects] = useState([]);
   const [zones, setZones] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [equipment, setEquipment] = useState([]);
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     projectId: "",
-    siteId: "",
-    subProjectId: "",
     zoneId: "",
     assetId: "",
+    projectAssetId: "",
     phase: "L1",
     checklistType: "INTERNAL",
   });
 
   const [items, setItems] = useState([makeItem(1)]);
 
-  // Load projects on mount
+  // Load projects on mount. Legacy /projects has no backend route;
+  // cx-projects (V2 list) is the source of truth — fall back to it.
   useEffect(() => {
     getProjects()
-      .then((d) => setProjects(toArray(d)))
+      .then((d) => {
+        const list = toArray(d);
+        if (list.length) setProjects(list);
+        else return listV2Projects({ limit: 100 }).then((v2) => setProjects(v2?.data ?? []));
+      })
+      .catch(() =>
+        listV2Projects({ limit: 100 })
+          .then((v2) => setProjects(v2?.data ?? []))
+          .catch(() => {}),
+      );
+  }, []);
+
+  // Asset registry (org-wide) for the optional legacy asset link.
+  useEffect(() => {
+    getAssets()
+      .then((res) => setAssets(res?.data ?? []))
       .catch(() => {});
   }, []);
 
-  // Project → Sites
+  // Project → zones + V2 equipment (ProjectAsset). Current-phase checklists
+  // on an equipment row gate its phase advance in the Project Playbook.
   useEffect(() => {
-    setSites([]);
-    setSubProjects([]);
     setZones([]);
-    setAssets([]);
-    setFormData((p) => ({
-      ...p,
-      siteId: "",
-      subProjectId: "",
-      zoneId: "",
-      assetId: "",
-    }));
+    setEquipment([]);
+    setFormData((p) => ({ ...p, zoneId: "", projectAssetId: "" }));
     if (!formData.projectId) return;
-    GetSites(formData.projectId)
-      .then((d) => setSites(toArray(d)))
-      .catch(() => {});
-  }, [formData.projectId]);
-
-  // Site → SubProjects
-  useEffect(() => {
-    setSubProjects([]);
-    setZones([]);
-    setAssets([]);
-    setFormData((p) => ({ ...p, subProjectId: "", zoneId: "", assetId: "" }));
-    if (!formData.siteId) return;
-    getProjects(25, 1, formData.siteId, formData?.projectId)
-      .then((d) => setSubProjects(toArray(d)))
-      .catch(() => {});
-  }, [formData.siteId]);
-
-  // SubProject → Zones
-  useEffect(() => {
-    setZones([]);
-    setAssets([]);
-    setFormData((p) => ({ ...p, zoneId: "", assetId: "" }));
-    if (!formData.subProjectId) return;
-    GetZones(formData.subProjectId)
+    getCxProjectZones(formData.projectId)
       .then((d) => setZones(toArray(d)))
       .catch(() => {});
-  }, [formData.subProjectId]);
-
-  // Zone → Assets
-  useEffect(() => {
-    setAssets([]);
-    setFormData((p) => ({ ...p, assetId: "" }));
-    if (!formData.zoneId) return;
-    GetEquipments(formData.zoneId)
-      .then((d) => setAssets(toArray(d)))
+    listV2Assets(formData.projectId, { limit: 100 })
+      .then((res) => setEquipment(res?.data ?? []))
       .catch(() => {});
-  }, [formData.zoneId]);
+  }, [formData.projectId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -275,14 +252,6 @@ export default function ChecklistAdd() {
       setError("Project is required");
       return false;
     }
-    if (!formData.siteId) {
-      setError("Site is required");
-      return false;
-    }
-    if (!formData.subProjectId) {
-      setError("Sub-project is required");
-      return false;
-    }
     if (!items.some((i) => i.title.trim())) {
       setError("At least one item with a title is required");
       return false;
@@ -296,14 +265,17 @@ export default function ChecklistAdd() {
     if (!validate()) return;
     setLoading(true);
     try {
+      // Backend whitelist: cxProjectId / zoneId / assetId / projectAssetId /
+      // phase / checklistType / title / description. Site and sub-project only
+      // drive the cascade pickers here — sending them would be rejected by the
+      // API's forbidNonWhitelisted validation.
       const checklist = await createChecklist({
         title: formData.title.trim(),
         description: formData.description.trim() || undefined,
-        projectId: formData.projectId,
-        siteId: formData.siteId,
-        subProjectId: formData.subProjectId,
+        cxProjectId: formData.projectId,
         zoneId: formData.zoneId || undefined,
         assetId: formData.assetId || undefined,
+        projectAssetId: formData.projectAssetId || undefined,
         phase: formData.phase || undefined,
         checklistType: formData.checklistType || undefined,
       });
@@ -458,54 +430,6 @@ export default function ChecklistAdd() {
                   />
                 </div>
 
-                {/* Site + Sub-Project */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Site <span className="text-red-400">*</span>
-                    </label>
-                    <AppSelect
-                      name="siteId"
-                      value={formData.siteId}
-                      onChange={handleChange}
-                      options={sites.map((s) => ({
-                        value: s.id,
-                        label: s.name,
-                      }))}
-                      placeholder={
-                        formData.projectId
-                          ? sites.length
-                            ? "— Select Site —"
-                            : "No sites found"
-                          : "— Select Project First —"
-                      }
-                      disabled={!formData.projectId || sites.length === 0}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Sub-Project <span className="text-red-400">*</span>
-                    </label>
-                    <AppSelect
-                      name="subProjectId"
-                      value={formData.subProjectId}
-                      onChange={handleChange}
-                      options={subProjects.map((s) => ({
-                        value: s.id,
-                        label: s.name,
-                      }))}
-                      placeholder={
-                        formData.siteId
-                          ? subProjects.length
-                            ? "— Select Sub-Project —"
-                            : "No sub-projects found"
-                          : "— Select Site First —"
-                      }
-                      disabled={!formData.siteId || subProjects.length === 0}
-                    />
-                  </div>
-                </div>
-
                 {/* Zone + Asset (optional) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -524,13 +448,13 @@ export default function ChecklistAdd() {
                         label: z.name,
                       }))}
                       placeholder={
-                        formData.subProjectId
+                        formData.projectId
                           ? zones.length
                             ? "— Select Zone —"
                             : "No zones found"
-                          : "— Select Sub-Project First —"
+                          : "— Select Project First —"
                       }
-                      disabled={!formData.subProjectId || zones.length === 0}
+                      disabled={!formData.projectId || zones.length === 0}
                     />
                   </div>
                   <div>
@@ -549,15 +473,38 @@ export default function ChecklistAdd() {
                         label: a.name,
                       }))}
                       placeholder={
-                        formData.zoneId
-                          ? assets.length
-                            ? "— Select Asset —"
-                            : "No assets found"
-                          : "— Select Zone First —"
+                        assets.length ? "— Select Asset —" : "No assets found"
                       }
-                      disabled={!formData.zoneId || assets.length === 0}
+                      disabled={assets.length === 0}
                     />
                   </div>
+                </div>
+
+                {/* Equipment (V2 / Playbook gate) */}
+                <div className="mt-4">
+                  <label className="block text-sm font-semibold text-white mb-2">
+                    Equipment{" "}
+                    <span className="text-gray-500 font-normal">
+                      (optional — gates its Playbook phase)
+                    </span>
+                  </label>
+                  <AppSelect
+                    name="projectAssetId"
+                    value={formData.projectAssetId}
+                    onChange={handleChange}
+                    options={equipment.map((a) => ({
+                      value: a.id,
+                      label: `${a.abbr} — ${a.name}`,
+                    }))}
+                    placeholder={
+                      formData.projectId
+                        ? equipment.length
+                          ? "— Select Equipment —"
+                          : "No equipment on this project"
+                        : "— Select Project First —"
+                    }
+                    disabled={!formData.projectId || equipment.length === 0}
+                  />
                 </div>
               </div>
             </div>

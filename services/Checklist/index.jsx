@@ -11,8 +11,8 @@ export const createChecklist = async (payload) => {
 };
 
 /**
- * Requires exactly one hierarchy filter:
- * { projectId, siteId, subProjectId, zoneId, or assetId }
+ * cxProjectId filter is required; zoneId, assetId, and projectAssetId
+ * narrow the result within the project.
  */
 export const getChecklists = async (filter = {}) => {
   try {
@@ -31,8 +31,8 @@ export const getChecklistById = async (id) => {
 };
 
 /**
- * Editable fields: title, description, phase, checklistType, zoneId, assetId
- * Locked/signed checklists cannot be updated.
+ * Editable fields: title, description, phase, checklistType, zoneId,
+ * assetId, projectAssetId. Locked/signed checklists cannot be updated.
  */
 export const updateChecklist = async (id, payload) => {
   try {

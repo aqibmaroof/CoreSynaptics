@@ -18,6 +18,7 @@ import {
   TEST_RESULTS,
   COMMISSIONING_PHASES,
 } from "@/services/CommissioningTests";
+import { listV2Assets } from "@/services/CxProjectsV2";
 import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 // ─── Color tokens (mirrors HTML Cobalt + Citrine palette) ───────────────────
@@ -571,13 +572,26 @@ function CreateTestModal({ cxProjectId, onClose, onCreated, onError }) {
   const [form, setForm] = useState({
     cxProjectId: cxProjectId ?? "",
     assetId: "",
+    projectAssetId: "",
     phase: "L2",
     testType: "INSULATION_RESISTANCE",
     testName: "",
     specification: "",
   });
   const [busy, setBusy] = useState(false);
+  const [equipment, setEquipment] = useState([]);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  // V2 equipment for the entered project — a FAIL on linked equipment
+  // blocks its phase gate in the Project Playbook.
+  useEffect(() => {
+    setEquipment([]);
+    setForm((p) => ({ ...p, projectAssetId: "" }));
+    if (!form.cxProjectId || form.cxProjectId.length < 36) return;
+    listV2Assets(form.cxProjectId, { limit: 100 })
+      .then((res) => setEquipment(res?.data ?? []))
+      .catch(() => {});
+  }, [form.cxProjectId]);
 
   const submit = async () => {
     setBusy(true);
@@ -585,6 +599,7 @@ function CreateTestModal({ cxProjectId, onClose, onCreated, onError }) {
       await createCommissioningTest({
         cxProjectId: form.cxProjectId,
         assetId: form.assetId || undefined,
+        projectAssetId: form.projectAssetId || undefined,
         phase: form.phase,
         testType: form.testType,
         testName: form.testName,
@@ -621,6 +636,24 @@ function CreateTestModal({ cxProjectId, onClose, onCreated, onError }) {
         <div>
           <div style={labelStyle}>Asset ID (optional)</div>
           <input style={inputStyle} value={form.assetId} onChange={set("assetId")} />
+        </div>
+        <div>
+          <div style={labelStyle}>Equipment (optional — gates its Playbook phase)</div>
+          <select
+            style={inputStyle}
+            value={form.projectAssetId}
+            onChange={set("projectAssetId")}
+            disabled={!equipment.length}
+          >
+            <option value="">
+              {equipment.length ? "Select equipment…" : "No equipment for this project"}
+            </option>
+            {equipment.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.abbr} — {a.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>

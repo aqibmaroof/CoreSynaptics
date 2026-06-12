@@ -4,8 +4,8 @@ const base = "/commissioning-tests";
 
 /**
  * List commissioning tests with optional filters.
- * params: { cxProjectId, assetId, phase, testType, result, performedByCompanyId,
- *           witnessedOnly, page, limit }
+ * params: { cxProjectId, assetId, projectAssetId, phase, testType, result,
+ *           performedByCompanyId, witnessedOnly, page, limit }
  */
 export const listCommissioningTests = (params = {}) => {
   const qs = new URLSearchParams(
@@ -22,8 +22,10 @@ export const getCommissioningTest = (id) =>
 
 /**
  * Create a commissioning test (starts in PENDING).
- * payload: { cxProjectId, assetId?, phase, testType, testName,
- *            specification?, performedByCompanyId?, previousTestId? }
+ * payload: { cxProjectId, assetId?, projectAssetId?, phase, testType,
+ *            testName, specification?, performedByCompanyId?, previousTestId? }
+ * projectAssetId links the test to V2 project equipment — a FAIL blocks
+ * that equipment's phase gate in the Project Playbook.
  */
 export const createCommissioningTest = (payload) =>
   sendRequest({ url: base, method: "POST", data: payload });
