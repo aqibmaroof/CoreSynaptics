@@ -218,7 +218,7 @@ export default function Executive() {
   const [slide, setSlide] = useState(1);
   const [present, setPresent] = useState(false);
   const d = DATA;
-  console.log(slide);
+
   return (
     <div
       style={{
@@ -312,7 +312,7 @@ export default function Executive() {
         </span>
         {Array.from({ length: TOTAL }, (_, i) => i + 1).map((n) => {
           const active = slide == n;
-          console.log(active);
+
           return (
             <button
               key={n}

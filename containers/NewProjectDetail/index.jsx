@@ -14,7 +14,6 @@ import {
   clearLookaheadConstraint,
   listTeamCompanies,
   revokeTeamCompany,
-  updatePlaybookRail,
   listV2Stakeholders,
 } from "../../services/CxProjectsV2";
 import { getIssues, getIssueById, changeIssueStatus, verifyAndCloseIssue } from "../../services/Issues";
@@ -1475,7 +1474,6 @@ export default function NewProjectDetail() {
   const [sel, setSel] = useState(null);
   const [mode, setMode] = useState("project");
   const [actf, setActf] = useState("all");
-  const [addOpen, setAddOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [laAdd, setLaAdd] = useState(null); // { wk, trade, area } when add-activity modal open
   const [toast, setToast] = useState("");
@@ -1634,9 +1632,8 @@ export default function NewProjectDetail() {
     tests: db.tests.length,
     schedule: db.milestones.length,
   };
-  const railMods = db.rail
-    .map((id) => MODULES.find((m) => m.id === id))
-    .filter(Boolean);
+  // Always show every module in the left rail (add/remove customization removed)
+  const railMods = MODULES;
 
   const selWrap = {
     flex: 1,
@@ -1783,30 +1780,6 @@ export default function NewProjectDetail() {
         apiErr(err, "Could not update task"),
       );
     }
-  };
-  const syncRail = (rail) => {
-    if (!projectId) return;
-    updatePlaybookRail(projectId, rail).catch((err) =>
-      apiErr(err, "Could not save module rail"),
-    );
-  };
-  const removeMod = (id) => {
-    const rail = db.rail.filter((x) => x !== id);
-    mutate((d) => {
-      d.rail = rail;
-    });
-    if (mod === id) setMod("overview");
-    syncRail(rail);
-  };
-  const addMod = (id) => {
-    const rail = db.rail.includes(id) ? db.rail : [...db.rail, id];
-    mutate((d) => {
-      d.rail = rail;
-    });
-    setMod(id);
-    setAddOpen(false);
-    flash("Module added");
-    syncRail(rail);
   };
   const revoke = (i) => {
     const member = db.team[i];
@@ -3511,22 +3484,6 @@ export default function NewProjectDetail() {
             style={{ padding: "8px 8px 4px" }}
           >
             <span style={eyebrow}>Modules</span>
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              className="font-mono"
-              style={{
-                fontSize: 10,
-                border: `1px dashed ${P.line}`,
-                background: "none",
-                borderRadius: 6,
-                padding: "2px 7px",
-                cursor: "pointer",
-                color: P.navy,
-              }}
-            >
-              + Add
-            </button>
           </div>
           {railMods.map((m) => {
             const allowed = moduleAllowed(m);
@@ -3570,74 +3527,12 @@ export default function NewProjectDetail() {
                 {!allowed && (
                   <span style={{ fontSize: 11, opacity: 0.6 }}>🔒</span>
                 )}
-                {m.id !== "overview" && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeMod(m.id);
-                    }}
-                    title="Remove"
-                    style={{ marginLeft: 4, color: "#c3ccd5", fontSize: 13 }}
-                  >
-                    ×
-                  </span>
-                )}
               </button>
             );
           })}
         </div>
         <div className="min-w-0">{body}</div>
       </div>
-
-      {/* Add module modal */}
-      {addOpen && (
-        <Modal
-          onClose={() => setAddOpen(false)}
-          title="Add a module to your Playbook"
-        >
-          {MODULES.filter((m) => !db.rail.includes(m.id)).map((m) => (
-            <div
-              key={m.id}
-              onClick={() => addMod(m.id)}
-              className="flex items-center gap-2"
-              style={{
-                padding: 9,
-                border: `1px solid ${P.line}`,
-                borderRadius: 9,
-                marginBottom: 7,
-                cursor: "pointer",
-                fontSize: 13,
-              }}
-            >
-              <span>{m.ic}</span>
-              <span className="flex-1">{m.name}</span>
-              {moduleAllowed(m) ? (
-                <span
-                  className="font-mono"
-                  style={{
-                    fontSize: 9,
-                    background: "#eaf1fa",
-                    color: P.navy,
-                    padding: "3px 8px",
-                    borderRadius: 6,
-                  }}
-                >
-                  visible
-                </span>
-              ) : (
-                <span style={{ fontSize: 11, opacity: 0.6 }}>
-                  🔒 other portal
-                </span>
-              )}
-            </div>
-          ))}
-          {MODULES.filter((m) => !db.rail.includes(m.id)).length === 0 && (
-            <Empty>All modules already added.</Empty>
-          )}
-        </Modal>
-      )}
 
       {/* Invite modal */}
       {inviteOpen && (

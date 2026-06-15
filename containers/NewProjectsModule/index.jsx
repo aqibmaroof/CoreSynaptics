@@ -7,6 +7,15 @@ import {
   listV2Projects,
   finalizeV2Direct,
 } from "../../services/CxProjectsV2";
+import { getUsers, CreateUsers } from "../../services/Users";
+import { getAssets, createAsset } from "../../services/AssetManagement";
+import {
+  getDocuments,
+  requestUploadUrl,
+  uploadFileToS3,
+  confirmUpload,
+} from "../../services/Documents";
+import { getTeams, CreateTeam } from "../../services/Teams";
 
 /* ------------------------------------------------------------------ *
  * Static config
@@ -80,64 +89,35 @@ const SAMPLING_OPTS = [
   "Document review only",
 ];
 
-const ASSET_CATEGORIES = [
-  {
-    title: "Electrical",
-    items: [
-      "Utility Service Entrance",
-      "MV Switchgear",
-      "MV Transformer",
-      "Unit Substation",
-      "Generator",
-      "Generator Paralleling Switchgear",
-      "Fuel System / Day Tank",
-      "ATS (Automatic Transfer Switch)",
-      "MTS (Manual/Maintenance Transfer Switch)",
-      "STS (Static Transfer Switch)",
-      "LV Switchboard",
-      "Motor Control Center (MCC)",
-      "Distribution Board / Panelboard",
-      "UPS",
-      "Battery System / VRLA UB",
-      "Flywheel / Energy Storage",
-      "PDU",
-      "RPP / Remote Power Panel",
-      "Reactor / Rotary / RDC",
-      "Busway / Bus Duct",
-      "Dry Type Transformer",
-      "Capacitor / PFC Bank",
-      "SPD / Surge Protection",
-      "Grounding / Bonding System",
-      "EPMS / Power Monitoring",
-      "Lighting / Emergency Egress",
-      "EPO System",
-    ],
-  },
-  {
-    title: "Mechanical",
-    items: [
-      "Chiller",
-      "CRAH / CRAC",
-      "CDU / Liquid Cooling",
-      "Cooling Tower",
-      "Pump",
-    ],
-  },
-  {
-    title: "Controls",
-    items: ["BMS / Controls"],
-  },
-  {
-    title: "Plumbing",
-    items: ["Make-up Water", "Leak Detection"],
-  },
-  {
-    title: "Fire / Life-Safety",
-    items: ["VESDA", "Clean Agent", "Fire Alarm", "EPO"],
-  },
+// Categories accepted by the Asset Management module's createAsset endpoint.
+const ASSET_REG_CATEGORIES = [
+  "IT Equipment",
+  "Vehicle",
+  "Machinery",
+  "Furniture",
+  "Safety Equipment",
+  "Tools",
+  "Other",
 ];
 
-const DOC_STATUSES = ["In hand", "Under review", "Pending", "N/A"];
+// Furnish + order-status options for the per-asset detail editor. Order statuses
+// are stored/sent as the backend enum; the FE shows a dash-joined Title label.
+const ASSET_FURNISH = ["CFCI", "OFCI"];
+const ASSET_ORDER_STATUSES = [
+  "NOT_ORDERED",
+  "ORDERED",
+  "IN_TRANSIT",
+  "RECEIVED",
+  "INSTALLED",
+  "COMMISSIONED",
+];
+const orderStatusLabel = (s) =>
+  String(s)
+    .toLowerCase()
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join("-");
+
 const DOC_ITEMS = [
   "IFP drawings",
   "IFC drawings",
@@ -316,17 +296,26 @@ function extractApiErrors(e) {
 // V1, only the creator is auto-assigned at finalize; named team members are
 // added on the project's Team page once resolved to real users.
 function buildFinalizePayload({ identity, facility, stakeholders, scope, assets, docs, milestones }) {
-  // Step 5 — selected asset types become ProjectAsset rows (qty default 1; the
-  // detailed qty/furnish/PO editing happens on the project page post-create).
-  const assetRows = Object.keys(assets)
-    .filter((k) => assets[k])
-    .map((name) => ({
-      abbr: name.slice(0, 50),
-      name,
-      assetType: "General",
-      quantity: 1,
-      procurementOwner: "OFCI",
-    }));
+  // Step 5 — selected assets become ProjectAsset rows. Each selection carries a
+  // detail object (qty / furnish / order status / PO# / manufacturer / model /
+  // location) captured inline in the wizard.
+  const assetRows = Object.entries(assets)
+    .filter(([, d]) => d)
+    .map(([name, raw]) => {
+      const d = typeof raw === "object" ? raw : {};
+      return clean({
+        abbr: (d.assetTag || name).slice(0, 50),
+        name,
+        assetType: d.category || "General",
+        quantity: num(d.qty) ?? 1,
+        procurementOwner: d.furnish || "OFCI",
+        procurementStatus: d.order,
+        poNumber: d.po,
+        manufacturer: d.manufacturer,
+        model: d.model,
+        location: d.location,
+      });
+    });
 
   // Step 6 — documents the user touched (status != default) are sent explicitly.
   const docRows = Object.entries(docs)
@@ -382,7 +371,7 @@ function buildFinalizePayload({ identity, facility, stakeholders, scope, assets,
     .filter((f) => f.label || f.from || f.to)
     .map((f) => clean({ label: f.label, startDate: iso(f.from), endDate: iso(f.to) }));
 
-  return clean({
+    return clean({
     projectName: (identity.projectName || "").trim(),
     customer: (identity.owner || "").trim() || "Unspecified",
     projectCode: identity.projectCode,
@@ -645,6 +634,218 @@ function StepIntro({ children }) {
   );
 }
 
+/* A BE-linked picker panel: an inline "add new" form + a scrollable, searchable
+ * list of records pulled from a backend module (Users / Assets / Teams / Docs). */
+function ModulePicker({
+  title,
+  hint,
+  search,
+  onSearch,
+  hideSearch,
+  addLabel,
+  addOpen,
+  onToggleAdd,
+  addForm,
+  loading,
+  isEmpty,
+  emptyText,
+  children,
+}) {
+  return (
+    <div
+      className="rounded-2xl p-4 mb-6"
+      style={{
+        background: "var(--rf-bg2)",
+        border: "1px solid var(--rf-border2, #adbbd8)",
+      }}
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <h4 className="uppercase" style={labelStyle}>
+            {title}
+          </h4>
+          {hint && (
+            <p className="text-xs mt-1" style={{ color: "var(--rf-txt3)" }}>
+              {hint}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onToggleAdd}
+          className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+          style={{
+            background: addOpen ? "var(--rf-bg3)" : "var(--rf-accent)",
+            color: addOpen ? "var(--rf-txt2)" : "#fff",
+            border: `1px solid ${addOpen ? "var(--rf-border, #c5d2ea)" : "var(--rf-accent)"}`,
+          }}
+        >
+          {addOpen ? "Close" : addLabel}
+        </button>
+      </div>
+
+      {addOpen && (
+        <div
+          className="rounded-xl p-3 mb-3"
+          style={{
+            background: "var(--rf-bg)",
+            border: "1px dashed var(--rf-border3, #8daacf)",
+          }}
+        >
+          {addForm}
+        </div>
+      )}
+
+      {!hideSearch && (
+        <TextInput placeholder="Search…" value={search} onChange={onSearch} />
+      )}
+
+      <div
+        className="flex flex-col gap-1.5 mt-2.5"
+        style={{ maxHeight: 264, overflowY: "auto" }}
+      >
+        {loading ? (
+          <p
+            className="text-xs text-center py-4"
+            style={{ color: "var(--rf-txt3)" }}
+          >
+            Loading…
+          </p>
+        ) : isEmpty ? (
+          <p
+            className="text-xs text-center py-4"
+            style={{ color: "var(--rf-txt3)" }}
+          >
+            {emptyText}
+          </p>
+        ) : (
+          children
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PickCheck({ selected }) {
+  return (
+    <span
+      className="flex items-center justify-center flex-shrink-0"
+      style={{
+        width: 18,
+        height: 18,
+        borderRadius: 5,
+        background: selected ? "var(--rf-accent)" : "var(--rf-bg2)",
+        border: `2px solid ${selected ? "var(--rf-accent)" : "var(--rf-border3, #8daacf)"}`,
+      }}
+    >
+      {selected && (
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+function PickRow({ selected, onClick, title, subtitle, right }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-lg transition-all"
+      style={{
+        background: selected ? "var(--rf-bg3)" : "var(--rf-bg)",
+        border: `1px solid ${selected ? "var(--rf-accent)" : "var(--rf-border2, #adbbd8)"}`,
+      }}
+    >
+      <PickCheck selected={selected} />
+      <span className="flex-1 min-w-0">
+        <span
+          className="block text-sm font-semibold truncate"
+          style={{ color: "var(--rf-txt)" }}
+        >
+          {title}
+        </span>
+        {subtitle && (
+          <span
+            className="block text-xs truncate"
+            style={{ color: "var(--rf-txt3)" }}
+          >
+            {subtitle}
+          </span>
+        )}
+      </span>
+      {right && (
+        <span className="flex-shrink-0 text-xs" style={{ color: "var(--rf-txt3)" }}>
+          {right}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// Compact, theme-correct inputs for the per-asset detail editor. The border
+// lives on the wrapper div (the global input rule pins input border-color).
+const miniBox = {
+  display: "flex",
+  alignItems: "center",
+  background: "var(--rf-bg2)",
+  border: "1px solid var(--rf-border2, #adbbd8)",
+  borderRadius: 8,
+};
+function MiniText({ className, style, ...props }) {
+  return (
+    <div className={`np-fieldbox ${className || ""}`} style={miniBox}>
+      <input
+        {...props}
+        className="w-full px-2 py-1 rounded-lg text-xs outline-none bg-transparent"
+        style={{ ...bareControlStyle, ...(style || {}) }}
+      />
+    </div>
+  );
+}
+function MiniSelect({ children, className, ...props }) {
+  return (
+    <div className={`np-fieldbox relative ${className || ""}`} style={miniBox}>
+      <select
+        {...props}
+        className="w-full pl-2 pr-6 py-1 rounded-lg text-xs outline-none appearance-none cursor-pointer bg-transparent"
+        style={bareControlStyle}
+      >
+        {children}
+      </select>
+      <svg
+        className="absolute pointer-events-none"
+        style={{
+          right: 7,
+          top: "50%",
+          transform: "translateY(-50%)",
+          color: "var(--rf-txt3)",
+        }}
+        width="10"
+        height="10"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ *
  * Main component
  * ------------------------------------------------------------------ */
@@ -691,6 +892,54 @@ export default function NewProjectsModule() {
     { name: "", company: "", role: "Project Manager" },
   ]);
 
+  /* ---- BE module catalogs for the linked wizard steps ---- */
+  const [users, setUsers] = useState([]);
+  const [assetCatalog, setAssetCatalog] = useState([]);
+  const [teamCatalog, setTeamCatalog] = useState([]);
+  const [uploadedDocs, setUploadedDocs] = useState([]); // created via the add flow
+  const [documentsCatalog, setDocumentsCatalog] = useState([]); // from the API
+  const [selectedDocIds, setSelectedDocIds] = useState([]);
+  const [linkedTeamIds, setLinkedTeamIds] = useState([]);
+  const [moduleLoading, setModuleLoading] = useState({
+    users: false,
+    assets: false,
+    teams: false,
+    docs: false,
+  });
+  const [moduleBusy, setModuleBusy] = useState(false); // a create/upload is in flight
+  const [docUploadPct, setDocUploadPct] = useState(null);
+  const [search, setSearch] = useState({ users: "", assets: "", teams: "" });
+  const [addOpen, setAddOpen] = useState({
+    users: false,
+    assets: false,
+    docs: false,
+    teams: false,
+  });
+  const [newUser, setNewUser] = useState({
+    email: "",
+    firstName: "",
+    lastName: "",
+    roleId: "",
+  });
+  const [newAsset, setNewAsset] = useState({
+    assetTag: "",
+    name: "",
+    category: "IT Equipment",
+    procurementType: "OFCI",
+  });
+  const [newTeam, setNewTeam] = useState({ name: "" });
+  const [newDoc, setNewDoc] = useState({ title: "", file: null });
+
+  // Roles list (populated at login) drives the new-user role dropdown.
+  const roles = useMemo(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      return JSON.parse(localStorage.getItem("roles") || "[]");
+    } catch {
+      return [];
+    }
+  }, []);
+
   const assetCount = useMemo(
     () => Object.values(assets).filter(Boolean).length,
     [assets],
@@ -714,6 +963,27 @@ export default function NewProjectsModule() {
     }
   };
 
+  // Pull the selectable records for the BE-linked steps (Stakeholders ← Users,
+  // Asset Register ← Assets, Team ← Teams). Each is independent and non-fatal.
+  const loadModuleCatalogs = async () => {
+    setModuleLoading({ users: true, assets: true, teams: true, docs: true });
+    const fetchInto = async (fn, set, key) => {
+      try {
+        set(rowsFrom(await fn()));
+      } catch {
+        set([]);
+      } finally {
+        setModuleLoading((p) => ({ ...p, [key]: false }));
+      }
+    };
+    fetchInto(() => getUsers(100), setUsers, "users");
+    fetchInto(() => getAssets({ limit: 100 }), setAssetCatalog, "assets");
+    fetchInto(() => getTeams(), setTeamCatalog, "teams");
+    // Documents are hierarchy-scoped; best-effort here (no project yet). Any
+    // documents uploaded via the add flow are merged in regardless.
+    fetchInto(() => getDocuments(), setDocumentsCatalog, "docs");
+  };
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -725,6 +995,7 @@ export default function NewProjectsModule() {
       }
     })();
     loadProjects();
+    loadModuleCatalogs();
     return () => {
       alive = false;
     };
@@ -778,6 +1049,20 @@ export default function NewProjectsModule() {
     });
     setMilestones({ freezes: [] });
     setTeam([{ name: "", company: "", role: "Project Manager" }]);
+    setLinkedTeamIds([]);
+    setUploadedDocs([]);
+    setSelectedDocIds([]);
+    setSearch({ users: "", assets: "", teams: "" });
+    setAddOpen({ users: false, assets: false, docs: false, teams: false });
+    setNewUser({ email: "", firstName: "", lastName: "", roleId: "" });
+    setNewAsset({
+      assetTag: "",
+      name: "",
+      category: "IT Equipment",
+      procurementType: "OFCI",
+    });
+    setNewTeam({ name: "" });
+    setNewDoc({ title: "", file: null });
   };
 
   const cancel = () => {
@@ -822,6 +1107,204 @@ export default function NewProjectsModule() {
       setSubmitting(false);
     }
   };
+
+  /* ---- BE-module link + add handlers (Users / Assets / Teams / Docs) ---- */
+
+  const userLabel = (u) =>
+    [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
+    u.name ||
+    u.email ||
+    "Unnamed user";
+
+  // Stakeholders ← Users: selecting a user adds a prefilled stakeholder row,
+  // keyed by userId so it flows into the finalize payload like a manual row.
+  const userLinked = (u) => stakeholders.some((s) => s.userId === u.id);
+  const linkUser = (u) =>
+    setStakeholders((prev) =>
+      prev.some((s) => s.userId === u.id)
+        ? prev.filter((s) => s.userId !== u.id)
+        : [
+            ...prev,
+            {
+              company: u?.company?.name,
+              role: u?.role?.name,
+              name: userLabel(u),
+              email: u.email || "",
+              phone: "",
+              userId: u.id,
+            },
+          ],
+    );
+  const submitNewUser = async () => {
+    if (!newUser.email.trim()) {
+      setError("New user needs an email.");
+      return;
+    }
+    setModuleBusy(true);
+    setError("");
+    try {
+      const res = await CreateUsers(
+        clean({
+          email: newUser.email.trim(),
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          roleId: newUser.roleId,
+        }),
+      );
+      const created = res?.data ?? res;
+      let list = [];
+      try {
+        list = rowsFrom(await getUsers(100));
+        setUsers(list);
+      } catch {
+        /* keep stale list */
+      }
+      const u =
+        (created?.id && created) ||
+        list.find((x) => x.email === newUser.email.trim());
+      if (u?.id && !userLinked(u)) linkUser(u);
+      setNewUser({ email: "", firstName: "", lastName: "", roleId: "" });
+      setAddOpen((p) => ({ ...p, users: false }));
+    } catch (e) {
+      setError(extractApiErrors(e));
+    } finally {
+      setModuleBusy(false);
+    }
+  };
+
+  // Asset Register ← Assets: toggling reflects into the `assets` map (keyed by
+  // name) so selected registry assets become ProjectAsset rows at finalize.
+  const submitNewAsset = async () => {
+    if (!newAsset.assetTag.trim() || !newAsset.name.trim()) {
+      setError("New asset needs a tag and a name.");
+      return;
+    }
+    setModuleBusy(true);
+    setError("");
+    try {
+      await createAsset(
+        clean({
+          assetTag: newAsset.assetTag.trim(),
+          name: newAsset.name.trim(),
+          category: newAsset.category,
+          procurementType: newAsset.procurementType,
+        }),
+      );
+      try {
+        setAssetCatalog(rowsFrom(await getAssets({ limit: 100 })));
+      } catch {
+        /* keep stale list */
+      }
+      setAssets((p) => ({
+        ...p,
+        [newAsset.name.trim()]: defaultAssetDetail({
+          procurementType: newAsset.procurementType,
+          category: newAsset.category,
+          assetTag: newAsset.assetTag.trim(),
+        }),
+      }));
+      setNewAsset({
+        assetTag: "",
+        name: "",
+        category: "IT Equipment",
+        procurementType: "OFCI",
+      });
+      setAddOpen((p) => ({ ...p, assets: false }));
+    } catch (e) {
+      setError(extractApiErrors(e));
+    } finally {
+      setModuleBusy(false);
+    }
+  };
+
+  // Team ← Teams: link existing teams or create one. (Captured for UI selection;
+  // member assignment happens on the project Team page once the project exists.)
+  const toggleTeamLink = (t) =>
+    setLinkedTeamIds((prev) =>
+      prev.includes(t.id) ? prev.filter((x) => x !== t.id) : [...prev, t.id],
+    );
+  const submitNewTeam = async () => {
+    if (!newTeam.name.trim()) {
+      setError("New team needs a name.");
+      return;
+    }
+    setModuleBusy(true);
+    setError("");
+    try {
+      const res = await CreateTeam({ name: newTeam.name.trim() });
+      const created = res?.data ?? res;
+      let list = [];
+      try {
+        list = rowsFrom(await getTeams());
+        setTeamCatalog(list);
+      } catch {
+        /* keep stale list */
+      }
+      const t =
+        (created?.id && created) ||
+        list.find((x) => x.name === newTeam.name.trim());
+      if (t?.id) {
+        setLinkedTeamIds((prev) =>
+          prev.includes(t.id) ? prev : [...prev, t.id],
+        );
+      }
+      setNewTeam({ name: "" });
+      setAddOpen((p) => ({ ...p, teams: false }));
+    } catch (e) {
+      setError(extractApiErrors(e));
+    } finally {
+      setModuleBusy(false);
+    }
+  };
+
+  // Documents ← Documents: real S3 upload (standalone — title + file are enough,
+  // project hierarchy is optional and resolved later on the project page).
+  const submitNewDoc = async () => {
+    if (!newDoc.title.trim() || !newDoc.file) {
+      setError("Document needs a title and a file.");
+      return;
+    }
+    setModuleBusy(true);
+    setDocUploadPct(0);
+    setError("");
+    try {
+      const res = await requestUploadUrl({
+        title: newDoc.title.trim(),
+        fileName: newDoc.file.name,
+        mimeType: newDoc.file.type,
+        fileSize: newDoc.file.size,
+        category: "CONTRACT",
+      });
+      const { uploadUrl, documentId } = res?.data ?? res;
+      await uploadFileToS3(uploadUrl, newDoc.file, setDocUploadPct);
+      const confirmed = await confirmUpload(documentId);
+      const doc = confirmed?.data ?? confirmed ?? {};
+      const newId = doc.id ?? documentId;
+      setUploadedDocs((prev) => [
+        {
+          id: newId,
+          title: doc.title ?? newDoc.title.trim(),
+          fileName: doc.fileName ?? newDoc.file.name,
+          category: doc.category ?? "CONTRACT",
+        },
+        ...prev,
+      ]);
+      setSelectedDocIds((prev) =>
+        prev.includes(newId) ? prev : [...prev, newId],
+      );
+      setNewDoc({ title: "", file: null });
+      setAddOpen((p) => ({ ...p, docs: false }));
+    } catch (e) {
+      setError(extractApiErrors(e));
+    } finally {
+      setModuleBusy(false);
+      setDocUploadPct(null);
+    }
+  };
+  const toggleDoc = (id) =>
+    setSelectedDocIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
 
   /* --------------------------- step bodies --------------------------- */
 
@@ -968,13 +1451,102 @@ export default function NewProjectsModule() {
       p.map((s, idx) => (idx === i ? { ...s, [key]: val } : s)),
     );
 
-  const renderStakeholders = () => (
+  const renderStakeholders = () => {
+    const q = search.users.trim().toLowerCase();
+    const userRows = users.filter(
+      (u) =>
+        !q ||
+        userLabel(u).toLowerCase().includes(q) ||
+        String(u.email || "").toLowerCase().includes(q),
+    );
+    return (
     <>
       <StepIntro>
-        Stakeholder directory — the decision-makers and partner orgs (owner,
-        architect, MEP/structural engineers, owner vendors, CM, AHJ).{" "}
-        {stakeholders.length} row(s).
+        Stakeholder directory — link platform users from the Users module (or add
+        new ones), then refine company / role below. {stakeholders.length}{" "}
+        row(s).
       </StepIntro>
+
+      <ModulePicker
+        title="Platform users"
+        hint="Select existing users to add as stakeholders, or create a new user."
+        search={search.users}
+        onSearch={(e) =>
+          setSearch((p) => ({ ...p, users: e.target.value }))
+        }
+        addLabel="+ New user"
+        addOpen={addOpen.users}
+        onToggleAdd={() => setAddOpen((p) => ({ ...p, users: !p.users }))}
+        loading={moduleLoading.users}
+        isEmpty={userRows.length === 0}
+        emptyText="No users found."
+        addForm={
+          <div className="flex flex-col gap-3">
+            <TextInput
+              placeholder="Email *"
+              value={newUser.email}
+              onChange={(e) =>
+                setNewUser((p) => ({ ...p, email: e.target.value }))
+              }
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <TextInput
+                placeholder="First name"
+                value={newUser.firstName}
+                onChange={(e) =>
+                  setNewUser((p) => ({ ...p, firstName: e.target.value }))
+                }
+              />
+              <TextInput
+                placeholder="Last name"
+                value={newUser.lastName}
+                onChange={(e) =>
+                  setNewUser((p) => ({ ...p, lastName: e.target.value }))
+                }
+              />
+            </div>
+            {roles.length > 0 && (
+              <SelectInput
+                value={newUser.roleId}
+                onChange={(e) =>
+                  setNewUser((p) => ({ ...p, roleId: e.target.value }))
+                }
+              >
+                <option value="">Select role…</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.description || r.name}
+                  </option>
+                ))}
+              </SelectInput>
+            )}
+            <button
+              type="button"
+              disabled={moduleBusy}
+              onClick={submitNewUser}
+              className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
+              style={{
+                background: "var(--rf-accent)",
+                color: "#fff",
+                opacity: moduleBusy ? 0.6 : 1,
+              }}
+            >
+              {moduleBusy ? "Creating…" : "Create user"}
+            </button>
+          </div>
+        }
+      >
+        {userRows.map((u) => (
+          <PickRow
+            key={u.id}
+            selected={userLinked(u)}
+            onClick={() => linkUser(u)}
+            title={userLabel(u)}
+            subtitle={u.email}
+          />
+        ))}
+      </ModulePicker>
+
       <div className="flex flex-col gap-3">
         {stakeholders.map((s, i) => (
           <div key={i} className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -1041,7 +1613,8 @@ export default function NewProjectsModule() {
         + Add stakeholder
       </button>
     </>
-  );
+    );
+  };
 
   const toggleLevel = (l) =>
     setScope((p) => ({
@@ -1099,109 +1672,481 @@ export default function NewProjectsModule() {
     </>
   );
 
-  const toggleAsset = (item) => setAssets((p) => ({ ...p, [item]: !p[item] }));
+  // Default detail captured when an asset is selected. Furnish seeds from the
+  // registry asset's procurement type when available.
+  const defaultAssetDetail = (a) => ({
+    qty: 1,
+    furnish: a?.procurementType || "CFCI",
+    order: "NOT_ORDERED",
+    po: "",
+    manufacturer: "",
+    model: "",
+    location: "",
+    category: a?.category || "",
+    assetTag: a?.assetTag || "",
+  });
+  // Toggle by asset object: select → attach a detail object, deselect → drop it.
+  const toggleAsset = (a) =>
+    setAssets((p) => {
+      const next = { ...p };
+      if (next[a.name]) delete next[a.name];
+      else next[a.name] = defaultAssetDetail(a);
+      return next;
+    });
+  const updateAssetField = (name, key, val) =>
+    setAssets((p) => ({ ...p, [name]: { ...p[name], [key]: val } }));
 
-  const renderAssets = () => (
+  const renderAssets = () => {
+    // Group the registered assets by their `category` so the select UI matches
+    // the original category-card layout — but driven entirely by the API.
+    const groups = [];
+    const byTitle = {};
+    assetCatalog.forEach((a) => {
+      const title = a.category || "Uncategorized";
+      if (!byTitle[title]) {
+        byTitle[title] = { title, items: [] };
+        groups.push(byTitle[title]);
+      }
+      byTitle[title].items.push(a);
+    });
+    return (
     <>
       <StepIntro>
-        Pick the asset types on this project. Set <strong>quantity</strong>{" "}
-        (fans out into numbered instances), <strong>furnish</strong>{" "}
-        (OFCI/CFCI), POH, order status, and optional manufacturer / model /
-        location. Works for any DC type — set the counts and makers for your
-        project, {assetCount} selected.
+        Select assets from the Asset Register (grouped by category), or register a
+        new asset. Selected items become project assets you can detail (quantity,
+        furnish, POH) on the project page. {assetCount} selected.
       </StepIntro>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-        {ASSET_CATEGORIES.map((cat) => (
-          <div
-            key={cat.title}
-            className="rounded-2xl p-4 h-full"
-            style={{
-              background: "var(--rf-bg2)",
-              border: "1px solid var(--rf-border2, #adbbd8)",
-            }}
-          >
-            <h4 className="uppercase mb-3" style={labelStyle}>
-              {cat.title}
-            </h4>
-            <div className="flex flex-col gap-2.5">
-              {cat.items.map((item) => (
-                <Checkbox
-                  key={item}
-                  checked={!!assets[item]}
-                  onChange={() => toggleAsset(item)}
-                  label={item}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
+
+      <div className="flex items-center justify-between mb-4">
+        <label className="uppercase" style={labelStyle}>
+          Asset register
+        </label>
+        <button
+          type="button"
+          onClick={() => setAddOpen((p) => ({ ...p, assets: !p.assets }))}
+          className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+          style={{
+            background: addOpen.assets ? "var(--rf-bg3)" : "var(--rf-accent)",
+            color: addOpen.assets ? "var(--rf-txt2)" : "#fff",
+            border: `1px solid ${addOpen.assets ? "var(--rf-border, #c5d2ea)" : "var(--rf-accent)"}`,
+          }}
+        >
+          {addOpen.assets ? "Close" : "+ New asset"}
+        </button>
       </div>
-    </>
-  );
 
-  const renderDocs = () => (
-    <>
-      <StepIntro>
-        Document &amp; contract readiness — set where each item sits so the PM
-        can see status at a glance. (As-builts are a closeout deliverable —
-        default N/A.)
-      </StepIntro>
-      <div className="flex flex-col gap-2.5">
-        {DOC_ITEMS.map((item) => {
-          const row = docs[item];
-          return (
-            <div
-              key={item}
-              className="flex flex-col md:flex-row md:items-center gap-3"
-            >
-              <div
-                className="md:w-56 flex-shrink-0 text-sm"
-                style={{ color: "var(--rf-txt)" }}
+      {addOpen.assets && (
+        <div
+          className="rounded-xl p-3 mb-4"
+          style={{
+            background: "var(--rf-bg)",
+            border: "1px dashed var(--rf-border3, #8daacf)",
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <TextInput
+                placeholder="Asset tag * (e.g. IT-LAP-0042)"
+                value={newAsset.assetTag}
+                onChange={(e) =>
+                  setNewAsset((p) => ({ ...p, assetTag: e.target.value }))
+                }
+              />
+              <TextInput
+                placeholder="Asset name *"
+                value={newAsset.name}
+                onChange={(e) =>
+                  setNewAsset((p) => ({ ...p, name: e.target.value }))
+                }
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <SelectInput
+                value={newAsset.category}
+                onChange={(e) =>
+                  setNewAsset((p) => ({ ...p, category: e.target.value }))
+                }
               >
-                {item}
-              </div>
-              <div className="flex gap-1.5 flex-shrink-0">
-                {DOC_STATUSES.map((st) => {
-                  const active = row.status === st;
+                {ASSET_REG_CATEGORIES.map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </SelectInput>
+              <SelectInput
+                value={newAsset.procurementType}
+                onChange={(e) =>
+                  setNewAsset((p) => ({
+                    ...p,
+                    procurementType: e.target.value,
+                  }))
+                }
+              >
+                <option value="OFCI">OFCI</option>
+                <option value="CFCI">CFCI</option>
+              </SelectInput>
+            </div>
+            <button
+              type="button"
+              disabled={moduleBusy}
+              onClick={submitNewAsset}
+              className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
+              style={{
+                background: "var(--rf-accent)",
+                color: "#fff",
+                opacity: moduleBusy ? 0.6 : 1,
+              }}
+            >
+              {moduleBusy ? "Registering…" : "Register asset"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {moduleLoading.assets ? (
+        <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+          Loading assets…
+        </p>
+      ) : groups.length === 0 ? (
+        <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+          No registered assets found — register one above to get started.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+          {groups.map((cat) => (
+            <div
+              key={cat.title}
+              className="rounded-2xl p-4 h-full"
+              style={{
+                background: "var(--rf-bg2)",
+                border: "1px solid var(--rf-border2, #adbbd8)",
+              }}
+            >
+              <h4 className="uppercase mb-3" style={labelStyle}>
+                {cat.title}
+              </h4>
+              <div className="flex flex-col gap-2.5">
+                {cat.items.map((a) => {
+                  const d = assets[a.name];
                   return (
-                    <button
-                      key={st}
-                      type="button"
-                      onClick={() =>
-                        setDocs((p) => ({
-                          ...p,
-                          [item]: { ...p[item], status: st },
-                        }))
-                      }
-                      className="px-2.5 py-1.5 rounded-md text-xs font-bold transition-all"
-                      style={{
-                        background: active ? "var(--rf-bg4)" : "var(--rf-bg2)",
-                        color: active ? "var(--rf-txt)" : "var(--rf-txt3)",
-                        border: `1px solid ${active ? "var(--rf-border3, #8daacf)" : "var(--rf-border2, #adbbd8)"}`,
-                      }}
-                    >
-                      {st}
-                    </button>
+                    <div key={a.id}>
+                      <Checkbox
+                        checked={!!d}
+                        onChange={() => toggleAsset(a)}
+                        label={
+                          a.assetTag && a.assetTag !== a.name
+                            ? `${a.name} · ${a.assetTag}`
+                            : a.name || a.assetTag || "Asset"
+                        }
+                      />
+                      {d && (
+                        <div
+                          className="mt-2 ml-7 flex flex-col gap-1.5 pb-1"
+                          style={{
+                            borderLeft: "2px solid var(--rf-accent)",
+                            paddingLeft: 8,
+                          }}
+                        >
+                          <div className="grid grid-cols-3 gap-1.5 items-center">
+                            <div className="flex items-center gap-1">
+                              <span
+                                className="text-[10px] font-bold"
+                                style={{ color: "var(--rf-txt3)" }}
+                              >
+                                QTY
+                              </span>
+                              <MiniText
+                                type="number"
+                                min={1}
+                                value={d.qty}
+                                onChange={(e) =>
+                                  updateAssetField(a.name, "qty", e.target.value)
+                                }
+                              />
+                            </div>
+                            <MiniSelect
+                              value={d.furnish}
+                              onChange={(e) =>
+                                updateAssetField(
+                                  a.name,
+                                  "furnish",
+                                  e.target.value,
+                                )
+                              }
+                            >
+                              {ASSET_FURNISH.map((o) => (
+                                <option key={o}>{o}</option>
+                              ))}
+                            </MiniSelect>
+                            <MiniSelect
+                              value={d.order}
+                              onChange={(e) =>
+                                updateAssetField(a.name, "order", e.target.value)
+                              }
+                            >
+                              {ASSET_ORDER_STATUSES.map((o) => (
+                                <option key={o} value={o}>
+                                  {orderStatusLabel(o)}
+                                </option>
+                              ))}
+                            </MiniSelect>
+                          </div>
+                          <MiniText
+                            placeholder="PO#"
+                            value={d.po}
+                            onChange={(e) =>
+                              updateAssetField(a.name, "po", e.target.value)
+                            }
+                          />
+                          <div className="grid grid-cols-3 gap-1.5">
+                            <MiniText
+                              placeholder="manufacturer"
+                              value={d.manufacturer}
+                              onChange={(e) =>
+                                updateAssetField(
+                                  a.name,
+                                  "manufacturer",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                            <MiniText
+                              placeholder="model"
+                              value={d.model}
+                              onChange={(e) =>
+                                updateAssetField(a.name, "model", e.target.value)
+                              }
+                            />
+                            <MiniText
+                              placeholder="location / lineup"
+                              value={d.location}
+                              onChange={(e) =>
+                                updateAssetField(
+                                  a.name,
+                                  "location",
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
-              <TextInput
-                placeholder="note (rev, owner, date…)"
-                value={row.note}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+    );
+  };
+
+  const renderDocs = () => {
+    // Merge documents fetched from the API with any uploaded this session,
+    // de-duped by id, so the list is fully API-driven.
+    const seen = {};
+    const docList = [];
+    [...uploadedDocs, ...documentsCatalog].forEach((d) => {
+      if (!d || !d.id || seen[d.id]) return;
+      seen[d.id] = true;
+      docList.push(d);
+    });
+    return (
+    <>
+      <StepIntro>
+        Select documents from the Documents module, or upload a new one. Uploads
+        are stored immediately and can be linked to this project from the
+        Documents page. {selectedDocIds.length} selected.
+      </StepIntro>
+
+      <div className="flex items-center justify-between mb-4">
+        <label className="uppercase" style={labelStyle}>
+          Documents
+        </label>
+        <button
+          type="button"
+          onClick={() => setAddOpen((p) => ({ ...p, docs: !p.docs }))}
+          className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+          style={{
+            background: addOpen.docs ? "var(--rf-bg3)" : "var(--rf-accent)",
+            color: addOpen.docs ? "var(--rf-txt2)" : "#fff",
+            border: `1px solid ${addOpen.docs ? "var(--rf-border, #c5d2ea)" : "var(--rf-accent)"}`,
+          }}
+        >
+          {addOpen.docs ? "Close" : "+ Upload document"}
+        </button>
+      </div>
+
+      {addOpen.docs && (
+        <div
+          className="rounded-xl p-3 mb-4"
+          style={{
+            background: "var(--rf-bg)",
+            border: "1px dashed var(--rf-border3, #8daacf)",
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            <TextInput
+              placeholder="Document title *"
+              value={newDoc.title}
+              onChange={(e) =>
+                setNewDoc((p) => ({ ...p, title: e.target.value }))
+              }
+            />
+            <label
+              htmlFor="np-doc-file"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const f = e.dataTransfer.files?.[0];
+                if (f) setNewDoc((p) => ({ ...p, file: f }));
+              }}
+              className="block rounded-xl p-6 text-center cursor-pointer transition-all"
+              style={{
+                border: `2px dashed ${newDoc.file ? "var(--rf-accent)" : "var(--rf-border3, #8daacf)"}`,
+                background: newDoc.file ? "var(--rf-bg3)" : "var(--rf-bg2)",
+              }}
+            >
+              <input
+                id="np-doc-file"
+                type="file"
+                className="hidden"
                 onChange={(e) =>
-                  setDocs((p) => ({
+                  setNewDoc((p) => ({
                     ...p,
-                    [item]: { ...p[item], note: e.target.value },
+                    file: e.target.files?.[0] || null,
                   }))
                 }
-                className="flex-1"
               />
-            </div>
-          );
-        })}
-      </div>
+              {newDoc.file ? (
+                <div className="flex flex-col items-center gap-1.5">
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--rf-accent)"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  <span
+                    className="text-sm font-semibold break-all"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    {newDoc.file.name}
+                  </span>
+                  <span
+                    className="text-xs"
+                    style={{ color: "var(--rf-txt3)" }}
+                  >
+                    {(newDoc.file.size / 1024 / 1024).toFixed(2)} MB · click to
+                    change
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <svg
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--rf-txt3)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9" />
+                    <polyline points="16 16 12 12 8 16" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                  </svg>
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    Drag &amp; drop or click to select
+                  </span>
+                  <span
+                    className="text-xs"
+                    style={{ color: "var(--rf-txt3)" }}
+                  >
+                    Any file type supported
+                  </span>
+                </div>
+              )}
+            </label>
+            {docUploadPct !== null && (
+              <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+                Uploading… {docUploadPct}%
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={moduleBusy}
+              onClick={submitNewDoc}
+              className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
+              style={{
+                background: "var(--rf-accent)",
+                color: "#fff",
+                opacity: moduleBusy ? 0.6 : 1,
+              }}
+            >
+              {moduleBusy ? "Uploading…" : "Upload document"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {moduleLoading.docs ? (
+        <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+          Loading documents…
+        </p>
+      ) : docList.length === 0 ? (
+        <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+          No documents found — upload one above to get started.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {docList.map((d) => {
+            const selected = selectedDocIds.includes(d.id);
+            return (
+              <div
+                key={d.id}
+                className="rounded-lg px-3 py-2.5"
+                style={{
+                  background: selected ? "var(--rf-bg3)" : "var(--rf-bg2)",
+                  border: `1px solid ${selected ? "var(--rf-accent)" : "var(--rf-border2, #adbbd8)"}`,
+                }}
+              >
+                <Checkbox
+                  checked={selected}
+                  onChange={() => toggleDoc(d.id)}
+                  label={d.title || d.fileName || "Document"}
+                />
+                {(d.fileName || d.category) && (
+                  <div
+                    className="text-xs mt-1 ml-7 flex flex-wrap gap-x-2"
+                    style={{ color: "var(--rf-txt3)" }}
+                  >
+                    {d.fileName && (
+                      <span className="truncate">{d.fileName}</span>
+                    )}
+                    {d.category && (
+                      <span>· {String(d.category).replace(/_/g, " ")}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </>
-  );
+    );
+  };
 
   const renderBaseline = () => (
     <>
@@ -1326,12 +2271,72 @@ export default function NewProjectsModule() {
   const updateTeam = (i, key, val) =>
     setTeam((p) => p.map((t, idx) => (idx === i ? { ...t, [key]: val } : t)));
 
-  const renderTeam = () => (
+  const renderTeam = () => {
+    const q = search.teams.trim().toLowerCase();
+    const teamRows = teamCatalog.filter(
+      (t) => !q || String(t.name || "").toLowerCase().includes(q),
+    );
+    return (
     <>
       <StepIntro>
-        Add key people now (optional) — assign their role; manage the full crew
-        on the Team page.
+        Link teams from the Teams module (or create one), and/or add key people
+        below. Manage the full crew on the project Team page.
       </StepIntro>
+
+      <ModulePicker
+        title="Teams"
+        hint="Select existing teams to attach, or create a new team."
+        search={search.teams}
+        onSearch={(e) =>
+          setSearch((p) => ({ ...p, teams: e.target.value }))
+        }
+        addLabel="+ New team"
+        addOpen={addOpen.teams}
+        onToggleAdd={() => setAddOpen((p) => ({ ...p, teams: !p.teams }))}
+        loading={moduleLoading.teams}
+        isEmpty={teamRows.length === 0}
+        emptyText="No teams found."
+        addForm={
+          <div className="flex flex-col gap-3">
+            <TextInput
+              placeholder="Team name *"
+              value={newTeam.name}
+              onChange={(e) =>
+                setNewTeam((p) => ({ ...p, name: e.target.value }))
+              }
+            />
+            <button
+              type="button"
+              disabled={moduleBusy}
+              onClick={submitNewTeam}
+              className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
+              style={{
+                background: "var(--rf-accent)",
+                color: "#fff",
+                opacity: moduleBusy ? 0.6 : 1,
+              }}
+            >
+              {moduleBusy ? "Creating…" : "Create team"}
+            </button>
+          </div>
+        }
+      >
+        {teamRows.map((t) => (
+          <PickRow
+            key={t.id}
+            selected={linkedTeamIds.includes(t.id)}
+            onClick={() => toggleTeamLink(t)}
+            title={t.name || "Team"}
+            subtitle={
+              t.memberCount != null ? `${t.memberCount} member(s)` : undefined
+            }
+          />
+        ))}
+      </ModulePicker>
+
+      <label className="uppercase block mb-2.5" style={labelStyle}>
+        Key people
+      </label>
       <div className="flex flex-col gap-3">
         {team.map((t, i) => (
           <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1388,7 +2393,8 @@ export default function NewProjectsModule() {
         + Add another person
       </button>
     </>
-  );
+    );
+  };
 
   const STEP_BODIES = [
     renderIdentity,

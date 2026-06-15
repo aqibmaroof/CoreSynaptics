@@ -89,7 +89,7 @@ export default function AssetAdd() {
     setErrors(e);
     return Object.keys(e).length === 0;
   };
-
+// need to add project id
   const handleSubmit = async (ev) => {
     ev.preventDefault();
     if (!validate()) return;
@@ -150,7 +150,7 @@ export default function AssetAdd() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
+            <h1 className="text-4xl font-bold text-black mb-2">
               Register Asset
             </h1>
             <p className="text-gray-400 mb-8">
