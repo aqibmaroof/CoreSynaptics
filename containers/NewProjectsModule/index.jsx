@@ -98,13 +98,13 @@ const ASSET_CATEGORIES = [
       "Motor Control Center (MCC)",
       "Distribution Board / Panelboard",
       "UPS",
-      "Battery System / VRLA UB",
+      "Battery System / VRLA-LiB",
       "Flywheel / Energy Storage",
       "PDU",
       "RPP / Remote Power Panel",
       "Reactor / Rotary / RDC",
       "Busway / Bus Duct",
-      "Dry Type Transformer",
+      "Dry-Type Transformer",
       "Capacitor / PFC Bank",
       "SPD / Surge Protection",
       "Grounding / Bonding System",
@@ -136,6 +136,55 @@ const ASSET_CATEGORIES = [
     items: ["VESDA", "Clean Agent", "Fire Alarm", "EPO"],
   },
 ];
+
+// Asset name → backend catalog abbr (the CxControl machine keys). Lets the
+// finalize payload send the real abbr (e.g. "UTIL") instead of a name slice.
+const ASSET_NAME_TO_ABBR = {
+  "Utility Service Entrance": "UTIL",
+  "MV Switchgear": "MVSWGR",
+  "MV Transformer": "MVXFMR",
+  "Unit Substation": "UNITSUB",
+  Generator: "GEN",
+  "Generator Paralleling Switchgear": "GENPARA",
+  "Fuel System / Day Tank": "FUEL",
+  "ATS (Automatic Transfer Switch)": "ATS",
+  "MTS (Manual/Maintenance Transfer Switch)": "MTS",
+  "STS (Static Transfer Switch)": "STS",
+  "LV Switchboard": "SWBD",
+  "Motor Control Center (MCC)": "MCC",
+  "Distribution Board / Panelboard": "DISTBRD",
+  UPS: "UPS",
+  "Battery System / VRLA-LiB": "BATT",
+  "Flywheel / Energy Storage": "FLYWHEEL",
+  PDU: "PDU",
+  "RPP / Remote Power Panel": "RPP",
+  "Reactor / Rotary / RDC": "RDC",
+  "Busway / Bus Duct": "BUSWAY",
+  "Dry-Type Transformer": "XFMR",
+  "Capacitor / PFC Bank": "CAPBANK",
+  "SPD / Surge Protection": "SURGE",
+  "Grounding / Bonding System": "GROUND",
+  "EPMS / Power Monitoring": "EPMS",
+  "Lighting / Emergency Egress": "LIGHTING",
+  "EPO System": "EPOSYS",
+  Chiller: "CH",
+  "CRAH / CRAC": "CRAH",
+  "CDU / Liquid Cooling": "CDU",
+  "Cooling Tower": "CT",
+  Pump: "PMP",
+  "BMS / Controls": "BMS",
+  "Make-up Water": "MUW",
+  "Leak Detection": "LEAK",
+  VESDA: "VESDA",
+  "Clean Agent": "AGENT",
+  "Fire Alarm": "FA",
+  EPO: "EPO",
+};
+
+// Asset name → its category title (the discipline, sent as assetType).
+const ASSET_NAME_TO_CATEGORY = Object.fromEntries(
+  ASSET_CATEGORIES.flatMap((cat) => cat.items.map((item) => [item, cat.title])),
+);
 
 const DOC_STATUSES = ["In hand", "Under review", "Pending", "N/A"];
 const DOC_ITEMS = [
@@ -230,6 +279,23 @@ const DOC_STATUS_TO_API = {
   "N/A": "NA",
 };
 
+// Step 5 — Asset Register per-asset dropdowns (CxControl wizard values).
+// Furnish maps 1:1 to the backend `procurementOwner` enum (CFCI/OFCI).
+const FURNISH_OPTS = ["CFCI", "OFCI"];
+// Order-status shows the four wizard labels; the V2 API accepts these labels
+// directly and normalizes them onto AssetProcurementStatus (Delivered→RECEIVED).
+const ORDER_STATUS_OPTS = ["Not Ordered", "Ordered", "In Transit", "Delivered"];
+// Default per-asset row created when an asset type is checked (mirrors the HTML).
+const DEFAULT_ASSET_ROW = {
+  qty: 1,
+  furnish: "CFCI",
+  orderStatus: "Not Ordered",
+  po: "",
+  manufacturer: "",
+  model: "",
+  location: "",
+};
+
 // FE doc-item label → backend ProjectDocType enum value
 const DOC_LABEL_TO_TYPE = {
   "IFP drawings": "IFP_DRAWINGS",
@@ -316,17 +382,25 @@ function extractApiErrors(e) {
 // V1, only the creator is auto-assigned at finalize; named team members are
 // added on the project's Team page once resolved to real users.
 function buildFinalizePayload({ identity, facility, stakeholders, scope, assets, docs, milestones }) {
-  // Step 5 — selected asset types become ProjectAsset rows (qty default 1; the
-  // detailed qty/furnish/PO editing happens on the project page post-create).
-  const assetRows = Object.keys(assets)
-    .filter((k) => assets[k])
-    .map((name) => ({
-      abbr: name.slice(0, 50),
-      name,
-      assetType: "General",
-      quantity: 1,
-      procurementOwner: "OFCI",
-    }));
+  // Step 5 — selected asset types become ProjectAsset rows. Each row carries the
+  // per-asset detail set in the wizard (qty fans out into numbered instances
+  // server-side; furnish, order status, PO#, manufacturer, model, location).
+  const assetRows = Object.entries(assets)
+    .filter(([, row]) => row && row.selected)
+    .map(([name, row]) =>
+      clean({
+        abbr: ASSET_NAME_TO_ABBR[name] || name.slice(0, 50),
+        name,
+        assetType: ASSET_NAME_TO_CATEGORY[name] || "General",
+        quantity: num(row.qty) ?? 1,
+        procurementOwner: row.furnish || "CFCI",
+        procurementStatus: row.orderStatus || "Not Ordered",
+        poNumber: row.po,
+        manufacturer: row.manufacturer,
+        model: row.model,
+        location: row.location,
+      }),
+    );
 
   // Step 6 — documents the user touched (status != default) are sent explicitly.
   const docRows = Object.entries(docs)
@@ -675,7 +749,7 @@ export default function NewProjectsModule() {
     sampling: SAMPLING_OPTS[0],
     ownerWitness: true,
   });
-  const [assets, setAssets] = useState({}); // item -> true
+  const [assets, setAssets] = useState({}); // item -> { selected, qty, furnish, orderStatus, po, manufacturer, model, location }
   const [docs, setDocs] = useState(() => {
     const init = {};
     DOC_ITEMS.forEach((d) => {
@@ -692,7 +766,7 @@ export default function NewProjectsModule() {
   ]);
 
   const assetCount = useMemo(
-    () => Object.values(assets).filter(Boolean).length,
+    () => Object.values(assets).filter((row) => row && row.selected).length,
     [assets],
   );
 
@@ -1099,14 +1173,30 @@ export default function NewProjectsModule() {
     </>
   );
 
-  const toggleAsset = (item) => setAssets((p) => ({ ...p, [item]: !p[item] }));
+  const toggleAsset = (item) =>
+    setAssets((p) => {
+      const current = p[item];
+      if (current && current.selected) {
+        return { ...p, [item]: { ...current, selected: false } };
+      }
+      return {
+        ...p,
+        [item]: { ...DEFAULT_ASSET_ROW, ...current, selected: true },
+      };
+    });
+
+  const updateAsset = (item, field, value) =>
+    setAssets((p) => ({
+      ...p,
+      [item]: { ...DEFAULT_ASSET_ROW, ...p[item], [field]: value },
+    }));
 
   const renderAssets = () => (
     <>
       <StepIntro>
         Pick the asset types on this project. Set <strong>quantity</strong>{" "}
         (fans out into numbered instances), <strong>furnish</strong>{" "}
-        (OFCI/CFCI), POH, order status, and optional manufacturer / model /
+        (OFCI/CFCI), PO#, order status, and optional manufacturer / model /
         location. Works for any DC type — set the counts and makers for your
         project, {assetCount} selected.
       </StepIntro>
@@ -1124,14 +1214,99 @@ export default function NewProjectsModule() {
               {cat.title}
             </h4>
             <div className="flex flex-col gap-2.5">
-              {cat.items.map((item) => (
-                <Checkbox
-                  key={item}
-                  checked={!!assets[item]}
-                  onChange={() => toggleAsset(item)}
-                  label={item}
-                />
-              ))}
+              {cat.items.map((item) => {
+                const row = assets[item];
+                const selected = !!(row && row.selected);
+                return (
+                  <div key={item} className="flex flex-col gap-2">
+                    <Checkbox
+                      checked={selected}
+                      onChange={() => toggleAsset(item)}
+                      label={item}
+                    />
+                    {selected && (
+                      <div
+                        className="flex flex-col gap-1.5 ml-6 pb-1"
+                        style={{ color: "var(--rf-txt3)" }}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="uppercase text-[10px] font-bold"
+                            style={{ color: "var(--rf-txt3)" }}
+                          >
+                            Qty
+                          </span>
+                          <TextInput
+                            type="number"
+                            min="1"
+                            value={row.qty}
+                            onChange={(e) =>
+                              updateAsset(item, "qty", e.target.value)
+                            }
+                            className="w-16"
+                          />
+                          <SelectInput
+                            value={row.furnish}
+                            onChange={(e) =>
+                              updateAsset(item, "furnish", e.target.value)
+                            }
+                            className="w-24"
+                          >
+                            {FURNISH_OPTS.map((o) => (
+                              <option key={o}>{o}</option>
+                            ))}
+                          </SelectInput>
+                          <SelectInput
+                            value={row.orderStatus}
+                            onChange={(e) =>
+                              updateAsset(item, "orderStatus", e.target.value)
+                            }
+                            className="flex-1"
+                          >
+                            {ORDER_STATUS_OPTS.map((o) => (
+                              <option key={o}>{o}</option>
+                            ))}
+                          </SelectInput>
+                          <TextInput
+                            placeholder="PO#"
+                            value={row.po}
+                            onChange={(e) =>
+                              updateAsset(item, "po", e.target.value)
+                            }
+                            className="w-24"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <TextInput
+                            placeholder="manufacturer"
+                            value={row.manufacturer}
+                            onChange={(e) =>
+                              updateAsset(item, "manufacturer", e.target.value)
+                            }
+                            className="flex-1"
+                          />
+                          <TextInput
+                            placeholder="model"
+                            value={row.model}
+                            onChange={(e) =>
+                              updateAsset(item, "model", e.target.value)
+                            }
+                            className="flex-1"
+                          />
+                          <TextInput
+                            placeholder="location / lineup"
+                            value={row.location}
+                            onChange={(e) =>
+                              updateAsset(item, "location", e.target.value)
+                            }
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
