@@ -3,42 +3,183 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { listMilestones, deleteMilestone, cloneMilestone } from "@/services/ScheduleMilestones";
+import {
+  listMilestones,
+  deleteMilestone,
+  cloneMilestone,
+} from "@/services/ScheduleMilestones";
 import { listPhases } from "@/services/Phases";
-import { getCxProjects } from "@/services/CxProjects";
+import { listV2Projects } from "@/services/CxProjectsV2";
 import ScheduleBaselineDiff from "@/components/ScheduleBaselineDiff";
 import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
-const TYPE_STYLES = {
-  CONTRACT: "bg-red-900/40 text-red-300 border-red-700/40",
-  OPS: "bg-orange-900/40 text-orange-300 border-orange-700/40",
-  INTERNAL: "bg-gray-700/60 text-gray-300 border-gray-600/40",
+// Type chip palette — rf-token based so it adapts to light/dark.
+const TYPE_META = {
+  CONTRACT: {
+    bg: "rgba(220,38,38,0.12)",
+    color: "var(--rf-red)",
+    border: "rgba(220,38,38,0.3)",
+  },
+  OPS: {
+    bg: "rgba(192,90,0,0.12)",
+    color: "var(--rf-orange)",
+    border: "rgba(192,90,0,0.3)",
+  },
+  INTERNAL: {
+    bg: "var(--rf-bg3)",
+    color: "var(--rf-txt2)",
+    border: "var(--rf-border)",
+  },
 };
 
 const fmt = (iso) =>
-  iso ? new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" }) : "—";
+  iso
+    ? new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" })
+    : "—";
 
 function toArr(data) {
-  return Array.isArray(data) ? data : (data?.data ?? data?.projects ?? data?.items ?? []);
+  return Array.isArray(data)
+    ? data
+    : (data?.data ?? data?.projects ?? data?.items ?? []);
 }
 
-function SelectField({ label, value, onChange, options, placeholder, loading: l, disabled }) {
+// ─── rf-token style atoms ────────────────────────────────────────────────────
+const sCard = {
+  background: "var(--rf-bg2)",
+  border: "1px solid var(--rf-border)",
+  borderRadius: 12,
+};
+const sBtnGhost = {
+  padding: "9px 16px",
+  borderRadius: 9,
+  border: "1px solid var(--rf-border)",
+  background: "var(--rf-bg3)",
+  color: "var(--rf-txt2)",
+  fontSize: 14,
+  fontWeight: 600,
+  cursor: "pointer",
+};
+const actionBtn = (bg) => ({
+  padding: "5px 12px",
+  fontSize: 12,
+  fontWeight: 600,
+  borderRadius: 6,
+  border: "none",
+  cursor: "pointer",
+  color: "#fff",
+  background: bg,
+});
+
+function Spinner({ size = 16 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      className="animate-spin"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
+  );
+}
+
+function Badge({ meta, children }) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "2px 9px",
+        fontSize: 11,
+        fontWeight: 700,
+        borderRadius: 999,
+        background: meta.bg,
+        color: meta.color,
+        border: `1px solid ${meta.border}`,
+        letterSpacing: "0.02em",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+  loading: l,
+  disabled,
+}) {
+  console.log(options);
   return (
     <div>
-      {label && <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>}
-      <div className="relative">
+      {label && (
+        <label
+          style={{
+            display: "block",
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--rf-txt2)",
+            marginBottom: 6,
+          }}
+        >
+          {label}
+        </label>
+      )}
+      <div style={{ position: "relative" }}>
         <select
           value={value}
           onChange={onChange}
           disabled={l || disabled}
-          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 appearance-none [&_option]:bg-gray-700 disabled:opacity-50"
+          style={{
+            width: "100%",
+            padding: "9px 32px 9px 12px",
+            background: "var(--rf-bg)",
+            border: "1px solid var(--rf-border)",
+            borderRadius: 9,
+            color: "var(--rf-txt2)",
+            fontSize: 13,
+            fontFamily: "inherit",
+            outline: "none",
+            appearance: "none",
+            cursor: l || disabled ? "default" : "pointer",
+            opacity: l || disabled ? 0.5 : 1,
+          }}
         >
           <option value="">{l ? "Loading…" : placeholder}</option>
           {options.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
           ))}
         </select>
-        <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+        <svg
+          style={{
+            pointerEvents: "none",
+            position: "absolute",
+            right: 10,
+            top: "50%",
+            transform: "translateY(-50%)",
+            color: "var(--rf-txt3)",
+          }}
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </div>
     </div>
   );
@@ -79,8 +220,11 @@ export default function ScheduleMilestonesList() {
 
   // Load projects once
   useEffect(() => {
-    getCxProjects()
-      .then((d) => { setProjects(toArr(d)); setCloneProjects(toArr(d)); })
+    listV2Projects()
+      .then((d) => {
+        setProjects(toArr(d));
+        setCloneProjects(toArr(d));
+      })
       .catch(() => {})
       .finally(() => setProjectsLoading(false));
   }, []);
@@ -89,7 +233,10 @@ export default function ScheduleMilestonesList() {
   useEffect(() => {
     if (filterMode !== "phase") return;
     setFilterPhaseId("");
-    if (!filterProjectId) { setPhases([]); return; }
+    if (!filterProjectId) {
+      setPhases([]);
+      return;
+    }
     setPhasesLoading(true);
     listPhases({ projectId: filterProjectId })
       .then((d) => setPhases(toArr(d)))
@@ -100,7 +247,10 @@ export default function ScheduleMilestonesList() {
   // Load phases for clone modal when cloneProjectId changes
   useEffect(() => {
     setClonePhaseId("");
-    if (!cloneProjectId) { setClonePhases([]); return; }
+    if (!cloneProjectId) {
+      setClonePhases([]);
+      return;
+    }
     setClonePhasesLoading(true);
     listPhases({ projectId: cloneProjectId })
       .then((d) => setClonePhases(toArr(d)))
@@ -118,8 +268,10 @@ export default function ScheduleMilestonesList() {
     setError("");
     try {
       const params = {};
-      if (filterMode === "project" && filterProjectId) params.projectId = filterProjectId;
-      if (filterMode === "phase" && filterPhaseId) params.phaseId = filterPhaseId;
+      if (filterMode === "project" && filterProjectId)
+        params.projectId = filterProjectId;
+      if (filterMode === "phase" && filterPhaseId)
+        params.phaseId = filterPhaseId;
       const res = await listMilestones(params);
       setMilestones(Array.isArray(res) ? res : (res?.data ?? []));
     } catch (err) {
@@ -166,10 +318,19 @@ export default function ScheduleMilestonesList() {
     setFilterPhaseId("");
     setPhases([]);
   };
-
-  const projectOptions = projects.map((p) => ({ value: p.id, label: p.name ?? p.id }));
-  const phaseOptions = phases.map((p) => ({ value: p.id, label: p.name ?? p.id }));
-  const clonePhaseOptions = clonePhases.map((p) => ({ value: p.id, label: p.name ?? p.id }));
+console.log(projects)
+  const projectOptions = projects.map((p) => ({
+    value: p.id,
+    label: p.projectName ?? p.id,
+  }));
+  const phaseOptions = phases.map((p) => ({
+    value: p.id,
+    label: p.name ?? p.id,
+  }));
+  const clonePhaseOptions = clonePhases.map((p) => ({
+    value: p.id,
+    label: p.name ?? p.id,
+  }));
 
   const groupedByPhase = milestones.reduce((acc, m) => {
     const key = m.phaseId ?? "__unassigned__";
@@ -178,232 +339,613 @@ export default function ScheduleMilestonesList() {
     return acc;
   }, {});
 
+  const th = {
+    padding: "10px 20px",
+    textAlign: "left",
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--rf-txt3)",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+  };
+  const td = { padding: "13px 20px", fontSize: 13, color: "var(--rf-txt)" };
+
   return (
-    <div className="min-h-screen p-6">
-      <div className="mx-auto">
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Schedule Milestones</h1>
-            <p className="text-gray-400">Manage schedule milestones and project templates</p>
-          </div>
-          <Link
-            href={canCreate(MODULE.MILESTONES) ? "/ScheduleMilestones/Add" : "#"}
-            {...permissionProps(canCreate(MODULE.MILESTONES), "create a milestone")}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
+    <div style={{ padding: "24px 28px", margin: "0 auto" }}>
+      <div
+        style={{
+          marginBottom: 28,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 26,
+              fontWeight: 800,
+              color: "var(--rf-txt)",
+            }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Milestone
-          </Link>
+            Schedule Milestones
+          </h1>
+          <p
+            style={{ margin: "6px 0 0", fontSize: 14, color: "var(--rf-txt3)" }}
+          >
+            Manage schedule milestones and project templates
+          </p>
         </div>
+        <Link
+          href={canCreate(MODULE.MILESTONES) ? "/ScheduleMilestones/Add" : "#"}
+          {...permissionProps(
+            canCreate(MODULE.MILESTONES),
+            "create a milestone",
+          )}
+          style={{
+            padding: "10px 18px",
+            background: "var(--rf-accent)",
+            color: "#fff",
+            borderRadius: 9,
+            fontWeight: 700,
+            fontSize: 14,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            textDecoration: "none",
+          }}
+        >
+          <svg
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          New Milestone
+        </Link>
+      </div>
 
-        {error && (
-          <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
-            <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            <span className="text-red-200">{error}</span>
-          </div>
-        )}
+      {error && (
+        <div
+          style={{
+            marginBottom: 24,
+            background: "rgba(220,38,38,0.08)",
+            border: "1px solid rgba(220,38,38,0.3)",
+            borderRadius: 10,
+            padding: "12px 14px",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 10,
+            color: "var(--rf-red)",
+            fontSize: 13,
+          }}
+        >
+          <svg
+            width="18"
+            height="18"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+            style={{ flexShrink: 0, marginTop: 1 }}
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>{error}</span>
+        </div>
+      )}
 
-        {/* Filter bar */}
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-6">
-          <div className="flex flex-wrap gap-4 items-end">
-            {/* Mode toggle */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Filter By</label>
-              <div className="flex rounded-lg overflow-hidden border border-gray-600">
-                {FILTER_MODES.map((mode) => (
+      {/* Filter bar */}
+      <div style={{ ...sCard, padding: 20, marginBottom: 24 }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 16,
+            alignItems: "flex-end",
+          }}
+        >
+          {/* Mode toggle */}
+          <div>
+            <label
+              style={{
+                display: "block",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--rf-txt2)",
+                marginBottom: 6,
+              }}
+            >
+              Filter By
+            </label>
+            <div
+              style={{
+                display: "flex",
+                borderRadius: 9,
+                overflow: "hidden",
+                border: "1px solid var(--rf-border)",
+              }}
+            >
+              {FILTER_MODES.map((mode) => {
+                const active = filterMode === mode;
+                return (
                   <button
                     key={mode}
                     onClick={() => handleFilterModeChange(mode)}
-                    className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${filterMode === mode ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"}`}
+                    style={{
+                      padding: "9px 16px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textTransform: "capitalize",
+                      border: "none",
+                      cursor: "pointer",
+                      background: active ? "var(--rf-accent)" : "var(--rf-bg3)",
+                      color: active ? "#fff" : "var(--rf-txt2)",
+                    }}
                   >
-                    {mode === "global" ? "Global Templates" : mode === "project" ? "Project" : "Phase"}
+                    {mode === "global"
+                      ? "Global Templates"
+                      : mode === "project"
+                        ? "Project"
+                        : "Phase"}
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
+          </div>
 
-            {/* Project dropdown */}
-            {(filterMode === "project" || filterMode === "phase") && (
-              <div className="w-64">
-                <SelectField
-                  label="Project"
-                  value={filterProjectId}
-                  onChange={(e) => setFilterProjectId(e.target.value)}
-                  options={projectOptions}
-                  placeholder="Select a project…"
-                  loading={projectsLoading}
-                />
-              </div>
-            )}
+          {/* Project dropdown */}
+          {(filterMode === "project" || filterMode === "phase") && (
+            <div style={{ width: 256 }}>
+              <SelectField
+                label="Project"
+                value={filterProjectId}
+                onChange={(e) => setFilterProjectId(e.target.value)}
+                options={projectOptions}
+                placeholder="Select a project…"
+                loading={projectsLoading}
+              />
+            </div>
+          )}
 
-            {/* Phase dropdown — only shown in phase mode, needs a project selected first */}
-            {filterMode === "phase" && (
-              <div className="w-64">
-                <SelectField
-                  label="Phase"
-                  value={filterPhaseId}
-                  onChange={(e) => setFilterPhaseId(e.target.value)}
-                  options={phaseOptions}
-                  placeholder={filterProjectId ? "Select a phase…" : "Select a project first"}
-                  loading={phasesLoading}
-                  disabled={!filterProjectId}
-                />
-              </div>
-            )}
+          {/* Phase dropdown — only shown in phase mode, needs a project selected first */}
+          {filterMode === "phase" && (
+            <div style={{ width: 256 }}>
+              <SelectField
+                label="Phase"
+                value={filterPhaseId}
+                onChange={(e) => setFilterPhaseId(e.target.value)}
+                options={phaseOptions}
+                placeholder={
+                  filterProjectId ? "Select a phase…" : "Select a project first"
+                }
+                loading={phasesLoading}
+                disabled={!filterProjectId}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* v15 B4 — Baseline vs actual variance, scoped to selected project */}
+      {filterMode !== "global" && filterProjectId && (
+        <div style={{ marginBottom: 16 }}>
+          <ScheduleBaselineDiff cxProjectId={filterProjectId} />
+        </div>
+      )}
+
+      {/* Content */}
+      {loading ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "64px 0",
+          }}
+        >
+          <div style={{ textAlign: "center", color: "var(--rf-accent)" }}>
+            <Spinner size={44} />
+            <p style={{ marginTop: 14, color: "var(--rf-txt3)", fontSize: 14 }}>
+              Loading milestones…
+            </p>
           </div>
         </div>
-
-        {/* v15 B4 — Baseline vs actual variance, scoped to selected project */}
-        {filterMode !== "global" && filterProjectId && (
-          <div style={{ marginBottom: 16 }}>
-            <ScheduleBaselineDiff cxProjectId={filterProjectId} />
-          </div>
-        )}
-
-        {/* Content */}
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="text-center">
-              <svg className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              <p className="text-gray-400">Loading milestones…</p>
-            </div>
-          </div>
-        ) : milestones.length === 0 ? (
-          <div className="text-center py-16">
-            <svg className="w-12 h-12 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <p className="text-gray-400 text-lg">No milestones found</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {Object.entries(groupedByPhase).map(([phaseKey, items]) => (
-              <div key={phaseKey} className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-lg">
-                <div className="px-6 py-3 border-b border-gray-700 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                  <span className="text-sm font-semibold text-gray-300">
-                    {phaseKey === "__unassigned__" ? "Unassigned" : `Phase: ${phaseKey}`}
-                  </span>
-                  <span className="ml-auto text-xs text-gray-500">{items.length} milestone{items.length !== 1 ? "s" : ""}</span>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b border-gray-700/50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Critical</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Scope</th>
-                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-700/50">
-                      {items.map((ms) => (
-                        <tr key={ms.id} className="hover:bg-gray-750 transition-colors">
-                          <td className="px-6 py-4 text-sm font-medium text-white">
-                            {ms.isCritical && <span className="mr-1.5 text-yellow-400" title="Critical path">◆</span>}
-                            {ms.name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-400">{fmt(ms.date)}</td>
-                          <td className="px-6 py-4">
-                            <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full border ${TYPE_STYLES[ms.type] ?? TYPE_STYLES.INTERNAL}`}>
-                              {ms.type}
+      ) : milestones.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "64px 0",
+            color: "var(--rf-txt3)",
+          }}
+        >
+          <svg
+            width="48"
+            height="48"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            style={{ margin: "0 auto 14px", display: "block" }}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          <p style={{ fontSize: 16 }}>No milestones found</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {Object.entries(groupedByPhase).map(([phaseKey, items]) => (
+            <div key={phaseKey} style={{ ...sCard, overflow: "hidden" }}>
+              <div
+                style={{
+                  padding: "12px 20px",
+                  borderBottom: "1px solid var(--rf-border)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="var(--rf-txt3)"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "var(--rf-txt2)",
+                  }}
+                >
+                  {phaseKey === "__unassigned__"
+                    ? "Unassigned"
+                    : `Phase: ${phaseKey}`}
+                </span>
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: 12,
+                    color: "var(--rf-txt3)",
+                  }}
+                >
+                  {items.length} milestone{items.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--rf-border)" }}>
+                      <th style={th}>Name</th>
+                      <th style={th}>Date</th>
+                      <th style={th}>Type</th>
+                      <th style={th}>Critical</th>
+                      <th style={th}>Scope</th>
+                      <th style={{ ...th, textAlign: "right" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((ms) => (
+                      <tr
+                        key={ms.id}
+                        style={{ borderTop: "1px solid var(--rf-border)" }}
+                      >
+                        <td style={{ ...td, fontWeight: 600 }}>
+                          {ms.isCritical && (
+                            <span
+                              style={{
+                                marginRight: 6,
+                                color: "var(--rf-yellow)",
+                              }}
+                              title="Critical path"
+                            >
+                              ◆
                             </span>
-                          </td>
-                          <td className="px-6 py-4 text-sm">
-                            {ms.isCritical ? <span className="text-yellow-400 font-medium">Yes</span> : <span className="text-gray-500">—</span>}
-                          </td>
-                          <td className="px-6 py-4">
-                            {ms.isGlobal ? (
-                              <span className="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-purple-900/40 text-purple-300 border border-purple-700/40">Template</span>
-                            ) : (
-                              <span className="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-blue-900/40 text-blue-300 border border-blue-700/40">Project</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button onClick={() => router.push(`/ScheduleMilestones/Edit/${ms.id}`)} className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">Edit</button>
-                              {ms.isGlobal && (
-                                <button onClick={() => setCloneTarget(ms)} className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded transition-colors">Clone</button>
+                          )}
+                          {ms.name}
+                        </td>
+                        <td style={{ ...td, color: "var(--rf-txt3)" }}>
+                          {fmt(ms.date)}
+                        </td>
+                        <td style={td}>
+                          <Badge
+                            meta={TYPE_META[ms.type] ?? TYPE_META.INTERNAL}
+                          >
+                            {ms.type}
+                          </Badge>
+                        </td>
+                        <td style={td}>
+                          {ms.isCritical ? (
+                            <span
+                              style={{
+                                color: "var(--rf-yellow)",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Yes
+                            </span>
+                          ) : (
+                            <span style={{ color: "var(--rf-txt3)" }}>—</span>
+                          )}
+                        </td>
+                        <td style={td}>
+                          {ms.isGlobal ? (
+                            <Badge
+                              meta={{
+                                bg: "rgba(96,32,176,0.12)",
+                                color: "var(--rf-purple)",
+                                border: "rgba(96,32,176,0.3)",
+                              }}
+                            >
+                              Template
+                            </Badge>
+                          ) : (
+                            <Badge
+                              meta={{
+                                bg: "var(--rf-glow)",
+                                color: "var(--rf-accent)",
+                                border: "rgba(0,112,187,0.3)",
+                              }}
+                            >
+                              Project
+                            </Badge>
+                          )}
+                        </td>
+                        <td style={{ ...td, textAlign: "right" }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              gap: 8,
+                            }}
+                          >
+                            <button
+                              onClick={() =>
+                                router.push(`/ScheduleMilestones/Edit/${ms.id}`)
+                              }
+                              {...permissionProps(
+                                canEdit(MODULE.MILESTONES),
+                                "edit milestones",
                               )}
-                              <button onClick={() => setDeleteConfirm(ms.id)} className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors">Delete</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Delete modal */}
-        {deleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-xl border border-gray-700 max-w-sm mx-4 shadow-2xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-2">Delete Milestone?</h3>
-              <p className="text-gray-400 mb-6">This will soft-delete the milestone and cannot be undone.</p>
-              <div className="flex gap-3">
-                <button onClick={() => setDeleteConfirm(null)} disabled={deleting} className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">Cancel</button>
-                <button onClick={() => handleDelete(deleteConfirm)} disabled={deleting} className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-red-900 text-white rounded-lg transition-colors flex items-center justify-center gap-2">
-                  {deleting && <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Clone modal */}
-        {cloneTarget && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-xl border border-gray-700 max-w-md w-full mx-4 shadow-2xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-1">Clone Milestone into Project</h3>
-              <p className="text-gray-400 text-sm mb-4">
-                Cloning <span className="text-white font-medium">{cloneTarget.name}</span>
-              </p>
-              <div className="space-y-4">
-                <SelectField
-                  label="Target Project *"
-                  value={cloneProjectId}
-                  onChange={(e) => setCloneProjectId(e.target.value)}
-                  options={projectOptions}
-                  placeholder="Select a project…"
-                  loading={projectsLoading}
-                />
-                <SelectField
-                  label="Target Phase (optional)"
-                  value={clonePhaseId}
-                  onChange={(e) => setClonePhaseId(e.target.value)}
-                  options={clonePhaseOptions}
-                  placeholder={cloneProjectId ? "Select a phase…" : "Select a project first"}
-                  loading={clonePhasesLoading}
-                  disabled={!cloneProjectId}
-                />
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button onClick={() => { setCloneTarget(null); setCloneProjectId(""); setClonePhaseId(""); }} disabled={cloning} className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">Cancel</button>
-                <button onClick={handleClone} disabled={cloning || !cloneProjectId} className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center justify-center gap-2">
-                  {cloning && <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>}
-                  Clone Milestone
-                </button>
+                              style={actionBtn("var(--rf-accent)")}
+                            >
+                              Edit
+                            </button>
+                            {ms.isGlobal && (
+                              <button
+                                onClick={() => setCloneTarget(ms)}
+                                style={actionBtn("var(--rf-purple)")}
+                              >
+                                Clone
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setDeleteConfirm(ms.id)}
+                              {...permissionProps(
+                                canDelete(MODULE.MILESTONES),
+                                "delete milestones",
+                              )}
+                              style={actionBtn("var(--rf-red)")}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
+          ))}
+        </div>
+      )}
+
+      {/* Delete modal */}
+      {deleteConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+            padding: 16,
+          }}
+          onClick={(e) =>
+            e.target === e.currentTarget && setDeleteConfirm(null)
+          }
+        >
+          <div style={{ ...sCard, maxWidth: 380, width: "100%", padding: 24 }}>
+            <h3
+              style={{
+                margin: "0 0 8px",
+                fontSize: 17,
+                fontWeight: 700,
+                color: "var(--rf-txt)",
+              }}
+            >
+              Delete Milestone?
+            </h3>
+            <p
+              style={{
+                margin: "0 0 22px",
+                fontSize: 14,
+                color: "var(--rf-txt3)",
+              }}
+            >
+              This will soft-delete the milestone and cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleting}
+                style={{ ...sBtnGhost, flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={deleting}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: 9,
+                  border: "none",
+                  background: "var(--rf-red)",
+                  color: "#fff",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  opacity: deleting ? 0.7 : 1,
+                }}
+              >
+                {deleting && <Spinner />}
+                Delete
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Clone modal */}
+      {cloneTarget && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+            padding: 16,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setCloneTarget(null);
+              setCloneProjectId("");
+              setClonePhaseId("");
+            }
+          }}
+        >
+          <div style={{ ...sCard, maxWidth: 460, width: "100%", padding: 24 }}>
+            <h3
+              style={{
+                margin: "0 0 4px",
+                fontSize: 17,
+                fontWeight: 700,
+                color: "var(--rf-txt)",
+              }}
+            >
+              Clone Milestone into Project
+            </h3>
+            <p
+              style={{
+                margin: "0 0 18px",
+                fontSize: 13,
+                color: "var(--rf-txt3)",
+              }}
+            >
+              Cloning{" "}
+              <span style={{ color: "var(--rf-txt)", fontWeight: 600 }}>
+                {cloneTarget.name}
+              </span>
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <SelectField
+                label="Target Project *"
+                value={cloneProjectId}
+                onChange={(e) => setCloneProjectId(e.target.value)}
+                options={projectOptions}
+                placeholder="Select a project…"
+                loading={projectsLoading}
+              />
+              <SelectField
+                label="Target Phase (optional)"
+                value={clonePhaseId}
+                onChange={(e) => setClonePhaseId(e.target.value)}
+                options={clonePhaseOptions}
+                placeholder={
+                  cloneProjectId ? "Select a phase…" : "Select a project first"
+                }
+                loading={clonePhasesLoading}
+                disabled={!cloneProjectId}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 12, marginTop: 22 }}>
+              <button
+                onClick={() => {
+                  setCloneTarget(null);
+                  setCloneProjectId("");
+                  setClonePhaseId("");
+                }}
+                disabled={cloning}
+                style={{ ...sBtnGhost, flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClone}
+                disabled={cloning || !cloneProjectId}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: 9,
+                  border: "none",
+                  background: "var(--rf-purple)",
+                  color: "#fff",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: cloning || !cloneProjectId ? "default" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  opacity: cloning || !cloneProjectId ? 0.5 : 1,
+                }}
+              >
+                {cloning && <Spinner />}
+                Clone Milestone
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -398,7 +398,6 @@ const MODULES = [
 ];
 
 const LIFECYCLE = [
-  { ph: "L0", nm: "Pre-Construction", meta: "Kickoff, design, mobilization" },
   { ph: "L1", nm: "FAT", meta: "Factory acceptance — cleared to ship" },
   { ph: "L2", nm: "Install", meta: "Receipt & installation verified" },
   { ph: "L3", nm: "Energize", meta: "Energization readiness & PFC" },
@@ -406,11 +405,11 @@ const LIFECYCLE = [
   { ph: "L5", nm: "Integrated (IST)", meta: "System-level integrated test" },
   { ph: "L6", nm: "Turnover", meta: "O&M, training, acceptance" },
 ];
-const PHASES = ["L0", "L1", "L2", "L3", "L4", "L5"];
+const PHASES = ["L1", "L2", "L3", "L4", "L5"];
 
 const PART = {
   gc: {
-    owns: ["L0", "L2", "L6"],
+    owns: ["L2", "L6"],
     role: "Runs the project",
     recv: "Design, submittals, and trade mobilization",
     does: "Coordinates site, sequences trades, verifies L2 install, manages punch & schedule",
@@ -487,7 +486,7 @@ const PART = {
     hand: "Security acceptance → Owner / Facilities",
   },
   staffing: {
-    owns: ["L0"],
+    owns: ["L1"],
     role: "Skilled labor supply",
     recv: "Manpower requests & forecast from the trades",
     does: "Sources, vets, dispatches skilled crews to site",
@@ -773,6 +772,28 @@ const SEED = {
       "Controls",
     ),
   ],
+  // Kind-scoped issue views — populated from the Issues API (PUNCH_LIST /
+  // HOLD_POINT) in refresh(); seeded here so the shape is stable pre-load.
+  punchList: [
+    fd(
+      "HS-UPS-01",
+      "Punch",
+      "Minor",
+      "Cable labeling incomplete Section B",
+      "open",
+      "Electrical",
+    ),
+  ],
+  holdPoints: [
+    fd(
+      "HS-UPS-01",
+      "HoldPoint",
+      "Major",
+      "Hold: NETA report required before L4",
+      "open",
+      "Electrical",
+    ),
+  ],
   tests: [
     {
       id: "t1",
@@ -791,7 +812,7 @@ const SEED = {
   milestones: [
     {
       d: "Wk 1",
-      ph: "L0",
+      ph: "L1",
       name: "Customer kickoff + mobilization",
       status: "done",
     },
@@ -1261,13 +1282,13 @@ function gateOf(db, u) {
           Math.min(
             ...u.ids.map((id) => {
               const e = db.equipment.find((x) => x.id === id);
-              return PHASES.indexOf(e ? e.phase : "L0");
+              return PHASES.indexOf(e ? e.phase : "L1");
             }),
           )
         ]
       : u.eq
         ? u.eq.phase
-        : "L0";
+        : "L1";
   const phaseCls = cls.filter((c) => c.level === phase);
   const workDone = phaseCls.filter((c) => isDone(c.status)).length;
   const failed = cls.filter((c) => c.status === "failed");
@@ -1517,7 +1538,7 @@ export default function NewProjectDetail() {
   const TASK_TO = { open: "PENDING", in_progress: "IN_PROGRESS", done: "COMPLETED" };
 
   const refresh = async (pid) => {
-    const [summaryR, issuesR, chksR, testsR, laR, teamR, stakeR, milesR, subsR, tarfR, procR, feedR, tasksR] =
+    const [summaryR, issuesR, chksR, testsR, laR, teamR, stakeR, milesR, subsR, tarfR, procR, feedR, tasksR, punchR, holdsR] =
       await Promise.allSettled([
         getPlaybookSummary(pid),
         getIssues({ projectId: pid, limit: 100 }),
@@ -1532,6 +1553,9 @@ export default function NewProjectDetail() {
         getProcurementItems({ projectId: pid }),
         getProjectFeed(pid, { limit: 50 }),
         getAllTasks({ projectId: pid }),
+        // Punch list + hold points are the same Issues resource, kind-scoped.
+        getIssues({ projectId: pid, kind: "PUNCH_LIST", limit: 100 }),
+        getIssues({ projectId: pid, kind: "HOLD_POINT", limit: 100 }),
       ]);
     const val = (r, fb) => (r.status === "fulfilled" ? norm(r.value) ?? fb : fb);
     const rows = (r) => {
@@ -1558,6 +1582,17 @@ export default function NewProjectDetail() {
     const eq = (projectAssetId) => (projectAssetId && codeOf[projectAssetId]) || "—";
     const discOf = (projectAssetId) => equipment.find((e) => e.assetId === projectAssetId)?.disc ?? "Electrical";
 
+    // Shared mapping: raw Issue → the finding shape these modules render.
+    const toFinding = (f) => ({
+      id: f.id,
+      eq: eq(f.projectAssetId),
+      type: FND_TYPE[f.kind] ?? "Deficiency",
+      sev: SEV_FROM[f.severity] ?? "Minor",
+      title: f.title,
+      status: f.status === "CLOSED" ? "resolved" : "open",
+      disc: discOf(f.projectAssetId),
+    });
+
     const monday = isoMonday();
     const next = {
       project: { name: summary.projectName, phase: summary.projectPhase },
@@ -1565,8 +1600,10 @@ export default function NewProjectDetail() {
       fieldProgress: (summary.tradeProgress ?? []).map((t) => ({ disc: t.trade, pct: t.pct, note: t.note ?? "" })),
       equipment,
       systems: [],
-      checklists: rows(chksR).map((c) => ({ id: c.id, eq: eq(c.projectAssetId), level: c.phase === "NONE" ? "L0" : c.phase, role: CHKTYPE_ROLE[c.checklistType] ?? "GC", name: c.title, status: CHK_FROM[c.status] ?? "not_started" })),
-      findings: rows(issuesR).map((f) => ({ id: f.id, eq: eq(f.projectAssetId), type: FND_TYPE[f.kind] ?? "Deficiency", sev: SEV_FROM[f.severity] ?? "Minor", title: f.title, status: f.status === "CLOSED" ? "resolved" : "open", disc: discOf(f.projectAssetId) })),
+      checklists: rows(chksR).map((c) => ({ id: c.id, eq: eq(c.projectAssetId), level: c.phase === "NONE" ? "L1" : c.phase, role: CHKTYPE_ROLE[c.checklistType] ?? "GC", name: c.title, status: CHK_FROM[c.status] ?? "not_started" })),
+      findings: rows(issuesR).map(toFinding),
+      punchList: rows(punchR).map(toFinding),
+      holdPoints: rows(holdsR).map(toFinding),
       tests: rows(testsR).map((t) => ({ id: t.id, eq: eq(t.projectAssetId), name: t.testName, status: t.result === "PASS" ? "passed" : "pending" })),
       lookahead: rows(laR).map((a) => {
         const wk = Math.round((new Date(a.weekStartDate).getTime() - monday.getTime()) / (7 * 86400000)) + 1;
@@ -1625,9 +1662,8 @@ export default function NewProjectDetail() {
 
   const counts = {
     issues: g.gk.length,
-    punch: g.mit.length,
-    holds: db.findings.filter((f) => f.type === "HoldPoint" && isOpen(f.status))
-      .length,
+    punch: (db.punchList ?? []).filter((f) => isOpen(f.status)).length,
+    holds: (db.holdPoints ?? []).filter((f) => isOpen(f.status)).length,
     readiness: db.equipment.length,
     tests: db.tests.length,
     schedule: db.milestones.length,
@@ -3205,16 +3241,14 @@ export default function NewProjectDetail() {
         break;
       case "punch":
         body = Findings({
-          arr: g.mit,
+          arr: (db.punchList ?? []).filter((f) => isOpen(f.status)),
           title: "Punch List — mitigating",
           note: "Carry-forward items; they do not block gates.",
         });
         break;
       case "holds":
         body = Findings({
-          arr: db.findings.filter(
-            (f) => f.type === "HoldPoint" && isOpen(f.status),
-          ),
+          arr: (db.holdPoints ?? []).filter((f) => isOpen(f.status)),
           title: "Hold Points",
           note: "Must be released before the gate clears.",
         });

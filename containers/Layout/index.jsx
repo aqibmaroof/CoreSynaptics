@@ -407,7 +407,7 @@ function buildSections(projectCode) {
         },
         {
           title: "Schedule milestones",
-          href: "/ScheduleMilestones",
+          href: "/ScheduleMilestones/List",
           module: MODULE.MILESTONES,
         },
         {
@@ -419,12 +419,12 @@ function buildSections(projectCode) {
         { title: "NCRs", href: "/NCRs", module: MODULE.QA_QC },
         {
           title: "Hold/Witness pts",
-          href: "/HoldWitnessPoints",
+          href: "/HoldWitnessPoints?kind=HOLD_POINT",
           module: MODULE.COMMISSIONING_TESTS,
         },
         {
           title: "Punch list",
-          href: "/PunchList",
+          href: "/PunchList?kind=PUNCH_LIST",
           module: MODULE.FIELD_EXECUTION,
         },
         {

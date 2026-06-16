@@ -1,20 +1,104 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { listPhases, assignPhasesToProject } from "@/services/Phases";
 import { listMilestones } from "@/services/ScheduleMilestones";
 import { getCxProjects } from "@/services/CxProjects";
 
-const TYPE_STYLES = {
-  CONTRACT: "bg-red-900/40 text-red-300 border-red-700/40",
-  OPS: "bg-orange-900/40 text-orange-300 border-orange-700/40",
-  INTERNAL: "bg-gray-700/60 text-gray-300 border-gray-600/40",
+// Type chip palette — rf-token based so it adapts to light/dark.
+const TYPE_META = {
+  CONTRACT: {
+    bg: "rgba(220,38,38,0.12)",
+    color: "var(--rf-red)",
+    border: "rgba(220,38,38,0.3)",
+  },
+  OPS: {
+    bg: "rgba(192,90,0,0.12)",
+    color: "var(--rf-orange)",
+    border: "rgba(192,90,0,0.3)",
+  },
+  INTERNAL: {
+    bg: "var(--rf-bg3)",
+    color: "var(--rf-txt2)",
+    border: "var(--rf-border)",
+  },
 };
 
 const fmt = (iso) =>
   iso
     ? new Date(iso).toLocaleDateString(undefined, { dateStyle: "short" })
     : "—";
+
+// ─── rf-token style atoms ────────────────────────────────────────────────────
+const sCard = {
+  background: "var(--rf-bg2)",
+  border: "1px solid var(--rf-border)",
+  borderRadius: 14,
+};
+const sBtnPrimary = {
+  padding: "10px 22px",
+  borderRadius: 9,
+  border: "none",
+  background: "var(--rf-accent)",
+  color: "#fff",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+};
+const sBtnGhost = {
+  padding: "10px 20px",
+  borderRadius: 9,
+  border: "1px solid var(--rf-border)",
+  background: "var(--rf-bg3)",
+  color: "var(--rf-txt2)",
+  fontSize: 14,
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+function Spinner({ size = 16 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      className="animate-spin"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <circle className="opacity-25" cx="12" cy="12" r="10" strokeWidth="4" />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
+  );
+}
+
+function TypeChip({ type }) {
+  const meta = TYPE_META[type] ?? TYPE_META.INTERNAL;
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "1px 8px",
+        fontSize: 11,
+        fontWeight: 700,
+        borderRadius: 6,
+        background: meta.bg,
+        color: meta.color,
+        border: `1px solid ${meta.border}`,
+      }}
+    >
+      {type}
+    </span>
+  );
+}
 
 export default function PhaseMilestoneWizard() {
   const [step, setStep] = useState(1); // 1 = setup, 2 = select, 3 = confirm, 4 = done
@@ -121,504 +205,621 @@ export default function PhaseMilestoneWizard() {
     selectedMilestoneIds.includes(m.id),
   );
 
+  const errorBox = (text) => (
+    <div
+      style={{
+        marginBottom: 16,
+        background: "rgba(220,38,38,0.08)",
+        border: "1px solid rgba(220,38,38,0.3)",
+        borderRadius: 10,
+        padding: "12px 14px",
+        color: "var(--rf-red)",
+        fontSize: 13,
+      }}
+    >
+      {text}
+    </div>
+  );
+
+  const panelHeader = {
+    padding: "14px 20px",
+    borderBottom: "1px solid var(--rf-border)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  };
+  const projectName =
+    projects.find((p) => p.id === projectId)?.name ?? projectId;
+
   return (
-    <div className="min-h-screen p-6">
-      <div className="mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Phase & Milestone Wizard
-          </h1>
-          <p className="text-gray-400">
-            Bulk-assign global templates to a project in one step.
-          </p>
-        </div>
+    <div style={{ padding: "24px 28px", margin: "0 auto" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "var(--rf-txt)" }}>
+          Phase &amp; Milestone Wizard
+        </h1>
+        <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--rf-txt3)" }}>
+          Bulk-assign global templates to a project in one step.
+        </p>
+      </div>
 
-        {/* Progress bar */}
-        <div className="flex items-center gap-2 mb-8">
-          {["Project", "Select", "Confirm", "Done"].map((label, i) => {
-            const idx = i + 1;
-            const active = step === idx;
-            const done = step > idx;
-            return (
-              <div key={label} className="flex items-center gap-2">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${done ? "bg-green-600 text-white" : active ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-400"}`}
-                >
-                  {done ? "" : idx}
-                </div>
-                <span
-                  className={`text-sm font-medium ${active ? "text-white" : "text-gray-500"}`}
-                >
-                  {label}
-                </span>
-                {i < 3 && (
-                  <div
-                    className={`h-px w-12 transition-colors ${done ? "bg-green-600" : "bg-gray-700"}`}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── Step 1: Enter project ID ── */}
-        {step === 1 && (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-8 max-w-lg">
-            <h2 className="text-xl font-semibold text-white mb-2">
-              Target Project
-            </h2>
-            <p className="text-gray-400 text-sm mb-6">
-              Select the project you want to assign phases and milestones to.
-            </p>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Project <span className="text-red-400">*</span>
-            </label>
-            <div className="relative">
-              <select
-                value={projectId}
-                onChange={(e) => { setProjectId(e.target.value); setProjectIdError(""); }}
-                disabled={projectsLoading}
-                className={`w-full px-4 py-3 bg-gray-700 border rounded-lg text-white focus:outline-none focus:border-blue-500 appearance-none [&_option]:bg-gray-700 disabled:opacity-50 ${projectIdError ? "border-red-500" : "border-gray-600"}`}
+      {/* Progress bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
+        {["Project", "Select", "Confirm", "Done"].map((label, i) => {
+          const idx = i + 1;
+          const active = step === idx;
+          const done = step > idx;
+          return (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  background: done
+                    ? "var(--rf-green)"
+                    : active
+                      ? "var(--rf-accent)"
+                      : "var(--rf-bg3)",
+                  color: done || active ? "#fff" : "var(--rf-txt3)",
+                  border: done || active ? "none" : "1px solid var(--rf-border)",
+                }}
               >
-                <option value="">{projectsLoading ? "Loading projects…" : "Select a project…"}</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name ?? p.id}</option>
-                ))}
-              </select>
-              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+                {done ? "✓" : idx}
+              </div>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: active ? "var(--rf-txt)" : "var(--rf-txt3)",
+                }}
+              >
+                {label}
+              </span>
+              {i < 3 && (
+                <div
+                  style={{
+                    height: 1,
+                    width: 48,
+                    background: done ? "var(--rf-green)" : "var(--rf-border)",
+                  }}
+                />
+              )}
             </div>
-            {projectIdError && (
-              <p className="text-red-400 text-sm mt-1">{projectIdError}</p>
-            )}
-            <button
-              onClick={handleNext}
-              disabled={projectsLoading}
-              className="mt-6 w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 text-white rounded-lg font-medium transition-all"
-            >
-              Next: Select Phases & Milestones →
-            </button>
-          </div>
-        )}
+          );
+        })}
+      </div>
 
-        {/* ── Step 2: Select ── */}
-        {step === 2 && (
-          <div>
-            {libraryError && (
-              <div className="mb-4 bg-red-900/20 border border-red-500/30 rounded-lg p-4 text-red-200 text-sm">
-                {libraryError}
-              </div>
-            )}
-            {libraryLoading ? (
-              <div className="flex items-center justify-center py-24">
-                <svg
-                  className="w-10 h-10 text-blue-500 animate-spin"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-6 mb-6">
-                  {/* Left: Phases */}
-                  <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-700 flex items-center justify-between">
-                      <h3 className="font-semibold text-white">
-                        Phases ({globalPhases.length})
-                      </h3>
-                      <span className="text-xs text-blue-400">
-                        {selectedPhaseIds.length} selected
+      {/* ── Step 1: Select project ── */}
+      {step === 1 && (
+        <div style={{ ...sCard, padding: 32, maxWidth: 520 }}>
+          <h2 style={{ margin: "0 0 6px", fontSize: 19, fontWeight: 700, color: "var(--rf-txt)" }}>
+            Target Project
+          </h2>
+          <p style={{ margin: "0 0 22px", fontSize: 13, color: "var(--rf-txt3)" }}>
+            Select the project you want to assign phases and milestones to.
+          </p>
+          <label
+            style={{
+              display: "block",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--rf-txt2)",
+              marginBottom: 8,
+            }}
+          >
+            Project <span style={{ color: "var(--rf-red)" }}>*</span>
+          </label>
+          <div style={{ position: "relative" }}>
+            <select
+              value={projectId}
+              onChange={(e) => { setProjectId(e.target.value); setProjectIdError(""); }}
+              disabled={projectsLoading}
+              style={{
+                width: "100%",
+                padding: "11px 32px 11px 12px",
+                background: "var(--rf-bg)",
+                border: `1px solid ${projectIdError ? "var(--rf-red)" : "var(--rf-border)"}`,
+                borderRadius: 9,
+                color: "var(--rf-txt)",
+                fontSize: 14,
+                fontFamily: "inherit",
+                outline: "none",
+                appearance: "none",
+                cursor: projectsLoading ? "default" : "pointer",
+                opacity: projectsLoading ? 0.5 : 1,
+              }}
+            >
+              <option value="">{projectsLoading ? "Loading projects…" : "Select a project…"}</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name ?? p.id}</option>
+              ))}
+            </select>
+            <svg
+              style={{
+                pointerEvents: "none",
+                position: "absolute",
+                right: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--rf-txt3)",
+              }}
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          {projectIdError && (
+            <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--rf-red)" }}>{projectIdError}</p>
+          )}
+          <button
+            onClick={handleNext}
+            disabled={projectsLoading}
+            style={{
+              ...sBtnPrimary,
+              marginTop: 24,
+              width: "100%",
+              justifyContent: "center",
+              opacity: projectsLoading ? 0.6 : 1,
+            }}
+          >
+            Next: Select Phases &amp; Milestones →
+          </button>
+        </div>
+      )}
+
+      {/* ── Step 2: Select ── */}
+      {step === 2 && (
+        <div>
+          {libraryError && errorBox(libraryError)}
+          {libraryLoading ? (
+            <div style={{ display: "flex", justifyContent: "center", padding: "96px 0", color: "var(--rf-accent)" }}>
+              <Spinner size={40} />
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 24,
+                  marginBottom: 24,
+                }}
+              >
+                {/* Left: Phases */}
+                <div style={{ ...sCard, overflow: "hidden" }}>
+                  <div style={panelHeader}>
+                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--rf-txt)" }}>
+                      Phases ({globalPhases.length})
+                    </h3>
+                    <span style={{ fontSize: 12, color: "var(--rf-accent)", fontWeight: 600 }}>
+                      {selectedPhaseIds.length} selected
+                    </span>
+                  </div>
+                  <div style={{ maxHeight: 384, overflowY: "auto" }}>
+                    {globalPhases.length === 0 ? (
+                      <p style={{ padding: 20, fontSize: 13, color: "var(--rf-txt3)" }}>
+                        No global phases in this org.
+                      </p>
+                    ) : (
+                      globalPhases.map((phase) => {
+                        const selected = selectedPhaseIds.includes(phase.id);
+                        const highlighted = highlightedPhaseId === phase.id;
+                        return (
+                          <div
+                            key={phase.id}
+                            onClick={() =>
+                              setHighlightedPhaseId(highlighted ? null : phase.id)
+                            }
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 12,
+                              padding: "12px 20px",
+                              cursor: "pointer",
+                              borderTop: "1px solid var(--rf-border)",
+                              background: highlighted ? "var(--rf-glow)" : "transparent",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                togglePhase(phase.id);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{ marginTop: 2, width: 16, height: 16, accentColor: "var(--rf-accent)", cursor: "pointer" }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p
+                                style={{
+                                  margin: 0,
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  color: "var(--rf-txt)",
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {phase.name}
+                              </p>
+                              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--rf-txt3)" }}>
+                                {fmt(phase.startDate)} – {fmt(phase.endDate)}
+                              </p>
+                            </div>
+                            <span style={{ fontSize: 12, color: "var(--rf-txt3)", flexShrink: 0 }}>
+                              #{phase.order}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Milestones */}
+                <div style={{ ...sCard, overflow: "hidden" }}>
+                  <div style={panelHeader}>
+                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--rf-txt)" }}>
+                      Milestones
+                      {highlightedPhaseId && (
+                        <span style={{ marginLeft: 6, fontSize: 12, color: "var(--rf-accent)", fontWeight: 500 }}>
+                          (filtered by phase)
+                        </span>
+                      )}
+                    </h3>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {highlightedPhaseId && (
+                        <button
+                          onClick={() => setHighlightedPhaseId(null)}
+                          style={{
+                            fontSize: 12,
+                            color: "var(--rf-txt3)",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            textDecoration: "underline",
+                          }}
+                        >
+                          Show all
+                        </button>
+                      )}
+                      <span style={{ fontSize: 12, color: "var(--rf-accent)", fontWeight: 600 }}>
+                        {selectedMilestoneIds.length} selected
                       </span>
                     </div>
-                    <div className="divide-y divide-gray-700/50 max-h-96 overflow-y-auto">
-                      {globalPhases.length === 0 ? (
-                        <p className="p-5 text-gray-500 text-sm">
-                          No global phases in this org.
-                        </p>
-                      ) : (
-                        globalPhases.map((phase) => {
-                          const selected = selectedPhaseIds.includes(phase.id);
-                          const highlighted = highlightedPhaseId === phase.id;
-                          return (
-                            <div
-                              key={phase.id}
-                              onClick={() =>
-                                setHighlightedPhaseId(
-                                  highlighted ? null : phase.id,
-                                )
-                              }
-                              className={`flex items-start gap-3 px-5 py-3 cursor-pointer transition-colors ${highlighted ? "bg-blue-900/20" : "hover:bg-gray-750"}`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selected}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  togglePhase(phase.id);
-                                }}
-                                className="mt-0.5 w-4 h-4 rounded border-gray-600 accent-blue-500 cursor-pointer"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate">
-                                  {phase.name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {fmt(phase.startDate)} – {fmt(phase.endDate)}
+                  </div>
+                  <div style={{ maxHeight: 384, overflowY: "auto" }}>
+                    {visibleMilestones.length === 0 ? (
+                      <p style={{ padding: 20, fontSize: 13, color: "var(--rf-txt3)" }}>
+                        {highlightedPhaseId
+                          ? "No milestones linked to this phase."
+                          : "No global milestones in this org."}
+                      </p>
+                    ) : (
+                      visibleMilestones.map((ms) => {
+                        const selected = selectedMilestoneIds.includes(ms.id);
+                        return (
+                          <label
+                            key={ms.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 12,
+                              padding: "12px 20px",
+                              cursor: "pointer",
+                              borderTop: "1px solid var(--rf-border)",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => toggleMilestone(ms.id)}
+                              style={{ marginTop: 2, width: 16, height: 16, accentColor: "var(--rf-accent)", cursor: "pointer" }}
+                            />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                {ms.isCritical && (
+                                  <span style={{ color: "var(--rf-yellow)", fontSize: 12 }}>◆</span>
+                                )}
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: "var(--rf-txt)",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
+                                >
+                                  {ms.name}
                                 </p>
                               </div>
-                              <span className="text-xs text-gray-500 shrink-0">
-                                #{phase.order}
-                              </span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
+                                <TypeChip type={ms.type} />
+                                <span style={{ fontSize: 12, color: "var(--rf-txt3)" }}>
+                                  {fmt(ms.date)}
+                                </span>
+                              </div>
                             </div>
-                          );
-                        })
-                      )}
-                    </div>
+                          </label>
+                        );
+                      })
+                    )}
                   </div>
-
-                  {/* Right: Milestones */}
-                  <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-700 flex items-center justify-between">
-                      <h3 className="font-semibold text-white">
-                        Milestones
-                        {highlightedPhaseId && (
-                          <span className="ml-1 text-xs text-blue-400">
-                            (filtered by phase)
-                          </span>
-                        )}
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        {highlightedPhaseId && (
-                          <button
-                            onClick={() => setHighlightedPhaseId(null)}
-                            className="text-xs text-gray-400 hover:text-white underline"
-                          >
-                            Show all
-                          </button>
-                        )}
-                        <span className="text-xs text-blue-400">
-                          {selectedMilestoneIds.length} selected
-                        </span>
-                      </div>
-                    </div>
-                    <div className="divide-y divide-gray-700/50 max-h-96 overflow-y-auto">
-                      {visibleMilestones.length === 0 ? (
-                        <p className="p-5 text-gray-500 text-sm">
-                          {highlightedPhaseId
-                            ? "No milestones linked to this phase."
-                            : "No global milestones in this org."}
-                        </p>
-                      ) : (
-                        visibleMilestones.map((ms) => {
-                          const selected = selectedMilestoneIds.includes(ms.id);
-                          return (
-                            <label
-                              key={ms.id}
-                              className="flex items-start gap-3 px-5 py-3 cursor-pointer hover:bg-gray-750 transition-colors"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selected}
-                                onChange={() => toggleMilestone(ms.id)}
-                                className="mt-0.5 w-4 h-4 rounded border-gray-600 accent-blue-500"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  {ms.isCritical && (
-                                    <span className="text-yellow-400 text-xs">
-                                      ◆
-                                    </span>
-                                  )}
-                                  <p className="text-sm font-medium text-white truncate">
-                                    {ms.name}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span
-                                    className={`inline-block px-1.5 py-0.5 text-xs rounded border ${TYPE_STYLES[ms.type] ?? TYPE_STYLES.INTERNAL}`}
-                                  >
-                                    {ms.type}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    {fmt(ms.date)}
-                                  </span>
-                                </div>
-                              </div>
-                            </label>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    onClick={handleNext}
-                    className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-lg font-medium transition-all"
-                  >
-                    Review & Confirm →
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ── Step 3: Confirm ── */}
-        {step === 3 && (
-          <div>
-            <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-6">
-              <h2 className="text-xl font-semibold text-white mb-4">
-                Review Selection
-              </h2>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-300 mb-3 uppercase tracking-wider">
-                    Phases to clone ({selectedPhases.length})
-                  </h3>
-                  {selectedPhases.length === 0 ? (
-                    <p className="text-gray-500 text-sm">None selected</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {selectedPhases.map((p) => (
-                        <li
-                          key={p.id}
-                          className="flex items-center gap-2 text-sm text-gray-300"
-                        >
-                          <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />
-                          <span className="font-medium text-white">
-                            {p.name}
-                          </span>
-                          <span className="text-gray-500">#{p.order}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-300 mb-3 uppercase tracking-wider">
-                    Milestones to clone ({selectedMilestones.length})
-                  </h3>
-                  {selectedMilestones.length === 0 ? (
-                    <p className="text-gray-500 text-sm">None selected</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {selectedMilestones.map((m) => (
-                        <li
-                          key={m.id}
-                          className="flex items-center gap-2 text-sm text-gray-300"
-                        >
-                          {m.isCritical && (
-                            <span className="text-yellow-400 text-xs">◆</span>
-                          )}
-                          <span className="font-medium text-white">
-                            {m.name}
-                          </span>
-                          <span
-                            className={`inline-block px-1.5 py-0 text-xs rounded border ${TYPE_STYLES[m.type] ?? TYPE_STYLES.INTERNAL}`}
-                          >
-                            {m.type}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-gray-700 flex items-center gap-2">
-                <svg
-                  className="w-4 h-4 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <button onClick={() => setStep(1)} style={sBtnGhost}>
+                  ← Back
+                </button>
+                <button onClick={handleNext} style={sBtnPrimary}>
+                  Review &amp; Confirm →
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Step 3: Confirm ── */}
+      {step === 3 && (
+        <div>
+          <div style={{ ...sCard, padding: 24, marginBottom: 24 }}>
+            <h2 style={{ margin: "0 0 18px", fontSize: 19, fontWeight: 700, color: "var(--rf-txt)" }}>
+              Review Selection
+            </h2>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+              <div>
+                <h3
+                  style={{
+                    margin: "0 0 12px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "var(--rf-txt3)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <p className="text-sm text-gray-400">
-                  Will be cloned into project{" "}
-                  <span className="text-white font-medium">
-                    {projects.find((p) => p.id === projectId)?.name ?? projectId}
-                  </span>
-                  . Phase-to-milestone links are remapped automatically.
-                </p>
+                  Phases to clone ({selectedPhases.length})
+                </h3>
+                {selectedPhases.length === 0 ? (
+                  <p style={{ fontSize: 13, color: "var(--rf-txt3)" }}>None selected</p>
+                ) : (
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                    {selectedPhases.map((p) => (
+                      <li key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--rf-accent)", flexShrink: 0 }} />
+                        <span style={{ fontWeight: 600, color: "var(--rf-txt)" }}>{p.name}</span>
+                        <span style={{ color: "var(--rf-txt3)" }}>#{p.order}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div>
+                <h3
+                  style={{
+                    margin: "0 0 12px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "var(--rf-txt3)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Milestones to clone ({selectedMilestones.length})
+                </h3>
+                {selectedMilestones.length === 0 ? (
+                  <p style={{ fontSize: 13, color: "var(--rf-txt3)" }}>None selected</p>
+                ) : (
+                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                    {selectedMilestones.map((m) => (
+                      <li key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                        {m.isCritical && <span style={{ color: "var(--rf-yellow)", fontSize: 12 }}>◆</span>}
+                        <span style={{ fontWeight: 600, color: "var(--rf-txt)" }}>{m.name}</span>
+                        <TypeChip type={m.type} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 
-            {saveError && (
-              <div className="mb-4 bg-red-900/20 border border-red-500/30 rounded-lg p-4 text-red-200 text-sm">
-                {saveError}
+            <div
+              style={{
+                marginTop: 22,
+                paddingTop: 16,
+                borderTop: "1px solid var(--rf-border)",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <svg width="16" height="16" fill="none" stroke="var(--rf-accent)" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--rf-txt3)" }}>
+                Will be cloned into project{" "}
+                <span style={{ color: "var(--rf-txt)", fontWeight: 600 }}>{projectName}</span>
+                . Phase-to-milestone links are remapped automatically.
+              </p>
+            </div>
+          </div>
+
+          {saveError && errorBox(saveError)}
+
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <button onClick={() => setStep(2)} disabled={saving} style={sBtnGhost}>
+              ← Back
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={saving}
+              style={{
+                padding: "11px 24px",
+                borderRadius: 9,
+                border: "none",
+                background: "var(--rf-green)",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: saving ? "default" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {saving && <Spinner />}
+              {saving ? "Saving…" : "Confirm & Finalize"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 4: Done ── */}
+      {step === 4 && result && (
+        <div style={{ ...sCard, padding: 32, textAlign: "center" }}>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              background: "rgba(22,163,74,0.14)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px",
+            }}
+          >
+            <svg width="32" height="32" fill="none" stroke="var(--rf-green)" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 style={{ margin: "0 0 8px", fontSize: 22, fontWeight: 800, color: "var(--rf-txt)" }}>
+            Done!
+          </h2>
+          <p style={{ margin: "0 0 24px", fontSize: 14, color: "var(--rf-txt3)" }}>
+            Cloned{" "}
+            <span style={{ color: "var(--rf-txt)", fontWeight: 700 }}>
+              {result.phases?.length ?? 0} phases
+            </span>{" "}
+            and{" "}
+            <span style={{ color: "var(--rf-txt)", fontWeight: 700 }}>
+              {result.milestones?.length ?? 0} milestones
+            </span>{" "}
+            into project{" "}
+            <span style={{ color: "var(--rf-txt)", fontWeight: 600 }}>{projectName}</span>.
+          </p>
+
+          <div
+            style={{
+              textAlign: "left",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+              marginBottom: 32,
+            }}
+          >
+            {result.phases?.length > 0 && (
+              <div style={{ background: "var(--rf-bg3)", borderRadius: 10, padding: 16 }}>
+                <h3
+                  style={{
+                    margin: "0 0 12px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--rf-txt3)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Cloned Phases
+                </h3>
+                <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+                  {result.phases.map((p) => (
+                    <li key={p.id} style={{ fontSize: 13 }}>
+                      <span style={{ fontWeight: 600, color: "var(--rf-txt)" }}>{p.name}</span>
+                      <span style={{ color: "var(--rf-txt3)", marginLeft: 8, fontSize: 12 }}>#{p.order}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
-
-            <div className="flex justify-between">
-              <button
-                onClick={() => setStep(2)}
-                disabled={saving}
-                className="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={handleConfirm}
-                disabled={saving}
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 disabled:opacity-50 text-white rounded-lg font-semibold transition-all flex items-center gap-2"
-              >
-                {saving && (
-                  <svg
-                    className="w-4 h-4 animate-spin"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
-                  </svg>
-                )}
-                {saving ? "Saving…" : "Confirm & Finalize"}
-              </button>
-            </div>
+            {result.milestones?.length > 0 && (
+              <div style={{ background: "var(--rf-bg3)", borderRadius: 10, padding: 16 }}>
+                <h3
+                  style={{
+                    margin: "0 0 12px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "var(--rf-txt3)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Cloned Milestones
+                </h3>
+                <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
+                  {result.milestones.map((m) => (
+                    <li key={m.id} style={{ fontSize: 13 }}>
+                      {m.isCritical && <span style={{ color: "var(--rf-yellow)", marginRight: 4, fontSize: 12 }}>◆</span>}
+                      <span style={{ fontWeight: 600, color: "var(--rf-txt)" }}>{m.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* ── Step 4: Done ── */}
-        {step === 4 && result && (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-8 text-center">
-            <div className="w-16 h-16 bg-green-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-green-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Done!</h2>
-            <p className="text-gray-400 mb-6">
-              Cloned{" "}
-              <span className="text-white font-semibold">
-                {result.phases?.length ?? 0} phases
-              </span>{" "}
-              and{" "}
-              <span className="text-white font-semibold">
-                {result.milestones?.length ?? 0} milestones
-              </span>{" "}
-              into project{" "}
-              <span className="text-white font-medium">
-                {projects.find((p) => p.id === projectId)?.name ?? projectId}
-              </span>.
-            </p>
-
-            <div className="text-left grid grid-cols-2 gap-4 mb-8">
-              {result.phases?.length > 0 && (
-                <div className="bg-gray-700/50 rounded-lg p-4">
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                    Cloned Phases
-                  </h3>
-                  <ul className="space-y-1.5">
-                    {result.phases.map((p) => (
-                      <li key={p.id} className="text-sm text-gray-300">
-                        <span className="font-medium text-white">{p.name}</span>
-                        <span className="text-gray-500 ml-2 text-xs">
-                          #{p.order}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {result.milestones?.length > 0 && (
-                <div className="bg-gray-700/50 rounded-lg p-4">
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                    Cloned Milestones
-                  </h3>
-                  <ul className="space-y-1.5">
-                    {result.milestones.map((m) => (
-                      <li key={m.id} className="text-sm text-gray-300">
-                        {m.isCritical && (
-                          <span className="text-yellow-400 mr-1 text-xs">
-                            ◆
-                          </span>
-                        )}
-                        <span className="font-medium text-white">{m.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => {
-                  setStep(1);
-                  setProjectId("");
-                  setProjectIdError("");
-                  setSelectedPhaseIds([]);
-                  setSelectedMilestoneIds([]);
-                  setResult(null);
-                  setSaveError("");
-                }}
-                className="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-              >
-                Run another wizard
-              </button>
-              <a
-                href="/Phases/List"
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                View Phases
-              </a>
-            </div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+            <button
+              onClick={() => {
+                setStep(1);
+                setProjectId("");
+                setProjectIdError("");
+                setSelectedPhaseIds([]);
+                setSelectedMilestoneIds([]);
+                setResult(null);
+                setSaveError("");
+              }}
+              style={sBtnGhost}
+            >
+              Run another wizard
+            </button>
+            <Link
+              href="/Phases/List"
+              style={{
+                padding: "10px 20px",
+                borderRadius: 9,
+                background: "var(--rf-accent)",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              View Phases
+            </Link>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

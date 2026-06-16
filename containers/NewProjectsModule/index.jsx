@@ -793,21 +793,22 @@ function PickRow({ selected, onClick, title, subtitle, right }) {
   );
 }
 
-// Compact, theme-correct inputs for the per-asset detail editor. The border
-// lives on the wrapper div (the global input rule pins input border-color).
+// Inputs for the per-asset detail editor (rounded, light-blue border to match
+// the design). The border lives on the wrapper div (the global input rule pins
+// input border-color), so the visible border is theme-correct.
 const miniBox = {
   display: "flex",
   alignItems: "center",
   background: "var(--rf-bg2)",
-  border: "1px solid var(--rf-border2, #adbbd8)",
-  borderRadius: 8,
+  border: "1px solid var(--rf-border, #c5d2ea)",
+  borderRadius: 10,
 };
 function MiniText({ className, style, ...props }) {
   return (
     <div className={`np-fieldbox ${className || ""}`} style={miniBox}>
       <input
         {...props}
-        className="w-full px-2 py-1 rounded-lg text-xs outline-none bg-transparent"
+        className="w-full px-3 py-2 rounded-[10px] text-sm outline-none bg-transparent"
         style={{ ...bareControlStyle, ...(style || {}) }}
       />
     </div>
@@ -818,7 +819,7 @@ function MiniSelect({ children, className, ...props }) {
     <div className={`np-fieldbox relative ${className || ""}`} style={miniBox}>
       <select
         {...props}
-        className="w-full pl-2 pr-6 py-1 rounded-lg text-xs outline-none appearance-none cursor-pointer bg-transparent"
+        className="w-full pl-3 pr-8 py-2 rounded-[10px] text-sm outline-none appearance-none cursor-pointer bg-transparent"
         style={bareControlStyle}
       >
         {children}
@@ -826,13 +827,13 @@ function MiniSelect({ children, className, ...props }) {
       <svg
         className="absolute pointer-events-none"
         style={{
-          right: 7,
+          right: 10,
           top: "50%",
           transform: "translateY(-50%)",
           color: "var(--rf-txt3)",
         }}
-        width="10"
-        height="10"
+        width="12"
+        height="12"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -1810,11 +1811,11 @@ export default function NewProjectsModule() {
           No registered assets found — register one above to get started.
         </p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+        <div className="flex flex-col gap-4">
           {groups.map((cat) => (
             <div
               key={cat.title}
-              className="rounded-2xl p-4 h-full"
+              className="rounded-2xl p-4"
               style={{
                 background: "var(--rf-bg2)",
                 border: "1px solid var(--rf-border2, #adbbd8)",
@@ -1838,31 +1839,25 @@ export default function NewProjectsModule() {
                         }
                       />
                       {d && (
-                        <div
-                          className="mt-2 ml-7 flex flex-col gap-1.5 pb-1"
-                          style={{
-                            borderLeft: "2px solid var(--rf-accent)",
-                            paddingLeft: 8,
-                          }}
-                        >
-                          <div className="grid grid-cols-3 gap-1.5 items-center">
-                            <div className="flex items-center gap-1">
-                              <span
-                                className="text-[10px] font-bold"
-                                style={{ color: "var(--rf-txt3)" }}
-                              >
-                                QTY
-                              </span>
-                              <MiniText
-                                type="number"
-                                min={1}
-                                value={d.qty}
-                                onChange={(e) =>
-                                  updateAssetField(a.name, "qty", e.target.value)
-                                }
-                              />
-                            </div>
+                        <div className="mt-2.5 flex flex-col gap-2 pb-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className="text-[11px] font-bold tracking-wide"
+                              style={{ color: "var(--rf-txt3)" }}
+                            >
+                              QTY
+                            </span>
+                            <MiniText
+                              type="number"
+                              min={1}
+                              className="w-16"
+                              value={d.qty}
+                              onChange={(e) =>
+                                updateAssetField(a.name, "qty", e.target.value)
+                              }
+                            />
                             <MiniSelect
+                              className="w-24"
                               value={d.furnish}
                               onChange={(e) =>
                                 updateAssetField(
@@ -1877,6 +1872,7 @@ export default function NewProjectsModule() {
                               ))}
                             </MiniSelect>
                             <MiniSelect
+                              className="w-40"
                               value={d.order}
                               onChange={(e) =>
                                 updateAssetField(a.name, "order", e.target.value)
@@ -1888,15 +1884,16 @@ export default function NewProjectsModule() {
                                 </option>
                               ))}
                             </MiniSelect>
+                            <MiniText
+                              className="flex-1 min-w-[90px]"
+                              placeholder="PO#"
+                              value={d.po}
+                              onChange={(e) =>
+                                updateAssetField(a.name, "po", e.target.value)
+                              }
+                            />
                           </div>
-                          <MiniText
-                            placeholder="PO#"
-                            value={d.po}
-                            onChange={(e) =>
-                              updateAssetField(a.name, "po", e.target.value)
-                            }
-                          />
-                          <div className="grid grid-cols-3 gap-1.5">
+                          <div className="grid grid-cols-3 gap-2">
                             <MiniText
                               placeholder="manufacturer"
                               value={d.manufacturer}

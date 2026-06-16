@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   getIssues,
+  createIssue,
   changeIssueStatus,
   assignIssue,
   verifyAndCloseIssue,
@@ -14,212 +15,9 @@ import {
   NCR_SUB_STATUSES,
 } from "@/services/Issues";
 import { getUsers } from "@/services/Users";
+import { getCompanies } from "@/services/Companies";
+import { listV2Projects, listV2Assets } from "@/services/CxProjectsV2";
 import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
-
-// ─── Mock fallback data (matches screenshot) ──────────────────────────────────
-
-const MOCK_ISSUES = [
-  {
-    id: "i1",
-    num: "ISS-2026-001",
-    priority: "CRIT",
-    title: "Refrigerant leak detected · DH01-CRAC-03 schrader valve",
-    discipline: "MECHANICAL",
-    asset: "CRAC-03",
-    company: "McKinstry",
-    assigneeCompany: "Stulz Vendor",
-    checklistRef: "Checklist · L2.05d MC Pre-Energ",
-    comments: 3,
-    blocker: "BLOCKS L3",
-    status: "IN_PROGRESS",
-    isOverdue: true,
-    overdueHours: 144,
-    sla: "24h",
-    raisedBy: "Anna Petrov",
-    raisedDate: "May 02",
-    assignedTo: "Eli Kim",
-  },
-  {
-    id: "i2",
-    num: "ISS-2026-003",
-    priority: "CRIT",
-    title: "Temporary electrical cables not rated for outdoor use",
-    discipline: "ELECTRICAL",
-    asset: null,
-    company: "Rosendin Electric",
-    assigneeCompany: null,
-    checklistRef: "Inspection",
-    comments: 0,
-    blocker: null,
-    status: "OPEN",
-    isOverdue: true,
-    overdueHours: 120,
-    sla: "24h",
-    raisedBy: "Mike Davis",
-    raisedDate: "May 03",
-    assignedTo: "Rob Pryke",
-  },
-  {
-    id: "i3",
-    num: "ISS-2026-007",
-    priority: "HIGH",
-    title: "Megger reading low on UPS-A1 input cable",
-    discipline: "ELECTRICAL",
-    asset: "UPS-A1",
-    company: "Rosendin Electric",
-    assigneeCompany: "Inglett & Stubbs",
-    checklistRef: "Checklist · L2.05a EC Pre-Energ",
-    comments: 2,
-    blocker: null,
-    status: "CX_VERIFIED",
-    isOverdue: false,
-    overdueHours: null,
-    sla: "48h",
-    raisedBy: "Rob Pryke",
-    raisedDate: "May 04",
-    assignedTo: "Rob Pryke",
-  },
-  {
-    id: "i4",
-    num: "ISS-2026-010",
-    priority: "HIGH",
-    title: "IT rack burn-in cert not received",
-    discipline: "VENDOR",
-    asset: null,
-    company: "Delta Electronics",
-    assigneeCompany: null,
-    checklistRef: "Checklist · L1 Factory Test",
-    comments: 0,
-    blocker: null,
-    status: "CLOSED",
-    isOverdue: false,
-    overdueHours: null,
-    sla: "48h",
-    raisedBy: "Carol Reyes",
-    raisedDate: "May 05",
-    assignedTo: "Chris Beauchamp",
-  },
-  {
-    id: "i5",
-    num: "ISS-2026-006",
-    priority: "MED",
-    title: "Phase imbalance 4.2% during energization · PDU-A1",
-    discipline: "ELECTRICAL",
-    asset: "PDU-A1",
-    company: "Shermco Industries",
-    assigneeCompany: "Shermco Industries",
-    checklistRef: "Checklist · L3 Energization",
-    comments: 0,
-    blocker: null,
-    status: "OPEN",
-    isOverdue: false,
-    timeLeft: "8h left",
-    sla: "72h",
-    raisedBy: "Adam Krol",
-    raisedDate: "May 06",
-    assignedTo: "Fiona Walsh",
-  },
-  {
-    id: "i6",
-    num: "ISS-2026-012",
-    priority: "HIGH",
-    title: "BMS point-to-point mismatch on Level 4 AHU-04",
-    discipline: "BMS",
-    asset: "AHU-04",
-    company: "Schneider Building Auto",
-    assigneeCompany: null,
-    checklistRef: "Checklist · L4 Pre-Commissioning",
-    comments: 1,
-    blocker: null,
-    status: "OPEN",
-    isOverdue: true,
-    overdueHours: 48,
-    sla: "48h",
-    raisedBy: "Carol Reyes",
-    raisedDate: "May 04",
-    assignedTo: "Tom Greene",
-  },
-  {
-    id: "i7",
-    num: "ISS-2026-014",
-    priority: "LOW",
-    title: "Missing safety sign-in sheets — Week 19 toolbox talks",
-    discipline: "SAFETY",
-    asset: null,
-    company: "HITT Contracting",
-    assigneeCompany: null,
-    checklistRef: "Safety Compliance · Week 19",
-    comments: 0,
-    blocker: null,
-    status: "OPEN",
-    isOverdue: false,
-    timeLeft: "72h left",
-    sla: "96h",
-    raisedBy: "David Park",
-    raisedDate: "May 07",
-    assignedTo: "David Park",
-  },
-  {
-    id: "i8",
-    num: "ISS-2026-015",
-    priority: "MED",
-    title: "RFI-042 response overdue — structural penetration seal",
-    discipline: "STRUCTURAL",
-    asset: null,
-    company: "HITT Contracting",
-    assigneeCompany: null,
-    checklistRef: "RFI · L3 Structural",
-    comments: 0,
-    blocker: null,
-    status: "OPEN",
-    isOverdue: true,
-    overdueHours: 36,
-    sla: "72h",
-    raisedBy: "Sarah Chen",
-    raisedDate: "May 05",
-    assignedTo: "Joe Martinez",
-  },
-  {
-    id: "i9",
-    num: "ISS-2026-016",
-    priority: "CRIT",
-    title: "Arc flash label missing on MDB-L3 switchgear",
-    discipline: "SAFETY",
-    asset: "MDB-L3",
-    company: "HITT Contracting",
-    assigneeCompany: null,
-    checklistRef: "Safety · Pre-Energization L3",
-    comments: 0,
-    blocker: "BLOCKS ENERGIZE",
-    status: "OPEN",
-    isOverdue: true,
-    overdueHours: 96,
-    sla: "24h",
-    raisedBy: "Priya Nair",
-    raisedDate: "May 06",
-    assignedTo: "Joe Martinez",
-  },
-  {
-    id: "i10",
-    num: "ISS-2026-017",
-    priority: "MED",
-    title: "Load bank cable routing conflicts with L5 cable tray",
-    discipline: "ELECTRICAL",
-    asset: "L5-CABLE-TRAY",
-    company: "Delta Electrical",
-    assigneeCompany: "Inglett & Stubbs",
-    checklistRef: "Checklist · L5 IST Readiness",
-    comments: 4,
-    blocker: null,
-    status: "OPEN",
-    isOverdue: false,
-    timeLeft: "24h left",
-    sla: "72h",
-    raisedBy: "Tom Greene",
-    raisedDate: "May 08",
-    assignedTo: "Mike Torres",
-  },
-];
 
 // ─── Style maps ───────────────────────────────────────────────────────────────
 
@@ -332,22 +130,83 @@ const TRANSITIONS = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const mergeWithMock = (apiData) => {
-  if (!apiData.length) return MOCK_ISSUES;
-  return apiData.map((issue, i) => ({
-    ...MOCK_ISSUES[i % MOCK_ISSUES.length],
-    ...issue,
+// API severity ↔ card priority. The card UI speaks CRIT/HIGH/MED/LOW; the
+// backend (createIssue / getIssues) speaks LOW/MEDIUM/HIGH/CRITICAL.
+const SEVERITY_TO_PRIORITY = {
+  CRITICAL: "CRIT",
+  HIGH: "HIGH",
+  MEDIUM: "MED",
+  LOW: "LOW",
+};
+const PRIORITY_TO_SEVERITY = {
+  CRIT: "CRITICAL",
+  HIGH: "HIGH",
+  MED: "MEDIUM",
+  LOW: "LOW",
+};
+
+const fullName = (u) =>
+  u ? [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email : null;
+
+// Map a raw API issue (see services/Issues getIssues) onto the card view-model
+// the rest of this screen renders. `usersById` resolves assignee/raiser ids to
+// display names.
+const normalizeIssue = (it, usersById = {}) => {
+  const assignee = it.assignedToUserId ? usersById[it.assignedToUserId] : null;
+  const raiserId = it.raisedByUserId || it.createdByUserId || it.raisedBy;
+  const raiser = raiserId ? usersById[raiserId] : null;
+  const created = it.createdAt ? new Date(it.createdAt) : null;
+  const slaDue = it.slaDueAt || it.dueAt;
+  const overdue =
+    typeof it.isOverdue === "boolean"
+      ? it.isOverdue
+      : slaDue
+        ? new Date(slaDue).getTime() < Date.now()
+        : false;
+  const overdueHours =
+    it.overdueHours ??
+    (overdue && slaDue
+      ? Math.max(
+          1,
+          Math.round((Date.now() - new Date(slaDue).getTime()) / 3.6e6),
+        )
+      : null);
+
+  return {
+    id: it.id,
     num:
-      issue.issueNumber || issue.num || MOCK_ISSUES[i % MOCK_ISSUES.length].num,
-    priority:
-      issue.severity === "CRITICAL"
-        ? "CRIT"
-        : issue.severity === "MEDIUM"
-          ? "MED"
-          : issue.severity || "MED",
-    discipline:
-      issue.discipline || MOCK_ISSUES[i % MOCK_ISSUES.length].discipline,
-  }));
+      it.issueNumber ||
+      it.num ||
+      (it.id ? `ISS-${String(it.id).slice(0, 8)}` : ""),
+    kind: it.kind || "GENERAL",
+    priority: SEVERITY_TO_PRIORITY[it.severity] || "MED",
+    title: it.title,
+    description: it.description || "",
+    discipline: it.discipline || null,
+    asset:
+      it.projectAsset?.abbr ||
+      it.projectAsset?.name ||
+      it.asset?.name ||
+      it.assetName ||
+      null,
+    company: it.assignedToCompany?.name || it.company?.name || null,
+    assigneeCompany: null,
+    checklistRef: it.checklistRef || null,
+    comments: it.commentCount ?? 0,
+    blocker: it.blocksPhase ? it.blocksNote || "BLOCKS PHASE" : null,
+    status: it.status || "NEW",
+    isOverdue: overdue && it.status !== "CLOSED",
+    overdueHours,
+    sla: it.slaHours ? `${it.slaHours}h` : null,
+    raisedBy: fullName(raiser) || it.raisedByName || "—",
+    raisedDate: created
+      ? created.toLocaleDateString("en-US", { month: "short", day: "2-digit" })
+      : null,
+    assignedTo: fullName(assignee) || (it.assignedToUserId ? "Assigned" : null),
+    assignedToUserId: it.assignedToUserId || "",
+    assignedToCompanyId: it.assignedToCompanyId || "",
+    ncrSubStatus: it.ncrSubStatus,
+  };
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -524,9 +383,7 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
                 {issue.assigneeCompany}
               </span>
             )}
-            {issue.checklistRef && (
-              <Chip label={issue.checklistRef} icon="" />
-            )}
+            {issue.checklistRef && <Chip label={issue.checklistRef} icon="" />}
             {issue.comments > 0 && (
               <span
                 style={{
@@ -627,7 +484,17 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
           {/* NCR sub-status stepper */}
           {issue.kind === "NCR" && issue.ncrSubStatus && (
             <div style={{ marginTop: 8, textAlign: "left" }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: "var(--rf-txt3)", letterSpacing: "0.06em", marginBottom: 4 }}>NCR PROGRESS</div>
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 800,
+                  color: "var(--rf-txt3)",
+                  letterSpacing: "0.06em",
+                  marginBottom: 4,
+                }}
+              >
+                NCR PROGRESS
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {NCR_SUB_STATUSES.map((step) => {
                   const stepIdx = NCR_SUB_STATUSES.indexOf(step);
@@ -635,17 +502,35 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
                   const done = stepIdx < curIdx;
                   const active = stepIdx === curIdx;
                   return (
-                    <div key={step} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <div style={{
-                        width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                        background: done ? "var(--rf-green)" : active ? "var(--rf-accent)" : "var(--rf-border)",
-                      }} />
-                      <span style={{
-                        fontSize: 9,
-                        fontWeight: active ? 800 : 500,
-                        color: done ? "var(--rf-green)" : active ? "var(--rf-accent)" : "var(--rf-txt3)",
-                        whiteSpace: "nowrap",
-                      }}>
+                    <div
+                      key={step}
+                      style={{ display: "flex", alignItems: "center", gap: 4 }}
+                    >
+                      <div
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          flexShrink: 0,
+                          background: done
+                            ? "var(--rf-green)"
+                            : active
+                              ? "var(--rf-accent)"
+                              : "var(--rf-border)",
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: 9,
+                          fontWeight: active ? 800 : 500,
+                          color: done
+                            ? "var(--rf-green)"
+                            : active
+                              ? "var(--rf-accent)"
+                              : "var(--rf-txt3)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         {NCR_SUB_STATUS_LABELS[step]}
                       </span>
                     </div>
@@ -760,32 +645,6 @@ const SOURCES = [
   "Submittal Review",
   "Safety Audit",
 ];
-const ASSETS_LIST = [
-  "— None —",
-  "CRAC-03",
-  "UPS-A1",
-  "PDU-A1",
-  "AHU-04",
-  "MDB-L3",
-  "L5-CABLE-TRAY",
-  "UPS-Rm-B",
-  "DH01",
-  "MSB-L4",
-];
-const COMPANIES_LIST = [
-  "— Select responding company —",
-  "HITT Contracting",
-  "McKinstry",
-  "Rosendin Electric",
-  "Delta Electronics",
-  "Shermco Industries",
-  "Schneider Building Auto",
-  "CxA Group",
-  "Vertiv",
-  "Caterpillar",
-  "Inglett & Stubbs",
-  "Stulz Vendor",
-];
 const BLOCK_OPTIONS = [
   "Blocks L3 energization",
   "Blocks L4 load bank",
@@ -801,8 +660,9 @@ const EMPTY_FORM = {
   priority: "MED",
   discipline: "Electrical",
   source: "Field Observation",
-  asset: "— None —",
-  responderCompany: "— Select responding company —",
+  projectId: "",
+  projectAssetId: "",
+  assignedToCompanyId: "",
   notifyCompany: "— Select company to notify —",
   assignedTo: "",
   slaOverride: "",
@@ -812,27 +672,73 @@ const EMPTY_FORM = {
 
 const KIND_DESCRIPTIONS = {
   GENERAL: "Generic issue",
-  HOLD_POINT: "Work must stop — requires notified party to sign off before proceeding",
-  WITNESS_POINT: "Notified party should observe test — work may continue if they are absent",
+  HOLD_POINT:
+    "Work must stop — requires notified party to sign off before proceeding",
+  WITNESS_POINT:
+    "Notified party should observe test — work may continue if they are absent",
   PUNCH_LIST: "Pre-handover punch item",
   NCR: "Non-conformance — requires description + NCR workflow",
   SNAG: "Late-stage closeout deficiency",
 };
 
-function RaiseIssueModal({ onClose, onSubmit, users }) {
-  const [form, setForm] = useState(EMPTY_FORM);
+function RaiseIssueModal({
+  onClose,
+  onSubmit,
+  users,
+  companies = [],
+  projects = [],
+  initialKind,
+}) {
+  // Default the kind to the ?kind= deep-link (if it's a valid kind) so a
+  // kind-scoped view raises that kind by default.
+  const [form, setForm] = useState(() => ({
+    ...EMPTY_FORM,
+    kind: ISSUE_KINDS.includes(initialKind) ? initialKind : EMPTY_FORM.kind,
+  }));
   const [submitting, setSubmitting] = useState(false);
+  const [equipment, setEquipment] = useState([]);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const notifyRequired = form.kind === "HOLD_POINT" && form.notifyCompany === "— Select company to notify —";
-  const canSubmit = form.title.trim() && !notifyRequired;
+  // Project → V2 equipment. Linking equipment lets the issue gate its phase in
+  // the Project Playbook (same behaviour as Issues/Add).
+  useEffect(() => {
+    setEquipment([]);
+    setForm((f) => ({ ...f, projectAssetId: "" }));
+    if (!form.projectId) return;
+    let cancelled = false;
+    listV2Assets(form.projectId, { limit: 100 })
+      .then((res) => {
+        if (!cancelled)
+          setEquipment(Array.isArray(res) ? res : res?.data || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [form.projectId]);
+
+  // createIssue needs at least a project. HOLD_POINT additionally requires a
+  // responding company, and NCR requires a description (both enforced server-side).
+  const companyRequired =
+    form.kind === "HOLD_POINT" && !form.assignedToCompanyId;
+  const descriptionRequired = form.kind === "NCR" && !form.description.trim();
+  const canSubmit =
+    form.title.trim() &&
+    form.projectId &&
+    !companyRequired &&
+    !descriptionRequired;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
-    await onSubmit(form);
-    setSubmitting(false);
-    onClose();
+    try {
+      await onSubmit(form);
+      onClose();
+    } catch {
+      // Parent surfaces the error toast; keep the modal open for a retry.
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inp = {
@@ -925,7 +831,14 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
           {/* Issue Kind */}
           <div style={{ marginBottom: 16 }}>
             <label style={lbl}>ISSUE KIND</label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginBottom: 8 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 6,
+                marginBottom: 8,
+              }}
+            >
               {ISSUE_KINDS.map((k) => {
                 const active = form.kind === k;
                 return (
@@ -938,12 +851,23 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
                       borderRadius: 7,
                       cursor: "pointer",
                       textAlign: "center",
-                      border: active ? "2px solid var(--rf-accent)" : "1px solid var(--rf-border)",
-                      background: active ? "rgba(var(--rf-accent-rgb,99,102,241),0.12)" : "var(--rf-bg3)",
+                      border: active
+                        ? "2px solid var(--rf-accent)"
+                        : "1px solid var(--rf-border)",
+                      background: active
+                        ? "rgba(var(--rf-accent-rgb,99,102,241),0.12)"
+                        : "var(--rf-bg3)",
                       transition: "all 0.15s",
                     }}
                   >
-                    <div style={{ fontSize: 11, fontWeight: 800, color: active ? "var(--rf-accent)" : "var(--rf-txt)", letterSpacing: "0.03em" }}>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: active ? "var(--rf-accent)" : "var(--rf-txt)",
+                        letterSpacing: "0.03em",
+                      }}
+                    >
                       {ISSUE_KIND_LABELS[k]}
                     </div>
                   </button>
@@ -951,7 +875,13 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
               })}
             </div>
             {form.kind && (
-              <div style={{ fontSize: 11, color: "var(--rf-txt3)", fontStyle: "italic" }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--rf-txt3)",
+                  fontStyle: "italic",
+                }}
+              >
                 {KIND_DESCRIPTIONS[form.kind]}
               </div>
             )}
@@ -959,24 +889,47 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
 
           {/* Notify company — required for HOLD_POINT, visible for WITNESS_POINT */}
           {(form.kind === "HOLD_POINT" || form.kind === "WITNESS_POINT") && (
-            <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 8, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.28)" }}>
+            <div
+              style={{
+                marginBottom: 16,
+                padding: "12px 14px",
+                borderRadius: 8,
+                background: "rgba(245,158,11,0.08)",
+                border: "1px solid rgba(245,158,11,0.28)",
+              }}
+            >
               <label style={{ ...lbl, color: "var(--rf-yellow)" }}>
-                NOTIFY COMPANY{form.kind === "HOLD_POINT" ? <span style={{ color: "var(--rf-red)" }}> *</span> : " (optional)"}
+                NOTIFY COMPANY
+                {form.kind === "HOLD_POINT" ? (
+                  <span style={{ color: "var(--rf-red)" }}> *</span>
+                ) : (
+                  " (optional)"
+                )}
               </label>
               <select
                 value={form.notifyCompany}
                 onChange={(e) => set("notifyCompany", e.target.value)}
                 style={{
                   ...inp,
-                  borderColor: form.kind === "HOLD_POINT" && form.notifyCompany === "— Select company to notify —" ? "rgba(239,68,68,0.4)" : "var(--rf-border)",
+                  borderColor:
+                    form.kind === "HOLD_POINT" &&
+                    form.notifyCompany === "— Select company to notify —"
+                      ? "rgba(239,68,68,0.4)"
+                      : "var(--rf-border)",
                 }}
               >
-                <option value="— Select company to notify —">— Select company to notify —</option>
-                {COMPANIES_LIST.slice(1).map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                <option value="— Select company to notify —">
+                  — Select company to notify —
+                </option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
-              <div style={{ fontSize: 10, color: "var(--rf-txt3)", marginTop: 5 }}>
+              <div
+                style={{ fontSize: 10, color: "var(--rf-txt3)", marginTop: 5 }}
+              >
                 {form.kind === "HOLD_POINT"
                   ? "This company must sign off before work resumes. They will be notified automatically."
                   : "This company will be invited to observe. Their absence will not block work."}
@@ -986,8 +939,19 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
 
           {/* NCR description requirement hint */}
           {form.kind === "NCR" && (
-            <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 7, background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.22)", fontSize: 11, color: "var(--rf-red)" }}>
-              NCR requires a detailed description of the non-conformance. The issue will enter the NCR review workflow after creation.
+            <div
+              style={{
+                marginBottom: 12,
+                padding: "8px 12px",
+                borderRadius: 7,
+                background: "rgba(239,68,68,0.07)",
+                border: "1px solid rgba(239,68,68,0.22)",
+                fontSize: 11,
+                color: "var(--rf-red)",
+              }}
+            >
+              NCR requires a detailed description of the non-conformance. The
+              issue will enter the NCR review workflow after creation.
             </div>
           )}
 
@@ -1116,7 +1080,31 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
             </div>
           </div>
 
-          {/* Asset + Responder company */}
+          {/* Project (required to satisfy createIssue) */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={lbl}>
+              PROJECT <span style={{ color: "var(--rf-red)" }}>*</span>
+            </label>
+            <select
+              value={form.projectId}
+              onChange={(e) => set("projectId", e.target.value)}
+              style={{
+                ...inp,
+                borderColor: !form.projectId
+                  ? "rgba(239,68,68,0.3)"
+                  : "var(--rf-border)",
+              }}
+            >
+              <option value="">— Select project —</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name ?? p.projectName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Equipment + Responder company */}
           <div
             style={{
               display: "grid",
@@ -1126,15 +1114,23 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
             }}
           >
             <div>
-              <label style={lbl}>AFFECTED ASSET</label>
+              <label style={lbl}>AFFECTED EQUIPMENT</label>
               <select
-                value={form.asset}
-                onChange={(e) => set("asset", e.target.value)}
+                value={form.projectAssetId}
+                onChange={(e) => set("projectAssetId", e.target.value)}
+                disabled={!form.projectId || !equipment.length}
                 style={{ ...inp }}
               >
-                {ASSETS_LIST.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
+                <option value="">
+                  {form.projectId
+                    ? equipment.length
+                      ? "— None —"
+                      : "No equipment on project"
+                    : "Select a project first"}
+                </option>
+                {equipment.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.abbr ? `${a.abbr} — ${a.name}` : a.name}
                   </option>
                 ))}
               </select>
@@ -1144,16 +1140,27 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
                 AFFECTED COMPANY{" "}
                 <span style={{ textTransform: "none", fontSize: 9 }}>
                   (responder)
+                  {form.kind === "HOLD_POINT" && (
+                    <span style={{ color: "var(--rf-red)" }}> *</span>
+                  )}
                 </span>
               </label>
               <select
-                value={form.responderCompany}
-                onChange={(e) => set("responderCompany", e.target.value)}
-                style={{ ...inp }}
+                value={form.assignedToCompanyId}
+                onChange={(e) => set("assignedToCompanyId", e.target.value)}
+                style={{
+                  ...inp,
+                  borderColor:
+                    form.kind === "HOLD_POINT" && !form.assignedToCompanyId
+                      ? "rgba(239,68,68,0.4)"
+                      : "var(--rf-border)",
+                }}
               >
-                {COMPANIES_LIST.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                <option value="">— Select responding company —</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.type ? ` (${c.type})` : ""}
                   </option>
                 ))}
               </select>
@@ -1286,9 +1293,7 @@ function RaiseIssueModal({ onClose, onSubmit, users }) {
               padding: "9px 22px",
               borderRadius: 9,
               border: "none",
-              background: canSubmit
-                ? "var(--rf-accent)"
-                : "var(--rf-bg3)",
+              background: canSubmit ? "var(--rf-accent)" : "var(--rf-bg3)",
               color: canSubmit ? "#fff" : "var(--rf-txt3)",
               cursor: canSubmit ? "pointer" : "default",
               fontSize: 13,
@@ -1370,14 +1375,59 @@ function Toast({ message, onDone }) {
   );
 }
 
+// Page heading per ?kind= deep-link. Falls back to the generic Issues header
+// when no (or an unknown) kind is supplied.
+const KIND_PAGE = {
+  GENERAL: {
+    title: "Issues",
+    subtitle: "Day-to-day field issues",
+    action: "Raise Issue",
+  },
+  PUNCH_LIST: {
+    title: "Punch List",
+    subtitle: "Pre-handover punch items",
+    action: "Raise Punch List",
+  },
+  HOLD_POINT: {
+    title: "Hold Points",
+    subtitle: "Work stops until the notified party signs off",
+    action: "Raise Hold Point",
+  },
+  WITNESS_POINT: {
+    title: "Witness Points",
+    subtitle: "Notified party observes — work may continue",
+    action: "Raise Witness Point",
+  },
+  NCR: {
+    title: "NCRs",
+    subtitle: "Non-conformance reports & dispositions",
+    action: "Raise NCR",
+  },
+  SNAG: {
+    title: "Snags",
+    subtitle: "Late-stage closeout deficiencies",
+    action: "Raise Snag",
+  },
+};
+const DEFAULT_PAGE = {
+  title: "Issues",
+  subtitle: "Day-to-day field issues",
+  action: "Raise Issue",
+};
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function IssuesList() {
-  const router = useRouter();
-  const { canCreate, canEdit, canDelete, canApprove } = useUserPermissions();
+  const searchparams = useSearchParams();
+  const issueKind = searchparams.get("kind");
+  const page = KIND_PAGE[issueKind] || DEFAULT_PAGE;
+  const { user, canCreate, canEdit, canDelete, canApprove } =
+    useUserPermissions();
 
-  const [issues, setIssues] = useState(MOCK_ISSUES);
+  const [issues, setIssues] = useState([]);
   const [users, setUsers] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
 
@@ -1401,20 +1451,35 @@ export default function IssuesList() {
   const [verifyForm, setVerifyForm] = useState({ closeVerifiedBy: "" });
 
   useEffect(() => {
-    fetchIssues();
     fetchUsers();
+    fetchCompanies();
+    fetchProjects();
   }, []);
+
+  // Re-normalize issues once the users list is available so assignee/raiser
+  // names resolve (fetchUsers and fetchIssues race on mount). Also refetch when
+  // the ?kind= deep-link changes so the server-side filter follows the URL.
+  useEffect(() => {
+    fetchIssues();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users, issueKind]);
 
   const fetchIssues = async () => {
     try {
       setLoading(true);
-      const res = await getIssues();
+      const usersById = Object.fromEntries((users || []).map((u) => [u.id, u]));
+      const params = { limit: 100 };
+      if (issueKind) params.kind = issueKind;
+      const res = await getIssues(params);
       const raw = Array.isArray(res) ? res : res?.data || [];
-      setIssues(raw.length ? mergeWithMock(raw) : MOCK_ISSUES);
+      setIssues(raw.map((it) => normalizeIssue(it, usersById)));
     } catch {
-      setIssues(MOCK_ISSUES);
+      // Backend unreachable — keep the mock sample so the screen is still usable.
+      setIssues([]);
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
     }
   };
 
@@ -1422,6 +1487,20 @@ export default function IssuesList() {
     try {
       const res = await getUsers();
       setUsers(Array.isArray(res) ? res : res?.data || []);
+    } catch {}
+  };
+
+  const fetchCompanies = async () => {
+    try {
+      const res = await getCompanies();
+      setCompanies(Array.isArray(res) ? res : res?.data || []);
+    } catch {}
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const res = await listV2Projects({ limit: 100 });
+      setProjects(Array.isArray(res) ? res : res?.data || []);
     } catch {}
   };
 
@@ -1483,12 +1562,14 @@ export default function IssuesList() {
   };
 
   // ── Filter logic ────────────────────────────────────────────────────────────
+  const myUserId = user?.id;
+  const myCompanyId = user?.companyId || user?.company?.id;
   const overdue = issues.filter((i) => i.isOverdue && i.status !== "CLOSED");
   const mine = issues.filter(
-    (i) => i.assignedTo === "Sarah Chen" && i.status !== "CLOSED",
+    (i) => i.assignedToUserId === myUserId && i.status !== "CLOSED",
   );
   const myCompany = issues.filter(
-    (i) => i.company === "HITT Contracting" && i.status !== "CLOSED",
+    (i) => i.assignedToCompanyId === myCompanyId && i.status !== "CLOSED",
   );
   const allOpen = issues.filter((i) => i.status !== "CLOSED");
 
@@ -1505,7 +1586,8 @@ export default function IssuesList() {
     const mp = !filterPriority || i.priority === filterPriority;
     const ms = !filterStatus || i.status === filterStatus;
     const md = !filterDiscipline || i.discipline === filterDiscipline;
-    return mp && ms && md;
+    const mk = !issueKind || i.kind === issueKind;
+    return mp && ms && md && mk;
   });
 
   const disciplines = [
@@ -1558,13 +1640,12 @@ export default function IssuesList() {
               gap: 8,
             }}
           >
-            <span></span> Issues
+            <span></span> {page.title}
           </h1>
           <p
             style={{ margin: "5px 0 0", fontSize: 13, color: "var(--rf-txt3)" }}
           >
-            Day-to-day field issues · {issues.length} total · {overdue.length}{" "}
-            overdue
+            {page.subtitle} · {issues.length} total · {overdue.length} overdue
           </p>
         </div>
         <button
@@ -1581,7 +1662,7 @@ export default function IssuesList() {
             cursor: "pointer",
           }}
         >
-          + Raise issue
+          + {page.action}
         </button>
       </div>
 
@@ -1682,15 +1763,14 @@ export default function IssuesList() {
         >
           <option value="">All statuses</option>
           {[
-            "OPEN",
-            "IN_PROGRESS",
-            "CX_VERIFIED",
-            "CLOSED",
             "NEW",
+            "IN_PROGRESS",
+            "READY_FOR_VERIFICATION",
+            "CLOSED",
             "DEFERRED",
           ].map((s) => (
             <option key={s} value={s}>
-              {s}
+              {STATUS_LABEL[s] || s}
             </option>
           ))}
         </select>
@@ -1723,7 +1803,7 @@ export default function IssuesList() {
             fontSize: 13,
           }}
         >
-          Loading issues...
+          Loading {page.title}...
         </div>
       ) : filtered.length === 0 ? (
         <div
@@ -1735,7 +1815,7 @@ export default function IssuesList() {
           }}
         >
           <div style={{ fontSize: 32, marginBottom: 10 }}></div>
-          No issues match the current filter.
+          No {page.title} match the current filter.
         </div>
       ) : (
         <div>
@@ -1780,7 +1860,7 @@ export default function IssuesList() {
               color: "var(--rf-txt3)",
             }}
           >
-            Move "{statusModal.issue.title}" →{" "}
+            Move &ldquo;{statusModal.issue.title}&rdquo; →{" "}
             <strong style={{ color: "var(--rf-txt)" }}>
               {STATUS_LABEL[statusModal.nextStatus] || statusModal.nextStatus}
             </strong>
@@ -2038,46 +2118,36 @@ export default function IssuesList() {
         <RaiseIssueModal
           onClose={() => setShowRaiseModal(false)}
           users={users}
+          companies={companies}
+          projects={projects}
+          initialKind={issueKind}
           onSubmit={async (form) => {
-            const newIssue = {
-              id: "i" + Date.now(),
-              num:
-                "ISS-" +
-                new Date().getFullYear() +
-                "-" +
-                String(Math.floor(Math.random() * 900) + 100).padStart(3, "0"),
+            const payload = {
               kind: form.kind,
-              priority: form.priority,
-              title: form.title,
-              discipline: form.discipline.toUpperCase(),
-              asset: form.asset === "— None —" ? null : form.asset,
-              company:
-                form.responderCompany === "— Select responding company —"
-                  ? null
-                  : form.responderCompany,
-              notifyCompany:
-                form.notifyCompany === "— Select company to notify —"
-                  ? null
-                  : form.notifyCompany,
-              assigneeCompany: null,
-              checklistRef: null,
-              comments: 0,
-              blocker: form.blocksPhase ? form.blocksNote : null,
-              status: "OPEN",
-              isOverdue: false,
-              ncrSubStatus: form.kind === "NCR" ? "DRAFT" : undefined,
-              sla:
-                form.slaOverride ||
-                PRIORITY_SLA[form.priority]?.replace(" SLA", ""),
-              raisedBy: "You",
-              raisedDate: new Date().toLocaleDateString("en-US", {
-                month: "short",
-                day: "2-digit",
-              }),
-              assignedTo: form.assignedTo || null,
+              title: form.title.trim(),
+              description: form.description?.trim() || undefined,
+              severity: PRIORITY_TO_SEVERITY[form.priority] || "MEDIUM",
             };
-            setIssues((prev) => [newIssue, ...prev]);
-            setMessage({ type: "success", text: "Issue raised successfully" });
+            if (form.projectId) payload.cxProjectId = form.projectId;
+            if (form.projectAssetId)
+              payload.projectAssetId = form.projectAssetId;
+            if (form.assignedToCompanyId)
+              payload.assignedToCompanyId = form.assignedToCompanyId;
+            if (form.assignedTo) payload.assignedToUserId = form.assignedTo;
+            try {
+              await createIssue(payload);
+              setMessage({
+                type: "success",
+                text: "Issue raised successfully",
+              });
+              await fetchIssues();
+            } catch (err) {
+              setMessage({
+                type: "error",
+                text: err?.message || "Failed to raise issue",
+              });
+              throw err; // keep the modal open so the user can retry
+            }
           }}
         />
       )}
