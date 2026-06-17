@@ -16,9 +16,18 @@ import {
   revokeTeamCompany,
   listV2Stakeholders,
 } from "../../services/CxProjectsV2";
-import { getIssues, getIssueById, changeIssueStatus, verifyAndCloseIssue } from "../../services/Issues";
+import {
+  getIssues,
+  getIssueById,
+  changeIssueStatus,
+  verifyAndCloseIssue,
+} from "../../services/Issues";
 import { getUser } from "../../services/instance/tokenService";
-import { getChecklists, changeChecklistStatus, signChecklist } from "../../services/Checklist";
+import {
+  getChecklists,
+  changeChecklistStatus,
+  signChecklist,
+} from "../../services/Checklist";
 import {
   listCommissioningTests,
   recordTestResult,
@@ -338,12 +347,12 @@ const MODULES = [
   { id: "issues", ic: "⚠", name: "Issues / NCRs", types: "all", hot: true },
   { id: "punch", ic: "☑", name: "Punch List", types: "all" },
   { id: "holds", ic: "⊘", name: "Hold Points", types: ["gc", "cxa", "owner"] },
-  {
-    id: "tests",
-    ic: "⚗",
-    name: "Test Records",
-    types: ["gc", "cxa", "ec", "mc", "controls", "neta", "owner"],
-  },
+  // {
+  //   id: "tests",
+  //   ic: "⚗",
+  //   name: "Test Records",
+  //   types: ["gc", "cxa", "ec", "mc", "controls", "neta", "owner"],
+  // },
   { id: "drawings", ic: "▧", name: "Drawings & P&ID", types: "all" },
   {
     id: "submittals",
@@ -351,18 +360,19 @@ const MODULES = [
     name: "Submittals",
     types: ["gc", "cxa", "ec", "mc", "controls", "oem", "owner"],
   },
-  {
-    id: "fsr",
-    ic: "▢",
-    name: "Field Service Reports",
-    types: ["oem", "cxa", "gc", "owner"],
-  },
-  {
-    id: "manpower",
-    ic: "⚒",
-    name: "Manpower / Crew",
-    types: ["gc", "ec", "mc", "controls", "oem", "staffing", "integrator"],
-  },
+  // Commented out per request — these steps are hidden for now.
+  // {
+  //   id: "fsr",
+  //   ic: "▢",
+  //   name: "Field Service Reports",
+  //   types: ["oem", "cxa", "gc", "owner"],
+  // },
+  // {
+  //   id: "manpower",
+  //   ic: "⚒",
+  //   name: "Manpower / Crew",
+  //   types: ["gc", "ec", "mc", "controls", "oem", "staffing", "integrator"],
+  // },
   {
     id: "procurement",
     ic: "▦",
@@ -603,624 +613,30 @@ const FOCUS = {
 
 let _id = 0;
 const nid = (p) => `${p}${(_id += 1)}`;
-const cl = (eq, level, role, name, status) => ({
-  id: nid("cl"),
-  eq,
-  level,
-  role,
-  name,
-  status,
-});
-const fd = (eq, type, sev, title, status, disc) => ({
-  id: nid("fd"),
-  eq,
-  type,
-  sev,
-  title,
-  status,
-  disc,
-});
-const tk = (ct, title, due, status) => ({
-  id: nid("tk"),
-  ct,
-  title,
-  due,
-  status,
-});
-
+// All project-detail data is loaded from the Playbook V2 APIs (see refresh()).
+// This skeleton only provides the shape so the UI renders empty states before
+// the fetch resolves — no static/demo data.
 const SEED = {
-  project: { name: "Hyperscale DC · ATL-04", phase: "L3" },
-  activity: [
-    {
-      when: "1d ago",
-      who: "PM · Iconicx Critical Solutions",
-      ct: "gc",
-      text: "Project created — Hyperscale DC · ATL-04",
-    },
-    {
-      when: "1h ago",
-      who: "Cx Lead · coreSynaptics",
-      ct: "cxa",
-      text: "Logged Critical NCR on HS-ATS-01 (auto-transfer failed)",
-    },
-    {
-      when: "30m ago",
-      who: "Superintendent · Iconicx",
-      ct: "gc",
-      text: "Flagged constraint: switchgear delivery delayed to Wk2",
-    },
-  ],
-  tasks: [
-    tk("gc", "Close out L2 punch with trades", "Wk 1", "in_progress"),
-    tk("gc", "Coordinate Train A energization sequence", "Wk 2", "open"),
-    tk("cxa", "Disposition ATS auto-transfer NCR", "Wk 1", "open"),
-    tk("cxa", "Witness L4 generator startup", "Wk 4", "open"),
-    tk("ec", "Rework ATS energization readiness (failed)", "Wk 1", "open"),
-    tk("mc", "P&ID verification — chiller", "Wk 1", "open"),
-    tk("controls", "Map 12 unmapped BMS alarm points", "Wk 1", "open"),
-    tk("oem", "Generator PFC + OEM startup", "Wk 4", "open"),
-    tk("owner", "Review Cx scorecard", "Wk 6", "open"),
-    tk("neta", "Acceptance test switchgear", "Wk 3", "open"),
-    tk("fls", "FACP programming", "Wk 2", "open"),
-    tk("staffing", "Dispatch 8 electricians to DH01", "Wk 1", "in_progress"),
-    tk("integrator", "FAT pod/skid #3", "Wk 1", "in_progress"),
-  ],
-  equipment: [
-    {
-      id: "HS-GEN-01",
-      name: "Generator 2.5MW",
-      disc: "Electrical",
-      sys: "sys-power-a",
-      phase: "L4",
-      furnish: "OFCI",
-    },
-    {
-      id: "HS-UPS-01",
-      name: "UPS System 500kVA",
-      disc: "Electrical",
-      sys: "sys-power-a",
-      phase: "L3",
-      furnish: "OFCI",
-    },
-    {
-      id: "HS-ATS-01",
-      name: "Automatic Transfer Switch",
-      disc: "Electrical",
-      sys: "sys-power-a",
-      phase: "L3",
-      furnish: "CFCI",
-    },
-    {
-      id: "HS-CHL-01",
-      name: "Chiller 400-ton",
-      disc: "Mechanical",
-      sys: "sys-cooling",
-      phase: "L2",
-      furnish: "OFCI",
-    },
-    {
-      id: "HS-CRAC-01",
-      name: "CRAH Unit",
-      disc: "Mechanical",
-      sys: "sys-cooling",
-      phase: "L1",
-      furnish: "CFCI",
-    },
-    {
-      id: "HS-BMS-01",
-      name: "BMS / DCIM Head-End",
-      disc: "Controls",
-      sys: null,
-      phase: "L3",
-      furnish: "CFCI",
-    },
-  ],
-  systems: [
-    { id: "sys-power-a", name: "Critical Power Train A" },
-    { id: "sys-cooling", name: "Cooling Plant" },
-  ],
-  checklists: [
-    cl("HS-GEN-01", "L4", "OEM", "PFT / OEM Startup", "in_progress"),
-    cl("HS-GEN-01", "L4", "NETA", "Load Bank Test", "not_started"),
-    cl("HS-UPS-01", "L3", "EC", "Energization Readiness", "in_progress"),
-    cl("HS-UPS-01", "L3", "EC", "Terminations & Torque", "complete"),
-    cl("HS-ATS-01", "L3", "EC", "Energization Readiness", "failed"),
-    cl("HS-CHL-01", "L2", "MC", "Mechanical Install", "in_progress"),
-    cl("HS-CHL-01", "L2", "MC", "P&ID Verification", "not_started"),
-    cl("HS-CRAC-01", "L1", "OEM", "Factory Acceptance Test", "complete"),
-    cl("HS-BMS-01", "L3", "BMS", "Points List Verification", "in_progress"),
-  ],
-  findings: [
-    fd(
-      "HS-ATS-01",
-      "NCR",
-      "Critical",
-      "ATS fails auto-transfer on utility loss",
-      "open",
-      "Controls",
-    ),
-    fd(
-      "HS-UPS-01",
-      "HoldPoint",
-      "Major",
-      "Hold: NETA report required before L4",
-      "open",
-      "Electrical",
-    ),
-    fd(
-      "HS-UPS-01",
-      "Punch",
-      "Minor",
-      "Cable labeling incomplete Section B",
-      "open",
-      "Electrical",
-    ),
-    fd(
-      "HS-GEN-01",
-      "Deficiency",
-      "Minor",
-      "Day-tank gauge reads 5% low",
-      "open",
-      "Mechanical",
-    ),
-    fd(
-      "HS-BMS-01",
-      "NCR",
-      "Major",
-      "12 alarm points unmapped vs points list",
-      "open",
-      "Controls",
-    ),
-  ],
-  // Kind-scoped issue views — populated from the Issues API (PUNCH_LIST /
-  // HOLD_POINT) in refresh(); seeded here so the shape is stable pre-load.
-  punchList: [
-    fd(
-      "HS-UPS-01",
-      "Punch",
-      "Minor",
-      "Cable labeling incomplete Section B",
-      "open",
-      "Electrical",
-    ),
-  ],
-  holdPoints: [
-    fd(
-      "HS-UPS-01",
-      "HoldPoint",
-      "Major",
-      "Hold: NETA report required before L4",
-      "open",
-      "Electrical",
-    ),
-  ],
-  tests: [
-    {
-      id: "t1",
-      eq: "HS-GEN-01",
-      name: "Load bank @ 100% rated kW",
-      status: "pending",
-    },
-    {
-      id: "t2",
-      eq: "HS-UPS-01",
-      name: "Battery runtime full load",
-      status: "pending",
-    },
-    { id: "t3", eq: "HS-GEN-01", name: "Black start", status: "passed" },
-  ],
-  milestones: [
-    {
-      d: "Wk 1",
-      ph: "L1",
-      name: "Customer kickoff + mobilization",
-      status: "done",
-    },
-    {
-      d: "Wk 4",
-      ph: "L1",
-      name: "FAT complete — all units cleared to ship",
-      status: "done",
-    },
-    {
-      d: "Wk 9",
-      ph: "L2",
-      name: "Install verified (electrical + mechanical)",
-      status: "done",
-    },
-    {
-      d: "Wk 12",
-      ph: "L3",
-      name: "Energization readiness — Train A",
-      status: "cur",
-    },
-    {
-      d: "Wk 15",
-      ph: "L4",
-      name: "Load bank / functional testing",
-      status: "todo",
-    },
-    {
-      d: "Wk 18",
-      ph: "L5",
-      name: "Integrated systems test (IST)",
-      status: "todo",
-    },
-    {
-      d: "Wk 20",
-      ph: "L6",
-      name: "Turnover + customer acceptance",
-      status: "todo",
-    },
-  ],
-  stakeholders: [
-    {
-      nm: "General Contractor",
-      sc: "Site coordination, QA/QC, schedule",
-      own: "Owns L2 install verification + punch",
-    },
-    {
-      nm: "Commissioning Authority (CxA)",
-      sc: "Independent verification",
-      own: "Owns L4 witness, L5 IST lead, gate sign-off",
-    },
-    {
-      nm: "Electrical Contractor",
-      sc: "Power distribution, terminations",
-      own: "Owns L3 energization readiness",
-    },
-    {
-      nm: "Mechanical Contractor",
-      sc: "Cooling, piping, P&ID",
-      own: "Owns L2 mechanical install",
-    },
-    {
-      nm: "Controls / BMS",
-      sc: "Sensors, integration, points",
-      own: "Owns L5 BMS/DCIM integration",
-    },
-    {
-      nm: "OEM / Vendor (FSE)",
-      sc: "Equipment startup & PFC",
-      own: "Owns L1 FAT, L4 PFT/startup",
-    },
-    {
-      nm: "NETA Testing",
-      sc: "Acceptance testing on gear",
-      own: "Owns L3/L4 NETA reports",
-    },
-    {
-      nm: "Owner / Operator",
-      sc: "Acceptance, ops readiness",
-      own: "Owns L6 turnover acceptance",
-    },
-  ],
-  safety: [
-    {
-      item: "AHA — Energized work / arc-flash (EC)",
-      type: "AHA",
-      status: "Approved",
-    },
-    {
-      item: "JHA — Rigging & lifting chiller (MC)",
-      type: "JHA",
-      status: "Approved",
-    },
-    {
-      item: "Daily site safety inspection",
-      type: "Inspection",
-      status: "Open",
-    },
-    {
-      item: "Hot-work permit — exhaust welding",
-      type: "Permit",
-      status: "Pending",
-    },
-    {
-      item: "Recordable incidents (this project)",
-      type: "Incident",
-      status: "0 to date",
-    },
-  ],
-  procurement: [
-    {
-      item: "UPS units (4)",
-      vendor: "Vertiv",
-      po: "PO-1042",
-      furnish: "OFCI",
-      status: "Delivered",
-      need: "Wk 0",
-    },
-    {
-      item: "Generator 2.5MW",
-      vendor: "Cummins",
-      po: "PO-1051",
-      furnish: "OFCI",
-      status: "Delivered",
-      need: "Wk 0",
-    },
-    {
-      item: "Switchgear lineup",
-      vendor: "Schneider",
-      po: "PO-1077",
-      furnish: "CFCI",
-      status: "Shipped",
-      need: "Wk 2",
-    },
-    {
-      item: "Chiller 400-ton",
-      vendor: "Trane",
-      po: "PO-1090",
-      furnish: "OFCI",
-      status: "Delivered",
-      need: "Wk 1",
-    },
-    {
-      item: "BMS controllers + I/O",
-      vendor: "Schneider",
-      po: "PO-1101",
-      furnish: "CFCI",
-      status: "Ordered",
-      need: "Wk 3",
-    },
-    {
-      item: "Load bank (rental)",
-      vendor: "Tower Electric",
-      po: "PO-1120",
-      furnish: "CFCI",
-      status: "Long-lead",
-      need: "Wk 5",
-    },
-  ],
-  tarf: [
-    {
-      crew: "CEC electrical crew (8)",
-      co: "Inglett & Stubbs",
-      date: "Mon",
-      badge: "Approved",
-      orient: "Complete",
-    },
-    {
-      crew: "Shermco NETA techs (3)",
-      co: "Shermco",
-      date: "Wk 3",
-      badge: "Submitted",
-      orient: "Pending",
-    },
-    {
-      crew: "Vertiv FSE (2)",
-      co: "Vertiv",
-      date: "Wk 4",
-      badge: "Submitted",
-      orient: "Pending",
-    },
-    {
-      crew: "TDI mechanical crew (6)",
-      co: "TDIndustries",
-      date: "Mon",
-      badge: "Approved",
-      orient: "Complete",
-    },
-  ],
-  fieldProgress: [
-    { disc: "Electrical", pct: 78, note: "Feeders + branch rough-in" },
-    { disc: "Mechanical", pct: 64, note: "CHW piping + equipment sets" },
-    { disc: "Controls", pct: 41, note: "BMS device rough-in + P2P" },
-    { disc: "Fire", pct: 55, note: "Device rough-in + FACP" },
-    { disc: "Plumbing", pct: 70, note: "Condensate + make-up water" },
-  ],
-  lookahead: [
-    {
-      id: "la1",
-      wk: 1,
-      trade: "EC",
-      area: "DH01 — Level 2 conduit & cable",
-      pct: 90,
-      status: "active",
-    },
-    {
-      id: "la2",
-      wk: 1,
-      trade: "MC",
-      area: "CHW piping — Cooling Plant",
-      pct: 75,
-      status: "active",
-    },
-    {
-      id: "la3",
-      wk: 1,
-      trade: "Controls",
-      area: "BMS device rough-in",
-      pct: 40,
-      status: "active",
-      blocked: true,
-      constraint: "Points list not yet approved",
-    },
-    {
-      id: "la4",
-      wk: 2,
-      trade: "EC",
-      area: "Feeder pull + terminations to gear",
-      pct: 20,
-      status: "active",
-      blocked: true,
-      constraint: "Switchgear delivery delayed to Wk2",
-    },
-    {
-      id: "la5",
-      wk: 2,
-      trade: "MC",
-      area: "Pump set + pressure test",
-      pct: 0,
-      status: "planned",
-    },
-    {
-      id: "la6",
-      wk: 2,
-      trade: "FIRE",
-      area: "Fire device rough-in DH01",
-      pct: 30,
-      status: "active",
-    },
-    {
-      id: "la7",
-      wk: 3,
-      trade: "EC",
-      area: "Energization readiness — Train A",
-      pct: 0,
-      status: "planned",
-    },
-    {
-      id: "la8",
-      wk: 3,
-      trade: "NETA",
-      area: "Acceptance testing — switchgear",
-      pct: 0,
-      status: "planned",
-    },
-    {
-      id: "la9",
-      wk: 3,
-      trade: "Controls",
-      area: "Point-to-point start",
-      pct: 0,
-      status: "planned",
-    },
-    {
-      id: "la10",
-      wk: 4,
-      trade: "OEM",
-      area: "UPS / GEN startup + PFC",
-      pct: 0,
-      status: "planned",
-    },
-    {
-      id: "la12",
-      wk: 5,
-      trade: "OEM",
-      area: "Load bank — Generator",
-      pct: 0,
-      status: "planned",
-    },
-    {
-      id: "la14",
-      wk: 6,
-      trade: "CXA",
-      area: "L4 functional witness",
-      pct: 0,
-      status: "planned",
-    },
-  ],
-  drawings: [
-    {
-      name: "One-Line Diagram — Critical Power",
-      type: "One-Line",
-      eq: "HS-UPS-01",
-      verified: true,
-    },
-    {
-      name: "P&ID — Chilled Water Plant",
-      type: "P&ID",
-      eq: "HS-CHL-01",
-      verified: false,
-    },
-    {
-      name: "BMS Points & Riser",
-      type: "Riser",
-      eq: "HS-BMS-01",
-      verified: false,
-    },
-    {
-      name: "Generator Fuel System P&ID",
-      type: "P&ID",
-      eq: "HS-GEN-01",
-      verified: true,
-    },
-  ],
-  submittals: [
-    {
-      name: "UPS System — product data & cut sheets",
-      eq: "HS-UPS-01",
-      by: "Vertiv",
-      status: "Approved",
-    },
-    {
-      name: "Chiller — performance & seismic",
-      eq: "HS-CHL-01",
-      by: "Trane",
-      status: "Approved as Noted",
-    },
-    {
-      name: "ATS — controller spec",
-      eq: "HS-ATS-01",
-      by: "ASCO",
-      status: "Revise & Resubmit",
-    },
-    {
-      name: "BMS — points list & architecture",
-      eq: "HS-BMS-01",
-      by: "Schneider",
-      status: "Under Review",
-    },
-  ],
-  team: [
-    {
-      ct: "gc",
-      company: "Iconicx Critical Solutions",
-      role: "GC — runs the project",
-      access: "Full control",
-      status: "host",
-    },
-    {
-      ct: "cxa",
-      company: "coreSynaptics",
-      role: "Commissioning Authority",
-      access: "Gates, witness, verify",
-      status: "active",
-    },
-    {
-      ct: "ec",
-      company: "Inglett & Stubbs",
-      role: "Electrical Contractor",
-      access: "Electrical scope",
-      status: "active",
-    },
-    {
-      ct: "mc",
-      company: "TDIndustries",
-      role: "Mechanical Contractor",
-      access: "Mechanical scope",
-      status: "active",
-    },
-    {
-      ct: "controls",
-      company: "Schneider Electric",
-      role: "Controls / BMS",
-      access: "Controls scope",
-      status: "active",
-    },
-    {
-      ct: "oem",
-      company: "Vertiv",
-      role: "OEM / Vendor",
-      access: "Their equipment only",
-      status: "active",
-    },
-    {
-      ct: "neta",
-      company: "Shermco Industries",
-      role: "NETA Testing",
-      access: "Test records",
-      status: "invited",
-    },
-    {
-      ct: "owner",
-      company: "Hyperscale Owner Co.",
-      role: "Owner / Operator",
-      access: "Scores & turnover",
-      status: "active",
-    },
-  ],
+  project: { name: "", phase: "" },
+  activity: [],
+  tasks: [],
+  equipment: [],
+  systems: [],
+  checklists: [],
+  findings: [],
+  punchList: [],
+  holdPoints: [],
+  tests: [],
+  milestones: [],
+  stakeholders: [],
+  safety: [],
+  procurement: [],
+  tarf: [],
+  fieldProgress: [],
+  lookahead: [],
+  drawings: [],
+  submittals: [],
+  team: [],
   rail: [
     "overview",
     "activity",
@@ -1519,45 +935,107 @@ export default function NewProjectDetail() {
   /* ---------- backend integration (Playbook V2 APIs) ---------- */
   const norm = (r) => r?.data ?? r;
   const isoMonday = (d = new Date()) => {
-    const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const x = new Date(
+      Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+    );
     const day = x.getUTCDay();
     x.setUTCDate(x.getUTCDate() + (day === 0 ? -6 : 1 - day));
     return x;
   };
   const ago = (ts) => {
     const ms = Date.now() - new Date(ts).getTime();
-    const m = Math.floor(ms / 60000), h = Math.floor(ms / 3600000), dy = Math.floor(ms / 86400000);
-    return dy > 0 ? `${dy}d ago` : h > 0 ? `${h}h ago` : m > 0 ? `${m}m ago` : "just now";
+    const m = Math.floor(ms / 60000),
+      h = Math.floor(ms / 3600000),
+      dy = Math.floor(ms / 86400000);
+    return dy > 0
+      ? `${dy}d ago`
+      : h > 0
+        ? `${h}h ago`
+        : m > 0
+          ? `${m}m ago`
+          : "just now";
   };
-  const CHK_FROM = { NOT_STARTED: "not_started", IN_PROGRESS: "in_progress", COMPLETED: "complete", VERIFIED: "verified" };
-  const CHK_TO = { not_started: "NOT_STARTED", in_progress: "IN_PROGRESS", complete: "COMPLETED", verified: "VERIFIED" };
-  const FND_TYPE = { NCR: "NCR", HOLD_POINT: "HoldPoint", WITNESS_POINT: "HoldPoint", PUNCH_LIST: "Punch", SNAG: "Deficiency", GENERAL: "Deficiency" };
-  const SEV_FROM = { CRITICAL: "Critical", HIGH: "Major", MEDIUM: "Minor", LOW: "Minor" };
-  const CHKTYPE_ROLE = { VENDOR: "OEM", GC: "GC", CX_AGENT: "CXA", TRADE: "TRADE", INTERNAL: "GC" };
-  const TASK_FROM = { PENDING: "open", IN_PROGRESS: "in_progress", COMPLETED: "done" };
-  const TASK_TO = { open: "PENDING", in_progress: "IN_PROGRESS", done: "COMPLETED" };
+  const CHK_FROM = {
+    NOT_STARTED: "not_started",
+    IN_PROGRESS: "in_progress",
+    COMPLETED: "complete",
+    VERIFIED: "verified",
+  };
+  const CHK_TO = {
+    not_started: "NOT_STARTED",
+    in_progress: "IN_PROGRESS",
+    complete: "COMPLETED",
+    verified: "VERIFIED",
+  };
+  const FND_TYPE = {
+    NCR: "NCR",
+    HOLD_POINT: "HoldPoint",
+    WITNESS_POINT: "HoldPoint",
+    PUNCH_LIST: "Punch",
+    SNAG: "Deficiency",
+    GENERAL: "Deficiency",
+  };
+  const SEV_FROM = {
+    CRITICAL: "Critical",
+    HIGH: "Major",
+    MEDIUM: "Minor",
+    LOW: "Minor",
+  };
+  const CHKTYPE_ROLE = {
+    VENDOR: "OEM",
+    GC: "GC",
+    CX_AGENT: "CXA",
+    TRADE: "TRADE",
+    INTERNAL: "GC",
+  };
+  const TASK_FROM = {
+    PENDING: "open",
+    IN_PROGRESS: "in_progress",
+    COMPLETED: "done",
+  };
+  const TASK_TO = {
+    open: "PENDING",
+    in_progress: "IN_PROGRESS",
+    done: "COMPLETED",
+  };
 
   const refresh = async (pid) => {
-    const [summaryR, issuesR, chksR, testsR, laR, teamR, stakeR, milesR, subsR, tarfR, procR, feedR, tasksR, punchR, holdsR] =
-      await Promise.allSettled([
-        getPlaybookSummary(pid),
-        getIssues({ projectId: pid, limit: 100 }),
-        getChecklists({ cxProjectId: pid }),
-        listCommissioningTests({ cxProjectId: pid, limit: 100 }),
-        listLookahead(pid, { limit: 200 }),
-        listTeamCompanies(pid),
-        listV2Stakeholders(pid),
-        listMilestones({ projectId: pid }),
-        getSubmittals({ cxProjectId: pid, limit: 100 }),
-        getTARFs({ cxProjectId: pid }),
-        getProcurementItems({ projectId: pid }),
-        getProjectFeed(pid, { limit: 50 }),
-        getAllTasks({ projectId: pid }),
-        // Punch list + hold points are the same Issues resource, kind-scoped.
-        getIssues({ projectId: pid, kind: "PUNCH_LIST", limit: 100 }),
-        getIssues({ projectId: pid, kind: "HOLD_POINT", limit: 100 }),
-      ]);
-    const val = (r, fb) => (r.status === "fulfilled" ? norm(r.value) ?? fb : fb);
+    const [
+      summaryR,
+      issuesR,
+      chksR,
+      testsR,
+      laR,
+      teamR,
+      stakeR,
+      milesR,
+      subsR,
+      tarfR,
+      procR,
+      feedR,
+      tasksR,
+      punchR,
+      holdsR,
+    ] = await Promise.allSettled([
+      getPlaybookSummary(pid),
+      getIssues({ projectId: pid, limit: 100 }),
+      getChecklists({ cxProjectId: pid }),
+      listCommissioningTests({ cxProjectId: pid, limit: 100 }),
+      listLookahead(pid, { limit: 200 }),
+      listTeamCompanies(pid),
+      listV2Stakeholders(pid),
+      listMilestones({ projectId: pid }),
+      getSubmittals({ cxProjectId: pid, limit: 100 }),
+      getTARFs({ cxProjectId: pid }),
+      getProcurementItems({ projectId: pid }),
+      getProjectFeed(pid, { limit: 50 }),
+      getAllTasks({ projectId: pid }),
+      // Punch list + hold points are the same Issues resource, kind-scoped.
+      getIssues({ projectId: pid, kind: "PUNCH_LIST", limit: 100 }),
+      getIssues({ projectId: pid, kind: "HOLD_POINT", limit: 100 }),
+    ]);
+    const val = (r, fb) =>
+      r.status === "fulfilled" ? (norm(r.value) ?? fb) : fb;
     const rows = (r) => {
       const v = val(r, []);
       return Array.isArray(v) ? v : (v?.data ?? v?.items ?? []);
@@ -1574,13 +1052,29 @@ export default function NewProjectDetail() {
     const codeCount = {};
     const equipment = (summary.equipmentGlance ?? []).map((a) => {
       codeCount[a.abbr] = (codeCount[a.abbr] ?? 0) + 1;
-      const code = codeCount[a.abbr] > 1 ? `${a.abbr}-${String(codeCount[a.abbr]).padStart(2, "0")}` : a.abbr;
-      return { id: code, assetId: a.assetId, name: a.name, disc: a.assetType, sys: null, phase: a.currentPhase, furnish: a.procurementOwner, blocked: a.blocked };
+      const code =
+        codeCount[a.abbr] > 1
+          ? `${a.abbr}-${String(codeCount[a.abbr]).padStart(2, "0")}`
+          : a.abbr;
+      return {
+        id: code,
+        assetId: a.assetId,
+        name: a.name,
+        disc: a.assetType,
+        sys: null,
+        phase: a.currentPhase,
+        furnish: a.procurementOwner,
+        blocked: a.blocked,
+      };
     });
     const codeOf = {};
-    equipment.forEach((e) => { codeOf[e.assetId] = e.id; });
-    const eq = (projectAssetId) => (projectAssetId && codeOf[projectAssetId]) || "—";
-    const discOf = (projectAssetId) => equipment.find((e) => e.assetId === projectAssetId)?.disc ?? "Electrical";
+    equipment.forEach((e) => {
+      codeOf[e.assetId] = e.id;
+    });
+    const eq = (projectAssetId) =>
+      (projectAssetId && codeOf[projectAssetId]) || "—";
+    const discOf = (projectAssetId) =>
+      equipment.find((e) => e.assetId === projectAssetId)?.disc ?? "Electrical";
 
     // Shared mapping: raw Issue → the finding shape these modules render.
     const toFinding = (f) => ({
@@ -1596,30 +1090,116 @@ export default function NewProjectDetail() {
     const monday = isoMonday();
     const next = {
       project: { name: summary.projectName, phase: summary.projectPhase },
-      rail: summary.rail?.moduleOrder?.length ? summary.rail.moduleOrder : structuredClone(SEED.rail),
-      fieldProgress: (summary.tradeProgress ?? []).map((t) => ({ disc: t.trade, pct: t.pct, note: t.note ?? "" })),
+      rail: summary.rail?.moduleOrder?.length
+        ? summary.rail.moduleOrder
+        : structuredClone(SEED.rail),
+      fieldProgress: (summary.tradeProgress ?? []).map((t) => ({
+        disc: t.trade,
+        pct: t.pct,
+        note: t.note ?? "",
+      })),
       equipment,
       systems: [],
-      checklists: rows(chksR).map((c) => ({ id: c.id, eq: eq(c.projectAssetId), level: c.phase === "NONE" ? "L1" : c.phase, role: CHKTYPE_ROLE[c.checklistType] ?? "GC", name: c.title, status: CHK_FROM[c.status] ?? "not_started" })),
+      checklists: rows(chksR).map((c) => ({
+        id: c.id,
+        eq: eq(c.projectAssetId),
+        level: c.phase === "NONE" ? "L1" : c.phase,
+        role: CHKTYPE_ROLE[c.checklistType] ?? "GC",
+        name: c.title,
+        status: CHK_FROM[c.status] ?? "not_started",
+      })),
       findings: rows(issuesR).map(toFinding),
       punchList: rows(punchR).map(toFinding),
       holdPoints: rows(holdsR).map(toFinding),
-      tests: rows(testsR).map((t) => ({ id: t.id, eq: eq(t.projectAssetId), name: t.testName, status: t.result === "PASS" ? "passed" : "pending" })),
+      tests: rows(testsR).map((t) => ({
+        id: t.id,
+        eq: eq(t.projectAssetId),
+        name: t.testName,
+        status: t.result === "PASS" ? "passed" : "pending",
+      })),
       lookahead: rows(laR).map((a) => {
-        const wk = Math.round((new Date(a.weekStartDate).getTime() - monday.getTime()) / (7 * 86400000)) + 1;
-        return { id: a.id, wk: Math.min(6, Math.max(1, wk)), trade: a.trade, area: a.description, pct: a.pct, status: (a.status ?? "PLANNED").toLowerCase(), blocked: !!a.blocked, constraint: a.constraintNote ?? "" };
+        const wk =
+          Math.round(
+            (new Date(a.weekStartDate).getTime() - monday.getTime()) /
+              (7 * 86400000),
+          ) + 1;
+        return {
+          id: a.id,
+          wk: Math.min(6, Math.max(1, wk)),
+          trade: a.trade,
+          area: a.description,
+          pct: a.pct,
+          status: (a.status ?? "PLANNED").toLowerCase(),
+          blocked: !!a.blocked,
+          constraint: a.constraintNote ?? "",
+        };
       }),
       team: [
-        { ct: "gc", company: summary.lens?.isHost ? "Your organization (host)" : "Host organization", role: "GC — runs the project", access: "Full control", status: "host" },
-        ...(val(teamR, []) ?? []).filter((m) => m.status !== "REVOKED").map((m) => ({ membershipId: m.id, ct: (m.companyType ?? "gc").toLowerCase(), company: m.companyName, role: m.companyRole, access: `${m.companyRole} scope`, status: (m.status ?? "active").toLowerCase() })),
+        {
+          ct: "gc",
+          company: summary.lens?.isHost
+            ? "Your organization (host)"
+            : "Host organization",
+          role: "GC — runs the project",
+          access: "Full control",
+          status: "host",
+        },
+        ...(val(teamR, []) ?? [])
+          .filter((m) => m.status !== "REVOKED")
+          .map((m) => ({
+            membershipId: m.id,
+            ct: (m.companyType ?? "gc").toLowerCase(),
+            company: m.companyName,
+            role: m.companyRole,
+            access: `${m.companyRole} scope`,
+            status: (m.status ?? "active").toLowerCase(),
+          })),
       ],
-      stakeholders: (val(stakeR, []) ?? []).map((s) => ({ nm: s.name, sc: s.role ?? "", own: s.company ?? "" })),
-      milestones: rows(milesR).map((m) => ({ d: m.date ? String(m.date).slice(0, 10) : "TBD", ph: m.type ?? "", name: m.name, status: m.date && new Date(m.date) < new Date() ? "done" : "todo" })),
-      submittals: rows(subsR).map((s) => ({ name: s.title ?? s.name, eq: "", by: s.specSection ?? "", status: s.status ?? "" })),
-      tarf: rows(tarfR).map((t) => ({ crew: t.personName ?? t.crew, co: t.companyName ?? "", date: t.expectedStart ? String(t.expectedStart).slice(0, 10) : "", badge: t.approvalStage ?? "", orient: t.safetyOrientationComplete ? "Complete" : "Pending" })),
-      procurement: rows(procR).map((p) => ({ item: p.itemName ?? p.name ?? p.title ?? "Item", vendor: p.vendorName ?? "", po: p.poNumber ?? "", furnish: p.ownership ?? p.furnish ?? "", status: p.status ?? "", need: p.expectedDelivery ? String(p.expectedDelivery).slice(0, 10) : "" })),
-      activity: rows(feedR).map((e) => ({ when: ago(e.createdAt ?? Date.now()), who: e.actorDisplayName ?? "system", ct: (e.actorCompanyCode ?? "gc").toLowerCase(), text: [e.action, e.target].filter(Boolean).join(" — ") })),
-      tasks: rows(tasksR).map((t) => ({ id: t.id, ct: ct, title: t.title, due: t.dueDate ? String(t.dueDate).slice(0, 10) : "", status: TASK_FROM[t.status] ?? "open" })),
+      stakeholders: (val(stakeR, []) ?? []).map((s) => ({
+        nm: s.name,
+        sc: s.role ?? "",
+        own: s.company ?? "",
+      })),
+      milestones: rows(milesR).map((m) => ({
+        d: m.date ? String(m.date).slice(0, 10) : "TBD",
+        ph: m.type ?? "",
+        name: m.name,
+        status: m.date && new Date(m.date) < new Date() ? "done" : "todo",
+      })),
+      submittals: rows(subsR).map((s) => ({
+        name: s.title ?? s.name,
+        eq: "",
+        by: s.specSection ?? "",
+        status: s.status ?? "",
+      })),
+      tarf: rows(tarfR).map((t) => ({
+        crew: t.personName ?? t.crew,
+        co: t.companyName ?? "",
+        date: t.expectedStart ? String(t.expectedStart).slice(0, 10) : "",
+        badge: t.approvalStage ?? "",
+        orient: t.safetyOrientationComplete ? "Complete" : "Pending",
+      })),
+      procurement: rows(procR).map((p) => ({
+        item: p.itemName ?? p.name ?? p.title ?? "Item",
+        vendor: p.vendorName ?? "",
+        po: p.poNumber ?? "",
+        furnish: p.ownership ?? p.furnish ?? "",
+        status: p.status ?? "",
+        need: p.expectedDelivery ? String(p.expectedDelivery).slice(0, 10) : "",
+      })),
+      activity: rows(feedR).map((e) => ({
+        when: ago(e.createdAt ?? Date.now()),
+        who: e.actorDisplayName ?? "system",
+        ct: (e.actorCompanyCode ?? "gc").toLowerCase(),
+        text: [e.action, e.target].filter(Boolean).join(" — "),
+      })),
+      tasks: rows(tasksR).map((t) => ({
+        id: t.id,
+        ct: ct,
+        title: t.title,
+        due: t.dueDate ? String(t.dueDate).slice(0, 10) : "",
+        status: TASK_FROM[t.status] ?? "open",
+      })),
       drawings: [],
       safety: [],
     };
@@ -1659,6 +1239,44 @@ export default function NewProjectDetail() {
   const g = useMemo(() => gateAll(db), [db]);
   const defaultSel = db.equipment[0] ? `eq:${db.equipment[0].id}` : "";
   const SELV = sel || defaultSel;
+
+  // Equipment Readiness — fetch a single asset's checklists straight from the
+  // Checklist API (scoped to this project + asset) and merge them into
+  // db.checklists, keyed by the asset's display code, so the Readiness card,
+  // status dropdown, and gate logic all reflect the live, asset-scoped list.
+  // Reused after a status change to re-sync with the server's latest state.
+  const loadChecklistsFor = (assetId, code) =>
+    getChecklists({ cxProjectId: projectId, assetId })
+      .then((res) => {
+        const data = res?.data ?? res;
+        const list = Array.isArray(data)
+          ? data
+          : (data?.data ?? data?.items ?? []);
+        const mapped = list.map((c) => ({
+          id: c.id,
+          eq: code,
+          level: c.phase === "NONE" ? "L1" : c.phase,
+          role: CHKTYPE_ROLE[c.checklistType] ?? "GC",
+          name: c.title,
+          status: CHK_FROM[c.status] ?? "not_started",
+        }));
+        setDb((prev) => ({
+          ...prev,
+          checklists: [
+            ...prev.checklists.filter((x) => x.eq !== code),
+            ...mapped,
+          ],
+        }));
+      })
+      .catch(() => {});
+
+  useEffect(() => {
+    if (mod !== "readiness" || !projectId) return;
+    const u = unit(db, SELV);
+    if (u.kind !== "equipment" || !u.eq?.assetId) return;
+    loadChecklistsFor(u.eq.assetId, u.eq.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mod, SELV, projectId]);
 
   const counts = {
     issues: g.gk.length,
@@ -1705,7 +1323,9 @@ export default function NewProjectDetail() {
     if (!e?.assetId || !projectId) return;
     try {
       const call = dir === "advance" ? advanceAssetPhase : revertAssetPhase;
-      const res = norm(await call(projectId, e.assetId, { expectedPhase: e.phase }));
+      const res = norm(
+        await call(projectId, e.assetId, { expectedPhase: e.phase }),
+      );
       mutate((d) => {
         const x = d.equipment.find((y) => y.id === u.id);
         if (x) x.phase = res?.currentPhase ?? x.phase;
@@ -1721,25 +1341,38 @@ export default function NewProjectDetail() {
       apiErr(err, "Gate is blocked — resolve outstanding items first");
     }
   };
+  // `status` is a ChecklistStatus enum value — one of NOT_STARTED | IN_PROGRESS
+  // | COMPLETED | VERIFIED (the only statuses the API accepts). The local store
+  // keeps the lowercase form for rendering.
   const setChk = (id, status) => {
-    const prev = db.checklists.find((x) => x.id === id)?.status;
+    const lower = CHK_FROM[status] ?? "not_started";
+    const row = db.checklists.find((x) => x.id === id);
+    const prev = row?.status;
     mutate((d) => {
       const c = d.checklists.find((x) => x.id === id);
-      if (c) c.status = status;
+      if (c) c.status = lower;
     });
     // VERIFIED goes through the sign endpoint (approval rights + required
     // items enforced server-side); other moves use the status transition API.
     const call =
-      status === "verified"
+      status === "VERIFIED"
         ? signChecklist(id)
-        : changeChecklistStatus(id, { status: CHK_TO[status] ?? "NOT_STARTED" });
-    call.catch((err) => {
-      mutate((d) => {
-        const c = d.checklists.find((x) => x.id === id);
-        if (c && prev) c.status = prev;
+        : changeChecklistStatus(id, { status });
+    call
+      .then(() => {
+        // Re-fetch the owning asset's checklists so the card shows the server's
+        // latest state (status, verification, derived fields) — not just the
+        // optimistic local update.
+        const e = db.equipment.find((x) => x.id === row?.eq);
+        if (e?.assetId) loadChecklistsFor(e.assetId, e.id);
+      })
+      .catch((err) => {
+        mutate((d) => {
+          const c = d.checklists.find((x) => x.id === id);
+          if (c && prev) c.status = prev;
+        });
+        apiErr(err, "Could not update checklist");
       });
-      apiErr(err, "Could not update checklist");
-    });
   };
   const resolveFinding = async (id) => {
     mutate((d) => {
@@ -1750,7 +1383,11 @@ export default function NewProjectDetail() {
       // Closing requires the full lifecycle: NEW/DEFERRED → IN_PROGRESS →
       // READY_FOR_VERIFICATION → verify-close (with the verifier's user id).
       let me = null;
-      try { me = JSON.parse(getUser() || "null")?.id ?? null; } catch { me = null; }
+      try {
+        me = JSON.parse(getUser() || "null")?.id ?? null;
+      } catch {
+        me = null;
+      }
       const detail = norm(await getIssueById(id, projectId));
       let st = detail?.status;
       if (st === "NEW" || st === "DEFERRED") {
@@ -1758,7 +1395,11 @@ export default function NewProjectDetail() {
         st = "IN_PROGRESS";
       }
       if (st === "IN_PROGRESS") {
-        await changeIssueStatus(id, { status: "READY_FOR_VERIFICATION" }, projectId);
+        await changeIssueStatus(
+          id,
+          { status: "READY_FOR_VERIFICATION" },
+          projectId,
+        );
       }
       await verifyAndCloseIssue(id, { closeVerifiedBy: me }, projectId);
       flash("Finding resolved");
@@ -1812,8 +1453,8 @@ export default function NewProjectDetail() {
       nextStatus = t.status;
     });
     if (nextStatus) {
-      updateTask(id, { status: TASK_TO[nextStatus] ?? "PENDING" }).catch((err) =>
-        apiErr(err, "Could not update task"),
+      updateTask(id, { status: TASK_TO[nextStatus] ?? "PENDING" }).catch(
+        (err) => apiErr(err, "Could not update task"),
       );
     }
   };
@@ -1911,7 +1552,16 @@ export default function NewProjectDetail() {
       );
     }
   };
-  const LA_TRADES = ["EC", "MC", "Controls", "OEM", "NETA", "FIRE", "GC", "CXA"];
+  const LA_TRADES = [
+    "EC",
+    "MC",
+    "Controls",
+    "OEM",
+    "NETA",
+    "FIRE",
+    "GC",
+    "CXA",
+  ];
   const submitActivity = async () => {
     const area = (laAdd.area || "").trim();
     if (!area) {
@@ -2051,11 +1701,12 @@ export default function NewProjectDetail() {
     const gg = gateOf(db, u);
     const k = PHASES.indexOf(gg.phase);
     const next = PHASES[Math.min(k + 1, PHASES.length - 1)];
+    // Only the backend ChecklistStatus enum values are selectable.
     const STAT = [
-      ["not_started", "Not Started"],
-      ["in_progress", "In Progress"],
-      ["complete", "Complete"],
-      ["verified", "CxA Verified"],
+      ["NOT_STARTED", "Not Started"],
+      ["IN_PROGRESS", "In Progress"],
+      ["COMPLETED", "Completed"],
+      ["VERIFIED", "Verified"],
     ];
     const canAdv = can("advance") && u.kind === "equipment";
     return (
@@ -2225,11 +1876,12 @@ export default function NewProjectDetail() {
                 <Pill kind="lvl">{c.level}</Pill>
                 <Pill kind="role">{c.role}</Pill>
                 <Grow>{c.name}</Grow>
+                Status :
                 {c.status === "failed" ? (
                   <St s="failed">failed</St>
                 ) : can("create") ? (
                   <select
-                    value={c.status}
+                    value={CHK_TO[c.status] ?? "NOT_STARTED"}
                     onChange={(e) => setChk(c.id, e.target.value)}
                     className="font-mono"
                     style={{
@@ -3614,29 +3266,58 @@ export default function NewProjectDetail() {
       {laAdd && (
         <div
           onClick={() => setLaAdd(null)}
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 40 }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+            zIndex: 40,
+          }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ background: P.card, border: `1px solid ${P.line}`, borderRadius: 12, padding: 16, width: "100%", maxWidth: 420 }}
+            style={{
+              background: P.card,
+              border: `1px solid ${P.line}`,
+              borderRadius: 12,
+              padding: 16,
+              width: "100%",
+              maxWidth: 420,
+            }}
           >
             <SectLab>Add a lookahead activity</SectLab>
 
-            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>Week</label>
+            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>
+              Week
+            </label>
             <select
               value={laAdd.wk}
               onChange={(e) => setLaAdd((p) => ({ ...p, wk: e.target.value }))}
-              style={{ ...selWrap, width: "100%", marginBottom: 12, fontWeight: 700 }}
+              style={{
+                ...selWrap,
+                width: "100%",
+                marginBottom: 12,
+                fontWeight: 700,
+              }}
             >
               {[1, 2, 3, 4, 5, 6].map((w) => (
-                <option key={w} value={w}>Week {w}</option>
+                <option key={w} value={w}>
+                  Week {w}
+                </option>
               ))}
             </select>
 
-            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>Trade</label>
+            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>
+              Trade
+            </label>
             <select
               value={laAdd.trade}
-              onChange={(e) => setLaAdd((p) => ({ ...p, trade: e.target.value }))}
+              onChange={(e) =>
+                setLaAdd((p) => ({ ...p, trade: e.target.value }))
+              }
               style={{ ...selWrap, width: "100%", marginBottom: 12 }}
             >
               {LA_TRADES.map((t) => (
@@ -3644,28 +3325,62 @@ export default function NewProjectDetail() {
               ))}
             </select>
 
-            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>Activity / Area</label>
+            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>
+              Activity / Area
+            </label>
             <input
               autoFocus
               value={laAdd.area}
-              onChange={(e) => setLaAdd((p) => ({ ...p, area: e.target.value }))}
+              onChange={(e) =>
+                setLaAdd((p) => ({ ...p, area: e.target.value }))
+              }
               onKeyDown={(e) => e.key === "Enter" && submitActivity()}
               placeholder="e.g. DH02 branch conduit rough-in"
-              style={{ width: "100%", height: 38, border: `1px solid ${P.line}`, borderRadius: 9, background: P.card, padding: "0 11px", fontSize: 14, color: P.ink, marginBottom: 14 }}
+              style={{
+                width: "100%",
+                height: 38,
+                border: `1px solid ${P.line}`,
+                borderRadius: 9,
+                background: P.card,
+                padding: "0 11px",
+                fontSize: 14,
+                color: P.ink,
+                marginBottom: 14,
+              }}
             />
 
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setLaAdd(null)}
-                style={{ height: 36, padding: "0 14px", borderRadius: 8, border: `1px solid ${P.line}`, background: P.card, fontSize: 13, fontWeight: 700, cursor: "pointer", color: P.ink }}
+                style={{
+                  height: 36,
+                  padding: "0 14px",
+                  borderRadius: 8,
+                  border: `1px solid ${P.line}`,
+                  background: P.card,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  color: P.ink,
+                }}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={submitActivity}
-                style={{ height: 36, padding: "0 16px", borderRadius: 8, border: `1px solid ${P.teal}`, background: P.teal, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                style={{
+                  height: 36,
+                  padding: "0 16px",
+                  borderRadius: 8,
+                  border: `1px solid ${P.teal}`,
+                  background: P.teal,
+                  color: "#fff",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
               >
                 Add activity
               </button>

@@ -3,9 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createChecklist, addChecklistItem } from "@/services/Checklist";
-import { getProjects } from "@/services/Projects";
-import { getCxProjectZones } from "@/services/CxProjects";
-import { getAssets } from "@/services/AssetManagement";
 import { listV2Assets, listV2Projects } from "@/services/CxProjectsV2";
 
 const PHASES = ["NONE", "L1", "L2", "L3", "L4", "L5", "IST"];
@@ -41,7 +38,12 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 [&_option]:bg-gray-700 appearance-none disabled:opacity-50"
+        className="w-full px-4 py-2 rounded-lg focus:outline-none appearance-none disabled:opacity-50"
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border3)",
+          color: "var(--rf-txt)",
+        }}
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((o) => (
@@ -51,7 +53,8 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
         ))}
       </select>
       <svg
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
+        style={{ color: "var(--rf-txt3)" }}
         width="12"
         height="12"
         viewBox="0 0 24 24"
@@ -68,24 +71,55 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
 // ─── ITEM CARD ────────────────────────────────────────────────────────────────
 function ItemCard({ item, index, onChange, onRemove, canRemove }) {
   return (
-    <div className="bg-gray-800/60 border border-gray-700 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-800 border-b border-gray-700">
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{
+        background: "var(--rf-bg3)",
+        border: "1px solid var(--rf-border2)",
+      }}
+    >
+      <div
+        className="flex items-center justify-between px-4 py-2.5"
+        style={{
+          background: "var(--rf-bg2)",
+          borderBottom: "1px solid var(--rf-border2)",
+        }}
+      >
         <div className="flex items-center gap-3">
-          <span className="w-7 h-7 rounded-md bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-xs font-bold text-blue-400">
+          <span
+            className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold"
+            style={{
+              background:
+                "color-mix(in srgb, var(--rf-accent) 14%, transparent)",
+              color: "var(--rf-accent)",
+              border:
+                "1px solid color-mix(in srgb, var(--rf-accent) 30%, transparent)",
+            }}
+          >
             {index + 1}
           </span>
-          <span className="text-xs text-gray-400">Item #{item.sequence}</span>
+          <span className="text-xs" style={{ color: "var(--rf-txt2)" }}>
+            Item #{item.sequence}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">Required</span>
+            <span className="text-xs" style={{ color: "var(--rf-txt2)" }}>
+              Required
+            </span>
             <button
               type="button"
               onClick={() => onChange(index, "isRequired", !item.isRequired)}
-              className={`relative w-9 h-5 rounded-full transition-colors ${item.isRequired ? "bg-blue-500" : "bg-gray-600"}`}
+              className="relative w-9 h-5 rounded-full transition-colors"
+              style={{
+                background: item.isRequired
+                  ? "var(--rf-accent)"
+                  : "var(--rf-bg4)",
+              }}
             >
               <div
-                className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${item.isRequired ? "translate-x-4" : "translate-x-0.5"}`}
+                className={`absolute top-0.5 w-4 h-4 rounded-full shadow-sm transition-transform ${item.isRequired ? "translate-x-4" : "translate-x-0.5"}`}
+                style={{ background: "#fff" }}
               />
             </button>
           </div>
@@ -93,7 +127,17 @@ function ItemCard({ item, index, onChange, onRemove, canRemove }) {
             <button
               type="button"
               onClick={() => onRemove(index)}
-              className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-all"
+              className="p-1.5 rounded-lg transition-all"
+              style={{ color: "var(--rf-txt3)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "var(--rf-red)";
+                e.currentTarget.style.background =
+                  "color-mix(in srgb, var(--rf-red) 12%, transparent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "var(--rf-txt3)";
+                e.currentTarget.style.background = "transparent";
+              }}
             >
               <svg
                 className="w-4 h-4"
@@ -114,19 +158,30 @@ function ItemCard({ item, index, onChange, onRemove, canRemove }) {
       </div>
       <div className="p-4 space-y-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-            Title <span className="text-red-400">*</span>
+          <label
+            className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+            style={{ color: "var(--rf-txt2)" }}
+          >
+            Title <span style={{ color: "var(--rf-red)" }}>*</span>
           </label>
           <input
             type="text"
             value={item.title}
             onChange={(e) => onChange(index, "title", e.target.value)}
             placeholder="Item title…"
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2 rounded-lg placeholder-gray-500 text-sm focus:outline-none"
+            style={{
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border3)",
+              color: "var(--rf-txt)",
+            }}
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+          <label
+            className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+            style={{ color: "var(--rf-txt2)" }}
+          >
             Description
           </label>
           <textarea
@@ -134,11 +189,19 @@ function ItemCard({ item, index, onChange, onRemove, canRemove }) {
             onChange={(e) => onChange(index, "description", e.target.value)}
             placeholder="What needs to be verified or checked…"
             rows={2}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500 resize-none"
+            className="w-full px-3 py-2 rounded-lg placeholder-gray-500 text-sm focus:outline-none resize-none"
+            style={{
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border3)",
+              color: "var(--rf-txt)",
+            }}
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+          <label
+            className="block text-xs font-semibold uppercase tracking-wider mb-1.5"
+            style={{ color: "var(--rf-txt2)" }}
+          >
             Notes
           </label>
           <textarea
@@ -146,7 +209,12 @@ function ItemCard({ item, index, onChange, onRemove, canRemove }) {
             onChange={(e) => onChange(index, "notes", e.target.value)}
             placeholder="Optional notes…"
             rows={2}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500 resize-none"
+            className="w-full px-3 py-2 rounded-lg placeholder-gray-500 text-sm focus:outline-none resize-none"
+            style={{
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border3)",
+              color: "var(--rf-txt)",
+            }}
           />
         </div>
       </div>
@@ -162,17 +230,13 @@ export default function ChecklistAdd() {
 
   // ── Cascade lists ─────────────────────────────────────────────────────────
   const [projects, setProjects] = useState([]);
-  const [zones, setZones] = useState([]);
   const [assets, setAssets] = useState([]);
-  const [equipment, setEquipment] = useState([]);
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     projectId: "",
-    zoneId: "",
     assetId: "",
-    projectAssetId: "",
     phase: "L1",
     checklistType: "INTERNAL",
   });
@@ -182,38 +246,18 @@ export default function ChecklistAdd() {
   // Load projects on mount. Legacy /projects has no backend route;
   // cx-projects (V2 list) is the source of truth — fall back to it.
   useEffect(() => {
-    getProjects()
-      .then((d) => {
-        const list = toArray(d);
-        if (list.length) setProjects(list);
-        else return listV2Projects({ limit: 100 }).then((v2) => setProjects(v2?.data ?? []));
-      })
-      .catch(() =>
-        listV2Projects({ limit: 100 })
-          .then((v2) => setProjects(v2?.data ?? []))
-          .catch(() => {}),
-      );
+    listV2Projects({ limit: 100 })
+      .then((v2) => setProjects(v2?.data ?? []))
+      .catch(() => {}); 
   }, []);
 
-  // Asset registry (org-wide) for the optional legacy asset link.
+  // Project → project-scoped assets (V2).
   useEffect(() => {
-    getAssets()
-      .then((res) => setAssets(res?.data ?? []))
-      .catch(() => {});
-  }, []);
-
-  // Project → zones + V2 equipment (ProjectAsset). Current-phase checklists
-  // on an equipment row gate its phase advance in the Project Playbook.
-  useEffect(() => {
-    setZones([]);
-    setEquipment([]);
-    setFormData((p) => ({ ...p, zoneId: "", projectAssetId: "" }));
+    setAssets([]);
+    setFormData((p) => ({ ...p, assetId: "" }));
     if (!formData.projectId) return;
-    getCxProjectZones(formData.projectId)
-      .then((d) => setZones(toArray(d)))
-      .catch(() => {});
     listV2Assets(formData.projectId, { limit: 100 })
-      .then((res) => setEquipment(res?.data ?? []))
+      .then((res) => setAssets(toArray(res)))
       .catch(() => {});
   }, [formData.projectId]);
 
@@ -273,9 +317,7 @@ export default function ChecklistAdd() {
         title: formData.title.trim(),
         description: formData.description.trim() || undefined,
         cxProjectId: formData.projectId,
-        zoneId: formData.zoneId || undefined,
         assetId: formData.assetId || undefined,
-        projectAssetId: formData.projectAssetId || undefined,
         phase: formData.phase || undefined,
         checklistType: formData.checklistType || undefined,
       });
@@ -299,21 +341,32 @@ export default function ChecklistAdd() {
   };
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-6 cl-page">
       <div className="mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1
+            className="text-4xl font-bold mb-2"
+            style={{ color: "var(--rf-txt)" }}
+          >
             Create Checklist
           </h1>
-          <p className="text-gray-400">
+          <p style={{ color: "var(--rf-txt2)" }}>
             Add a new project checklist with items
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <div
+            className="rounded-lg p-4 mb-6 flex items-start gap-3"
+            style={{
+              background: "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+            }}
+          >
             <svg
-              className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+              className="w-5 h-5 flex-shrink-0 mt-0.5"
+              style={{ color: "var(--rf-red)" }}
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -323,16 +376,26 @@ export default function ChecklistAdd() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="text-red-200">{error}</span>
+            <span style={{ color: "var(--rf-red)" }}>{error}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* ── Checklist Details ── */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-5 flex items-center gap-3">
+          <div
+            className="rounded-xl overflow-hidden shadow-2xl"
+            style={{
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border2)",
+            }}
+          >
+            <div
+              className="px-6 py-5 flex items-center gap-3"
+              style={{ background: "var(--rf-accent)" }}
+            >
               <svg
-                className="w-5 h-5 text-white"
+                className="w-5 h-5"
+                style={{ color: "#fff" }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -344,7 +407,7 @@ export default function ChecklistAdd() {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <h2 className="text-lg font-semibold text-white">
+              <h2 className="text-lg font-semibold" style={{ color: "#fff" }}>
                 Checklist Details
               </h2>
             </div>
@@ -352,8 +415,11 @@ export default function ChecklistAdd() {
             <div className="p-6 space-y-5">
               {/* Title + Description */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-2">
-                  Title <span className="text-red-400">*</span>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: "var(--rf-txt)" }}
+                >
+                  Title <span style={{ color: "var(--rf-red)" }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -361,11 +427,19 @@ export default function ChecklistAdd() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="e.g. L1 Power Verification Checklist"
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 rounded-lg placeholder-gray-400 focus:outline-none"
+                  style={{
+                    background: "var(--rf-bg2)",
+                    border: "1px solid var(--rf-border3)",
+                    color: "var(--rf-txt)",
+                  }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-white mb-2">
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: "var(--rf-txt)" }}
+                >
                   Description
                 </label>
                 <textarea
@@ -374,14 +448,22 @@ export default function ChecklistAdd() {
                   onChange={handleChange}
                   rows={2}
                   placeholder="Optional description…"
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full px-4 py-2 rounded-lg placeholder-gray-400 focus:outline-none resize-none"
+                  style={{
+                    background: "var(--rf-bg2)",
+                    border: "1px solid var(--rf-border3)",
+                    color: "var(--rf-txt)",
+                  }}
                 />
               </div>
 
               {/* Phase + Type */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Phase
                   </label>
                   <AppSelect
@@ -392,7 +474,10 @@ export default function ChecklistAdd() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Type
                   </label>
                   <AppSelect
@@ -408,15 +493,24 @@ export default function ChecklistAdd() {
               </div>
 
               {/* ── Hierarchy ── */}
-              <div className="border-t border-gray-700 pt-5">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+              <div
+                className="pt-5"
+                style={{ borderTop: "1px solid var(--rf-border2)" }}
+              >
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider mb-4"
+                  style={{ color: "var(--rf-txt2)" }}
+                >
                   Project Hierarchy
                 </p>
 
                 {/* Project */}
                 <div className="mb-4">
-                  <label className="block text-sm font-semibold text-white mb-2">
-                    Project <span className="text-red-400">*</span>
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    Project <span style={{ color: "var(--rf-red)" }}>*</span>
                   </label>
                   <AppSelect
                     name="projectId"
@@ -430,80 +524,36 @@ export default function ChecklistAdd() {
                   />
                 </div>
 
-                {/* Zone + Asset (optional) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Zone{" "}
-                      <span className="text-gray-500 font-normal">
-                        (optional)
-                      </span>
-                    </label>
-                    <AppSelect
-                      name="zoneId"
-                      value={formData.zoneId}
-                      onChange={handleChange}
-                      options={zones.map((z) => ({
-                        value: z.id,
-                        label: z.name,
-                      }))}
-                      placeholder={
-                        formData.projectId
-                          ? zones.length
-                            ? "— Select Zone —"
-                            : "No zones found"
-                          : "— Select Project First —"
-                      }
-                      disabled={!formData.projectId || zones.length === 0}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Asset{" "}
-                      <span className="text-gray-500 font-normal">
-                        (optional)
-                      </span>
-                    </label>
-                    <AppSelect
-                      name="assetId"
-                      value={formData.assetId}
-                      onChange={handleChange}
-                      options={assets.map((a) => ({
-                        value: a.id,
-                        label: a.name,
-                      }))}
-                      placeholder={
-                        assets.length ? "— Select Asset —" : "No assets found"
-                      }
-                      disabled={assets.length === 0}
-                    />
-                  </div>
-                </div>
-
-                {/* Equipment (V2 / Playbook gate) */}
-                <div className="mt-4">
-                  <label className="block text-sm font-semibold text-white mb-2">
-                    Equipment{" "}
-                    <span className="text-gray-500 font-normal">
-                      (optional — gates its Playbook phase)
+                {/* Asset (optional) */}
+                <div>
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    Asset{" "}
+                    <span
+                      className="font-normal"
+                      style={{ color: "var(--rf-txt3)" }}
+                    >
+                      (optional)
                     </span>
                   </label>
                   <AppSelect
-                    name="projectAssetId"
-                    value={formData.projectAssetId}
+                    name="assetId"
+                    value={formData.assetId}
                     onChange={handleChange}
-                    options={equipment.map((a) => ({
+                    options={assets.map((a) => ({
                       value: a.id,
-                      label: `${a.abbr} — ${a.name}`,
+                      label: a.name,
                     }))}
                     placeholder={
                       formData.projectId
-                        ? equipment.length
-                          ? "— Select Equipment —"
-                          : "No equipment on this project"
+                        ? assets.length
+                          ? "— Select Asset —"
+                          : "No assets found"
                         : "— Select Project First —"
                     }
-                    disabled={!formData.projectId || equipment.length === 0}
+                    disabled={!formData.projectId || assets.length === 0}
                   />
                 </div>
               </div>
@@ -511,18 +561,34 @@ export default function ChecklistAdd() {
           </div>
 
           {/* ── Items ── */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
-              <h2 className="text-lg font-semibold text-white">
+          <div
+            className="rounded-xl overflow-hidden shadow-2xl"
+            style={{
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border2)",
+            }}
+          >
+            <div
+              className="flex items-center justify-between px-6 py-4"
+              style={{ borderBottom: "1px solid var(--rf-border2)" }}
+            >
+              <h2
+                className="text-lg font-semibold"
+                style={{ color: "var(--rf-txt)" }}
+              >
                 Checklist Items{" "}
-                <span className="ml-2 text-sm font-normal text-gray-400">
+                <span
+                  className="ml-2 text-sm font-normal"
+                  style={{ color: "var(--rf-txt2)" }}
+                >
                   ({items.length})
                 </span>
               </h2>
               <button
                 type="button"
                 onClick={addItem}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-medium transition-all"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ background: "var(--rf-green)", color: "#fff" }}
               >
                 <svg
                   className="w-4 h-4"
@@ -558,7 +624,20 @@ export default function ChecklistAdd() {
               <button
                 type="button"
                 onClick={addItem}
-                className="w-full py-3 border-2 border-dashed border-gray-700 hover:border-blue-500/50 rounded-xl text-gray-500 hover:text-blue-400 text-sm font-medium transition-all flex items-center justify-center gap-2 hover:bg-blue-600/5"
+                className="w-full py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
+                style={{
+                  border: "2px dashed var(--rf-border3)",
+                  color: "var(--rf-txt3)",
+                  background: "transparent",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--rf-accent)";
+                  e.currentTarget.style.color = "var(--rf-accent)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--rf-border3)";
+                  e.currentTarget.style.color = "var(--rf-txt3)";
+                }}
               >
                 <svg
                   className="w-4 h-4"
@@ -583,14 +662,24 @@ export default function ChecklistAdd() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+              className="flex-1 px-4 py-3 rounded-xl font-medium transition-colors"
+              style={{
+                background: "var(--rf-bg3)",
+                color: "var(--rf-txt)",
+                border: "1px solid var(--rf-border2)",
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30"
+              className="flex-1 px-4 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+              style={{
+                background: "var(--rf-accent)",
+                color: "#fff",
+                opacity: loading ? 0.6 : 1,
+              }}
             >
               {loading ? (
                 <>

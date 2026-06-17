@@ -11,10 +11,7 @@ import {
   completeChecklistItem,
   deleteChecklistItem,
 } from "@/services/Checklist";
-import { getProjects } from "@/services/Projects";
-import { GetSites } from "@/services/Sites";
-import { GetZones } from "@/services/Zones";
-import { GetEquipments } from "@/services/Equipment";
+import { listV2Projects, listV2Assets } from "@/services/CxProjectsV2";
 import { getUser } from "@/services/instance/tokenService";
 import ChecklistDelegateModal from "@/components/ChecklistDelegateModal";
 import ChecklistDelegationHistory from "@/components/ChecklistDelegationHistory";
@@ -29,12 +26,21 @@ const STATUS_LABELS = {
   VERIFIED: "Verified",
 };
 
-const STATUS_COLORS = {
-  NOT_STARTED: "bg-gray-700 text-gray-300",
-  IN_PROGRESS: "bg-blue-700/40 text-blue-300",
-  COMPLETED: "bg-green-700/40 text-green-300",
-  VERIFIED: "bg-purple-700/40 text-purple-300",
+const STATUS_TOKENS = {
+  NOT_STARTED: "var(--rf-txt3)",
+  IN_PROGRESS: "var(--rf-accent)",
+  COMPLETED: "var(--rf-green)",
+  VERIFIED: "var(--rf-purple)",
 };
+
+function statusBadgeStyle(status) {
+  const token = STATUS_TOKENS[status] ?? "var(--rf-txt3)";
+  return {
+    background: `color-mix(in srgb, ${token} 14%, transparent)`,
+    color: token,
+    border: `1px solid color-mix(in srgb, ${token} 32%, transparent)`,
+  };
+}
 
 function toArray(data) {
   return Array.isArray(data)
@@ -56,7 +62,12 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 [&_option]:bg-gray-700 appearance-none disabled:opacity-50"
+        className="w-full px-4 py-2 rounded-lg focus:outline-none appearance-none disabled:opacity-50"
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border3)",
+          color: "var(--rf-txt)",
+        }}
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((o) => (
@@ -66,7 +77,8 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
         ))}
       </select>
       <svg
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
+        style={{ color: "var(--rf-txt3)" }}
         width="12"
         height="12"
         viewBox="0 0 24 24"
@@ -84,16 +96,31 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
 function ItemRow({ item, locked, onComplete, onDelete }) {
   return (
     <div
-      className={`flex items-start gap-3 p-4 rounded-xl border transition-all
-      ${item.isCompleted ? "bg-green-900/10 border-green-500/20" : "bg-gray-800/60 border-gray-700"}`}
+      className="flex items-start gap-3 p-4 rounded-xl border transition-all"
+      style={
+        item.isCompleted
+          ? {
+              background: "color-mix(in srgb, var(--rf-green) 10%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--rf-green) 28%, transparent)",
+            }
+          : {
+              background: "var(--rf-bg3)",
+              border: "1px solid var(--rf-border2)",
+            }
+      }
     >
       <div
-        className={`mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center
-        ${item.isCompleted ? "bg-green-500 border-green-500" : "border-gray-500"}`}
+        className="mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+        style={
+          item.isCompleted
+            ? { background: "var(--rf-green)", borderColor: "var(--rf-green)" }
+            : { borderColor: "var(--rf-border3)" }
+        }
       >
         {item.isCompleted && (
           <svg
-            className="w-3 h-3 text-white"
+            className="w-3 h-3"
+            style={{ color: "#fff" }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -110,24 +137,38 @@ function ItemRow({ item, locked, onComplete, onDelete }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span
-            className={`text-sm font-medium ${item.isCompleted ? "text-gray-400 line-through" : "text-white"}`}
+            className={`text-sm font-medium ${item.isCompleted ? "line-through" : ""}`}
+            style={{
+              color: item.isCompleted ? "var(--rf-txt3)" : "var(--rf-txt)",
+            }}
           >
             {item.title}
           </span>
           {item.isRequired && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-900/30 border border-blue-700/30 text-blue-400">
+            <span
+              className="text-xs px-1.5 py-0.5 rounded"
+              style={{
+                background: "color-mix(in srgb, var(--rf-accent) 14%, transparent)",
+                color: "var(--rf-accent)",
+                border: "1px solid color-mix(in srgb, var(--rf-accent) 30%, transparent)",
+              }}
+            >
               Required
             </span>
           )}
         </div>
         {item.description && (
-          <p className="text-xs text-gray-400 mb-1">{item.description}</p>
+          <p className="text-xs mb-1" style={{ color: "var(--rf-txt2)" }}>
+            {item.description}
+          </p>
         )}
         {item.notes && (
-          <p className="text-xs text-gray-500 italic">{item.notes}</p>
+          <p className="text-xs italic" style={{ color: "var(--rf-txt3)" }}>
+            {item.notes}
+          </p>
         )}
         {item.isCompleted && item.completedAt && (
-          <p className="text-xs text-green-500/70 mt-1">
+          <p className="text-xs mt-1" style={{ color: "var(--rf-green)" }}>
             Completed {new Date(item.completedAt).toLocaleString()}
           </p>
         )}
@@ -138,7 +179,12 @@ function ItemRow({ item, locked, onComplete, onDelete }) {
             <button
               type="button"
               onClick={() => onComplete(item.id)}
-              className="px-3 py-1.5 text-xs bg-green-700/40 hover:bg-green-600/50 border border-green-600/30 text-green-300 rounded-lg transition-all"
+              className="px-3 py-1.5 text-xs rounded-lg transition-all"
+              style={{
+                background: "color-mix(in srgb, var(--rf-green) 14%, transparent)",
+                color: "var(--rf-green)",
+                border: "1px solid color-mix(in srgb, var(--rf-green) 30%, transparent)",
+              }}
             >
               Complete
             </button>
@@ -146,7 +192,17 @@ function ItemRow({ item, locked, onComplete, onDelete }) {
           <button
             type="button"
             onClick={() => onDelete(item.id)}
-            className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition-all"
+            className="p-1.5 rounded-lg transition-all"
+            style={{ color: "var(--rf-txt3)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--rf-red)";
+              e.currentTarget.style.background =
+                "color-mix(in srgb, var(--rf-red) 12%, transparent)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--rf-txt3)";
+              e.currentTarget.style.background = "transparent";
+            }}
           >
             <svg
               className="w-4 h-4"
@@ -198,42 +254,73 @@ function AddItemForm({ nextSequence, onAdd, onCancel }) {
   };
 
   return (
-    <div className="bg-blue-900/10 border border-blue-500/20 rounded-xl p-4 space-y-3">
-      <h4 className="text-sm font-semibold text-blue-300">
+    <div
+      className="rounded-xl p-4 space-y-3"
+      style={{
+        background: "color-mix(in srgb, var(--rf-accent) 8%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--rf-accent) 24%, transparent)",
+      }}
+    >
+      <h4 className="text-sm font-semibold" style={{ color: "var(--rf-accent)" }}>
         New Item #{nextSequence}
       </h4>
-      {err && <p className="text-xs text-red-400">{err}</p>}
+      {err && (
+        <p className="text-xs" style={{ color: "var(--rf-red)" }}>
+          {err}
+        </p>
+      )}
       <input
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Item title *"
-        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500"
+        className="w-full px-3 py-2 rounded-lg placeholder-gray-400 text-sm focus:outline-none"
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border3)",
+          color: "var(--rf-txt)",
+        }}
       />
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Description (optional)"
         rows={2}
-        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500 resize-none"
+        className="w-full px-3 py-2 rounded-lg placeholder-gray-400 text-sm focus:outline-none resize-none"
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border3)",
+          color: "var(--rf-txt)",
+        }}
       />
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes (optional)"
         rows={1}
-        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-sm focus:outline-none focus:border-blue-500 resize-none"
+        className="w-full px-3 py-2 rounded-lg placeholder-gray-400 text-sm focus:outline-none resize-none"
+        style={{
+          background: "var(--rf-bg2)",
+          border: "1px solid var(--rf-border3)",
+          color: "var(--rf-txt)",
+        }}
       />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">Required</span>
+          <span className="text-xs" style={{ color: "var(--rf-txt2)" }}>
+            Required
+          </span>
           <button
             type="button"
             onClick={() => setIsRequired((v) => !v)}
-            className={`relative w-9 h-5 rounded-full transition-colors ${isRequired ? "bg-blue-500" : "bg-gray-600"}`}
+            className="relative w-9 h-5 rounded-full transition-colors"
+            style={{
+              background: isRequired ? "var(--rf-accent)" : "var(--rf-bg4)",
+            }}
           >
             <div
-              className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isRequired ? "translate-x-4" : "translate-x-0.5"}`}
+              className={`absolute top-0.5 w-4 h-4 rounded-full shadow-sm transition-transform ${isRequired ? "translate-x-4" : "translate-x-0.5"}`}
+              style={{ background: "#fff" }}
             />
           </button>
         </div>
@@ -241,7 +328,12 @@ function AddItemForm({ nextSequence, onAdd, onCancel }) {
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg transition-colors"
+            style={{
+              background: "var(--rf-bg3)",
+              color: "var(--rf-txt)",
+              border: "1px solid var(--rf-border2)",
+            }}
           >
             Cancel
           </button>
@@ -249,7 +341,12 @@ function AddItemForm({ nextSequence, onAdd, onCancel }) {
             type="button"
             onClick={handleSubmit}
             disabled={saving}
-            className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg transition-colors"
+            style={{
+              background: "var(--rf-accent)",
+              color: "#fff",
+              opacity: saving ? 0.6 : 1,
+            }}
           >
             {saving ? "Adding…" : "Add Item"}
           </button>
@@ -289,9 +386,6 @@ export default function ChecklistEdit() {
 
   // ── Cascade lists ─────────────────────────────────────────────────────────
   const [projects, setProjects] = useState([]);
-  const [sites, setSites] = useState([]);
-  const [subProjects, setSubProjects] = useState([]);
-  const [zones, setZones] = useState([]);
   const [assets, setAssets] = useState([]);
 
   // Form data
@@ -301,9 +395,6 @@ export default function ChecklistEdit() {
     phase: "L1",
     checklistType: "INTERNAL",
     projectId: "",
-    siteId: "",
-    subProjectId: "",
-    zoneId: "",
     assetId: "",
   });
 
@@ -318,7 +409,7 @@ export default function ChecklistEdit() {
         const [cl, its, projs] = await Promise.all([
           getChecklistById(id),
           getChecklistItems(id),
-          getProjects(),
+          listV2Projects({ limit: 100 }),
         ]);
 
         setChecklist(cl);
@@ -331,40 +422,16 @@ export default function ChecklistEdit() {
           phase: cl.phase ?? "L1",
           checklistType: cl.checklistType ?? "INTERNAL",
           projectId: cl.projectId ?? "",
-          siteId: cl.siteId ?? "",
-          subProjectId: cl.subProjectId ?? "",
-          zoneId: cl.zoneId ?? "",
           assetId: cl.assetId ?? "",
         };
         setFormData(fd);
 
-        // Pre-load cascade dropdowns in parallel based on existing values
-        const cascadeLoads = [];
-        if (fd.projectId)
-          cascadeLoads.push(
-            GetSites(fd.projectId)
-              .then((d) => setSites(toArray(d)))
-              .catch(() => {}),
-          );
-        if (fd.siteId)
-          cascadeLoads.push(
-            getProjects(25, 1, fd.siteId)
-              .then((d) => setSubProjects(toArray(d)))
-              .catch(() => {}),
-          );
-        if (fd.subProjectId)
-          cascadeLoads.push(
-            GetZones(fd.subProjectId)
-              .then((d) => setZones(toArray(d)))
-              .catch(() => {}),
-          );
-        if (fd.zoneId)
-          cascadeLoads.push(
-            GetEquipments(fd.zoneId)
-              .then((d) => setAssets(toArray(d)))
-              .catch(() => {}),
-          );
-        await Promise.all(cascadeLoads);
+        // Pre-load assets for the existing project
+        if (fd.projectId) {
+          await listV2Assets(fd.projectId, { limit: 100 })
+            .then((res) => setAssets(toArray(res)))
+            .catch(() => {});
+        }
 
         initialLoadDone.current = true;
         setError("");
@@ -379,61 +446,16 @@ export default function ChecklistEdit() {
 
   // ── Cascade effects (only after initial load) ─────────────────────────────
 
-  // Project → Sites
-  useEffect(() => {
-    if (!initialLoadDone.current) return;
-    setSites([]);
-    setSubProjects([]);
-    setZones([]);
-    setAssets([]);
-    setFormData((p) => ({
-      ...p,
-      siteId: "",
-      subProjectId: "",
-      zoneId: "",
-      assetId: "",
-    }));
-    if (!formData.projectId) return;
-    GetSites(formData.projectId)
-      .then((d) => setSites(toArray(d)))
-      .catch(() => {});
-  }, [formData.projectId]);
-
-  // Site → SubProjects
-  useEffect(() => {
-    if (!initialLoadDone.current) return;
-    setSubProjects([]);
-    setZones([]);
-    setAssets([]);
-    setFormData((p) => ({ ...p, subProjectId: "", zoneId: "", assetId: "" }));
-    if (!formData.siteId) return;
-    getProjects(25, 1, formData.siteId)
-      .then((d) => setSubProjects(toArray(d)))
-      .catch(() => {});
-  }, [formData.siteId]);
-
-  // SubProject → Zones
-  useEffect(() => {
-    if (!initialLoadDone.current) return;
-    setZones([]);
-    setAssets([]);
-    setFormData((p) => ({ ...p, zoneId: "", assetId: "" }));
-    if (!formData.subProjectId) return;
-    GetZones(formData.subProjectId)
-      .then((d) => setZones(toArray(d)))
-      .catch(() => {});
-  }, [formData.subProjectId]);
-
-  // Zone → Assets
+  // Project → Assets
   useEffect(() => {
     if (!initialLoadDone.current) return;
     setAssets([]);
     setFormData((p) => ({ ...p, assetId: "" }));
-    if (!formData.zoneId) return;
-    GetEquipments(formData.zoneId)
-      .then((d) => setAssets(toArray(d)))
+    if (!formData.projectId) return;
+    listV2Assets(formData.projectId, { limit: 100 })
+      .then((res) => setAssets(toArray(res)))
       .catch(() => {});
-  }, [formData.zoneId]);
+  }, [formData.projectId]);
 
   const isLocked = !!checklist?.lockedAt;
 
@@ -455,7 +477,6 @@ export default function ChecklistEdit() {
         description: formData.description.trim() || undefined,
         phase: formData.phase || undefined,
         checklistType: formData.checklistType || undefined,
-        zoneId: formData.zoneId || undefined,
         assetId: formData.assetId || undefined,
       });
       setChecklist(updated);
@@ -521,7 +542,8 @@ export default function ChecklistEdit() {
       <div className="min-h-screen p-6 flex items-center justify-center">
         <div className="text-center">
           <svg
-            className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4"
+            className="w-12 h-12 animate-spin mx-auto mb-4"
+            style={{ color: "var(--rf-accent)" }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -540,30 +562,37 @@ export default function ChecklistEdit() {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <p className="text-gray-400">Loading checklist…</p>
+          <p style={{ color: "var(--rf-txt2)" }}>Loading checklist…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-6 cl-page">
       <div className="mx-auto">
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
+            <h1
+              className="text-4xl font-bold mb-2"
+              style={{ color: "var(--rf-txt)" }}
+            >
               Edit Checklist
             </h1>
             {checklist && (
               <div className="flex items-center gap-3">
                 <span
-                  className={`px-3 py-1 text-xs font-semibold rounded-full ${STATUS_COLORS[checklist.status] ?? "bg-gray-700 text-gray-300"}`}
+                  className="px-3 py-1 text-xs font-semibold rounded-full"
+                  style={statusBadgeStyle(checklist.status)}
                 >
                   {STATUS_LABELS[checklist.status] ?? checklist.status}
                 </span>
                 {isLocked && (
-                  <span className="flex items-center gap-1 text-xs text-purple-400">
+                  <span
+                    className="flex items-center gap-1 text-xs"
+                    style={{ color: "var(--rf-purple)" }}
+                  >
                     <svg
                       className="w-3.5 h-3.5"
                       fill="currentColor"
@@ -585,8 +614,8 @@ export default function ChecklistEdit() {
             <button
               type="button"
               onClick={() => setDelegateOpen(true)}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
-              style={{ marginRight: 8 }}
+              className="px-5 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
+              style={{ background: "var(--rf-purple)", color: "#fff", marginRight: 8 }}
             >
               Delegate
             </button>
@@ -596,7 +625,8 @@ export default function ChecklistEdit() {
               type="button"
               onClick={handleSign}
               disabled={signing}
-              className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 text-white rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center gap-2"
+              style={{ background: "var(--rf-purple)", color: "#fff", opacity: signing ? 0.6 : 1 }}
             >
               {signing ? (
                 <>
@@ -646,9 +676,16 @@ export default function ChecklistEdit() {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <div
+            className="rounded-lg p-4 mb-6 flex items-start gap-3"
+            style={{
+              background: "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+            }}
+          >
             <svg
-              className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+              className="w-5 h-5 flex-shrink-0 mt-0.5"
+              style={{ color: "var(--rf-red)" }}
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -658,7 +695,7 @@ export default function ChecklistEdit() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="text-red-200">{error}</span>
+            <span style={{ color: "var(--rf-red)" }}>{error}</span>
           </div>
         )}
 
@@ -679,17 +716,23 @@ export default function ChecklistEdit() {
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* ── Metadata Card ── */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-5">
-              <h2 className="text-lg font-semibold text-white">
+          <div
+            className="rounded-xl overflow-hidden"
+            style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border2)" }}
+          >
+            <div className="px-6 py-5" style={{ background: "var(--rf-accent)" }}>
+              <h2 className="text-lg font-semibold" style={{ color: "#fff" }}>
                 Checklist Details
               </h2>
             </div>
             <div className="p-6 space-y-5">
               {/* Title */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-2">
-                  Title <span className="text-red-400">*</span>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: "var(--rf-txt)" }}
+                >
+                  Title <span style={{ color: "var(--rf-red)" }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -698,13 +741,21 @@ export default function ChecklistEdit() {
                   onChange={handleChange}
                   disabled={isLocked}
                   placeholder="Checklist title…"
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg placeholder-gray-400 focus:outline-none disabled:opacity-50"
+                  style={{
+                    background: "var(--rf-bg2)",
+                    border: "1px solid var(--rf-border3)",
+                    color: "var(--rf-txt)",
+                  }}
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-2">
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: "var(--rf-txt)" }}
+                >
                   Description
                 </label>
                 <textarea
@@ -714,14 +765,22 @@ export default function ChecklistEdit() {
                   disabled={isLocked}
                   rows={2}
                   placeholder="Optional description…"
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg placeholder-gray-400 focus:outline-none resize-none disabled:opacity-50"
+                  style={{
+                    background: "var(--rf-bg2)",
+                    border: "1px solid var(--rf-border3)",
+                    color: "var(--rf-txt)",
+                  }}
                 />
               </div>
 
               {/* Phase + Type */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Phase
                   </label>
                   <AppSelect
@@ -733,7 +792,10 @@ export default function ChecklistEdit() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Type
                   </label>
                   <AppSelect
@@ -750,14 +812,23 @@ export default function ChecklistEdit() {
               </div>
 
               {/* ── Hierarchy (read-only project/site/subProject; editable zone/asset) ── */}
-              <div className="border-t border-gray-700 pt-5">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+              <div
+                className="border-t pt-5"
+                style={{ borderColor: "var(--rf-border2)" }}
+              >
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider mb-4"
+                  style={{ color: "var(--rf-txt2)" }}
+                >
                   Project Hierarchy
                 </p>
 
                 {/* Project (display only — cannot change after creation) */}
                 <div className="mb-4">
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Project
                   </label>
                   <AppSelect
@@ -773,125 +844,60 @@ export default function ChecklistEdit() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Site
-                    </label>
-                    <AppSelect
-                      name="siteId"
-                      value={formData.siteId}
-                      onChange={handleChange}
-                      disabled={
-                        isLocked || !formData.projectId || sites.length === 0
-                      }
-                      options={sites.map((s) => ({
-                        value: s.id,
-                        label: s.name,
-                      }))}
-                      placeholder={
-                        formData.projectId
-                          ? sites.length
-                            ? "— Select Site —"
-                            : "No sites found"
-                          : "— Select Project First —"
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Sub-Project
-                    </label>
-                    <AppSelect
-                      name="subProjectId"
-                      value={formData.subProjectId}
-                      onChange={handleChange}
-                      disabled={
-                        isLocked || !formData.siteId || subProjects.length === 0
-                      }
-                      options={subProjects.map((s) => ({
-                        value: s.id,
-                        label: s.name,
-                      }))}
-                      placeholder={
-                        formData.siteId
-                          ? subProjects.length
-                            ? "— Select Sub-Project —"
-                            : "No sub-projects found"
-                          : "— Select Site First —"
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* Zone + Asset (editable — allowed by PATCH API) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Zone{" "}
-                      <span className="text-gray-500 font-normal">
-                        (optional)
-                      </span>
-                    </label>
-                    <AppSelect
-                      name="zoneId"
-                      value={formData.zoneId}
-                      onChange={handleChange}
-                      disabled={
-                        isLocked || !formData.subProjectId || zones.length === 0
-                      }
-                      options={zones.map((z) => ({
-                        value: z.id,
-                        label: z.name,
-                      }))}
-                      placeholder={
-                        formData.subProjectId
-                          ? zones.length
-                            ? "— Select Zone —"
-                            : "No zones found"
-                          : "— Select Sub-Project First —"
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Asset{" "}
-                      <span className="text-gray-500 font-normal">
-                        (optional)
-                      </span>
-                    </label>
-                    <AppSelect
-                      name="assetId"
-                      value={formData.assetId}
-                      onChange={handleChange}
-                      disabled={
-                        isLocked || !formData.zoneId || assets.length === 0
-                      }
-                      options={assets.map((a) => ({
-                        value: a.id,
-                        label: a.name,
-                      }))}
-                      placeholder={
-                        formData.zoneId
-                          ? assets.length
-                            ? "— Select Asset —"
-                            : "No assets found"
-                          : "— Select Zone First —"
-                      }
-                    />
-                  </div>
+                {/* Asset (editable — allowed by PATCH API) */}
+                <div className="mb-4">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    Asset{" "}
+                    <span
+                      className="font-normal"
+                      style={{ color: "var(--rf-txt3)" }}
+                    >
+                      (optional)
+                    </span>
+                  </label>
+                  <AppSelect
+                    name="assetId"
+                    value={formData.assetId}
+                    onChange={handleChange}
+                    disabled={
+                      isLocked || !formData.projectId || assets.length === 0
+                    }
+                    options={assets.map((a) => ({
+                      value: a.id,
+                      label: a.name,
+                    }))}
+                    placeholder={
+                      formData.projectId
+                        ? assets.length
+                          ? "— Select Asset —"
+                          : "No assets found"
+                        : "— Select Project First —"
+                    }
+                  />
                 </div>
               </div>
             </div>
           </div>
 
           {/* ── Items Card ── */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
-            <div className="px-6 py-4 border-b border-gray-700">
+          <div
+            className="rounded-xl overflow-hidden"
+            style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border2)" }}
+          >
+            <div
+              className="px-6 py-4 border-b"
+              style={{ borderColor: "var(--rf-border2)" }}
+            >
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-lg font-semibold" style={{ color: "var(--rf-txt)" }}>
                   Checklist Items
-                  <span className="ml-2 text-sm font-normal text-gray-400">
+                  <span
+                    className="ml-2 text-sm font-normal"
+                    style={{ color: "var(--rf-txt2)" }}
+                  >
                     ({items.length})
                   </span>
                 </h2>
@@ -899,7 +905,8 @@ export default function ChecklistEdit() {
                   <button
                     type="button"
                     onClick={() => setShowAddItem((v) => !v)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-medium transition-all"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{ background: "var(--rf-green)", color: "#fff" }}
                   >
                     <svg
                       className="w-4 h-4"
@@ -919,16 +926,28 @@ export default function ChecklistEdit() {
                 )}
               </div>
               <div className="space-y-1">
-                <div className="flex justify-between text-xs text-gray-400">
+                <div
+                  className="flex justify-between text-xs"
+                  style={{ color: "var(--rf-txt2)" }}
+                >
                   <span>
                     {completedCount}/{items.length} completed
                   </span>
-                  <span className="font-semibold text-white">{pct}%</span>
+                  <span className="font-semibold" style={{ color: "var(--rf-txt)" }}>
+                    {pct}%
+                  </span>
                 </div>
-                <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-1.5 rounded-full overflow-hidden"
+                  style={{ background: "var(--rf-bg4)" }}
+                >
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all"
-                    style={{ width: `${pct}%` }}
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${pct}%`,
+                      background:
+                        "linear-gradient(90deg, var(--rf-accent), var(--rf-green))",
+                    }}
                   />
                 </div>
               </div>
@@ -943,7 +962,10 @@ export default function ChecklistEdit() {
                 />
               )}
               {items.length === 0 && !showAddItem ? (
-                <p className="text-gray-500 text-sm text-center py-8">
+                <p
+                  className="text-sm text-center py-8"
+                  style={{ color: "var(--rf-txt3)" }}
+                >
                   No items yet. Add the first one above.
                 </p>
               ) : (
@@ -965,7 +987,12 @@ export default function ChecklistEdit() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+              className="flex-1 px-4 py-3 rounded-xl font-medium transition-colors"
+              style={{
+                background: "var(--rf-bg3)",
+                color: "var(--rf-txt)",
+                border: "1px solid var(--rf-border2)",
+              }}
             >
               Back
             </button>
@@ -973,7 +1000,8 @@ export default function ChecklistEdit() {
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30"
+                className="flex-1 px-4 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                style={{ background: "var(--rf-accent)", color: "#fff", opacity: saving ? 0.6 : 1 }}
               >
                 {saving ? (
                   <>

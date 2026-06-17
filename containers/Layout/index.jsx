@@ -440,7 +440,7 @@ function buildSections(projectCode) {
         {
           title: "Submittals",
           href: "/Submittals/List",
-          module: MODULE.SUBMITTALS,
+          // module: MODULE.SUBMITTALS,
         },
       ],
     },
@@ -713,6 +713,7 @@ export default function CxLayout({ children }) {
   const [menu, setMenu] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
   const [activeProject, setActiveProject] = useState(PROJECTS[0]);
+  const [navQuery, setNavQuery] = useState("");
 
   // Preserve sidebar scroll position across route changes. Each page wraps
   // itself in <Layout>, so the <aside> remounts on every navigation and its
@@ -756,6 +757,22 @@ export default function CxLayout({ children }) {
     () => filterSectionsForUser(buildSections(activeProject?.code), user),
     [activeProject?.code, user],
   );
+
+  // Filter the role-based nav by the sidebar search query. Matches on the
+  // module/item title or its section label; sections with no surviving items
+  // are dropped so empty headers don't linger.
+  const visibleSections = useMemo(() => {
+    const q = navQuery.trim().toLowerCase();
+    if (!q) return SECTIONS;
+    return SECTIONS.map((sec) => ({
+      ...sec,
+      items: sec.items.filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          sec.label.toLowerCase().includes(q),
+      ),
+    })).filter((sec) => sec.items.length > 0);
+  }, [SECTIONS, navQuery]);
 
   const initials = useMemo(() => {
     if (!user) return "U";
@@ -1112,32 +1129,69 @@ export default function CxLayout({ children }) {
             </div>
           </div>
 
-          {SECTIONS.map((sec) => (
-            <div key={sec.label} className="cx-side-section">
-              <div className="label">{sec.label}</div>
-              {sec.items.map((item) => {
-                const active = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`cx-nav-item${active ? " active" : ""}`}
-                  >
-                    <span style={{ flex: 1 }}>{item.title}</span>
-                    {item.badge ? (
-                      <span
-                        className={`nav-badge${
-                          item.badgeKind ? ` ${item.badgeKind}` : ""
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+          <div className="cx-side-search">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              value={navQuery}
+              onChange={(e) => setNavQuery(e.target.value)}
+              placeholder="Search modules…"
+              aria-label="Search modules"
+            />
+            {navQuery && (
+              <button
+                type="button"
+                onClick={() => setNavQuery("")}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {visibleSections.length === 0 ? (
+            <div className="cx-side-empty">No modules match “{navQuery}”.</div>
+          ) : (
+            visibleSections.map((sec) => (
+              <div key={sec.label} className="cx-side-section">
+                <div className="label">{sec.label}</div>
+                {sec.items.map((item) => {
+                  const active = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`cx-nav-item${active ? " active" : ""}`}
+                    >
+                      <span style={{ flex: 1 }}>{item.title}</span>
+                      {item.badge ? (
+                        <span
+                          className={`nav-badge${
+                            item.badgeKind ? ` ${item.badgeKind}` : ""
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))
+          )}
         </aside>
 
         <main style={{ overflowX: "hidden", minWidth: 0 }}>

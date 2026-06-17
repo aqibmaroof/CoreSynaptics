@@ -8,7 +8,11 @@ import {
   finalizeV2Direct,
 } from "../../services/CxProjectsV2";
 import { getUsers, CreateUsers } from "../../services/Users";
-import { getAssets, createAsset } from "../../services/AssetManagement";
+import {
+  getAssets,
+  createAsset,
+  bulkCreateAssets,
+} from "../../services/AssetManagement";
 import {
   getDocuments,
   requestUploadUrl,
@@ -117,6 +121,77 @@ const orderStatusLabel = (s) =>
     .split("_")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join("-");
+
+// Standard commissioning system list (BQ) — the canonical data-center asset
+// taxonomy grouped by discipline/phase. These render alongside the API-driven
+// Asset Register so a project can pick from the standard systems even before any
+// asset has been registered in the Asset Management module. Each [code, label]
+// pair becomes a selectable item (assetTag = code, category = discipline).
+const STATIC_ASSET_BQ = [
+  {
+    disc: "Electrical",
+    phase: "L2",
+    types: [
+      ["UTIL", "Utility Service Entrance"],
+      ["MVSWGR", "MV Switchgear"],
+      ["MVXFMR", "MV Transformer"],
+      ["UNITSUB", "Unit Substation"],
+      ["GEN", "Generator"],
+      ["GENPARA", "Generator Paralleling Switchgear"],
+      ["FUEL", "Fuel System / Day Tank"],
+      ["ATS", "ATS (Automatic Transfer Switch)"],
+      ["MTS", "MTS (Manual/Maintenance Transfer Switch)"],
+      ["STS", "STS (Static Transfer Switch)"],
+      ["SWBD", "LV Switchboard"],
+      ["MCC", "Motor Control Center (MCC)"],
+      ["DISTBRD", "Distribution Board / Panelboard"],
+      ["UPS", "UPS"],
+      ["BATT", "Battery System / VRLA-LiB"],
+      ["FLYWHEEL", "Flywheel / Energy Storage"],
+      ["PDU", "PDU"],
+      ["RPP", "RPP / Remote Power Panel"],
+      ["RDC", "Reactor / Rotary / RDC"],
+      ["BUSWAY", "Busway / Bus Duct"],
+      ["XFMR", "Dry-Type Transformer"],
+      ["CAPBANK", "Capacitor / PFC Bank"],
+      ["SURGE", "SPD / Surge Protection"],
+      ["GROUND", "Grounding / Bonding System"],
+      ["EPMS", "EPMS / Power Monitoring"],
+      ["LIGHTING", "Lighting / Emergency Egress"],
+      ["EPOSYS", "EPO System"],
+    ],
+  },
+  {
+    disc: "Mechanical",
+    phase: "L2",
+    types: [
+      ["CH", "Chiller"],
+      ["CRAH", "CRAH / CRAC"],
+      ["CDU", "CDU / Liquid Cooling"],
+      ["CT", "Cooling Tower"],
+      ["PMP", "Pump"],
+    ],
+  },
+  { disc: "Controls", phase: "L2", types: [["BMS", "BMS / Controls"]] },
+  {
+    disc: "Plumbing",
+    phase: "L2",
+    types: [
+      ["MUW", "Make-up Water"],
+      ["LEAK", "Leak Detection"],
+    ],
+  },
+  {
+    disc: "Fire/Life-Safety",
+    phase: "L2",
+    types: [
+      ["VESDA", "VESDA"],
+      ["AGENT", "Clean Agent"],
+      ["FA", "Fire Alarm"],
+      ["EPO", "EPO"],
+    ],
+  },
+];
 
 const DOC_ITEMS = [
   "IFP drawings",
@@ -1089,8 +1164,24 @@ export default function NewProjectsModule() {
       milestones,
     });
 
+    // Selected static BQ systems aren't registered assets yet — register them
+    // in the Asset Management module via the atomic bulk endpoint. API-sourced
+    // assets already exist, so they're excluded here.
+    const staticAssetRows = Object.entries(assets)
+      .filter(([, d]) => d && d.staticBq)
+      .map(([name, d]) =>
+        clean({
+          name,
+          category: d.bqCode || d.category,
+          procurementType: d.furnish === "OFCI" ? "OFCI" : "CFCI",
+        }),
+      );
+
     setSubmitting(true);
     try {
+      if (staticAssetRows.length) {
+        await bulkCreateAssets({ assets: staticAssetRows });
+      }
       // The ONLY V2 create path — one atomic finalize (no stored draft needed).
       const res = await finalizeV2Direct(payload);
       const created = res?.data ?? res;
@@ -1685,6 +1776,10 @@ export default function NewProjectsModule() {
     location: "",
     category: a?.category || "",
     assetTag: a?.assetTag || "",
+    // Static BQ systems are not yet registered assets — flag them so they get
+    // bulk-created via /assets/bulk at finalize. API assets already exist.
+    staticBq: !!a?.staticBq,
+    bqCode: a?.bqCode || "",
   });
   // Toggle by asset object: select → attach a detail object, deselect → drop it.
   const toggleAsset = (a) =>
@@ -1698,18 +1793,38 @@ export default function NewProjectsModule() {
     setAssets((p) => ({ ...p, [name]: { ...p[name], [key]: val } }));
 
   const renderAssets = () => {
+    // Standard commissioning systems (BQ) — always available, grouped by
+    // discipline/phase. Each [code, label] pair is shaped like an Asset Register
+    // row so it reuses the same checkbox + per-asset detail editor.
+    const staticGroups = STATIC_ASSET_BQ.map((d) => ({
+      title: `${d.disc} · ${d.phase}`,
+      items: d.types.map(([code, label]) => ({
+        id: `bq-${d.disc}-${code}`,
+        name: label,
+        assetTag: code,
+        category: d.disc,
+        // BQ-specific: flag + type code so selected static systems can be
+        // bulk-registered in the Asset Management module at finalize.
+        staticBq: true,
+        bqCode: code,
+      })),
+    }));
+
     // Group the registered assets by their `category` so the select UI matches
     // the original category-card layout — but driven entirely by the API.
-    const groups = [];
+    const apiGroups = [];
     const byTitle = {};
     assetCatalog.forEach((a) => {
       const title = a.category || "Uncategorized";
       if (!byTitle[title]) {
         byTitle[title] = { title, items: [] };
-        groups.push(byTitle[title]);
+        apiGroups.push(byTitle[title]);
       }
       byTitle[title].items.push(a);
     });
+
+    // Standard systems first, then anything registered via the API.
+    const groups = [...staticGroups, ...apiGroups];
     return (
     <>
       <StepIntro>
@@ -1802,16 +1917,12 @@ export default function NewProjectsModule() {
         </div>
       )}
 
-      {moduleLoading.assets ? (
-        <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
-          Loading assets…
+      {moduleLoading.assets && (
+        <p className="text-xs mb-3" style={{ color: "var(--rf-txt3)" }}>
+          Loading registered assets…
         </p>
-      ) : groups.length === 0 ? (
-        <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
-          No registered assets found — register one above to get started.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4">
+      )}
+      <div className="flex flex-col gap-4">
           {groups.map((cat) => (
             <div
               key={cat.title}
@@ -1932,8 +2043,7 @@ export default function NewProjectsModule() {
               </div>
             </div>
           ))}
-        </div>
-      )}
+      </div>
     </>
     );
   };

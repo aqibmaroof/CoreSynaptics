@@ -13,6 +13,9 @@ export const createProcurementItem = (data) =>
 export const updateProcurementItem = (id, data) =>
   sendRequest({ method: "PATCH", url: `/procurement/${id}`, data });
 
+export const deleteProcurementItem = (id) =>
+  sendRequest({ method: "DELETE", url: `/procurement/${id}` });
+
 export const orderProcurementItem = (id) =>
   sendRequest({ method: "POST", url: `/procurement/${id}/order`, data: {} });
 

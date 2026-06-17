@@ -13,6 +13,14 @@ export const getAssetById = async (id) =>
 export const createAsset = async (payload) =>
   sendRequest({ url: `/assets`, method: "POST", data: payload });
 
+/**
+ * Bulk-create assets (atomic, all-or-nothing). 1–100 items.
+ * payload: { assets: [{ name, category, procurementType, assetTag?, ... }] }
+ * Returns AssetResponseDto[] (in request order, with resolved assetTag/id).
+ */
+export const bulkCreateAssets = async (payload) =>
+  sendRequest({ url: `/assets/bulk`, method: "POST", data: payload });
+
 export const updateAsset = async (id, payload) =>
   sendRequest({ url: `/assets/${id}`, method: "PATCH", data: payload });
 

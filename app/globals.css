@@ -605,6 +605,46 @@ html {
   color: var(--rf-txt);
 }
 
+/* ── Form controls — force a visible border on every field ──
+   The generic `[data-theme] input` rule above pins border-color with
+   !important but never sets a width, so these controls render borderless.
+   That rule carries four :not([type=…]) attribute selectors (specificity
+   0,5,1), so to win we scope under a page-root marker class (`.cl-page` or the
+   reusable `.rf-fields`) AND match the same :not() chain → 0,6,1, beating it
+   outright. Add `cl-page`/`rf-fields` to a page root to opt every field in. */
+[data-theme="light"]
+  .cl-page
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="color"]
+  ),
+[data-theme="light"] .cl-page select,
+[data-theme="light"] .cl-page textarea,
+[data-theme="light"]
+  .rf-fields
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="color"]
+  ),
+[data-theme="light"] .rf-fields select,
+[data-theme="light"] .rf-fields textarea {
+  border: 1px solid #1f2937 !important;
+}
+[data-theme="dark"]
+  .cl-page
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="color"]
+  ),
+[data-theme="dark"] .cl-page select,
+[data-theme="dark"] .cl-page textarea,
+[data-theme="dark"]
+  .rf-fields
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="color"]
+  ),
+[data-theme="dark"] .rf-fields select,
+[data-theme="dark"] .rf-fields textarea {
+  border: 1px solid var(--rf-border3) !important;
+}
+
 /* ═══════════════════════════════════════════════════════════
    CUSTOM HEX COLOR OVERRIDES — light theme
    These use attribute-contains selectors to catch Tailwind
@@ -2561,6 +2601,52 @@ body {
 }
 .cx-you .name { font-size: 14px; font-weight: 700; color: var(--cx-text); }
 .cx-you .role { font-size: 11px; color: var(--cx-text-soft); margin-top: 2px; }
+
+/* ── Sidebar module search ──────────────────────────────────────────────── */
+.cx-side-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 16px;
+  padding: 7px 10px;
+  background: var(--cx-surface);
+  border: 1px solid var(--cx-border);
+  border-radius: 8px;
+  color: var(--cx-text-muted);
+}
+.cx-side-search:focus-within {
+  border-color: var(--cx-brand);
+}
+.cx-side-search svg { flex-shrink: 0; }
+.cx-side-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--cx-text);
+}
+.cx-side-search input::placeholder { color: var(--cx-text-muted); }
+.cx-side-search button {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cx-text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.cx-side-search button:hover { color: var(--cx-text); }
+.cx-side-empty {
+  margin: 0 4px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--cx-text-muted);
+  text-align: center;
+}
 
 /* ── Common form controls ──────────────────────────────────────────────── */
 .cx-input, .cx-select, .cx-textarea {

@@ -309,7 +309,10 @@ export function useRequirePermission(moduleKey, action = "view") {
 
 function RbacLoading() {
   return (
-    <div className="flex items-center justify-center h-[60vh] text-gray-400 text-sm">
+    <div
+      className="flex items-center justify-center h-[60vh] text-sm"
+      style={{ color: "var(--rf-txt2)" }}
+    >
       Checking permissions…
     </div>
   );
@@ -320,15 +323,37 @@ function RbacDenied({ module, action }) {
   return (
     <div className="flex flex-col items-center justify-center h-[60vh] text-center px-6">
       <div className="text-5xl mb-3">🔒</div>
-      <h2 className="text-2xl font-semibold text-white mb-2">Access denied</h2>
-      <p className="text-gray-400 max-w-md mb-5">
-        You don't have permission to <span className="font-semibold text-white">{action}</span>{" "}
-        in the <span className="font-semibold text-white">{module}</span> module. Ask an
-        administrator to grant access.
+      <h2
+        className="text-2xl font-semibold mb-2"
+        style={{ color: "var(--rf-txt)" }}
+      >
+        Access denied
+      </h2>
+      <p className="max-w-md mb-5" style={{ color: "var(--rf-txt2)" }}>
+        You don&apos;t have permission to{" "}
+        <span className="font-semibold" style={{ color: "var(--rf-txt)" }}>
+          {action}
+        </span>{" "}
+        in the{" "}
+        <span className="font-semibold" style={{ color: "var(--rf-txt)" }}>
+          {module}
+        </span>{" "}
+        module. Ask an administrator to grant access.
       </p>
       <button
         onClick={() => router.back()}
-        className="px-5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm border border-white/15"
+        className="px-5 py-2 rounded-lg text-sm transition-colors"
+        style={{
+          background: "var(--rf-bg3)",
+          color: "var(--rf-txt)",
+          border: "1px solid var(--rf-border2)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "var(--rf-bg4)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "var(--rf-bg3)";
+        }}
       >
         Go back
       </button>
