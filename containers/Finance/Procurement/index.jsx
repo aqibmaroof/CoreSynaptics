@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import {
-  getProcurementItems,
-  createProcurementItem,
-  updateProcurementItem,
-  deleteProcurementItem,
-} from "@/services/Finance/Procurement";
+  getProcurementV2Items,
+  createProcurementV2Item,
+  updateProcurementV2Item,
+  deleteProcurementV2Item,
+} from "@/services/Finance/ProcurementV2";
 import { listV2Projects } from "@/services/CxProjectsV2";
 
 /* ------------------------------------------------------------------ *
@@ -21,13 +21,6 @@ const ORDER_STATUS = [
   { v: "DELIVERED", label: "Delivered", color: "var(--rf-green)" },
 ];
 const OS = Object.fromEntries(ORDER_STATUS.map((o) => [o.v, o]));
-// Map the legacy backend status enum onto the order-status model.
-const LEGACY_STATUS = {
-  PLANNED: "NOT_ORDERED",
-  ORDERED: "ORDERED",
-  DELAYED: "IN_TRANSIT",
-  DELIVERED: "DELIVERED",
-};
 
 const EMPTY_FORM = {
   projectId: "",
@@ -62,16 +55,15 @@ const fieldCls = "w-full px-3 py-2.5 rounded-lg text-sm outline-none";
  * Field helpers — read tolerant of differing backend shapes
  * ------------------------------------------------------------------ */
 
-const itemName = (i) => i.name ?? i.description ?? i.itemName ?? "—";
-const itemPo = (i) => i.poNumber ?? i.po ?? "";
-const itemFurnish = (i) => i.furnish ?? i.procurementOwner ?? "OFCI";
-const itemVendor = (i) => i.vendorName ?? i.vendor ?? "";
+const itemName = (i) => i.description ?? i.name ?? i.itemName ?? "—";
+const itemPo = (i) => i.poSubmittalNo ?? i.poNumber ?? i.po ?? "";
+const itemFurnish = (i) => i.ownership ?? i.furnish ?? i.procurementOwner ?? "OFCI";
+const itemVendor = (i) => i.vendor ?? i.vendorName ?? "";
 const itemSource = (i) =>
-  i.source === "ASSET_REGISTER" || i.fromAssetRegister
+  i.projectAssetId || i.source === "ASSET_REGISTER" || i.fromAssetRegister
     ? "Asset Register"
     : "Manual";
-const itemOrderStatus = (i) =>
-  i.orderStatus ?? LEGACY_STATUS[i.status] ?? "NOT_ORDERED";
+const itemOrderStatus = (i) => i.status ?? i.orderStatus ?? "NOT_ORDERED";
 
 /* ------------------------------------------------------------------ *
  * Component
@@ -96,7 +88,7 @@ export default function Procurement() {
   async function fetchItems() {
     setLoading(true);
     try {
-      const res = await getProcurementItems();
+      const res = await getProcurementV2Items();
       const d = res?.data ?? res;
       setItems(Array.isArray(d) ? d : (d?.data ?? d?.items ?? []));
     } catch (e) {
@@ -125,21 +117,18 @@ export default function Procurement() {
     setSaving(true);
     try {
       const payload = {
-        name: form.description.trim(),
         description: form.description.trim(),
-        poNumber: form.po || undefined,
-        furnish: form.furnish,
+        ownership: form.furnish,
+        status: form.orderStatus,
+        poSubmittalNo: form.po || undefined,
         manufacturer: form.manufacturer || undefined,
         model: form.model || undefined,
-        orderStatus: form.orderStatus,
         location: form.location || undefined,
-        vendorName: form.vendor || undefined,
+        vendor: form.vendor || undefined,
         poc: form.poc || undefined,
-        projectId: form.projectId || undefined,
-        source: "MANUAL",
-        quantity: 1,
+        cxProjectId: form.projectId || undefined,
       };
-      await createProcurementItem(payload);
+      await createProcurementV2Item(payload);
       setForm(EMPTY_FORM);
       setShowAdd(false);
       fetchItems();
@@ -150,13 +139,13 @@ export default function Procurement() {
     }
   };
 
-  const changeStatus = async (item, orderStatus) => {
+  const changeStatus = async (item, status) => {
     setStatusBusy(item.id);
     setItems((prev) =>
-      prev.map((x) => (x.id === item.id ? { ...x, orderStatus } : x)),
+      prev.map((x) => (x.id === item.id ? { ...x, status } : x)),
     );
     try {
-      await updateProcurementItem(item.id, { orderStatus });
+      await updateProcurementV2Item(item.id, { status });
     } catch (e) {
       console.error(e);
       fetchItems();
@@ -169,7 +158,7 @@ export default function Procurement() {
     const prev = items;
     setItems((p) => p.filter((x) => x.id !== id));
     try {
-      await deleteProcurementItem(id);
+      await deleteProcurementV2Item(id);
     } catch (e) {
       console.error(e);
       setItems(prev);
