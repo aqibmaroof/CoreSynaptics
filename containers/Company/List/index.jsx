@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -5,146 +7,6 @@ import { useRouter } from "next/navigation";
 import { getCompanies, deleteCompany } from "@/services/Companies";
 import ActivityTimeline from "@/components/CRM/ActivityTimeline";
 import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
-
-// ─── Mock fallback data (matches screenshot) ──────────────────────────────────
-
-const MOCK_COMPANIES = [
-  {
-    id: "c1",
-    name: "HITT Contracting",
-    badge: "GC",
-    subtitle: "General Contractor",
-    people: 32,
-    checklists: 312,
-    isMyCompany: false,
-  },
-  {
-    id: "c2",
-    name: "Microsoft",
-    badge: "CUST",
-    subtitle: "Customer",
-    people: 14,
-    checklists: 0,
-    isMyCompany: false,
-  },
-  {
-    id: "c3",
-    name: "Delta Electronics",
-    badge: "OEM",
-    subtitle: "OEM · UPS",
-    people: 22,
-    checklists: 88,
-    isMyCompany: true,
-  },
-  {
-    id: "c4",
-    name: "Caterpillar",
-    badge: "OEM",
-    subtitle: "OEM · Generators",
-    people: 14,
-    checklists: 32,
-    isMyCompany: false,
-  },
-  {
-    id: "c5",
-    name: "Vertiv",
-    badge: "OEM",
-    subtitle: "OEM · Cooling",
-    people: 16,
-    checklists: 44,
-    isMyCompany: false,
-  },
-  {
-    id: "c6",
-    name: "Rosendin Electric",
-    badge: "TRAD",
-    subtitle: "Electrical Trade",
-    people: 62,
-    checklists: 178,
-    isMyCompany: false,
-  },
-  {
-    id: "c7",
-    name: "McKinstry",
-    badge: "TRAD",
-    subtitle: "Mechanical Trade",
-    people: 38,
-    checklists: 96,
-    isMyCompany: false,
-  },
-  {
-    id: "c8",
-    name: "Shermco Industries",
-    badge: "NETA",
-    subtitle: "NETA Testing",
-    people: 9,
-    checklists: 64,
-    isMyCompany: false,
-  },
-  {
-    id: "c9",
-    name: "CxA Group",
-    badge: "CXA",
-    subtitle: "Commissioning Agent",
-    people: 8,
-    checklists: 142,
-    isMyCompany: false,
-  },
-  {
-    id: "c10",
-    name: "Schneider Building Auto",
-    badge: "BMS",
-    subtitle: "BMS Provider",
-    people: 9,
-    checklists: 48,
-    isMyCompany: false,
-  },
-  {
-    id: "c11",
-    name: "Allied Security",
-    badge: "SECU",
-    subtitle: "Building Security · Access Control",
-    people: 14,
-    checklists: 18,
-    isMyCompany: false,
-  },
-  {
-    id: "c12",
-    name: "Tyco Surveillance",
-    badge: "CCTV",
-    subtitle: "CCTV / Security Cameras",
-    people: 8,
-    checklists: 24,
-    isMyCompany: false,
-  },
-  {
-    id: "c13",
-    name: "Siemens Fire & Life",
-    badge: "FIRE",
-    subtitle: "Fire / Life Safety",
-    people: 10,
-    checklists: 36,
-    isMyCompany: false,
-  },
-  {
-    id: "c14",
-    name: "Gensler",
-    badge: "ARCH",
-    subtitle: "Architect of Record",
-    people: 6,
-    checklists: 0,
-    isMyCompany: false,
-  },
-  {
-    id: "c15",
-    name: "Aerotek Staffing",
-    badge: "STAF",
-    subtitle: "Staffing Agency · Labor Supply",
-    people: 4,
-    checklists: 0,
-    isMyCompany: false,
-  },
-];
 
 // ─── Badge color map ──────────────────────────────────────────────────────────
 
@@ -220,28 +82,18 @@ const getBadgeStyle = (badge) =>
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const mergeWithMock = (apiData) => {
-  if (!apiData.length) return MOCK_COMPANIES;
-  return apiData.map((c, i) => ({
-    ...MOCK_COMPANIES[i % MOCK_COMPANIES.length],
-    ...c,
+// Map an API company record → the card view-model. Driven entirely by the API
+// (getCompanies) — no static/seed companies are ever shown.
+const mapCompanies = (apiData) =>
+  apiData.map((c) => ({
     id: c.id,
     name: c.name,
-    badge: c.badge || c.type?.slice(0, 4).toUpperCase() || "GC",
-    subtitle: c.subtitle || c.description || c.type || "",
-    people:
-      c.people ??
-      c.memberCount ??
-      MOCK_COMPANIES[i % MOCK_COMPANIES.length]?.people ??
-      0,
-    checklists:
-      c.checklists ??
-      c.checklistCount ??
-      MOCK_COMPANIES[i % MOCK_COMPANIES.length]?.checklists ??
-      0,
+    badge: c.badge || (c.type ? c.type.slice(0, 4).toUpperCase() : "CO"),
+    subtitle: c.subtitle || c.description || c.type || c.region || "",
+    people: c.people ?? c.memberCount ?? 0,
+    checklists: c.checklists ?? c.checklistCount ?? 0,
     isMyCompany: c.isMyCompany ?? false,
   }));
-};
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -448,7 +300,7 @@ function CompanyCard({ company, onDelete, onTimeline, onClick }) {
 export default function CompanyList() {
   const router = useRouter();
   const { canCreate, canEdit, canDelete } = useUserPermissions();
-  const [companies, setCompanies] = useState(MOCK_COMPANIES);
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -464,11 +316,13 @@ export default function CompanyList() {
     try {
       setLoading(true);
       const res = await getCompanies();
-      const raw = Array.isArray(res) ? res : res?.data || [];
-      setCompanies(raw.length ? mergeWithMock(raw) : MOCK_COMPANIES);
+      const d = res?.data ?? res;
+      const raw = Array.isArray(d) ? d : (d?.data ?? d?.items ?? []);
+      setCompanies(mapCompanies(raw));
       setError("");
-    } catch {
-      setCompanies(MOCK_COMPANIES);
+    } catch (err) {
+      setCompanies([]);
+      setError(err?.message || "Failed to load companies");
     } finally {
       setLoading(false);
     }

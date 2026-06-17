@@ -172,7 +172,7 @@ const ROUTE_PERMISSIONS = [
   { match: /^\/QAQC/, module: MODULE.QA_QC, action: "view" },
   { match: /^\/QA\//, module: MODULE.QA_QC, action: "view" },
   { match: /^\/Quality/, module: MODULE.QA_QC, action: "view" },
-  { match: /^\/Safety/, module: MODULE.SAFETY, action: "view" },
+  { match: /^\/Safety/, module: MODULE.SAFETY, action: "edit" },
   { match: /^\/Jha/, module: MODULE.SAFETY, action: "view" },
   {
     match: /^\/OrgSafetyPlans\/(?:Add|Edit)/,
@@ -442,6 +442,11 @@ function buildSections(projectCode) {
           href: "/Submittals/List",
           // module: MODULE.SUBMITTALS,
         },
+        {
+          title: "Documents",
+          href: "/Document/List",
+          // module: MODULE.SUBMITTALS,
+        },
       ],
     },
     {
@@ -484,6 +489,10 @@ function buildSections(projectCode) {
       label: "GC QA/QC Toolkit",
       items: [
         { title: "QA/QC Command Center", href: "/QAQC", module: MODULE.QA_QC },
+        { title: "Safety", 
+          href: "/Safety",
+           module: MODULE.SAFETY 
+          },
         {
           title: "Phase advancement queue",
           href: "/Phases/List",

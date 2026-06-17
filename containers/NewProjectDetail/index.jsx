@@ -37,6 +37,7 @@ import { getSubmittals } from "../../services/Submittals";
 import { getTARFs } from "../../services/TARF";
 import { getProcurementItems } from "../../services/Procurement";
 import { getProjectFeed } from "../../services/OperationalFeed";
+import { getDocuments } from "../../services/Documents";
 import { getAllTasks, updateTask } from "../../services/Tasks";
 
 /* ================================================================== *
@@ -618,6 +619,7 @@ const nid = (p) => `${p}${(_id += 1)}`;
 // the fetch resolves — no static/demo data.
 const SEED = {
   project: { name: "", phase: "" },
+  identity: null,
   activity: [],
   tasks: [],
   equipment: [],
@@ -1016,6 +1018,7 @@ export default function NewProjectDetail() {
       tasksR,
       punchR,
       holdsR,
+      docsR,
     ] = await Promise.allSettled([
       getPlaybookSummary(pid),
       getIssues({ projectId: pid, limit: 100 }),
@@ -1033,6 +1036,8 @@ export default function NewProjectDetail() {
       // Punch list + hold points are the same Issues resource, kind-scoped.
       getIssues({ projectId: pid, kind: "PUNCH_LIST", limit: 100 }),
       getIssues({ projectId: pid, kind: "HOLD_POINT", limit: 100 }),
+      // Drawings & P&ID — linked documents for this project.
+      getDocuments({ projectId: pid }),
     ]);
     const val = (r, fb) =>
       r.status === "fulfilled" ? (norm(r.value) ?? fb) : fb;
@@ -1090,6 +1095,7 @@ export default function NewProjectDetail() {
     const monday = isoMonday();
     const next = {
       project: { name: summary.projectName, phase: summary.projectPhase },
+      identity: summary.identity ?? null,
       rail: summary.rail?.moduleOrder?.length
         ? summary.rail.moduleOrder
         : structuredClone(SEED.rail),
@@ -1200,7 +1206,12 @@ export default function NewProjectDetail() {
         due: t.dueDate ? String(t.dueDate).slice(0, 10) : "",
         status: TASK_FROM[t.status] ?? "open",
       })),
-      drawings: [],
+      drawings: rows(docsR).map((d) => ({
+        type: (d.category || "DOC").replace(/_/g, " "),
+        name: d.title || d.fileName || "Document",
+        eq: d.fileName || "",
+        verified: true,
+      })),
       safety: [],
     };
     setDb((prev) => ({ ...structuredClone(SEED), ...prev, ...next }));
@@ -1601,6 +1612,27 @@ export default function NewProjectDetail() {
   /* ============================ panels ============================ */
   function Overview() {
     const verified = db.checklists.filter((c) => isDone(c.status)).length;
+    const idy = db.identity || {};
+    const fmtDate = (d) =>
+      d ? new Date(d).toLocaleDateString() : "—";
+    const titleCase = (s) =>
+      s
+        ? String(s)
+            .replace(/_/g, " ")
+            .toLowerCase()
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+        : "—";
+    const DETAILS = [
+      ["Project Name", idy.projectName],
+      ["Customer", idy.customer],
+      ["Project Code", idy.projectCode],
+      ["Contract Number", idy.contractNumber],
+      ["Site Address", idy.siteAddress],
+      ["Start Date", fmtDate(idy.startDate)],
+      ["Project Type", idy.projectType],
+      ["Start Mode", titleCase(idy.startMode)],
+      ["Status", titleCase(idy.status)],
+    ];
     return (
       <>
         <Card>
@@ -1616,6 +1648,36 @@ export default function NewProjectDetail() {
             <Kpi v={g.mit.length} l="Mitigating" tone="warn" />
           </Kpis>
         </Card>
+        {db.identity && (
+          <Card>
+            <SectLab>Project Details</SectLab>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                gap: 16,
+                marginTop: 4,
+              }}
+            >
+              {DETAILS.map(([label, value]) => (
+                <div key={label}>
+                  <div style={eyebrow}>{label}</div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: P.ink,
+                      marginTop: 3,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {value || "—"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
         <Card>
           <SectLab>Equipment at a glance</SectLab>
           {db.equipment.map((e, i) => {

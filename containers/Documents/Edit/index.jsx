@@ -9,14 +9,7 @@ import {
   uploadFileToS3,
   confirmUpload,
 } from "@/services/Documents";
-import { getProjects } from "@/services/Projects";
-import { GetSites } from "@/services/Sites";
-import { GetZones } from "@/services/Zones";
-import { GetEquipments } from "@/services/Equipment";
-import { getAllTasks } from "@/services/Tasks";
-import { getChecklists } from "@/services/Checklist";
-import { getAssets } from "@/services/AssetManagement";
-import { getIssues } from "@/services/Issues";
+import { listV2Projects, listV2Assets } from "@/services/CxProjectsV2";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -29,7 +22,6 @@ const CATEGORIES = [
   "SAFETY",
   "CONTRACT",
 ];
-const LINKED_TYPES = ["TASK", "CHECKLIST", "ASSET", "QA", "OTHER"];
 
 function toArray(data) {
   return Array.isArray(data)
@@ -44,18 +36,6 @@ function toArray(data) {
         data?.assets ??
         data?.issues ??
         []);
-}
-
-const LINKED_TYPE_FETCHERS = {
-  TASK: () => getAllTasks(),
-  CHECKLIST: (filter) => getChecklists(filter),
-  ASSET: () => getAssets(),
-  QA: () => getIssues(),
-};
-
-function getEntityLabel(type, entity) {
-  if (type === "ASSET") return entity.name || entity.id;
-  return entity.title || entity.name || entity.id;
 }
 
 const FILE_ICON = (file) => {
@@ -94,7 +74,12 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 [&_option]:bg-gray-700 appearance-none disabled:opacity-50"
+        className="w-full px-4 py-2 rounded-lg placeholder-gray-400 focus:outline-none appearance-none disabled:opacity-50"
+        style={{
+          background: "var(--rf-bg2)",
+          color: "var(--rf-txt)",
+          boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+        }}
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((o) => (
@@ -104,7 +89,8 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
         ))}
       </select>
       <svg
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
+        style={{ color: "var(--rf-txt3)" }}
         width="12"
         height="12"
         viewBox="0 0 24 24"
@@ -132,22 +118,13 @@ export default function DocumentEdit() {
 
   // Cascade lookups (to resolve names for the read-only hierarchy display)
   const [projects, setProjects] = useState([]);
-  const [sites, setSites] = useState([]);
-  const [subProjects, setSubProjects] = useState([]);
-  const [zones, setZones] = useState([]);
   const [assets, setAssets] = useState([]);
-
-  // Linked entity dropdown
-  const [linkedEntities, setLinkedEntities] = useState([]);
-  const [loadingLinkedEntities, setLoadingLinkedEntities] = useState(false);
 
   // Metadata form (only editable fields per PATCH /api/documents/:id)
   const [metaForm, setMetaForm] = useState({
     title: "",
     description: "",
     category: "GENERAL",
-    linkedToType: "",
-    linkedToId: "",
   });
   const [savingMeta, setSavingMeta] = useState(false);
   const [metaSuccess, setMetaSuccess] = useState(false);
@@ -178,33 +155,16 @@ export default function DocumentEdit() {
         title: data.title || "",
         description: data.description || "",
         category: data.category || "GENERAL",
-        linkedToType: data.linkedToType || "",
-        linkedToId: data.linkedToId || "",
       });
       setReuploadCategory(data.category || "GENERAL");
 
-      // Load cascade lists so we can show names next to IDs
+      // Load V2 projects + assets so we can show names next to IDs
+      const pRes = await listV2Projects({ limit: 100 });
+      setProjects(toArray(pRes));
+
       if (data.projectId) {
-        const pRes = await getProjects();
-        setProjects(toArray(pRes));
-
-        const sRes = await GetSites(data.projectId);
-        setSites(toArray(sRes));
-
-        if (data.siteId) {
-          const spRes = await getProjects(25, 1, data.siteId, data.projectId);
-          setSubProjects(toArray(spRes));
-
-          if (data.subProjectId) {
-            const zRes = await GetZones(data.subProjectId);
-            setZones(toArray(zRes));
-
-            if (data.zoneId) {
-              const aRes = await GetEquipments(data.zoneId);
-              setAssets(toArray(aRes));
-            }
-          }
-        }
+        const aRes = await listV2Assets(data.projectId, { limit: 100 });
+        setAssets(toArray(aRes));
       }
     } catch (err) {
       setLoadError(err?.message || "Failed to load document.");
@@ -212,35 +172,6 @@ export default function DocumentEdit() {
       setLoadingDoc(false);
     }
   };
-
-  useEffect(() => {
-    setLinkedEntities([]);
-    const fetcher = LINKED_TYPE_FETCHERS[metaForm.linkedToType];
-    if (!fetcher) return;
-
-    let arg;
-    if (metaForm.linkedToType === "CHECKLIST") {
-      // Mirror ChecklistList: pass the deepest active hierarchy level from the document
-      arg = doc?.assetId
-        ? { assetId: doc.assetId }
-        : doc?.zoneId
-          ? { zoneId: doc.zoneId }
-          : doc?.subProjectId
-            ? { subProjectId: doc.subProjectId }
-            : doc?.siteId
-              ? { siteId: doc.siteId }
-              : doc?.projectId
-                ? { projectId: doc.projectId }
-                : null;
-      if (!arg) return;
-    }
-
-    setLoadingLinkedEntities(true);
-    fetcher(arg)
-      .then((d) => setLinkedEntities(toArray(d)))
-      .catch(() => {})
-      .finally(() => setLoadingLinkedEntities(false));
-  }, [metaForm.linkedToType]);
 
   // Helper: resolve name from list by id
   const nameOf = (list, id) => list.find((x) => x.id === id)?.name || id || "—";
@@ -260,10 +191,6 @@ export default function DocumentEdit() {
       setMetaError("Title is required.");
       return;
     }
-    if (metaForm.linkedToType && !metaForm.linkedToId.trim()) {
-      setMetaError("Linked Entity ID is required when Linked Type is set.");
-      return;
-    }
 
     setSavingMeta(true);
     try {
@@ -271,10 +198,6 @@ export default function DocumentEdit() {
       if (metaForm.description.trim())
         payload.description = metaForm.description.trim();
       if (metaForm.category) payload.category = metaForm.category;
-      if (metaForm.linkedToType) {
-        payload.linkedToType = metaForm.linkedToType;
-        payload.linkedToId = metaForm.linkedToId.trim();
-      }
       const res = await updateDocument(id, payload);
       setDoc(res?.data || res);
       setMetaSuccess(true);
@@ -333,8 +256,14 @@ export default function DocumentEdit() {
     return (
       <div className="min-h-screen p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-400">Loading document...</p>
+          <div
+            className="w-8 h-8 border-2 rounded-full animate-spin mx-auto mb-3"
+            style={{
+              borderColor: "var(--rf-accent)",
+              borderTopColor: "transparent",
+            }}
+          />
+          <p style={{ color: "var(--rf-txt2)" }}>Loading document...</p>
         </div>
       </div>
     );
@@ -344,10 +273,17 @@ export default function DocumentEdit() {
     return (
       <div className="min-h-screen p-6 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-400 mb-4">{loadError}</p>
+          <p className="mb-4" style={{ color: "var(--rf-red)" }}>
+            {loadError}
+          </p>
           <button
             onClick={() => router.back()}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm"
+            className="px-4 py-2 rounded-lg text-sm"
+            style={{
+              background: "var(--rf-bg3)",
+              color: "var(--rf-txt)",
+              border: "1px solid var(--rf-border2)",
+            }}
           >
             Go Back
           </button>
@@ -364,10 +300,13 @@ export default function DocumentEdit() {
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
+            <h1
+              className="text-4xl font-bold mb-2"
+              style={{ color: "var(--rf-txt)" }}
+            >
               Edit Document
             </h1>
-            <p className="text-gray-400">{doc?.title}</p>
+            <p style={{ color: "var(--rf-txt2)" }}>{doc?.title}</p>
           </div>
           {doc?.status && (
             <span
@@ -385,17 +324,35 @@ export default function DocumentEdit() {
         </div>
 
         {isDeleted && (
-          <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4 text-red-300 text-sm mb-6">
+          <div
+            className="rounded-xl p-4 text-sm mb-6"
+            style={{
+              background: "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+              color: "var(--rf-red)",
+            }}
+          >
             This document has been deleted and cannot be edited.
           </div>
         )}
 
         <div className="space-y-6">
           {/* ── Section 1: Metadata edit ── */}
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-5 flex items-center gap-3">
+          <div
+            className="rounded-xl overflow-hidden shadow-2xl"
+            style={{
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border2)",
+            }}
+          >
+            <div
+              className="px-6 py-5 flex items-center gap-3"
+              style={{ background: "var(--rf-accent)" }}
+            >
               <svg
-                className="w-5 h-5 text-white"
+                className="w-5 h-5"
+                style={{ color: "#fff" }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -407,16 +364,25 @@ export default function DocumentEdit() {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <h2 className="text-lg font-semibold text-white">
+              <h2 className="text-lg font-semibold" style={{ color: "#fff" }}>
                 Document Information
               </h2>
             </div>
 
             <form onSubmit={handleMetaSave} className="p-6 space-y-5">
               {metaError && (
-                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+                <div
+                  className="rounded-lg p-4 flex items-start gap-3"
+                  style={{
+                    background:
+                      "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+                  }}
+                >
                   <svg
-                    className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+                    className="w-5 h-5 flex-shrink-0 mt-0.5"
+                    style={{ color: "var(--rf-red)" }}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -426,19 +392,31 @@ export default function DocumentEdit() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="text-red-200">{metaError}</span>
+                  <span style={{ color: "var(--rf-red)" }}>{metaError}</span>
                 </div>
               )}
               {metaSuccess && (
-                <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 text-green-300 text-sm flex items-center gap-2">
+                <div
+                  className="rounded-lg p-3 text-sm flex items-center gap-2"
+                  style={{
+                    background:
+                      "color-mix(in srgb, var(--rf-green) 12%, transparent)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--rf-green) 30%, transparent)",
+                    color: "var(--rf-green)",
+                  }}
+                >
                   Metadata updated successfully.
                 </div>
               )}
 
               {/* Title */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-2">
-                  Title <span className="text-red-400">*</span>
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: "var(--rf-txt)" }}
+                >
+                  Title <span style={{ color: "var(--rf-red)" }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -446,13 +424,21 @@ export default function DocumentEdit() {
                   value={metaForm.title}
                   onChange={handleMetaChange}
                   disabled={isDeleted || savingMeta}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg placeholder-gray-400 focus:outline-none disabled:opacity-50"
+                  style={{
+                    background: "var(--rf-bg2)",
+                    color: "var(--rf-txt)",
+                    boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+                  }}
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-2">
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: "var(--rf-txt)" }}
+                >
                   Description
                 </label>
                 <textarea
@@ -461,13 +447,21 @@ export default function DocumentEdit() {
                   onChange={handleMetaChange}
                   rows={2}
                   disabled={isDeleted || savingMeta}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none disabled:opacity-50"
+                  className="w-full px-4 py-2 rounded-lg placeholder-gray-400 focus:outline-none resize-none disabled:opacity-50"
+                  style={{
+                    background: "var(--rf-bg2)",
+                    color: "var(--rf-txt)",
+                    boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+                  }}
                 />
               </div>
 
               {/* Category */}
               <div>
-                <label className="block text-sm font-semibold text-white mb-2">
+                <label
+                  className="block text-sm font-semibold mb-2"
+                  style={{ color: "var(--rf-txt)" }}
+                >
                   Category
                 </label>
                 <AppSelect
@@ -483,17 +477,29 @@ export default function DocumentEdit() {
               </div>
 
               {/* ── Project Hierarchy (read-only display) ── */}
-              <div className="border-t border-gray-700 pt-5">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+              <div
+                className="pt-5"
+                style={{ borderTop: "1px solid var(--rf-border2)" }}
+              >
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider mb-4"
+                  style={{ color: "var(--rf-txt2)" }}
+                >
                   Project Hierarchy{" "}
-                  <span className="text-gray-600 font-normal normal-case ml-1">
+                  <span
+                    className="font-normal normal-case ml-1"
+                    style={{ color: "var(--rf-txt3)" }}
+                  >
                     (not editable)
                   </span>
                 </p>
 
                 {/* Project */}
                 <div className="mb-4">
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Project
                   </label>
                   <AppSelect
@@ -511,210 +517,94 @@ export default function DocumentEdit() {
                   />
                 </div>
 
-                {/* Site + Sub-Project */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Site
-                    </label>
-                    <AppSelect
-                      name="siteId"
-                      value={doc?.siteId || ""}
-                      onChange={() => {}}
-                      options={sites.map((s) => ({
-                        value: s.id,
-                        label: s.name,
-                      }))}
-                      placeholder={
-                        doc?.siteId ? nameOf(sites, doc.siteId) : "—"
-                      }
-                      disabled={true}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Sub-Project
-                    </label>
-                    <AppSelect
-                      name="subProjectId"
-                      value={doc?.subProjectId || ""}
-                      onChange={() => {}}
-                      options={subProjects.map((s) => ({
-                        value: s.id,
-                        label: s.name,
-                      }))}
-                      placeholder={
-                        doc?.subProjectId
-                          ? nameOf(subProjects, doc.subProjectId)
-                          : "—"
-                      }
-                      disabled={true}
-                    />
-                  </div>
-                </div>
-
-                {/* Zone + Asset */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Zone{" "}
-                      <span className="text-gray-500 font-normal">
-                        (optional)
-                      </span>
-                    </label>
-                    <AppSelect
-                      name="zoneId"
-                      value={doc?.zoneId || ""}
-                      onChange={() => {}}
-                      options={zones.map((z) => ({
-                        value: z.id,
-                        label: z.name,
-                      }))}
-                      placeholder={
-                        doc?.zoneId ? nameOf(zones, doc.zoneId) : "—"
-                      }
-                      disabled={true}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Asset{" "}
-                      <span className="text-gray-500 font-normal">
-                        (optional)
-                      </span>
-                    </label>
-                    <AppSelect
-                      name="assetId"
-                      value={doc?.assetId || ""}
-                      onChange={() => {}}
-                      options={assets.map((a) => ({
-                        value: a.id,
-                        label: a.name,
-                      }))}
-                      placeholder={
-                        doc?.assetId ? nameOf(assets, doc.assetId) : "—"
-                      }
-                      disabled={true}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Linked Entity ── */}
-              <div className="border-t border-gray-700 pt-5">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                  Link to Entity{" "}
-                  <span className="text-gray-600 font-normal normal-case">
-                    (optional)
-                  </span>
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Linked Type
-                    </label>
-                    <AppSelect
-                      name="linkedToType"
-                      value={metaForm.linkedToType}
-                      onChange={(e) =>
-                        setMetaForm((p) => ({
-                          ...p,
-                          linkedToType: e.target.value,
-                          linkedToId: "",
-                        }))
-                      }
-                      options={LINKED_TYPES.map((t) => ({
-                        value: t,
-                        label: t,
-                      }))}
-                      placeholder="— None —"
-                      disabled={isDeleted || savingMeta}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Linked Entity{" "}
-                      {metaForm.linkedToType && (
-                        <span className="text-red-400">*</span>
-                      )}
-                    </label>
-                    {metaForm.linkedToType &&
-                    metaForm.linkedToType !== "OTHER" ? (
-                      <AppSelect
-                        name="linkedToId"
-                        value={metaForm.linkedToId}
-                        onChange={handleMetaChange}
-                        options={linkedEntities.map((e) => ({
-                          value: e.id,
-                          label: getEntityLabel(metaForm.linkedToType, e),
-                        }))}
-                        placeholder={
-                          loadingLinkedEntities
-                            ? "Loading…"
-                            : linkedEntities.length
-                              ? "— Select —"
-                              : "No entities found"
-                        }
-                        disabled={
-                          isDeleted ||
-                          savingMeta ||
-                          loadingLinkedEntities ||
-                          linkedEntities.length === 0
-                        }
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        name="linkedToId"
-                        value={metaForm.linkedToId}
-                        onChange={handleMetaChange}
-                        placeholder={
-                          metaForm.linkedToType === "OTHER"
-                            ? "Entity UUID"
-                            : "Select a type first"
-                        }
-                        disabled={
-                          isDeleted || savingMeta || !metaForm.linkedToType
-                        }
-                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 disabled:opacity-50"
-                      />
-                    )}
-                  </div>
+                {/* Asset */}
+                <div>
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    Asset{" "}
+                    <span
+                      className="font-normal"
+                      style={{ color: "var(--rf-txt3)" }}
+                    >
+                      (optional)
+                    </span>
+                  </label>
+                  <AppSelect
+                    name="assetId"
+                    value={doc?.assetId || ""}
+                    onChange={() => {}}
+                    options={assets.map((a) => ({
+                      value: a.id,
+                      label: a.name,
+                    }))}
+                    placeholder={
+                      doc?.assetId ? nameOf(assets, doc.assetId) : "—"
+                    }
+                    disabled={true}
+                  />
                 </div>
               </div>
 
               {/* File metadata (read-only) */}
               {doc && (
-                <div className="border-t border-gray-700 pt-5 space-y-3 bg-gray-700/30 rounded-lg p-4">
-                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <div
+                  className="pt-5 space-y-3 rounded-lg p-4"
+                  style={{
+                    borderTop: "1px solid var(--rf-border2)",
+                    background: "var(--rf-bg3)",
+                  }}
+                >
+                  <h4
+                    className="text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: "var(--rf-txt2)" }}
+                  >
                     Current File{" "}
-                    <span className="text-gray-600 font-normal normal-case">
+                    <span
+                      className="font-normal normal-case"
+                      style={{ color: "var(--rf-txt3)" }}
+                    >
                       (read-only)
                     </span>
                   </h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     <div>
-                      <p className="text-gray-500 text-xs">File Name</p>
+                      <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+                        File Name
+                      </p>
                       <p
-                        className="text-white truncate mt-0.5"
+                        className="truncate mt-0.5"
+                        style={{ color: "var(--rf-txt)" }}
                         title={doc.fileName}
                       >
                         {doc.fileName || "—"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-xs">Size</p>
-                      <p className="text-white mt-0.5">
+                      <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+                        Size
+                      </p>
+                      <p className="mt-0.5" style={{ color: "var(--rf-txt)" }}>
                         {formatSize(doc.fileSize)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-xs">Version</p>
-                      <p className="text-white mt-0.5">v{doc.version || 1}</p>
+                      <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+                        Version
+                      </p>
+                      <p className="mt-0.5" style={{ color: "var(--rf-txt)" }}>
+                        v{doc.version || 1}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-xs">MIME</p>
-                      <p className="text-white mt-0.5 truncate">
+                      <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+                        MIME
+                      </p>
+                      <p
+                        className="mt-0.5 truncate"
+                        style={{ color: "var(--rf-txt)" }}
+                      >
                         {doc.mimeType || "—"}
                       </p>
                     </div>
@@ -727,14 +617,24 @@ export default function DocumentEdit() {
                 <button
                   type="button"
                   onClick={() => router.back()}
-                  className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                  className="flex-1 px-4 py-3 rounded-xl font-medium transition-colors"
+                  style={{
+                    background: "var(--rf-bg3)",
+                    color: "var(--rf-txt)",
+                    border: "1px solid var(--rf-border2)",
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isDeleted || savingMeta}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30"
+                  className="flex-1 px-4 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
+                  style={{
+                    background: "var(--rf-accent)",
+                    color: "#fff",
+                    opacity: isDeleted || savingMeta ? 0.6 : 1,
+                  }}
                 >
                   {savingMeta ? (
                     <>
@@ -785,10 +685,20 @@ export default function DocumentEdit() {
 
           {/* ── Section 2: Replace File ── */}
           {!isDeleted && (
-            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
-              <div className="px-6 py-5 border-b border-gray-700 flex items-center gap-3">
+            <div
+              className="rounded-xl overflow-hidden shadow-2xl"
+              style={{
+                background: "var(--rf-bg2)",
+                border: "1px solid var(--rf-border2)",
+              }}
+            >
+              <div
+                className="px-6 py-5 flex items-center gap-3"
+                style={{ borderBottom: "1px solid var(--rf-border2)" }}
+              >
                 <svg
-                  className="w-5 h-5 text-orange-400"
+                  className="w-5 h-5"
+                  style={{ color: "var(--rf-accent)" }}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -801,10 +711,13 @@ export default function DocumentEdit() {
                   />
                 </svg>
                 <div>
-                  <h2 className="text-lg font-semibold text-white">
+                  <h2
+                    className="text-lg font-semibold"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Replace File
                   </h2>
-                  <p className="text-gray-500 text-xs mt-0.5">
+                  <p className="text-xs mt-0.5" style={{ color: "var(--rf-txt3)" }}>
                     Archives the current file as v{doc?.version || 1} and
                     creates a new version
                   </p>
@@ -813,9 +726,18 @@ export default function DocumentEdit() {
 
               <div className="p-6 space-y-5">
                 {reuploadError && (
-                  <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+                  <div
+                    className="rounded-lg p-4 flex items-start gap-3"
+                    style={{
+                      background:
+                        "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+                    }}
+                  >
                     <svg
-                      className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+                      className="w-5 h-5 flex-shrink-0 mt-0.5"
+                      style={{ color: "var(--rf-red)" }}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -825,47 +747,83 @@ export default function DocumentEdit() {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span className="text-red-200">{reuploadError}</span>
+                    <span style={{ color: "var(--rf-red)" }}>
+                      {reuploadError}
+                    </span>
                   </div>
                 )}
                 {reuploadStep === 4 && (
-                  <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3 text-green-300 text-sm flex items-center gap-2">
+                  <div
+                    className="rounded-lg p-3 text-sm flex items-center gap-2"
+                    style={{
+                      background:
+                        "color-mix(in srgb, var(--rf-green) 12%, transparent)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--rf-green) 30%, transparent)",
+                      color: "var(--rf-green)",
+                    }}
+                  >
                     File replaced. Now at v{(doc?.version || 1) + 1}.
                   </div>
                 )}
                 {reuploadStep === 2 && (
                   <div>
-                    <p className="text-white text-sm mb-2">
+                    <p className="text-sm mb-2" style={{ color: "var(--rf-txt)" }}>
                       Uploading... {reuploadProgress}%
                     </p>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div
+                      className="w-full rounded-full h-2"
+                      style={{ background: "var(--rf-bg4)" }}
+                    >
                       <div
-                        className="bg-orange-500 h-2 rounded-full transition-all"
-                        style={{ width: `${reuploadProgress}%` }}
+                        className="h-2 rounded-full transition-all"
+                        style={{
+                          width: `${reuploadProgress}%`,
+                          background: "var(--rf-accent)",
+                        }}
                       />
                     </div>
                   </div>
                 )}
                 {reuploadStep === 3 && (
-                  <div className="flex items-center gap-2 text-gray-300 text-sm">
-                    <span className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                  <div
+                    className="flex items-center gap-2 text-sm"
+                    style={{ color: "var(--rf-txt2)" }}
+                  >
+                    <span
+                      className="w-4 h-4 border-2 rounded-full animate-spin"
+                      style={{
+                        borderColor: "var(--rf-accent)",
+                        borderTopColor: "transparent",
+                      }}
+                    />
                     Confirming with server...
                   </div>
                 )}
 
                 {/* File picker */}
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Select Replacement File{" "}
-                    <span className="text-red-400">*</span>
+                    <span style={{ color: "var(--rf-red)" }}>*</span>
                   </label>
                   <label
                     htmlFor="reupload-input"
-                    className={`block border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                    className={`block rounded-xl p-6 text-center cursor-pointer transition-all ${
+                      isReuploading ? "pointer-events-none opacity-50" : ""
+                    }`}
+                    style={
                       reuploadFile
-                        ? "border-orange-500 bg-orange-500/5"
-                        : "border-gray-600 hover:border-orange-500/50"
-                    } ${isReuploading ? "pointer-events-none opacity-50" : ""}`}
+                        ? {
+                            border: "2px dashed var(--rf-accent)",
+                            background:
+                              "color-mix(in srgb, var(--rf-accent) 6%, transparent)",
+                          }
+                        : { border: "2px dashed var(--rf-border3)" }
+                    }
                   >
                     <input
                       id="reupload-input"
@@ -879,20 +837,30 @@ export default function DocumentEdit() {
                         <span className="text-2xl mb-1.5">
                           {FILE_ICON(reuploadFile)}
                         </span>
-                        <p className="text-white font-medium text-sm">
+                        <p
+                          className="font-medium text-sm"
+                          style={{ color: "var(--rf-txt)" }}
+                        >
                           {reuploadFile.name}
                         </p>
-                        <p className="text-gray-400 text-xs mt-0.5">
+                        <p
+                          className="text-xs mt-0.5"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
                           {(reuploadFile.size / 1024 / 1024).toFixed(2)} MB
                         </p>
-                        <p className="text-orange-400 text-xs mt-2">
+                        <p
+                          className="text-xs mt-2"
+                          style={{ color: "var(--rf-accent)" }}
+                        >
                           Click to change
                         </p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center">
                         <svg
-                          className="w-8 h-8 text-gray-400 mb-2"
+                          className="w-8 h-8 mb-2"
+                          style={{ color: "var(--rf-txt3)" }}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -904,7 +872,7 @@ export default function DocumentEdit() {
                             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                           />
                         </svg>
-                        <p className="text-gray-300 text-sm">
+                        <p className="text-sm" style={{ color: "var(--rf-txt2)" }}>
                           Select replacement file
                         </p>
                       </div>
@@ -914,7 +882,10 @@ export default function DocumentEdit() {
 
                 {/* Category for new version */}
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Category for new version
                   </label>
                   <AppSelect
@@ -932,7 +903,12 @@ export default function DocumentEdit() {
                 <button
                   onClick={handleReupload}
                   disabled={!reuploadFile || isReuploading}
-                  className="w-full py-3 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                  style={{
+                    background: "var(--rf-accent)",
+                    color: "#fff",
+                    opacity: !reuploadFile || isReuploading ? 0.6 : 1,
+                  }}
                 >
                   {isReuploading ? (
                     <>

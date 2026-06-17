@@ -7,14 +7,7 @@ import {
   uploadFileToS3,
   confirmUpload,
 } from "@/services/Documents";
-import { getProjects } from "@/services/Projects";
-import { GetSites } from "@/services/Sites";
-import { GetZones } from "@/services/Zones";
-import { GetEquipments } from "@/services/Equipment";
-import { getAllTasks } from "@/services/Tasks";
-import { getChecklists } from "@/services/Checklist";
-import { getAssets } from "@/services/AssetManagement";
-import { getIssues } from "@/services/Issues";
+import { listV2Projects, listV2Assets } from "@/services/CxProjectsV2";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -27,7 +20,6 @@ const CATEGORIES = [
   "SAFETY",
   "CONTRACT",
 ];
-const LINKED_TYPES = ["TASK", "CHECKLIST", "ASSET", "QA", "OTHER"];
 const STEP_LABELS = ["Fill Details", "Uploading to S3", "Confirming"];
 
 function toArray(data) {
@@ -43,18 +35,6 @@ function toArray(data) {
         data?.assets ??
         data?.issues ??
         []);
-}
-
-const LINKED_TYPE_FETCHERS = {
-  TASK: () => getAllTasks(),
-  CHECKLIST: (filter) => getChecklists(filter),
-  ASSET: () => getAssets(),
-  QA: () => getIssues(),
-};
-
-function getEntityLabel(type, entity) {
-  if (type === "ASSET") return entity.name || entity.id;
-  return entity.title || entity.name || entity.id;
 }
 
 const FILE_ICON = (file) => {
@@ -85,7 +65,12 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 [&_option]:bg-gray-700 appearance-none disabled:opacity-50"
+        style={{
+          background: "var(--rf-bg2)",
+          color: "var(--rf-txt)",
+          boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+        }}
+        className="w-full px-4 py-2 rounded-lg outline-none appearance-none disabled:opacity-50"
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((o) => (
@@ -95,7 +80,8 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
         ))}
       </select>
       <svg
-        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2"
+        style={{ color: "var(--rf-txt3)" }}
         width="12"
         height="12"
         viewBox="0 0 24 24"
@@ -115,13 +101,8 @@ const EMPTY_FORM = {
   title: "",
   description: "",
   projectId: "",
-  siteId: "",
-  subProjectId: "",
-  zoneId: "",
   assetId: "",
   category: "GENERAL",
-  linkedToType: "",
-  linkedToId: "",
 };
 
 export default function DocumentAdd() {
@@ -133,105 +114,29 @@ export default function DocumentAdd() {
 
   // Cascade lists
   const [projects, setProjects] = useState([]);
-  const [sites, setSites] = useState([]);
-  const [subProjects, setSubProjects] = useState([]);
-  const [zones, setZones] = useState([]);
   const [assets, setAssets] = useState([]);
-
-  // Linked entity dropdown
-  const [linkedEntities, setLinkedEntities] = useState([]);
-  const [loadingLinkedEntities, setLoadingLinkedEntities] = useState(false);
 
   // Upload flow state
   const [step, setStep] = useState(0); // 0=idle 1=requesting 2=uploading 3=confirming 4=done
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
 
-  // ── Cascade effects (same as Checklist) ───────────────────────────────────
+  // ── Cascade effects ────────────────────────────────────────────────────────
 
   useEffect(() => {
-    getProjects()
+    listV2Projects({ limit: 100 })
       .then((d) => setProjects(toArray(d)))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    setSites([]);
-    setSubProjects([]);
-    setZones([]);
-    setAssets([]);
-    setForm((p) => ({
-      ...p,
-      siteId: "",
-      subProjectId: "",
-      zoneId: "",
-      assetId: "",
-    }));
-    if (!form.projectId) return;
-    GetSites(form.projectId)
-      .then((d) => setSites(toArray(d)))
-      .catch(() => {});
-  }, [form.projectId]);
-
-  useEffect(() => {
-    setSubProjects([]);
-    setZones([]);
-    setAssets([]);
-    setForm((p) => ({ ...p, subProjectId: "", zoneId: "", assetId: "" }));
-    if (!form.siteId) return;
-    getProjects(25, 1, form.siteId, form.projectId)
-      .then((d) => setSubProjects(toArray(d)))
-      .catch(() => {});
-  }, [form.siteId]);
-
-  useEffect(() => {
-    setZones([]);
-    setAssets([]);
-    setForm((p) => ({ ...p, zoneId: "", assetId: "" }));
-    if (!form.subProjectId) return;
-    GetZones(form.subProjectId)
-      .then((d) => setZones(toArray(d)))
-      .catch(() => {});
-  }, [form.subProjectId]);
-
-  useEffect(() => {
     setAssets([]);
     setForm((p) => ({ ...p, assetId: "" }));
-    if (!form.zoneId) return;
-    GetEquipments(form.zoneId)
+    if (!form.projectId) return;
+    listV2Assets(form.projectId, { limit: 100 })
       .then((d) => setAssets(toArray(d)))
       .catch(() => {});
-  }, [form.zoneId]);
-
-  useEffect(() => {
-    setLinkedEntities([]);
-    setForm((p) => ({ ...p, linkedToId: "" }));
-    const fetcher = LINKED_TYPE_FETCHERS[form.linkedToType];
-    if (!fetcher) return;
-
-    let arg;
-    if (form.linkedToType === "CHECKLIST") {
-      // Mirror ChecklistList: pass the deepest active hierarchy level
-      arg = form.assetId
-        ? { assetId: form.assetId }
-        : form.zoneId
-          ? { zoneId: form.zoneId }
-          : form.subProjectId
-            ? { subProjectId: form.subProjectId }
-            : form.siteId
-              ? { siteId: form.siteId }
-              : form.projectId
-                ? { projectId: form.projectId }
-                : null;
-      if (!arg) return; // no hierarchy selected yet — nothing to fetch
-    }
-
-    setLoadingLinkedEntities(true);
-    fetcher(arg)
-      .then((d) => setLinkedEntities(toArray(d)))
-      .catch(() => {})
-      .finally(() => setLoadingLinkedEntities(false));
-  }, [form.linkedToType]);
+  }, [form.projectId]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -256,8 +161,6 @@ export default function DocumentAdd() {
   const validate = () => {
     if (!form.title.trim()) return "Title is required.";
     if (!selectedFile) return "Please select a file to upload.";
-    if (form.linkedToType && !form.linkedToId.trim())
-      return "Linked Entity ID is required when Linked Type is set.";
     return null;
   };
 
@@ -281,16 +184,9 @@ export default function DocumentAdd() {
       };
       if (form.description.trim())
         payload.description = form.description.trim();
-      if (form.projectId) payload.projectId = form.projectId;
-      if (form.siteId) payload.siteId = form.siteId;
-      if (form.zoneId) payload.zoneId = form.zoneId;
-      if (form.subProjectId) payload.subProjectId = form.subProjectId;
+      if (form.projectId) payload.cxProjectId = form.projectId;
       if (form.assetId) payload.assetId = form.assetId;
       if (form.category) payload.category = form.category;
-      if (form.linkedToType) {
-        payload.linkedToType = form.linkedToType;
-        payload.linkedToId = form.linkedToId.trim();
-      }
 
       const { uploadUrl, documentId } = await requestUploadUrl(payload);
 
@@ -318,10 +214,13 @@ export default function DocumentAdd() {
       <div className="mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1
+            className="text-4xl font-bold mb-2"
+            style={{ color: "var(--rf-txt)" }}
+          >
             Upload Document
           </h1>
-          <p className="text-gray-400">
+          <p style={{ color: "var(--rf-txt2)" }}>
             3-step process: fill details → upload to S3 → confirm
           </p>
         </div>
@@ -335,23 +234,34 @@ export default function DocumentAdd() {
             return (
               <div key={i} className="flex items-center gap-2">
                 <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={
                     done
-                      ? "bg-green-600 text-white"
+                      ? { background: "var(--rf-green)", color: "#fff" }
                       : active
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-400"
-                  }`}
+                        ? { background: "var(--rf-accent)", color: "#fff" }
+                        : { background: "var(--rf-bg3)", color: "var(--rf-txt3)" }
+                  }
                 >
                   {done ? "" : stepNum}
                 </div>
                 <span
-                  className={`text-xs ${active ? "text-white font-medium" : done ? "text-green-400" : "text-gray-500"}`}
+                  className={`text-xs ${active ? "font-medium" : ""}`}
+                  style={{
+                    color: active
+                      ? "var(--rf-txt)"
+                      : done
+                        ? "var(--rf-green)"
+                        : "var(--rf-txt3)",
+                  }}
                 >
                   {label}
                 </span>
                 {i < STEP_LABELS.length - 1 && (
-                  <div className="w-8 h-px bg-gray-700 mx-1" />
+                  <div
+                    className="w-8 h-px mx-1"
+                    style={{ background: "var(--rf-border2)" }}
+                  />
                 )}
               </div>
             );
@@ -360,12 +270,24 @@ export default function DocumentAdd() {
 
         {/* Success */}
         {step === 4 && (
-          <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-8 text-center">
+          <div
+            className="rounded-xl p-8 text-center"
+            style={{
+              background: "color-mix(in srgb, var(--rf-green) 12%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--rf-green) 30%, transparent)",
+            }}
+          >
             <div className="text-4xl mb-3"></div>
-            <p className="text-green-300 font-semibold text-lg">
+            <p
+              className="font-semibold text-lg"
+              style={{ color: "var(--rf-green)" }}
+            >
               Document uploaded successfully!
             </p>
-            <p className="text-gray-400 text-sm mt-1">Redirecting...</p>
+            <p className="text-sm mt-1" style={{ color: "var(--rf-txt2)" }}>
+              Redirecting...
+            </p>
           </div>
         )}
 
@@ -373,9 +295,18 @@ export default function DocumentAdd() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error */}
             {error && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <div
+                className="rounded-lg p-4 mb-6 flex items-start gap-3"
+                style={{
+                  background:
+                    "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+                }}
+              >
                 <svg
-                  className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+                  className="w-5 h-5 flex-shrink-0 mt-0.5"
+                  style={{ color: "var(--rf-red)" }}
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -385,38 +316,75 @@ export default function DocumentAdd() {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span className="text-red-200">{error}</span>
+                <span style={{ color: "var(--rf-red)" }}>{error}</span>
               </div>
             )}
 
             {/* Upload progress */}
             {step === 2 && (
-              <div className="bg-gray-800 border border-gray-700 rounded-xl p-5">
-                <p className="text-white text-sm font-medium mb-3">
+              <div
+                className="rounded-xl p-5"
+                style={{
+                  background: "var(--rf-bg2)",
+                  border: "1px solid var(--rf-border2)",
+                }}
+              >
+                <p
+                  className="text-sm font-medium mb-3"
+                  style={{ color: "var(--rf-txt)" }}
+                >
                   Uploading to S3... {progress}%
                 </p>
-                <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="w-full rounded-full h-2"
+                  style={{ background: "var(--rf-bg4)" }}
+                >
                   <div
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-200"
-                    style={{ width: `${progress}%` }}
+                    className="h-2 rounded-full transition-all duration-200"
+                    style={{
+                      width: `${progress}%`,
+                      background: "var(--rf-accent)",
+                    }}
                   />
                 </div>
               </div>
             )}
             {step === 3 && (
-              <div className="bg-gray-800 border border-gray-700 rounded-xl p-5 flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                <p className="text-white text-sm">
+              <div
+                className="rounded-xl p-5 flex items-center gap-3"
+                style={{
+                  background: "var(--rf-bg2)",
+                  border: "1px solid var(--rf-border2)",
+                }}
+              >
+                <div
+                  className="w-5 h-5 border-2 rounded-full animate-spin flex-shrink-0"
+                  style={{
+                    borderColor: "var(--rf-accent)",
+                    borderTopColor: "transparent",
+                  }}
+                />
+                <p className="text-sm" style={{ color: "var(--rf-txt)" }}>
                   Confirming upload with the server...
                 </p>
               </div>
             )}
 
             {/* ── Main form card ── */}
-            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-2xl">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-5 flex items-center gap-3">
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{
+                background: "var(--rf-bg2)",
+                border: "1px solid var(--rf-border2)",
+              }}
+            >
+              <div
+                className="px-6 py-5 flex items-center gap-3"
+                style={{ background: "var(--rf-accent)" }}
+              >
                 <svg
-                  className="w-5 h-5 text-white"
+                  className="w-5 h-5"
+                  style={{ color: "#fff" }}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -428,7 +396,7 @@ export default function DocumentAdd() {
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-lg font-semibold" style={{ color: "#fff" }}>
                   Document Details
                 </h2>
               </div>
@@ -436,16 +404,26 @@ export default function DocumentAdd() {
               <div className="p-6 space-y-5">
                 {/* File picker */}
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
-                    File <span className="text-red-400">*</span>
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    File <span style={{ color: "var(--rf-red)" }}>*</span>
                   </label>
                   <label
                     htmlFor="file-input"
-                    className={`block border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                    className={`block rounded-xl p-8 text-center cursor-pointer transition-all ${
+                      isUploading ? "pointer-events-none opacity-50" : ""
+                    }`}
+                    style={
                       selectedFile
-                        ? "border-blue-500 bg-blue-500/5"
-                        : "border-gray-600 hover:border-blue-500/50"
-                    } ${isUploading ? "pointer-events-none opacity-50" : ""}`}
+                        ? {
+                            border: "2px dashed var(--rf-accent)",
+                            background:
+                              "color-mix(in srgb, var(--rf-accent) 6%, transparent)",
+                          }
+                        : { border: "2px dashed var(--rf-border3)" }
+                    }
                   >
                     <input
                       id="file-input"
@@ -459,21 +437,31 @@ export default function DocumentAdd() {
                         <span className="text-3xl mb-2">
                           {FILE_ICON(selectedFile)}
                         </span>
-                        <p className="text-white font-medium text-sm">
+                        <p
+                          className="font-medium text-sm"
+                          style={{ color: "var(--rf-txt)" }}
+                        >
                           {selectedFile.name}
                         </p>
-                        <p className="text-gray-400 text-xs mt-1">
+                        <p
+                          className="text-xs mt-1"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
                           {selectedFile.type} ·{" "}
                           {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                         </p>
-                        <p className="text-blue-400 text-xs mt-2">
+                        <p
+                          className="text-xs mt-2"
+                          style={{ color: "var(--rf-accent)" }}
+                        >
                           Click to change file
                         </p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center">
                         <svg
-                          className="w-10 h-10 text-gray-400 mb-2"
+                          className="w-10 h-10 mb-2"
+                          style={{ color: "var(--rf-accent)" }}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -485,10 +473,16 @@ export default function DocumentAdd() {
                             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                           />
                         </svg>
-                        <p className="text-white font-medium">
+                        <p
+                          className="font-medium"
+                          style={{ color: "var(--rf-txt)" }}
+                        >
                           Drag & drop or click to select
                         </p>
-                        <p className="text-gray-400 text-sm mt-1">
+                        <p
+                          className="text-sm mt-1"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
                           Any file type supported
                         </p>
                       </div>
@@ -498,15 +492,19 @@ export default function DocumentAdd() {
                     <img
                       src={filePreview}
                       alt="Preview"
-                      className="mt-3 max-h-40 rounded-lg border border-gray-600 object-contain"
+                      className="mt-3 max-h-40 rounded-lg border object-contain"
+                      style={{ borderColor: "var(--rf-border2)" }}
                     />
                   )}
                 </div>
 
                 {/* Title + Description */}
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
-                    Title <span className="text-red-400">*</span>
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    Title <span style={{ color: "var(--rf-red)" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -515,11 +513,19 @@ export default function DocumentAdd() {
                     onChange={handleChange}
                     placeholder="e.g. L2 Power Test Report"
                     disabled={isUploading}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                    style={{
+                      background: "var(--rf-bg2)",
+                      color: "var(--rf-txt)",
+                      boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+                    }}
+                    className="w-full px-4 py-2 rounded-lg outline-none placeholder-gray-400 disabled:opacity-50"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Description
                   </label>
                   <textarea
@@ -529,13 +535,21 @@ export default function DocumentAdd() {
                     rows={2}
                     placeholder="Optional description…"
                     disabled={isUploading}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none disabled:opacity-50"
+                    style={{
+                      background: "var(--rf-bg2)",
+                      color: "var(--rf-txt)",
+                      boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+                    }}
+                    className="w-full px-4 py-2 rounded-lg outline-none placeholder-gray-400 resize-none disabled:opacity-50"
                   />
                 </div>
 
                 {/* Category */}
                 <div>
-                  <label className="block text-sm font-semibold text-white mb-2">
+                  <label
+                    className="block text-sm font-semibold mb-2"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
                     Category
                   </label>
                   <AppSelect
@@ -551,127 +565,54 @@ export default function DocumentAdd() {
                 </div>
 
                 {/* ── Project Hierarchy ── */}
-                <div className="border-t border-gray-700 pt-5">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                <div
+                  className="border-t pt-5"
+                  style={{ borderColor: "var(--rf-border2)" }}
+                >
+                  <p
+                    className="text-xs font-semibold uppercase tracking-wider mb-4"
+                    style={{ color: "var(--rf-txt2)" }}
+                  >
                     Project Hierarchy
                   </p>
 
-                  {/* Project */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-white mb-2">
-                      Project{" "}
-                      <span className="text-gray-500 font-normal">
-                        (optional)
-                      </span>
-                    </label>
-                    <AppSelect
-                      name="projectId"
-                      value={form.projectId}
-                      onChange={handleChange}
-                      options={projects.map((p) => ({
-                        value: p.id,
-                        label: p.name,
-                      }))}
-                      placeholder="— Select Project —"
-                      disabled={isUploading}
-                    />
-                  </div>
-
-                  {/* Site + Sub-Project */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-white mb-2">
-                        Site{" "}
-                        <span className="text-gray-500 font-normal">
-                          (optional)
-                        </span>
-                      </label>
-                      <AppSelect
-                        name="siteId"
-                        value={form.siteId}
-                        onChange={handleChange}
-                        options={sites.map((s) => ({
-                          value: s.id,
-                          label: s.name,
-                        }))}
-                        placeholder={
-                          form.projectId
-                            ? sites.length
-                              ? "— Select Site —"
-                              : "No sites found"
-                            : "— Select Project First —"
-                        }
-                        disabled={
-                          isUploading || !form.projectId || sites.length === 0
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-white mb-2">
-                        Sub-Project{" "}
-                        <span className="text-gray-500 font-normal">
-                          (optional)
-                        </span>
-                      </label>
-                      <AppSelect
-                        name="subProjectId"
-                        value={form.subProjectId}
-                        onChange={handleChange}
-                        options={subProjects.map((s) => ({
-                          value: s.id,
-                          label: s.name,
-                        }))}
-                        placeholder={
-                          form.siteId
-                            ? subProjects.length
-                              ? "— Select Sub-Project —"
-                              : "No sub-projects found"
-                            : "— Select Site First —"
-                        }
-                        disabled={
-                          isUploading ||
-                          !form.siteId ||
-                          subProjects.length === 0
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  {/* Zone + Asset (optional) */}
+                  {/* Project + Asset */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-white mb-2">
-                        Zone{" "}
-                        <span className="text-gray-500 font-normal">
+                      <label
+                        className="block text-sm font-semibold mb-2"
+                        style={{ color: "var(--rf-txt)" }}
+                      >
+                        Project{" "}
+                        <span
+                          className="font-normal"
+                          style={{ color: "var(--rf-txt3)" }}
+                        >
                           (optional)
                         </span>
                       </label>
                       <AppSelect
-                        name="zoneId"
-                        value={form.zoneId}
+                        name="projectId"
+                        value={form.projectId}
                         onChange={handleChange}
-                        options={zones.map((z) => ({
-                          value: z.id,
-                          label: z.name,
+                        options={projects.map((p) => ({
+                          value: p.id,
+                          label: p.projectName,
                         }))}
-                        placeholder={
-                          form.subProjectId
-                            ? zones.length
-                              ? "— Select Zone —"
-                              : "No zones found"
-                            : "— Select Sub-Project First —"
-                        }
-                        disabled={
-                          isUploading ||
-                          !form.subProjectId ||
-                          zones.length === 0
-                        }
+                        placeholder="— Select Project —"
+                        disabled={isUploading}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-white mb-2">
+                      <label
+                        className="block text-sm font-semibold mb-2"
+                        style={{ color: "var(--rf-txt)" }}
+                      >
                         Asset{" "}
-                        <span className="text-gray-500 font-normal">
+                        <span
+                          className="font-normal"
+                          style={{ color: "var(--rf-txt3)" }}
+                        >
                           (optional)
                         </span>
                       </label>
@@ -684,89 +625,16 @@ export default function DocumentAdd() {
                           label: a.name,
                         }))}
                         placeholder={
-                          form.zoneId
+                          form.projectId
                             ? assets.length
                               ? "— Select Asset —"
                               : "No assets found"
-                            : "— Select Zone First —"
+                            : "— Select Project First —"
                         }
                         disabled={
-                          isUploading || !form.zoneId || assets.length === 0
+                          isUploading || !form.projectId || assets.length === 0
                         }
                       />
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── Linked Entity (optional) ── */}
-                <div className="border-t border-gray-700 pt-5">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                    Link to Entity{" "}
-                    <span className="text-gray-600 font-normal normal-case">
-                      (optional)
-                    </span>
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-white mb-2">
-                        Linked Type
-                      </label>
-                      <AppSelect
-                        name="linkedToType"
-                        value={form.linkedToType}
-                        onChange={handleChange}
-                        options={LINKED_TYPES.map((t) => ({
-                          value: t,
-                          label: t,
-                        }))}
-                        placeholder="— None —"
-                        disabled={isUploading}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-white mb-2">
-                        Linked Entity{" "}
-                        {form.linkedToType && (
-                          <span className="text-red-400">*</span>
-                        )}
-                      </label>
-                      {form.linkedToType && form.linkedToType !== "OTHER" ? (
-                        <AppSelect
-                          name="linkedToId"
-                          value={form.linkedToId}
-                          onChange={handleChange}
-                          options={linkedEntities.map((e) => ({
-                            value: e.id,
-                            label: getEntityLabel(form.linkedToType, e),
-                          }))}
-                          placeholder={
-                            loadingLinkedEntities
-                              ? "Loading…"
-                              : linkedEntities.length
-                                ? "— Select —"
-                                : "No entities found"
-                          }
-                          disabled={
-                            isUploading ||
-                            loadingLinkedEntities ||
-                            linkedEntities.length === 0
-                          }
-                        />
-                      ) : (
-                        <input
-                          type="text"
-                          name="linkedToId"
-                          value={form.linkedToId}
-                          onChange={handleChange}
-                          placeholder={
-                            form.linkedToType === "OTHER"
-                              ? "Entity UUID"
-                              : "Select a type first"
-                          }
-                          disabled={isUploading || !form.linkedToType}
-                          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 disabled:opacity-50"
-                        />
-                      )}
                     </div>
                   </div>
                 </div>
@@ -779,14 +647,24 @@ export default function DocumentAdd() {
                 type="button"
                 onClick={() => router.back()}
                 disabled={isUploading}
-                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white rounded-xl font-medium transition-colors"
+                style={{
+                  background: "var(--rf-bg3)",
+                  color: "var(--rf-txt)",
+                  border: "1px solid var(--rf-border2)",
+                }}
+                className="flex-1 px-4 py-3 disabled:opacity-50 rounded-xl font-medium transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isUploading || !selectedFile}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30"
+                style={{
+                  background: "var(--rf-accent)",
+                  color: "#fff",
+                  opacity: isUploading || !selectedFile ? 0.6 : 1,
+                }}
+                className="flex-1 px-4 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/30"
               >
                 {isUploading ? (
                   <>

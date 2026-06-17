@@ -76,17 +76,35 @@ export default function CompanyAdd() {
     <div className="min-h-screen p-6">
       <div className="mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1
+            className="text-4xl font-bold mb-2"
+            style={{ color: "var(--rf-txt)" }}
+          >
             Add New Company
           </h1>
-          <p className="text-gray-400">
+          <p style={{ color: "var(--rf-txt2)" }}>
             Create and manage your company information
           </p>
         </div>
 
-        <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 border-b border-gray-700">
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: "var(--rf-bg2)",
+            border: "1px solid var(--rf-border2)",
+          }}
+        >
+          <div
+            className="p-6"
+            style={{
+              background: "var(--rf-accent)",
+              borderBottom: "1px solid var(--rf-border2)",
+            }}
+          >
+            <h2
+              className="text-xl font-semibold flex items-center gap-2"
+              style={{ color: "#fff" }}
+            >
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -106,9 +124,18 @@ export default function CompanyAdd() {
 
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
             {error && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+              <div
+                className="rounded-lg p-4 flex items-start gap-3"
+                style={{
+                  background:
+                    "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+                }}
+              >
                 <svg
-                  className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+                  className="w-5 h-5 flex-shrink-0 mt-0.5"
+                  style={{ color: "var(--rf-red)" }}
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -118,7 +145,7 @@ export default function CompanyAdd() {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span className="text-red-200">{error}</span>
+                <span style={{ color: "var(--rf-red)" }}>{error}</span>
               </div>
             )}
 
@@ -126,9 +153,10 @@ export default function CompanyAdd() {
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-semibold text-white mb-3"
+                className="block text-sm font-semibold mb-3"
+                style={{ color: "var(--rf-txt)" }}
               >
-                Company Name <span className="text-red-400">*</span>
+                Company Name <span style={{ color: "var(--rf-red)" }}>*</span>
               </label>
               <input
                 type="text"
@@ -137,7 +165,12 @@ export default function CompanyAdd() {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Enter company name"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-full px-4 py-3 rounded-lg outline-none placeholder-gray-400"
+                style={{
+                  background: "var(--rf-bg2)",
+                  color: "var(--rf-txt)",
+                  boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+                }}
               />
             </div>
 
@@ -145,16 +178,22 @@ export default function CompanyAdd() {
             <div>
               <label
                 htmlFor="type"
-                className="block text-sm font-semibold text-white mb-3"
+                className="block text-sm font-semibold mb-3"
+                style={{ color: "var(--rf-txt)" }}
               >
-                Company Type <span className="text-red-400">*</span>
+                Company Type <span style={{ color: "var(--rf-red)" }}>*</span>
               </label>
               <select
                 id="type"
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-full px-4 py-3 rounded-lg outline-none placeholder-gray-400"
+                style={{
+                  background: "var(--rf-bg2)",
+                  color: "var(--rf-txt)",
+                  boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+                }}
               >
                 <option value="">— Select Type —</option>
                 {COMPANY_TYPES.map((t) => (
@@ -169,9 +208,10 @@ export default function CompanyAdd() {
             <div>
               <label
                 htmlFor="region"
-                className="block text-sm font-semibold text-white mb-3"
+                className="block text-sm font-semibold mb-3"
+                style={{ color: "var(--rf-txt)" }}
               >
-                Region <span className="text-red-400">*</span>
+                Region <span style={{ color: "var(--rf-red)" }}>*</span>
               </label>
               <input
                 type="text"
@@ -180,7 +220,12 @@ export default function CompanyAdd() {
                 value={formData.region}
                 onChange={handleChange}
                 placeholder="e.g., North America, Europe, Asia-Pacific"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-full px-4 py-3 rounded-lg outline-none placeholder-gray-400"
+                style={{
+                  background: "var(--rf-bg2)",
+                  color: "var(--rf-txt)",
+                  boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+                }}
               />
             </div>
 
@@ -188,10 +233,16 @@ export default function CompanyAdd() {
             <div>
               <label
                 htmlFor="subscriptionPlan"
-                className="block text-sm font-semibold text-white mb-3"
+                className="block text-sm font-semibold mb-3"
+                style={{ color: "var(--rf-txt)" }}
               >
                 Subscription Plan{" "}
-                <span className="text-gray-500 font-normal">(optional)</span>
+                <span
+                  className="font-normal"
+                  style={{ color: "var(--rf-txt3)" }}
+                >
+                  (optional)
+                </span>
               </label>
               <input
                 type="text"
@@ -200,12 +251,23 @@ export default function CompanyAdd() {
                 value={formData.subscriptionPlan}
                 onChange={handleChange}
                 placeholder="e.g., Standard, Premium, Enterprise"
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-full px-4 py-3 rounded-lg outline-none placeholder-gray-400"
+                style={{
+                  background: "var(--rf-bg2)",
+                  color: "var(--rf-txt)",
+                  boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+                }}
               />
             </div>
 
             {/* Subscription Active */}
-            <div className="bg-gray-700/30 rounded-lg p-4 border border-gray-600">
+            <div
+              className="rounded-lg p-4"
+              style={{
+                background: "var(--rf-bg3)",
+                border: "1px solid var(--rf-border2)",
+              }}
+            >
               <label
                 htmlFor="subscriptionActive"
                 className="flex items-center gap-3 cursor-pointer"
@@ -216,30 +278,50 @@ export default function CompanyAdd() {
                   name="subscriptionActive"
                   checked={formData.subscriptionActive}
                   onChange={handleChange}
-                  className="w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                  className="w-5 h-5 rounded focus:ring-2 cursor-pointer"
+                  style={{ accentColor: "var(--rf-accent)" }}
                 />
-                <span className="text-sm font-medium text-white">
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: "var(--rf-txt)" }}
+                >
                   Subscription Active
                 </span>
-                <span className="ml-auto text-xs text-gray-400">
+                <span
+                  className="ml-auto text-xs"
+                  style={{ color: "var(--rf-txt2)" }}
+                >
                   {formData.subscriptionActive ? "Active" : "○ Inactive"}
                 </span>
               </label>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-6 border-t border-gray-700">
+            <div
+              className="flex gap-3 pt-6 border-t"
+              style={{ borderColor: "var(--rf-border2)" }}
+            >
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                className="flex-1 px-4 py-3 rounded-lg font-medium transition-colors"
+                style={{
+                  background: "var(--rf-bg3)",
+                  color: "var(--rf-txt)",
+                  border: "1px solid var(--rf-border2)",
+                }}
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+                style={{
+                  background: "var(--rf-accent)",
+                  color: "#fff",
+                  opacity: loading ? 0.6 : 1,
+                }}
               >
                 {loading ? (
                   <>
@@ -287,10 +369,13 @@ export default function CompanyAdd() {
           </form>
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-400">
+        <div
+          className="mt-6 text-center text-sm"
+          style={{ color: "var(--rf-txt2)" }}
+        >
           <p>
-            All fields marked with <span className="text-red-400">*</span> are
-            required
+            All fields marked with{" "}
+            <span style={{ color: "var(--rf-red)" }}>*</span> are required
           </p>
         </div>
       </div>

@@ -30,6 +30,19 @@ const EMPTY_FORM = {
   scheduledAt: "",
 };
 
+// RequiredFlow light-theme tokens
+const SUBCARD = {
+  background: "var(--rf-bg3)",
+  border: "1px solid var(--rf-border2)",
+};
+// Border drawn as an inset ring so it survives the global input overrides.
+const FIELD = {
+  background: "var(--rf-bg2)",
+  color: "var(--rf-txt)",
+  boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+};
+const fieldCls = "w-full px-3 py-2 rounded-lg text-sm outline-none";
+
 /**
  * Reusable activity timeline.
  *
@@ -101,10 +114,19 @@ export default function ActivityTimeline({ entityType, entityId }) {
     <div className="space-y-4">
       {/* Header row */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Activity Timeline</h4>
+        <h4
+          className="text-sm font-bold uppercase tracking-wider"
+          style={{ color: "var(--rf-txt2)" }}
+        >
+          Activity Timeline
+        </h4>
         <button
           onClick={() => { setShowForm((v) => !v); setErr(""); }}
-          className="text-xs px-3 py-1.5 bg-cyan-700/40 hover:bg-cyan-700/70 text-cyan-300 rounded-lg transition-colors"
+          className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors"
+          style={{
+            background: "color-mix(in srgb, var(--rf-accent) 14%, transparent)",
+            color: "var(--rf-accent)",
+          }}
         >
           {showForm ? "Cancel" : "+ Add Activity"}
         </button>
@@ -112,19 +134,29 @@ export default function ActivityTimeline({ entityType, entityId }) {
 
       {/* Add activity form */}
       {showForm && (
-        <div className="bg-gray-800/80 border border-gray-700 rounded-xl p-4 space-y-3">
-          {err && <p className="text-red-400 text-xs">{err}</p>}
+        <div className="rounded-xl p-4 space-y-3" style={SUBCARD}>
+          {err && (
+            <p className="text-xs" style={{ color: "var(--rf-red)" }}>{err}</p>
+          )}
           <div className="grid grid-cols-3 gap-2">
             {ACTIVITY_TYPES.map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setForm({ ...EMPTY_FORM, type: t })}
-                className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                className="py-1.5 rounded-lg text-xs font-medium transition-colors"
+                style={
                   form.type === t
-                    ? "border-cyan-500 bg-cyan-600/20 text-cyan-300"
-                    : "border-gray-600 text-gray-400 hover:text-white"
-                }`}
+                    ? {
+                        border: "1px solid var(--rf-accent)",
+                        background: "color-mix(in srgb, var(--rf-accent) 14%, transparent)",
+                        color: "var(--rf-accent)",
+                      }
+                    : {
+                        border: "1px solid var(--rf-border2)",
+                        color: "var(--rf-txt2)",
+                      }
+                }
               >
                 {TYPE_ICON[t]} {t}
               </button>
@@ -135,14 +167,16 @@ export default function ActivityTimeline({ entityType, entityId }) {
             placeholder="Title *"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500"
+            className={fieldCls}
+            style={FIELD}
           />
           <textarea
             placeholder={form.type === "Note" ? "Note content..." : "Details / notes..."}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             rows={2}
-            className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 resize-none"
+            className={`${fieldCls} resize-none`}
+            style={FIELD}
           />
           {form.type === "Call" && (
             <input
@@ -150,7 +184,8 @@ export default function ActivityTimeline({ entityType, entityId }) {
               placeholder="Duration (minutes)"
               value={form.duration}
               onChange={(e) => setForm({ ...form, duration: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500"
+              className={fieldCls}
+              style={FIELD}
             />
           )}
           {form.type === "Meeting" && (
@@ -158,14 +193,20 @@ export default function ActivityTimeline({ entityType, entityId }) {
               type="datetime-local"
               value={form.scheduledAt}
               onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500"
+              className={fieldCls}
+              style={FIELD}
             />
           )}
           <div className="flex justify-end">
             <button
               onClick={handleAdd}
               disabled={saving}
-              className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-medium disabled:opacity-50"
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold"
+              style={{
+                background: "var(--rf-accent)",
+                color: "#fff",
+                opacity: saving ? 0.6 : 1,
+              }}
             >
               {saving ? "Saving..." : "Save Activity"}
             </button>
@@ -175,41 +216,53 @@ export default function ActivityTimeline({ entityType, entityId }) {
 
       {/* Timeline */}
       {loading ? (
-        <div className="text-center text-gray-500 text-sm py-4">Loading activities...</div>
+        <div className="text-center text-sm py-4" style={{ color: "var(--rf-txt3)" }}>
+          Loading activities...
+        </div>
       ) : activities.length === 0 ? (
-        <div className="text-center text-gray-600 text-sm py-6">No activities yet.</div>
+        <div className="text-center text-sm py-6" style={{ color: "var(--rf-txt3)" }}>
+          No activities yet.
+        </div>
       ) : (
-        <div className="relative space-y-3 pl-5 before:absolute before:left-[7px] before:top-0 before:bottom-0 before:w-px before:bg-gray-700">
+        <div className="relative space-y-3 pl-5 before:absolute before:left-[7px] before:top-0 before:bottom-0 before:w-px before:bg-[var(--rf-border2)]">
           {activities.map((a) => {
             const displayType = DISPLAY_TYPE_MAP[a.type] || a.type;
             return (
               <div key={a.id} className="relative">
                 {/* Dot */}
                 <span className={`absolute -left-[18px] top-1.5 w-3 h-3 rounded-full ${TYPE_COLOR[displayType] || "bg-gray-500"}`} />
-                <div className="bg-gray-800/60 border border-gray-700/50 rounded-lg px-4 py-3">
+                <div className="rounded-lg px-4 py-3" style={SUBCARD}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm">{TYPE_ICON[displayType] || ""}</span>
-                      <span className="text-white text-sm font-medium">{a.title}</span>
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700 text-gray-400">{displayType}</span>
+                      <span className="text-sm font-medium" style={{ color: "var(--rf-txt)" }}>{a.title}</span>
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded"
+                        style={{ background: "var(--rf-bg4)", color: "var(--rf-txt2)" }}
+                      >
+                        {displayType}
+                      </span>
                     </div>
                     <button
                       onClick={() => handleDelete(a.id)}
-                      className="text-gray-600 hover:text-red-400 text-xs transition-colors flex-shrink-0"
+                      className="text-xs transition-colors flex-shrink-0"
+                      style={{ color: "var(--rf-txt3)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--rf-red)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--rf-txt3)")}
                     >
-                     
+                      ×
                     </button>
                   </div>
                   {(a.description || a.content) && (
-                    <p className="text-gray-400 text-xs mt-1">{a.description || a.content}</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--rf-txt2)" }}>{a.description || a.content}</p>
                   )}
-                  {a.duration && <p className="text-gray-500 text-xs mt-1">Duration: {a.duration} min</p>}
+                  {a.duration && <p className="text-xs mt-1" style={{ color: "var(--rf-txt3)" }}>Duration: {a.duration} min</p>}
                   {a.scheduledAt && (
-                    <p className="text-gray-500 text-xs mt-1">
+                    <p className="text-xs mt-1" style={{ color: "var(--rf-txt3)" }}>
                       Scheduled: {new Date(a.scheduledAt).toLocaleString()}
                     </p>
                   )}
-                  <p className="text-gray-600 text-xs mt-1">
+                  <p className="text-xs mt-1" style={{ color: "var(--rf-txt3)" }}>
                     {a.createdAt ? new Date(a.createdAt).toLocaleString() : ""}
                   </p>
                 </div>
