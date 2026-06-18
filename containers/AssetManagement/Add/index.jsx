@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createAsset } from "@/services/AssetManagement";
+import { listV2Projects } from "@/services/CxProjectsV2";
 
 const CATEGORIES = [
   "IT Equipment",
@@ -45,6 +46,7 @@ export default function AssetAdd() {
     name: "",
     category: "",
     procurementType: "",
+    projectId: "",
     purchaseDate: "",
     purchaseCost: "",
     currentValue: "",
@@ -52,11 +54,32 @@ export default function AssetAdd() {
     notes: "",
   });
 
+  // Optional "link to project" dropdown — reuses the V2 projects list.
+  const [projects, setProjects] = useState([]);
+
   useEffect(() => {
     if (!msg) return;
     const t = setTimeout(() => setMsg(null), 4000);
     return () => clearTimeout(t);
   }, [msg]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await listV2Projects({ limit: 100 });
+        const arr = Array.isArray(r)
+          ? r
+          : (r?.data ?? r?.projects ?? r?.items ?? []);
+        if (alive) setProjects(arr);
+      } catch {
+        // non-fatal — the dropdown just stays empty (asset can be org-only)
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const showWarranty = WARRANTY_CATEGORIES.has(form.category);
 
@@ -89,7 +112,6 @@ export default function AssetAdd() {
     setErrors(e);
     return Object.keys(e).length === 0;
   };
-// need to add project id
   const handleSubmit = async (ev) => {
     ev.preventDefault();
     if (!validate()) return;
@@ -100,6 +122,8 @@ export default function AssetAdd() {
         name: form.name,
         category: form.category,
         procurementType: form.procurementType,
+        // Optional: also materialize this asset in the chosen project's playbook.
+        projectId: form.projectId || undefined,
         purchaseDate: form.purchaseDate || undefined,
         purchaseCost: form.purchaseCost
           ? parseFloat(form.purchaseCost)
@@ -254,6 +278,24 @@ export default function AssetAdd() {
               {errors.procurementType && (
                 <p className="text-red-400 text-xs mt-1">{errors.procurementType}</p>
               )}
+            </div>
+
+            <div>
+              <FL hint="Optional — also lists this asset in the project's playbook.">
+                Link to Project
+              </FL>
+              <select
+                className={INPUT}
+                value={form.projectId}
+                onChange={set("projectId")}
+              >
+                <option value="">— No project (org register only) —</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.projectName ?? p.name ?? p.id}
+                  </option>
+                ))}
+              </select>
             </div>
           </section>
 

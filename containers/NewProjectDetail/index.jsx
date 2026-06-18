@@ -39,6 +39,11 @@ import { getProcurementV2Items } from "../../services/Finance/ProcurementV2";
 import { getProjectFeed } from "../../services/OperationalFeed";
 import { getDocuments } from "../../services/Documents";
 import { getAllTasks, updateTask } from "../../services/Tasks";
+import {
+  listSafetyItems,
+  createSafetyItem,
+  removeSafetyItem,
+} from "../../services/SafetyItems";
 
 /* ================================================================== *
  * Project Playbook — the whole project on one screen, scoped to the
@@ -397,7 +402,7 @@ const MODULES = [
       "integrator",
     ],
   },
-  // { id: "safety", ic: "✚", name: "Safety", types: "all" },
+  { id: "safety", ic: "✚", name: "Safety", types: "all", hot: true },
   { id: "team", ic: "▥", name: "Project Team", types: "all" },
   { id: "stakeholders", ic: "⬡", name: "Key Stakeholders", types: "all" },
   {
@@ -917,6 +922,15 @@ export default function NewProjectDetail() {
   const [laAdd, setLaAdd] = useState(null); // { wk, trade, area } when add-activity modal open
   const [toast, setToast] = useState("");
   const [projectId, setProjectId] = useState(null);
+  const [safetyTab, setSafetyTab] = useState("CERTIFICATION");
+  // controlled inline add-form for the active Safety tab
+  const [safetyForm, setSafetyForm] = useState({
+    title: "",
+    workerName: "",
+    companyTrade: "",
+    issuedAt: "",
+    expiresAt: "",
+  });
 
   const role = COMPANY_TYPES[ct].roles[ri] || COMPANY_TYPES[ct].roles[0];
   const can = (p) => (mode === "standalone" ? true : role.perms.includes(p));
@@ -1019,6 +1033,7 @@ export default function NewProjectDetail() {
       punchR,
       holdsR,
       docsR,
+      safetyR,
     ] = await Promise.allSettled([
       getPlaybookSummary(pid),
       getIssues({ projectId: pid, limit: 100 }),
@@ -1036,14 +1051,17 @@ export default function NewProjectDetail() {
       // Punch list + hold points are the same Issues resource, kind-scoped.
       getIssues({ projectId: pid, kind: "PUNCH_LIST", limit: 100 }),
       getIssues({ projectId: pid, kind: "HOLD_POINT", limit: 100 }),
-      // Drawings & P&ID — linked documents for this project.
-      getDocuments({ projectId: pid }),
+      // Uploaded files (Document model), org- and project-scoped server-side.
+      getDocuments({ cxProjectId: pid }),
+      // Project safety items (cert / PTP / inspection / lift plan / SDS / orientation).
+      listSafetyItems(pid),
     ]);
     const val = (r, fb) =>
       r.status === "fulfilled" ? (norm(r.value) ?? fb) : fb;
     const rows = (r) => {
       const v = val(r, []);
-      return Array.isArray(v) ? v : (v?.data ?? v?.items ?? []);
+      // `entries` covers the operational-feed shape ({ entries, nextCursor }).
+      return Array.isArray(v) ? v : (v?.data ?? v?.items ?? v?.entries ?? []);
     };
 
     const summary = val(summaryR, null);
@@ -1203,8 +1221,13 @@ export default function NewProjectDetail() {
       })),
       activity: rows(feedR).map((e) => ({
         when: ago(e.createdAt ?? Date.now()),
-        who: e.actorDisplayName ?? "system",
-        ct: (e.actorCompanyCode ?? "gc").toLowerCase(),
+        // Operational-feed entries nest the actor under `actor`.
+        who: e.actor?.displayName ?? e.actorDisplayName ?? "system",
+        ct: (
+          e.actor?.companyCode ??
+          e.actorCompanyCode ??
+          "gc"
+        ).toLowerCase(),
         text: [e.action, e.target].filter(Boolean).join(" — "),
       })),
       tasks: rows(tasksR).map((t) => ({
@@ -1215,12 +1238,24 @@ export default function NewProjectDetail() {
         status: TASK_FROM[t.status] ?? "open",
       })),
       drawings: rows(docsR).map((d) => ({
-        type: (d.category || "DOC").replace(/_/g, " "),
-        name: d.title || d.fileName || "Document",
-        eq: d.fileName || "",
-        verified: true,
+        id: d.id,
+        name: d.title || d.fileName,
+        type: d.category ?? "GENERAL",
+        eq: eq(d.assetId),
+        verified: d.status === "VERIFIED" || d.status === "APPROVED",
       })),
-      safety: [],
+      safety: rows(safetyR).map((s) => ({
+        id: s.id,
+        kind: s.kind,
+        title: s.title,
+        workerName: s.workerName || "",
+        companyTrade: s.companyTrade || "",
+        status: s.status,
+        issuedAt: s.issuedAt ? String(s.issuedAt).slice(0, 10) : "",
+        expiresAt: s.expiresAt ? String(s.expiresAt).slice(0, 10) : "",
+        projectAssetId: s.projectAssetId || null,
+        attachments: s.attachments || [],
+      })),
     };
     setDb((prev) => ({ ...structuredClone(SEED), ...prev, ...next }));
     if (summary.lens?.companyType) {
@@ -1297,6 +1332,40 @@ export default function NewProjectDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mod, SELV, projectId]);
 
+  // Re-pull the operational feed whenever the Activity panel is opened, so
+  // newly-recorded actions (added/updated/removed safety item, gate moves, …)
+  // show up without a full page reload. Outbox dispatch is async (~5s), so we
+  // fetch on open and again shortly after to catch the just-dispatched rows.
+  useEffect(() => {
+    if (mod !== "activity" || !projectId) return;
+    let alive = true;
+    const pull = async () => {
+      try {
+        const feed = norm(await getProjectFeed(projectId, { limit: 50 }));
+        const entries = Array.isArray(feed)
+          ? feed
+          : (feed?.entries ?? feed?.data ?? feed?.items ?? []);
+        if (!alive) return;
+        mutate((d) => {
+          d.activity = entries.map((e) => ({
+            when: ago(e.createdAt ?? Date.now()),
+            who: e.actor?.displayName ?? e.actorDisplayName ?? "system",
+            ct: (e.actor?.companyCode ?? e.actorCompanyCode ?? "gc").toLowerCase(),
+            text: [e.action, e.target].filter(Boolean).join(" — "),
+          }));
+        });
+      } catch {
+        // non-fatal — keep whatever activity we already have
+      }
+    };
+    pull();
+    const t = setTimeout(pull, 6000); // catch the next outbox dispatch tick
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [mod, projectId]);
+
   const counts = {
     issues: g.gk.length,
     punch: (db.punchList ?? []).filter((f) => isOpen(f.status)).length,
@@ -1304,6 +1373,11 @@ export default function NewProjectDetail() {
     readiness: db.equipment.length,
     tests: db.tests.length,
     schedule: db.milestones.length,
+    // Only badge Safety when something is expiring/expired (red "hot" pill).
+    safety:
+      (db.safety ?? []).filter(
+        (s) => s.status === "EXPIRING" || s.status === "EXPIRED",
+      ).length || undefined,
   };
   // Always show every module in the left rail (add/remove customization removed)
   const railMods = MODULES;
@@ -1454,9 +1528,9 @@ export default function NewProjectDetail() {
       },
     );
   };
-  const verifyDrawing = (name) => {
+  const verifyDrawing = (id) => {
     mutate((d) => {
-      const x = d.drawings.find((y) => y.name === name);
+      const x = d.drawings.find((y) => y.id === id);
       if (x) x.verified = true;
     });
     flash("Drawing verified");
@@ -1614,6 +1688,75 @@ export default function NewProjectDetail() {
       flash("Activity added");
     } catch (err) {
       apiErr(err, "Could not add activity");
+    }
+  };
+
+  /* ---------- Safety (project safety items) ---------- */
+  const SAFETY_TABS = [
+    { id: "CERTIFICATION", label: "Training / Certification" },
+    { id: "PTP_AHA_JSA", label: "PTP / AHA / JSA" },
+    { id: "INSPECTION", label: "Inspection" },
+    { id: "LIFT_PLAN", label: "Lift Plan" },
+    { id: "SDS_DOCUMENT", label: "SDS / Document" },
+    { id: "ORIENTATION", label: "Orientation" },
+  ];
+  const resetSafetyForm = () =>
+    setSafetyForm({
+      title: "",
+      workerName: "",
+      companyTrade: "",
+      issuedAt: "",
+      expiresAt: "",
+    });
+  const submitSafety = async () => {
+    const title = (safetyForm.title || "").trim();
+    if (!title) {
+      flash("Enter a title");
+      return;
+    }
+    if (!projectId) return;
+    const payload = {
+      kind: safetyTab,
+      title,
+      workerName: safetyForm.workerName?.trim() || undefined,
+      companyTrade: safetyForm.companyTrade?.trim() || undefined,
+      issuedAt: safetyForm.issuedAt || undefined,
+      expiresAt: safetyForm.expiresAt || undefined,
+    };
+    try {
+      const created = norm(await createSafetyItem(projectId, payload));
+      mutate((d) => {
+        (d.safety = d.safety || []).push({
+          id: created?.id ?? nid("sf"),
+          kind: created?.kind ?? safetyTab,
+          title: created?.title ?? title,
+          workerName: created?.workerName ?? payload.workerName ?? "",
+          companyTrade: created?.companyTrade ?? payload.companyTrade ?? "",
+          status: created?.status ?? "ACTIVE",
+          issuedAt: created?.issuedAt
+            ? String(created.issuedAt).slice(0, 10)
+            : safetyForm.issuedAt || "",
+          expiresAt: created?.expiresAt
+            ? String(created.expiresAt).slice(0, 10)
+            : safetyForm.expiresAt || "",
+          projectAssetId: created?.projectAssetId ?? null,
+          attachments: created?.attachments ?? [],
+        });
+      });
+      resetSafetyForm();
+      flash("Added to project");
+    } catch (err) {
+      apiErr(err, "Could not add safety item");
+    }
+  };
+  const safetyRemove = (id) => {
+    mutate((d) => {
+      d.safety = (d.safety || []).filter((x) => x.id !== id);
+    });
+    if (projectId) {
+      removeSafetyItem(projectId, id).catch((err) =>
+        apiErr(err, "Could not remove safety item"),
+      );
     }
   };
 
@@ -2037,7 +2180,7 @@ export default function NewProjectDetail() {
       <Card>
         <SectLab>Drawings &amp; P&amp;ID</SectLab>
         {db.drawings.map((d, i) => (
-          <Row key={d.name} style={i === 0 ? { borderTop: 0 } : undefined}>
+          <Row key={d.id ?? d.name} style={i === 0 ? { borderTop: 0 } : undefined}>
             <Pill kind="lvl">{d.type}</Pill>
             <Grow>
               {d.name} <span style={eyebrow}>· {d.eq}</span>
@@ -2046,7 +2189,7 @@ export default function NewProjectDetail() {
               {d.verified ? "verified" : "unverified"}
             </St>
             {!d.verified && can("verify") && (
-              <Mark onClick={() => verifyDrawing(d.name)}>Verify</Mark>
+              <Mark onClick={() => verifyDrawing(d.id)}>Verify</Mark>
             )}
           </Row>
         ))}
@@ -2143,24 +2286,301 @@ export default function NewProjectDetail() {
   }
 
   function Safety() {
-    const sc = (s) =>
-      /Approved|0 to date/.test(s)
-        ? "complete"
-        : /Open|Pending/.test(s)
-          ? "in_progress"
-          : "not_started";
+    const edit = can("create");
+    const items = db.safety || [];
+    const tabItems = items.filter((s) => s.kind === safetyTab);
+    const expiringTotal = items.filter(
+      (s) => s.status === "EXPIRING" || s.status === "EXPIRED",
+    ).length;
+    const isCert = safetyTab === "CERTIFICATION";
+    const isDoc = safetyTab === "SDS_DOCUMENT";
+    const dated = isCert || isDoc;
+    const titlePh = isCert
+      ? "Certification (e.g. OSHA 30)"
+      : safetyTab === "PTP_AHA_JSA"
+        ? "Pre-task plan / AHA / JSA title"
+        : safetyTab === "INSPECTION"
+          ? "Inspection title"
+          : safetyTab === "LIFT_PLAN"
+            ? "Lift plan title"
+            : isDoc
+              ? "Document / SDS name"
+              : "Orientation title";
+
+    const inp = {
+      height: 38,
+      border: `1px solid ${P.line}`,
+      borderRadius: 9,
+      background: P.card,
+      padding: "0 11px",
+      fontSize: 14,
+      color: P.ink,
+      width: "100%",
+    };
+    const lab = {
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: 0.5,
+      color: P.smoke,
+      textTransform: "uppercase",
+      marginBottom: 4,
+      display: "block",
+    };
+    const setF = (k) => (e) =>
+      setSafetyForm((p) => ({ ...p, [k]: e.target.value }));
+
+    const chipFor = (s) => {
+      if (s.status === "EXPIRED")
+        return { background: P.rust, color: "#fff", text: `Expired ${s.expiresAt}` };
+      if (s.status === "EXPIRING")
+        return {
+          background: "#fbf2dc",
+          color: P.amber,
+          text: `Expiring ${s.expiresAt}`,
+        };
+      if (s.status === "COMPLETED")
+        return { background: "#e7f3ee", color: P.teal, text: "Completed" };
+      if (s.status === "VOID")
+        return { background: P.soft, color: P.smoke, text: "Void" };
+      return {
+        background: "#e7f3ee",
+        color: P.teal,
+        text: s.expiresAt ? `Valid · ${s.expiresAt}` : "Active",
+      };
+    };
+
     return (
       <Card>
         <SectLab>
-          Safety — AHAs / JHAs · permits · inspections · incidents
+          Safety — certifications, pre-task plans, inspections, lift plans, SDS,
+          and orientations
         </SectLab>
-        {db.safety.map((s, i) => (
-          <Row key={s.item} style={i === 0 ? { borderTop: 0 } : undefined}>
-            <Pill kind="role">{s.type}</Pill>
-            <Grow>{s.item}</Grow>
-            <St s={sc(s.status)}>{s.status}</St>
-          </Row>
-        ))}
+
+        {expiringTotal > 0 && (
+          <div
+            style={{
+              display: "inline-block",
+              background: "#fbf2dc",
+              color: P.amber,
+              border: `1px solid ${P.amber}33`,
+              borderRadius: 8,
+              padding: "5px 10px",
+              fontSize: 12,
+              fontWeight: 700,
+              marginBottom: 12,
+            }}
+          >
+            {expiringTotal} expiring within 30 days
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div
+          className="flex flex-wrap gap-2"
+          style={{ marginBottom: 14 }}
+        >
+          {SAFETY_TABS.map((t) => {
+            const c = items.filter((s) => s.kind === t.id).length;
+            const active = t.id === safetyTab;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setSafetyTab(t.id);
+                  resetSafetyForm();
+                }}
+                style={{
+                  height: 32,
+                  padding: "0 12px",
+                  borderRadius: 8,
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  border: `1px solid ${active ? P.navy : P.line}`,
+                  background: active ? P.navy : P.card,
+                  color: active ? "#fff" : P.ink,
+                }}
+              >
+                {t.label} ({c})
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Create form (active tab) */}
+        {edit && (
+          <div
+            style={{
+              border: `1px solid ${P.line}`,
+              borderRadius: 12,
+              padding: 14,
+              marginBottom: 14,
+              background: P.paper,
+            }}
+          >
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: isCert ? "1fr 1fr 1fr" : "1fr" }}
+            >
+              <input
+                style={inp}
+                placeholder={titlePh}
+                value={safetyForm.title}
+                onChange={setF("title")}
+                onKeyDown={(e) => e.key === "Enter" && submitSafety()}
+              />
+              {isCert && (
+                <>
+                  <input
+                    style={inp}
+                    placeholder="Worker name"
+                    value={safetyForm.workerName}
+                    onChange={setF("workerName")}
+                  />
+                  <input
+                    style={inp}
+                    placeholder="Company / trade"
+                    value={safetyForm.companyTrade}
+                    onChange={setF("companyTrade")}
+                  />
+                </>
+              )}
+            </div>
+            <div
+              className="grid gap-3"
+              style={{
+                gridTemplateColumns: dated ? "1fr 1fr 1fr" : "1fr",
+                marginTop: 10,
+                alignItems: "end",
+              }}
+            >
+              {dated && (
+                <div>
+                  <label style={lab}>Issued</label>
+                  <input
+                    type="date"
+                    style={inp}
+                    value={safetyForm.issuedAt}
+                    onChange={setF("issuedAt")}
+                  />
+                </div>
+              )}
+              {dated && (
+                <div>
+                  <label style={lab}>Expires</label>
+                  <input
+                    type="date"
+                    style={inp}
+                    value={safetyForm.expiresAt}
+                    onChange={setF("expiresAt")}
+                  />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={submitSafety}
+                style={{
+                  height: 38,
+                  borderRadius: 9,
+                  border: "none",
+                  background: P.navy,
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  padding: "0 18px",
+                }}
+              >
+                Add to project
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* List */}
+        {tabItems.length === 0 ? (
+          <div
+            style={{
+              color: P.smoke,
+              fontSize: 13,
+              padding: "10px 2px",
+            }}
+          >
+            No {SAFETY_TABS.find((t) => t.id === safetyTab)?.label.toLowerCase()}{" "}
+            items yet.
+          </div>
+        ) : (
+          tabItems.map((s) => {
+            const chip = chipFor(s);
+            const subtitle = [s.workerName, s.companyTrade]
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <div
+                key={s.id}
+                className="flex items-center"
+                style={{
+                  border: `1px solid ${P.line}`,
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  marginBottom: 8,
+                  gap: 12,
+                }}
+              >
+                <div className="min-w-0" style={{ flex: 1 }}>
+                  <div
+                    className="truncate"
+                    style={{ fontWeight: 700, color: P.ink, fontSize: 14 }}
+                  >
+                    {s.title}
+                  </div>
+                  {subtitle && (
+                    <div
+                      className="truncate"
+                      style={{ color: P.smoke, fontSize: 12, marginTop: 2 }}
+                    >
+                      {subtitle}
+                    </div>
+                  )}
+                </div>
+                <span
+                  className="font-mono"
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "4px 9px",
+                    borderRadius: 7,
+                    whiteSpace: "nowrap",
+                    background: chip.background,
+                    color: chip.color,
+                  }}
+                >
+                  {chip.text}
+                </span>
+                {edit && (
+                  <button
+                    type="button"
+                    title="Remove"
+                    onClick={() => safetyRemove(s.id)}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      color: P.smoke,
+                      fontSize: 18,
+                      lineHeight: 1,
+                      cursor: "pointer",
+                      padding: "0 2px",
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+
         <LockMsg style={{ marginTop: 10 }}>
           Safety gates the field: an activity can&apos;t start until its AHA/JHA
           is approved and the crew is badged &amp; oriented.
