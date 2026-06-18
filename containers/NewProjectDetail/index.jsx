@@ -39,7 +39,6 @@ import { getProcurementItems } from "../../services/Procurement";
 import { getProjectFeed } from "../../services/OperationalFeed";
 import { getDocuments } from "../../services/Documents";
 import { getAllTasks, updateTask } from "../../services/Tasks";
-import { getDocuments } from "../../services/Documents";
 import {
   listSafetyItems,
   createSafetyItem,
