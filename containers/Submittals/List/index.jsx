@@ -53,37 +53,48 @@ const TYPE_LABELS = {
   OTHER: "Other",
 };
 
-const STATUS_COLORS = {
-  DRAFT: "bg-gray-500/20 text-gray-300 border-gray-500/30",
-  SUBMITTED: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  UNDER_REVIEW: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  APPROVED: "bg-green-500/20 text-green-400 border-green-500/30",
-  REJECTED: "bg-red-500/20 text-red-400 border-red-500/30",
-  REVISE_RESUBMIT: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-  VOID: "bg-gray-700/40 text-gray-500 border-gray-600/30",
+// Maps each status to an rf token for the badge color.
+const STATUS_TOKENS = {
+  DRAFT: "var(--rf-txt3)",
+  SUBMITTED: "var(--rf-accent)",
+  UNDER_REVIEW: "var(--rf-yellow)",
+  APPROVED: "var(--rf-green)",
+  REJECTED: "var(--rf-red)",
+  REVISE_RESUBMIT: "var(--rf-yellow)",
+  VOID: "var(--rf-txt3)",
 };
+
+// Token-based badge style: tinted bg + token text + tinted border.
+function statusBadgeStyle(status) {
+  const token = STATUS_TOKENS[status] ?? "var(--rf-txt3)";
+  return {
+    background: `color-mix(in srgb, ${token} 14%, transparent)`,
+    color: token,
+    border: `1px solid color-mix(in srgb, ${token} 32%, transparent)`,
+  };
+}
 
 function getAvailableActions(sub) {
   const s = sub.status;
   const actions = [];
   if (s === "DRAFT")
-    actions.push({ key: "submit", label: "Submit", color: "text-blue-400" });
+    actions.push({ key: "submit", label: "Submit", color: "var(--rf-accent)" });
   if (s === "SUBMITTED")
     actions.push({
       key: "start-review",
       label: "Start Review",
-      color: "text-yellow-400",
+      color: "var(--rf-yellow)",
     });
   if (s === "UNDER_REVIEW") {
-    actions.push({ key: "approve", label: "Approve", color: "text-green-400" });
-    actions.push({ key: "revise", label: "Revise", color: "text-orange-400" });
-    actions.push({ key: "reject", label: "Reject", color: "text-red-400" });
+    actions.push({ key: "approve", label: "Approve", color: "var(--rf-green)" });
+    actions.push({ key: "revise", label: "Revise", color: "var(--rf-yellow)" });
+    actions.push({ key: "reject", label: "Reject", color: "var(--rf-red)" });
   }
   if (s === "REJECTED" || s === "REVISE_RESUBMIT") {
     actions.push({
       key: "resubmit",
       label: "Resubmit",
-      color: "text-blue-400",
+      color: "var(--rf-accent)",
     });
   }
   return actions;
@@ -212,11 +223,24 @@ export default function SubmittalsList() {
         {/* Toast */}
         {message && (
           <div
-            className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg border shadow-lg text-sm ${
+            className="fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm"
+            style={
               message.type === "success"
-                ? "bg-green-900/80 border-green-500/30 text-green-300"
-                : "bg-red-900/80 border-red-500/30 text-red-300"
-            }`}
+                ? {
+                    background:
+                      "color-mix(in srgb, var(--rf-green) 14%, transparent)",
+                    color: "var(--rf-green)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--rf-green) 32%, transparent)",
+                  }
+                : {
+                    background:
+                      "color-mix(in srgb, var(--rf-red) 14%, transparent)",
+                    color: "var(--rf-red)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--rf-red) 32%, transparent)",
+                  }
+            }
           >
             {message.text}
           </div>
@@ -225,8 +249,13 @@ export default function SubmittalsList() {
         {/* Header */}
         <div className="mb-8 flex justify-between items-start">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Submittals</h1>
-            <p className="text-gray-400">
+            <h1
+              className="text-4xl font-bold mb-2"
+              style={{ color: "var(--rf-txt)" }}
+            >
+              Submittals
+            </h1>
+            <p style={{ color: "var(--rf-txt2)" }}>
               Manage technical documentation submissions and approvals
             </p>
           </div>
@@ -234,7 +263,8 @@ export default function SubmittalsList() {
             <button
               onClick={() => router.push("/Submittals/Add")}
               {...permissionProps(canCreate(MODULE.SUBMITTALS), "create a submittal")}
-              className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
+              className="px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
+              style={{ background: "var(--rf-accent)", color: "#fff" }}
             >
               <svg
                 className="w-5 h-5"
@@ -257,28 +287,40 @@ export default function SubmittalsList() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           {[
-            { label: "Total", value: stats.total, color: "text-white" },
-            { label: "Draft", value: stats.draft, color: "text-gray-400" },
+            { label: "Total", value: stats.total, color: "var(--rf-txt)" },
+            { label: "Draft", value: stats.draft, color: "var(--rf-txt2)" },
             {
               label: "Under Review",
               value: stats.underReview,
-              color: "text-yellow-400",
+              color: "var(--rf-yellow)",
             },
             {
               label: "Approved",
               value: stats.approved,
-              color: "text-green-400",
+              color: "var(--rf-green)",
             },
-            { label: "Overdue", value: stats.overdue, color: "text-red-400" },
+            { label: "Overdue", value: stats.overdue, color: "var(--rf-red)" },
           ].map((s) => (
             <div
               key={s.label}
-              className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-4"
+              className="rounded-xl p-4"
+              style={{
+                background: "var(--rf-bg2)",
+                border: "1px solid var(--rf-border2)",
+              }}
             >
-              <p className="text-gray-500 text-xs uppercase tracking-wider">
+              <p
+                className="text-xs uppercase tracking-wider"
+                style={{ color: "var(--rf-txt3)" }}
+              >
                 {s.label}
               </p>
-              <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+              <p
+                className="text-2xl font-bold mt-1"
+                style={{ color: s.color }}
+              >
+                {s.value}
+              </p>
             </div>
           ))}
         </div>
@@ -290,12 +332,22 @@ export default function SubmittalsList() {
             placeholder="Search by title, number, spec section…"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 min-w-[200px] max-w-md px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 text-sm"
+            className="flex-1 min-w-[200px] max-w-md px-4 py-2.5 rounded-lg placeholder-gray-500 focus:outline-none text-sm"
+            style={{
+              background: "var(--rf-bg2)",
+              color: "var(--rf-txt)",
+              boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+            }}
           />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 [&_option]:bg-gray-800"
+            className="px-4 py-2.5 rounded-lg text-sm focus:outline-none"
+            style={{
+              background: "var(--rf-bg2)",
+              color: "var(--rf-txt)",
+              boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+            }}
           >
             <option value="">All Statuses</option>
             {STATUSES.map((s) => (
@@ -307,7 +359,12 @@ export default function SubmittalsList() {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 [&_option]:bg-gray-800"
+            className="px-4 py-2.5 rounded-lg text-sm focus:outline-none"
+            style={{
+              background: "var(--rf-bg2)",
+              color: "var(--rf-txt)",
+              boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+            }}
           >
             <option value="">All Types</option>
             {TYPES.map((t) => (
@@ -320,7 +377,15 @@ export default function SubmittalsList() {
 
         {/* Error */}
         {error && (
-          <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
+          <div
+            className="mb-6 rounded-lg p-4 text-sm"
+            style={{
+              background: "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+              color: "var(--rf-red)",
+            }}
+          >
             {error}
           </div>
         )}
@@ -328,14 +393,29 @@ export default function SubmittalsList() {
         {/* Table */}
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            <div
+              className="w-8 h-8 border-2 rounded-full animate-spin"
+              style={{
+                borderColor: "var(--rf-accent)",
+                borderTopColor: "transparent",
+              }}
+            />
           </div>
         ) : (
-          <div className="bg-gray-900/50 rounded-xl border border-gray-800/50 overflow-hidden">
+          <div
+            className="rounded-xl overflow-hidden"
+            style={{
+              background: "var(--rf-bg2)",
+              border: "1px solid var(--rf-border2)",
+            }}
+          >
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-800">
+                  <tr
+                    className="border-b"
+                    style={{ borderColor: "var(--rf-border2)" }}
+                  >
                     {[
                       "#",
                       "Title",
@@ -348,7 +428,8 @@ export default function SubmittalsList() {
                     ].map((h) => (
                       <th
                         key={h}
-                        className="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                        className="text-left px-5 py-4 text-xs font-bold uppercase tracking-wider whitespace-nowrap"
+                        style={{ color: "var(--rf-txt2)" }}
                       >
                         {h}
                       </th>
@@ -364,40 +445,77 @@ export default function SubmittalsList() {
                     return (
                       <tr
                         key={sub.id}
-                        className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors ${overdue ? "bg-red-900/5" : ""}`}
+                        className="border-b transition-colors"
+                        style={{
+                          borderColor: "var(--rf-border)",
+                          background: overdue
+                            ? "color-mix(in srgb, var(--rf-red) 6%, transparent)"
+                            : "transparent",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "var(--rf-bg3)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = overdue
+                            ? "color-mix(in srgb, var(--rf-red) 6%, transparent)"
+                            : "transparent";
+                        }}
                       >
-                        <td className="px-5 py-4 text-cyan-400 font-mono text-sm font-medium whitespace-nowrap">
+                        <td
+                          className="px-5 py-4 font-mono text-sm font-medium whitespace-nowrap"
+                          style={{ color: "var(--rf-accent)" }}
+                        >
                           {sub.submittalNumber}
                         </td>
-                        <td className="px-5 py-4 text-white text-sm max-w-[200px] truncate">
+                        <td
+                          className="px-5 py-4 text-sm max-w-[200px] truncate"
+                          style={{ color: "var(--rf-txt)" }}
+                        >
                           {sub.title}
                         </td>
-                        <td className="px-5 py-4 text-gray-400 text-sm whitespace-nowrap">
+                        <td
+                          className="px-5 py-4 text-sm whitespace-nowrap"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
                           {TYPE_LABELS[sub.type] ?? sub.type ?? "—"}
                         </td>
-                        <td className="px-5 py-4 text-gray-400 text-sm">
+                        <td
+                          className="px-5 py-4 text-sm"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
                           {sub.specSection || "—"}
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap">
                           <span
-                            className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_COLORS[sub.status] ?? ""}`}
+                            className="text-xs px-2.5 py-1 rounded-full"
+                            style={statusBadgeStyle(sub.status)}
                           >
                             {STATUS_LABELS[sub.status] ?? sub.status}
                           </span>
                         </td>
                         <td
-                          className={`px-5 py-4 text-sm whitespace-nowrap ${overdue ? "text-red-400 font-medium" : "text-gray-400"}`}
+                          className="px-5 py-4 text-sm whitespace-nowrap"
+                          style={{
+                            color: overdue ? "var(--rf-red)" : "var(--rf-txt2)",
+                            fontWeight: overdue ? 500 : undefined,
+                          }}
                         >
                           {sub.dueDate
                             ? new Date(sub.dueDate).toLocaleDateString()
                             : "—"}
                           {overdue && (
-                            <span className="ml-1 text-[10px] text-red-500 uppercase">
+                            <span
+                              className="ml-1 text-[10px] uppercase"
+                              style={{ color: "var(--rf-red)" }}
+                            >
                               overdue
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-4 text-gray-500 text-sm font-mono">
+                        <td
+                          className="px-5 py-4 text-sm font-mono"
+                          style={{ color: "var(--rf-txt3)" }}
+                        >
                           {sub.currentRevision ?? 0}
                         </td>
                         <td className="px-5 py-4">
@@ -420,7 +538,11 @@ export default function SubmittalsList() {
                                       submittal: sub,
                                     })
                                   }
-                                  className={`${a.color} hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50 whitespace-nowrap`}
+                                  className="hover:opacity-80 text-[11px] px-2 py-0.5 rounded whitespace-nowrap"
+                                  style={{
+                                    color: a.color,
+                                    background: "var(--rf-bg3)",
+                                  }}
                                 >
                                   {a.label}
                                 </button>
@@ -430,7 +552,11 @@ export default function SubmittalsList() {
                                 onClick={() =>
                                   router.push(`/Submittals/Edit/${sub.id}`)
                                 }
-                                className="text-cyan-400 hover:text-cyan-300 text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
+                                className="hover:opacity-80 text-[11px] px-2 py-0.5 rounded"
+                                style={{
+                                  color: "var(--rf-accent)",
+                                  background: "var(--rf-bg3)",
+                                }}
                               >
                                 Edit
                               </button>
@@ -438,7 +564,11 @@ export default function SubmittalsList() {
                             {canDeletePerm(MODULE.SUBMITTALS) && rowDeletable && (
                               <button
                                 onClick={() => setDeleteConfirm(sub.id)}
-                                className="text-red-400 hover:text-red-300 text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
+                                className="hover:opacity-80 text-[11px] px-2 py-0.5 rounded"
+                                style={{
+                                  color: "var(--rf-red)",
+                                  background: "var(--rf-bg3)",
+                                }}
                               >
                                 Delete
                               </button>
@@ -452,7 +582,8 @@ export default function SubmittalsList() {
                     <tr>
                       <td
                         colSpan={8}
-                        className="text-center text-gray-500 py-12"
+                        className="text-center py-12"
+                        style={{ color: "var(--rf-txt3)" }}
                       >
                         No submittals found
                       </td>
@@ -467,21 +598,38 @@ export default function SubmittalsList() {
         {/* Delete Confirm */}
         {deleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
-              <h3 className="text-white font-bold mb-2">Delete Submittal?</h3>
-              <p className="text-gray-400 text-sm mb-6">
+            <div
+              className="rounded-xl p-6 max-w-sm w-full"
+              style={{
+                background: "var(--rf-bg2)",
+                border: "1px solid var(--rf-border2)",
+              }}
+            >
+              <h3
+                className="font-bold mb-2"
+                style={{ color: "var(--rf-txt)" }}
+              >
+                Delete Submittal?
+              </h3>
+              <p className="text-sm mb-6" style={{ color: "var(--rf-txt2)" }}>
                 Approved submittals cannot be deleted. This is a soft delete.
               </p>
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => setDeleteConfirm(null)}
-                  className="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg text-sm"
+                  className="px-4 py-2 rounded-lg text-sm"
+                  style={{
+                    background: "var(--rf-bg3)",
+                    color: "var(--rf-txt)",
+                    border: "1px solid var(--rf-border2)",
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleDelete(deleteConfirm)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm"
+                  className="px-4 py-2 rounded-lg text-sm"
+                  style={{ background: "var(--rf-red)", color: "#fff" }}
                 >
                   Delete
                 </button>
@@ -493,15 +641,27 @@ export default function SubmittalsList() {
         {/* Workflow Action Modal */}
         {actionModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-white font-bold text-lg mb-1 capitalize">
+            <div
+              className="rounded-xl p-6 max-w-md w-full"
+              style={{
+                background: "var(--rf-bg2)",
+                border: "1px solid var(--rf-border2)",
+              }}
+            >
+              <h3
+                className="font-bold text-lg mb-1 capitalize"
+                style={{ color: "var(--rf-txt)" }}
+              >
                 {actionModal.action === "start-review"
                   ? "Start Review"
                   : actionModal.action}{" "}
                 Submittal
               </h3>
-              <p className="text-gray-400 text-sm mb-4">
-                <span className="text-cyan-400 font-mono">
+              <p className="text-sm mb-4" style={{ color: "var(--rf-txt2)" }}>
+                <span
+                  className="font-mono"
+                  style={{ color: "var(--rf-accent)" }}
+                >
                   {actionModal.submittal?.submittalNumber}
                 </span>
                 {" — "}
@@ -512,7 +672,10 @@ export default function SubmittalsList() {
                 actionModal.action === "resubmit" ||
                 actionModal.action === "approve") && (
                 <div className="mb-6">
-                  <label className="block text-xs font-bold text-gray-400 mb-2 uppercase">
+                  <label
+                    className="block text-xs font-bold mb-2 uppercase"
+                    style={{ color: "var(--rf-txt2)" }}
+                  >
                     {actionModal.action === "reject"
                       ? "Rejection Reason *"
                       : actionModal.action === "revise"
@@ -525,7 +688,12 @@ export default function SubmittalsList() {
                     value={actionNotes}
                     onChange={(e) => setActionNotes(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-500 resize-none"
+                    className="w-full px-4 py-2.5 rounded-lg text-sm focus:outline-none resize-none"
+                    style={{
+                      background: "var(--rf-bg2)",
+                      color: "var(--rf-txt)",
+                      boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+                    }}
                     placeholder={
                       actionModal.action === "reject"
                         ? "Reason for rejection…"
@@ -543,24 +711,32 @@ export default function SubmittalsList() {
                     setActionModal(null);
                     setActionNotes("");
                   }}
-                  className="px-5 py-2.5 border border-gray-600 text-gray-300 rounded-lg text-sm"
+                  className="px-5 py-2.5 rounded-lg text-sm"
+                  style={{
+                    background: "var(--rf-bg3)",
+                    color: "var(--rf-txt)",
+                    border: "1px solid var(--rf-border2)",
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleWorkflowAction}
                   disabled={actionLoading || (needsNote && !actionNotes.trim())}
-                  className={`px-5 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-50 ${
-                    actionModal.action === "reject"
-                      ? "bg-red-600"
-                      : actionModal.action === "approve"
-                        ? "bg-green-600"
-                        : actionModal.action === "revise"
-                          ? "bg-orange-600"
-                          : actionModal.action === "start-review"
-                            ? "bg-yellow-600"
-                            : "bg-blue-600"
-                  }`}
+                  className="px-5 py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                  style={{
+                    color: "#fff",
+                    background:
+                      actionModal.action === "reject"
+                        ? "var(--rf-red)"
+                        : actionModal.action === "approve"
+                          ? "var(--rf-green)"
+                          : actionModal.action === "revise"
+                            ? "var(--rf-yellow)"
+                            : actionModal.action === "start-review"
+                              ? "var(--rf-yellow)"
+                              : "var(--rf-accent)",
+                  }}
                 >
                   {actionLoading ? "Processing…" : "Confirm"}
                 </button>

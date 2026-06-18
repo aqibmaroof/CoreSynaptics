@@ -39,6 +39,7 @@ import { listMilestones, createMilestone } from "../../services/ScheduleMileston
 import { getSubmittals, createSubmittal } from "../../services/Submittals";
 import { getTARFs, createTARF } from "../../services/TARF";
 import { getProcurementItems, createProcurement } from "../../services/Procurement";
+import { getProcurementV2Items } from "../../services/Finance/ProcurementV2";
 import { getProjectFeed } from "../../services/OperationalFeed";
 import {
   getDocuments,
@@ -1055,7 +1056,7 @@ export default function NewProjectDetail() {
       listMilestones({ projectId: pid }),
       getSubmittals({ cxProjectId: pid, limit: 100 }),
       getTARFs({ cxProjectId: pid }),
-      getProcurementItems({ projectId: pid }),
+      getProcurementV2Items({ cxProjectId: pid }),
       getProjectFeed(pid, { limit: 50 }),
       getAllTasks({ projectId: pid }),
       // Punch list + hold points are the same Issues resource, kind-scoped.
@@ -1214,11 +1215,19 @@ export default function NewProjectDetail() {
         orient: t.safetyOrientationComplete ? "Complete" : "Pending",
       })),
       procurement: rows(procR).map((p) => ({
-        item: p.itemName ?? p.name ?? p.title ?? "Item",
-        vendor: p.vendorName ?? "",
-        po: p.poNumber ?? "",
+        item: p.description ?? p.itemName ?? p.name ?? p.title ?? "Item",
+        vendor: p.vendor ?? p.vendorName ?? "",
+        po: p.poSubmittalNo ?? p.poNumber ?? "",
         furnish: p.ownership ?? p.furnish ?? "",
-        status: p.status ?? "",
+        status:
+          {
+            NOT_ORDERED: "Not Ordered",
+            ORDERED: "Ordered",
+            IN_TRANSIT: "In Transit",
+            DELIVERED: "Delivered",
+          }[p.status] ??
+          p.status ??
+          "",
         need: p.expectedDelivery ? String(p.expectedDelivery).slice(0, 10) : "",
       })),
       activity: rows(feedR).map((e) => ({

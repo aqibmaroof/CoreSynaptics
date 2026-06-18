@@ -2133,6 +2133,8 @@ export default function IssuesList() {
               payload.projectAssetId = form.projectAssetId;
             if (form.assignedToCompanyId)
               payload.assignedToCompanyId = form.assignedToCompanyId;
+            if (form.assignedToCompanyId)
+              payload.notifyCompanyId = form.assignedToCompanyId;
             if (form.assignedTo) payload.assignedToUserId = form.assignedTo;
             try {
               await createIssue(payload);
