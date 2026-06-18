@@ -48,20 +48,36 @@ export default function CreateSubmittalContainer() {
 
   return (
     <div className="mx-auto p-6">
-      <h1 className="text-2xl text-gray-100 font-semibold mb-2">
+      <h1
+        className="text-2xl font-semibold mb-2"
+        style={{ color: "var(--rf-txt)" }}
+      >
         Create Submittal
       </h1>
-      <p className="text-gray-300 mb-6">
+      <p className="mb-6" style={{ color: "var(--rf-txt2)" }}>
         Fill all required fields to initiate workflow
       </p>
 
       {message && (
         <div
-          className={`mb-4 p-3 rounded-lg text-sm border ${
+          className="mb-4 p-3 rounded-lg text-sm"
+          style={
             message.type === "success"
-              ? "bg-green-900/20 border-green-500/30 text-green-300"
-              : "bg-red-900/20 border-red-500/30 text-red-300"
-          }`}
+              ? {
+                  background:
+                    "color-mix(in srgb, var(--rf-green) 12%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--rf-green) 30%, transparent)",
+                  color: "var(--rf-green)",
+                }
+              : {
+                  background:
+                    "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+                  color: "var(--rf-red)",
+                }
+          }
         >
           {message.text}
         </div>

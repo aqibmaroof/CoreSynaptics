@@ -14,6 +14,7 @@ import {
   signOutTARF,
   TARF_STAGE_LABELS,
 } from "@/services/TARF";
+import { useRouter } from "next/navigation";
 
 const C = {
   bg: "#f8fafc",
@@ -92,6 +93,7 @@ export default function CxTARF({
   isCustomerReviewer = false,
   isGateStaff = false,
 }) {
+  const router = useRouter()
   const [items, setItems] = useState([]);
   const [tab, setTab] = useState("ALL");
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export default function CxTARF({
     try {
       const params = cxProjectId ? { cxProjectId } : {};
       const list = await getTARFs(params);
-      setItems(Array.isArray(list) ? list : list?.data ?? []);
+      setItems(Array.isArray(list) ? list : (list?.data ?? []));
     } catch (e) {
       setToast({ type: "error", text: e?.message ?? "Failed to load" });
     } finally {
@@ -128,7 +130,9 @@ export default function CxTARF({
   const counts = {
     ALL: items.length,
     PENDING_GC: items.filter((t) => t.approvalStage === "PENDING_GC").length,
-    PENDING_CUSTOMER: items.filter((t) => t.approvalStage === "PENDING_CUSTOMER").length,
+    PENDING_CUSTOMER: items.filter(
+      (t) => t.approvalStage === "PENDING_CUSTOMER",
+    ).length,
     APPROVED: items.filter((t) => t.approvalStage === "APPROVED").length,
     REJECTED: items.filter((t) => t.approvalStage === "REJECTED").length,
   };
@@ -155,18 +159,32 @@ export default function CxTARF({
     >
       <Toast message={toast} onClose={() => setToast(null)} />
 
-      <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}>
-          TARF · Trade Access Requests
-        </h1>
-        <div style={{ fontSize: 13, color: C.textSoft, marginTop: 6 }}>
-          Two-stage funnel: <b>PENDING_GC</b> → GC reviews → <b>PENDING_CUSTOMER</b>{" "}
-          → customer accepts → <b>APPROVED</b>. Site sign-in only on APPROVED +
-          safety oriented.
+      <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
+        <div>
+          <h1
+            style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.01em" }}
+          >
+            TARF · Trade Access Requests
+          </h1>
+          <div style={{ fontSize: 13, color: C.textSoft, marginTop: 6 }}>
+            Two-stage funnel: <b>PENDING_GC</b> → GC reviews →{" "}
+            <b>PENDING_CUSTOMER</b> → customer accepts → <b>APPROVED</b>. Site
+            sign-in only on APPROVED + safety oriented.
+          </div>
         </div>
+
+        <button
+          onClick={() => router.push("/TARF/Add")}
+          // {...permissionProps(canCreate(MODULE.COMMISSIONING_TESTS), "create a TARF")}
+          className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
+        >
+          Add New TARF Request
+        </button>
       </div>
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+      <div
+        style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}
+      >
         {TABS.map((t) => (
           <button
             key={t}
@@ -213,8 +231,7 @@ export default function CxTARF({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "1.4fr 1fr 130px 130px 1fr 110px 200px",
+            gridTemplateColumns: "1.4fr 1fr 130px 130px 1fr 110px 200px",
             gap: 14,
             padding: "12px 16px",
             background: C.bgSoft,
@@ -251,8 +268,7 @@ export default function CxTARF({
               key={t.id}
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                  "1.4fr 1fr 130px 130px 1fr 110px 200px",
+                gridTemplateColumns: "1.4fr 1fr 130px 130px 1fr 110px 200px",
                 gap: 14,
                 padding: "12px 16px",
                 borderTop: `1px solid ${C.border}`,
@@ -280,7 +296,9 @@ export default function CxTARF({
                   </div>
                 )}
               </div>
-              <div style={{ fontSize: 12, color: C.textSoft }}>{t.roleOnSite}</div>
+              <div style={{ fontSize: 12, color: C.textSoft }}>
+                {t.roleOnSite}
+              </div>
               <div
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
@@ -312,16 +330,20 @@ export default function CxTARF({
                     GC Approve
                   </button>
                 )}
-                {t.approvalStage === "PENDING_CUSTOMER" && isCustomerReviewer && (
-                  <button
-                    style={btnPri}
-                    onClick={() =>
-                      act(() => customerApproveTARF(t.id), "Customer accepted")
-                    }
-                  >
-                    Customer Approve
-                  </button>
-                )}
+                {t.approvalStage === "PENDING_CUSTOMER" &&
+                  isCustomerReviewer && (
+                    <button
+                      style={btnPri}
+                      onClick={() =>
+                        act(
+                          () => customerApproveTARF(t.id),
+                          "Customer accepted",
+                        )
+                      }
+                    >
+                      Customer Approve
+                    </button>
+                  )}
                 {(t.approvalStage === "PENDING_GC" ||
                   t.approvalStage === "PENDING_CUSTOMER") && (
                   <button
@@ -468,7 +490,9 @@ function RejectModal({ tarf, onClose, onRejected, onError }) {
             background: C.bgSoft,
           }}
         >
-          <button onClick={onClose} style={btnSoft}>Cancel</button>
+          <button onClick={onClose} style={btnSoft}>
+            Cancel
+          </button>
           <button onClick={submit} disabled={busy} style={btnPri}>
             {busy ? "…" : "Reject"}
           </button>

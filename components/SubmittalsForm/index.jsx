@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getProjects } from "@/services/Projects";
-import { GetSites } from "@/services/Sites";
-import { GetZones } from "@/services/Zones";
-import { GetEquipments } from "@/services/Equipment";
+import { listV2Projects, listV2Assets } from "@/services/CxProjectsV2";
 
 const SUBMITTAL_TYPES = [
   { value: "SHOP_DRAWING", label: "Shop Drawing" },
@@ -44,7 +41,12 @@ function AppSelect({
         onChange={onChange}
         disabled={disabled}
         required={required}
-        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all [&_option]:bg-gray-700 appearance-none disabled:opacity-50"
+        className="w-full px-4 py-3 rounded-lg outline-none appearance-none disabled:opacity-50"
+        style={{
+          background: "var(--rf-bg2)",
+          color: "var(--rf-txt)",
+          boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+        }}
       >
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((o) => (
@@ -54,7 +56,8 @@ function AppSelect({
         ))}
       </select>
       <svg
-        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"
+        style={{ color: "var(--rf-txt3)" }}
         width="12"
         height="12"
         viewBox="0 0 24 24"
@@ -69,18 +72,12 @@ function AppSelect({
 }
 
 export default function SubmittalForm({ onSubmit, loading, companies, users }) {
-  // ── Cascade state ─────────────────────────────────────────────────────────
+  // ── Project + Asset (V2) ───────────────────────────────────────────────────
   const [projects, setProjects] = useState([]);
-  const [sites, setSites] = useState([]);
-  const [subProjects, setSubProjects] = useState([]);
-  const [zones, setZones] = useState([]);
   const [assets, setAssets] = useState([]);
 
   const [form, setForm] = useState({
-    projectId: "",
-    siteId: "",
-    subProjectId: "",
-    zoneId: "",
+    cxProjectId: "",
     assetId: "",
     title: "",
     description: "",
@@ -95,62 +92,20 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
 
   // Load projects on mount
   useEffect(() => {
-    getProjects()
+    listV2Projects({ limit: 100 })
       .then((d) => setProjects(toArray(d)))
       .catch(() => {});
   }, []);
 
-  // Project → Sites
-  useEffect(() => {
-    setSites([]);
-    setSubProjects([]);
-    setZones([]);
-    setAssets([]);
-    setForm((p) => ({
-      ...p,
-      siteId: "",
-      subProjectId: "",
-      zoneId: "",
-      assetId: "",
-    }));
-    if (!form.projectId) return;
-    GetSites(form.projectId)
-      .then((d) => setSites(toArray(d)))
-      .catch(() => {});
-  }, [form.projectId]);
-
-  // Site → SubProjects
-  useEffect(() => {
-    setSubProjects([]);
-    setZones([]);
-    setAssets([]);
-    setForm((p) => ({ ...p, subProjectId: "", zoneId: "", assetId: "" }));
-    if (!form.siteId) return;
-    getProjects(25, 1, form.siteId, form.projectId)
-      .then((d) => setSubProjects(toArray(d)))
-      .catch(() => {});
-  }, [form.siteId]);
-
-  // SubProject → Zones
-  useEffect(() => {
-    setZones([]);
-    setAssets([]);
-    setForm((p) => ({ ...p, zoneId: "", assetId: "" }));
-    if (!form.subProjectId) return;
-    GetZones(form.subProjectId)
-      .then((d) => setZones(toArray(d)))
-      .catch(() => {});
-  }, [form.subProjectId]);
-
-  // Zone → Assets
+  // Project → project-scoped assets (V2)
   useEffect(() => {
     setAssets([]);
     setForm((p) => ({ ...p, assetId: "" }));
-    if (!form.zoneId) return;
-    GetEquipments(form.zoneId)
+    if (!form.cxProjectId) return;
+    listV2Assets(form.cxProjectId, { limit: 100 })
       .then((d) => setAssets(toArray(d)))
       .catch(() => {});
-  }, [form.zoneId]);
+  }, [form.cxProjectId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -170,14 +125,35 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
   };
 
   const inputClass =
-    "w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all";
-  const labelClass = "text-sm text-gray-300 mb-1 block";
+    "w-full px-4 py-3 rounded-lg outline-none placeholder-gray-400";
+  const inputStyle = {
+    background: "var(--rf-bg2)",
+    color: "var(--rf-txt)",
+    boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+  };
+  const labelClass = "text-sm mb-1 block";
+  const labelStyle = { color: "var(--rf-txt2)" };
 
   return (
-    <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{
+        background: "var(--rf-bg2)",
+        border: "1px solid var(--rf-border2)",
+      }}
+    >
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 border-b border-gray-700">
-        <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+      <div
+        className="p-6"
+        style={{
+          background: "var(--rf-accent)",
+          borderBottom: "1px solid var(--rf-border2)",
+        }}
+      >
+        <h2
+          className="text-xl font-semibold flex items-center gap-2"
+          style={{ color: "#fff" }}
+        >
           <svg
             className="w-5 h-5"
             fill="none"
@@ -195,91 +171,44 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-gray-900/50 p-6 space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="p-6 space-y-6"
+        style={{ background: "var(--rf-bg)" }}
+      >
         {/* ── Section 1: Project Hierarchy ── */}
         <div>
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+          <h3
+            className="text-xs font-semibold uppercase tracking-widest mb-4"
+            style={{ color: "var(--rf-txt2)" }}
+          >
             Project Hierarchy
           </h3>
 
           {/* Project */}
           <div className="mb-4">
-            <label className={labelClass}>Project *</label>
+            <label className={labelClass} style={labelStyle}>
+              Project *
+            </label>
             <AppSelect
-              name="projectId"
-              value={form.projectId}
+              name="cxProjectId"
+              value={form.cxProjectId}
               onChange={handleChange}
-              options={projects.map((p) => ({ value: p.id, label: p.name }))}
+              options={projects.map((p) => ({
+                value: p.id,
+                label: p.projectName ?? p.name ?? p.code ?? p.id,
+              }))}
               placeholder="— Select Project —"
               required
             />
           </div>
 
-          {/* Site + Sub-Project */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Asset */}
+          <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className={labelClass}>Site</label>
-              <AppSelect
-                name="siteId"
-                value={form.siteId}
-                onChange={handleChange}
-                options={sites.map((s) => ({ value: s.id, label: s.name }))}
-                placeholder={
-                  form.projectId
-                    ? sites.length
-                      ? "— Select Site —"
-                      : "No sites found"
-                    : "— Select Project First —"
-                }
-                disabled={!form.projectId || sites.length === 0}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Sub-Project</label>
-              <AppSelect
-                name="subProjectId"
-                value={form.subProjectId}
-                onChange={handleChange}
-                options={subProjects.map((s) => ({
-                  value: s.id,
-                  label: s.name,
-                }))}
-                placeholder={
-                  form.siteId
-                    ? subProjects.length
-                      ? "— Select Sub-Project —"
-                      : "No sub-projects found"
-                    : "— Select Site First —"
-                }
-                disabled={!form.siteId || subProjects.length === 0}
-              />
-            </div>
-          </div>
-
-          {/* Zone + Asset */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>
-                Zone <span className="text-gray-500">(optional)</span>
-              </label>
-              <AppSelect
-                name="zoneId"
-                value={form.zoneId}
-                onChange={handleChange}
-                options={zones.map((z) => ({ value: z.id, label: z.name }))}
-                placeholder={
-                  form.subProjectId
-                    ? zones.length
-                      ? "— Select Zone —"
-                      : "No zones found"
-                    : "— Select Sub-Project First —"
-                }
-                disabled={!form.subProjectId || zones.length === 0}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>
-                Asset <span className="text-gray-500">(optional)</span>
+              <label className={labelClass} style={labelStyle}>
+                Asset{" "}
+                <span style={{ color: "var(--rf-txt3)" }}>(optional)</span>
               </label>
               <AppSelect
                 name="assetId"
@@ -287,40 +216,51 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
                 onChange={handleChange}
                 options={assets.map((a) => ({ value: a.id, label: a.name }))}
                 placeholder={
-                  form.zoneId
+                  form.cxProjectId
                     ? assets.length
                       ? "— Select Asset —"
                       : "No assets found"
-                    : "— Select Zone First —"
+                    : "— Select Project First —"
                 }
-                disabled={!form.zoneId || assets.length === 0}
+                disabled={!form.cxProjectId || assets.length === 0}
               />
             </div>
           </div>
         </div>
 
         {/* ── Section 2: Submittal Info ── */}
-        <div className="border-t border-gray-700 pt-6">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+        <div
+          className="border-t pt-6"
+          style={{ borderColor: "var(--rf-border2)" }}
+        >
+          <h3
+            className="text-xs font-semibold uppercase tracking-widest mb-4"
+            style={{ color: "var(--rf-txt2)" }}
+          >
             Submittal Info
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {/* Title */}
             <div className="lg:col-span-2 flex flex-col">
-              <label className={labelClass}>Title *</label>
+              <label className={labelClass} style={labelStyle}>
+                Title *
+              </label>
               <input
                 name="title"
                 value={form.title}
                 onChange={handleChange}
                 placeholder="e.g. UPS-101 Shop Drawing - Primary Feed"
                 className={inputClass}
+                style={inputStyle}
                 required
               />
             </div>
 
             {/* Type */}
             <div className="flex flex-col">
-              <label className={labelClass}>Type *</label>
+              <label className={labelClass} style={labelStyle}>
+                Type *
+              </label>
               <AppSelect
                 name="type"
                 value={form.type}
@@ -332,51 +272,68 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
 
             {/* Spec Section */}
             <div className="flex flex-col">
-              <label className={labelClass}>Spec Section</label>
+              <label className={labelClass} style={labelStyle}>
+                Spec Section
+              </label>
               <input
                 name="specSection"
                 value={form.specSection}
                 onChange={handleChange}
                 placeholder="e.g. 16480"
                 className={inputClass}
+                style={inputStyle}
               />
             </div>
 
             {/* Due Date */}
             <div className="flex flex-col">
-              <label className={labelClass}>Due Date</label>
+              <label className={labelClass} style={labelStyle}>
+                Due Date
+              </label>
               <input
                 type="date"
                 name="dueDate"
                 value={form.dueDate}
                 onChange={handleChange}
                 className={inputClass}
+                style={inputStyle}
               />
             </div>
           </div>
 
           {/* Description */}
           <div className="flex flex-col mt-5">
-            <label className={labelClass}>Description</label>
+            <label className={labelClass} style={labelStyle}>
+              Description
+            </label>
             <textarea
               name="description"
               value={form.description}
               onChange={handleChange}
               className={`${inputClass} h-28 resize-none`}
+              style={inputStyle}
               placeholder="Describe the submittal content, scope, and relevant details..."
             />
           </div>
         </div>
 
         {/* ── Section 3: Review & Assignment ── */}
-        <div className="border-t border-gray-700 pt-6">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+        <div
+          className="border-t pt-6"
+          style={{ borderColor: "var(--rf-border2)" }}
+        >
+          <h3
+            className="text-xs font-semibold uppercase tracking-widest mb-4"
+            style={{ color: "var(--rf-txt2)" }}
+          >
             Review &amp; Assignment
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Trade Company */}
             <div className="flex flex-col">
-              <label className={labelClass}>Trade Company</label>
+              <label className={labelClass} style={labelStyle}>
+                Trade Company
+              </label>
               <AppSelect
                 name="tradeCompanyId"
                 value={form.tradeCompanyId}
@@ -391,7 +348,9 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
 
             {/* Reviewer Company */}
             <div className="flex flex-col">
-              <label className={labelClass}>Reviewer Company</label>
+              <label className={labelClass} style={labelStyle}>
+                Reviewer Company
+              </label>
               <AppSelect
                 name="reviewerCompanyId"
                 value={form.reviewerCompanyId}
@@ -406,7 +365,9 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
 
             {/* Reviewer User */}
             <div className="flex flex-col">
-              <label className={labelClass}>Reviewed By</label>
+              <label className={labelClass} style={labelStyle}>
+                Reviewed By
+              </label>
               <AppSelect
                 name="reviewerUserId"
                 value={form.reviewerUserId}
@@ -428,7 +389,12 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 disabled:from-gray-600 disabled:to-gray-600 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+          className="w-full px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+          style={{
+            background: "var(--rf-accent)",
+            color: "#fff",
+            opacity: loading ? 0.6 : 1,
+          }}
         >
           {loading ? (
             <>

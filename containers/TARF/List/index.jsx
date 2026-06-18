@@ -14,13 +14,34 @@ import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const TABS = ["All", "Pending", "Approved", "On Site", "Expired"];
 
-const STATUS_COLORS = {
-  Pending:  "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  Approved: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-  "On Site": "bg-green-500/20 text-green-300 border-green-500/30",
-  Expired:  "bg-red-500/20 text-red-300 border-red-500/30",
-  Rejected: "bg-gray-500/20 text-gray-400 border-gray-600/30",
-  "Signed Out": "bg-purple-500/20 text-purple-300 border-purple-500/30",
+/* ── Light-theme status palette ─────────────────────────────────────────────
+   Each status maps to an --rf-* token; the badge is a soft tint of that token. */
+const STATUS_TOKEN = {
+  Pending: "var(--rf-yellow)",
+  Approved: "var(--rf-accent)",
+  "On Site": "var(--rf-green)",
+  Expired: "var(--rf-red)",
+  Rejected: "var(--rf-txt3)",
+  "Signed Out": "var(--rf-purple)",
+};
+
+const statusStyle = (status) => {
+  const t = STATUS_TOKEN[status] || STATUS_TOKEN.Rejected;
+  return {
+    background: `color-mix(in srgb, ${t} 14%, transparent)`,
+    border: `1px solid color-mix(in srgb, ${t} 32%, transparent)`,
+    color: t,
+  };
+};
+
+/* Shared surfaces */
+const CARD = {
+  background: "var(--rf-bg2)",
+  border: "1px solid var(--rf-border2)",
+};
+const actionBtn = {
+  background: "var(--rf-bg3)",
+  border: "1px solid var(--rf-border2)",
 };
 
 function getTARFStatus(tarf) {
@@ -54,7 +75,9 @@ export default function TARFList() {
   const [rejectReason, setRejectReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => { fetchTARFs(); }, []);
+  useEffect(() => {
+    fetchTARFs();
+  }, []);
   useEffect(() => {
     if (message) {
       const t = setTimeout(() => setMessage(null), 3500);
@@ -95,7 +118,7 @@ export default function TARFList() {
     if (!rejectModal) return;
     await withAction(
       () => rejectTARF(rejectModal, { reason: rejectReason }),
-      "TARF rejected"
+      "TARF rejected",
     );
     setRejectModal(null);
     setRejectReason("");
@@ -129,31 +152,65 @@ export default function TARFList() {
   });
 
   const stats = {
-    total:    tarfs.length,
-    pending:  tarfs.filter((t) => getTARFStatus(t) === "Pending").length,
-    onSite:   tarfs.filter((t) => getTARFStatus(t) === "On Site").length,
+    total: tarfs.length,
+    pending: tarfs.filter((t) => getTARFStatus(t) === "Pending").length,
+    onSite: tarfs.filter((t) => getTARFStatus(t) === "On Site").length,
     approved: tarfs.filter((t) => getTARFStatus(t) === "Approved").length,
-    expired:  tarfs.filter((t) => getTARFStatus(t) === "Expired").length,
+    expired: tarfs.filter((t) => getTARFStatus(t) === "Expired").length,
   };
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="p-6">
       <div className="mx-auto">
-
         {/* Toast */}
         {message && (
-          <div className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg border shadow-lg text-sm flex items-center gap-2 ${
-            message.type === "success"
-              ? "bg-green-900/80 border-green-500/30 text-green-300"
-              : "bg-red-900/80 border-red-500/30 text-red-300"
-          }`}>
+          <div
+            className="fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2"
+            style={
+              message.type === "success"
+                ? {
+                    background:
+                      "color-mix(in srgb, var(--rf-green) 14%, var(--rf-bg2))",
+                    border:
+                      "1px solid color-mix(in srgb, var(--rf-green) 32%, transparent)",
+                    color: "var(--rf-green)",
+                  }
+                : {
+                    background:
+                      "color-mix(in srgb, var(--rf-red) 14%, var(--rf-bg2))",
+                    border:
+                      "1px solid color-mix(in srgb, var(--rf-red) 32%, transparent)",
+                    color: "var(--rf-red)",
+                  }
+            }
+          >
             {message.type === "success" ? (
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-4 h-4 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             ) : (
-              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-4 h-4 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             )}
             {message.text}
@@ -161,18 +218,42 @@ export default function TARFList() {
         )}
 
         {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
+        <div className="mb-8 flex justify-between items-start flex-wrap gap-3">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Site Access — TARF</h1>
-            <p className="text-gray-400">Trade Access Request Forms · Personnel sign-in/out tracking</p>
+            <h1
+              className="text-2xl font-bold mb-1"
+              style={{ color: "var(--rf-txt)" }}
+            >
+              Site Access — TARF
+            </h1>
+            <p className="text-sm" style={{ color: "var(--rf-txt2)" }}>
+              Trade Access Request Forms · Personnel sign-in/out tracking
+            </p>
           </div>
           <button
             onClick={() => router.push("/TARF/Add")}
-            {...permissionProps(canCreate(MODULE.COMMISSIONING_TESTS), "create a TARF")}
-            className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
+            // {...permissionProps(canCreate(MODULE.COMMISSIONING_TESTS), "create a TARF")}
+            className="px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg"
+            style={{ background: "var(--rf-accent)", color: "var(--rf-bg2)" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "var(--rf-accent2)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "var(--rf-accent)")
+            }
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             New TARF Request
           </button>
@@ -181,48 +262,94 @@ export default function TARFList() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           {[
-            { label: "Total",    value: stats.total,    color: "text-white" },
-            { label: "Pending",  value: stats.pending,  color: "text-yellow-400" },
-            { label: "Approved", value: stats.approved, color: "text-cyan-400" },
-            { label: "On Site",  value: stats.onSite,   color: "text-green-400" },
-            { label: "Expired",  value: stats.expired,  color: "text-red-400" },
+            { label: "Total", value: stats.total, color: "var(--rf-txt)" },
+            {
+              label: "Pending",
+              value: stats.pending,
+              color: "var(--rf-yellow)",
+            },
+            {
+              label: "Approved",
+              value: stats.approved,
+              color: "var(--rf-accent)",
+            },
+            {
+              label: "On Site",
+              value: stats.onSite,
+              color: "var(--rf-green)",
+            },
+            {
+              label: "Expired",
+              value: stats.expired,
+              color: "var(--rf-red)",
+            },
           ].map((s) => (
-            <div key={s.label} className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-4">
-              <p className="text-gray-500 text-xs uppercase tracking-wider">{s.label}</p>
-              <p className={`text-2xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+            <div key={s.label} className="rounded-xl p-4" style={CARD}>
+              <p
+                className="text-xs uppercase tracking-wider"
+                style={{ color: "var(--rf-txt3)" }}
+              >
+                {s.label}
+              </p>
+              <p
+                className="text-2xl font-bold mt-1"
+                style={{ color: s.color }}
+              >
+                {s.value}
+              </p>
             </div>
           ))}
         </div>
 
         {/* Tabs + Search */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
-          <div className="flex bg-gray-900/60 border border-gray-800/60 rounded-lg overflow-hidden">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab
-                    ? "bg-cyan-600 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800/50"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div
+            className="flex rounded-lg overflow-hidden"
+            style={CARD}
+          >
+            {TABS.map((tab) => {
+              const active = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className="px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap"
+                  style={
+                    active
+                      ? { background: "var(--rf-accent)", color: "var(--rf-bg2)" }
+                      : { background: "transparent", color: "var(--rf-txt2)" }
+                  }
+                >
+                  {tab}
+                </button>
+              );
+            })}
           </div>
           <input
             type="text"
             placeholder="Search by name, company, role..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 min-w-[220px] max-w-sm px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-cyan-500"
+            className="flex-1 min-w-[220px] max-w-sm px-4 py-2 rounded-lg text-sm outline-none placeholder-gray-500"
+            style={{
+              background: "var(--rf-bg2)",
+              color: "var(--rf-txt)",
+              boxShadow: "inset 0 0 0 1px var(--rf-border2)",
+            }}
           />
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mb-6 bg-red-900/20 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
+          <div
+            className="mb-6 rounded-lg p-4 text-sm"
+            style={{
+              background: "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+              color: "var(--rf-red)",
+            }}
+          >
             {error}
           </div>
         )}
@@ -230,16 +357,40 @@ export default function TARFList() {
         {/* Table */}
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+            <div
+              className="w-8 h-8 border-2 rounded-full animate-spin"
+              style={{
+                borderColor: "var(--rf-accent)",
+                borderTopColor: "transparent",
+              }}
+            />
           </div>
         ) : (
-          <div className="bg-gray-900/50 rounded-xl border border-gray-800/50 overflow-hidden">
+          <div className="rounded-xl overflow-hidden" style={CARD}>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-800">
-                    {["Person", "Company", "Role on Site", "Access Window", "Safety", "Status", "Signed In", "Actions"].map((h) => (
-                      <th key={h} className="text-left px-5 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                  <tr
+                    style={{
+                      borderBottom: "1px solid var(--rf-border2)",
+                      background: "var(--rf-bg3)",
+                    }}
+                  >
+                    {[
+                      "Person",
+                      "Company",
+                      "Role on Site",
+                      "Access Window",
+                      "Safety",
+                      "Status",
+                      "Signed In",
+                      "Actions",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="text-left px-5 py-4 text-xs font-bold uppercase tracking-wider whitespace-nowrap"
+                        style={{ color: "var(--rf-txt2)" }}
+                      >
                         {h}
                       </th>
                     ))}
@@ -252,31 +403,70 @@ export default function TARFList() {
                     return (
                       <tr
                         key={tarf.id}
-                        className={`border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors ${
-                          expired ? "bg-red-900/5" : ""
-                        }`}
+                        className="transition-colors"
+                        style={{
+                          borderBottom: "1px solid var(--rf-border)",
+                          background: expired
+                            ? "color-mix(in srgb, var(--rf-red) 5%, transparent)"
+                            : "transparent",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = "var(--rf-bg3)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = expired
+                            ? "color-mix(in srgb, var(--rf-red) 5%, transparent)"
+                            : "transparent")
+                        }
                       >
                         {/* Person */}
                         <td className="px-5 py-4">
-                          <p className="text-white text-sm font-medium">{tarf.personName}</p>
+                          <p
+                            className="text-sm font-medium"
+                            style={{ color: "var(--rf-txt)" }}
+                          >
+                            {tarf.personName}
+                          </p>
                           {tarf.approvedAt && (
-                            <p className="text-gray-500 text-xs mt-0.5">Approved {new Date(tarf.approvedAt).toLocaleDateString()}</p>
+                            <p
+                              className="text-xs mt-0.5"
+                              style={{ color: "var(--rf-txt3)" }}
+                            >
+                              Approved{" "}
+                              {new Date(tarf.approvedAt).toLocaleDateString()}
+                            </p>
                           )}
                         </td>
 
                         {/* Company */}
-                        <td className="px-5 py-4 text-gray-400 text-sm whitespace-nowrap">
+                        <td
+                          className="px-5 py-4 text-sm whitespace-nowrap"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
                           {tarf.companyName || "—"}
                         </td>
 
                         {/* Role */}
-                        <td className="px-5 py-4 text-gray-300 text-sm">{tarf.roleOnSite || "—"}</td>
+                        <td
+                          className="px-5 py-4 text-sm"
+                          style={{ color: "var(--rf-txt)" }}
+                        >
+                          {tarf.roleOnSite || "—"}
+                        </td>
 
                         {/* Access Window */}
                         <td className="px-5 py-4 text-sm whitespace-nowrap">
-                          <span className={expired ? "text-red-400" : "text-gray-400"}>
+                          <span
+                            style={{
+                              color: expired
+                                ? "var(--rf-red)"
+                                : "var(--rf-txt2)",
+                            }}
+                          >
                             {tarf.expectedStart
-                              ? new Date(tarf.expectedStart).toLocaleDateString()
+                              ? new Date(
+                                  tarf.expectedStart,
+                                ).toLocaleDateString()
                               : "—"}
                             {" → "}
                             {tarf.expectedEnd
@@ -284,23 +474,54 @@ export default function TARFList() {
                               : "—"}
                           </span>
                           {expired && (
-                            <span className="ml-1.5 text-[10px] text-red-500 uppercase font-bold">expired</span>
+                            <span
+                              className="ml-1.5 text-[10px] uppercase font-bold"
+                              style={{ color: "var(--rf-red)" }}
+                            >
+                              expired
+                            </span>
                           )}
                         </td>
 
                         {/* Safety Orientation */}
                         <td className="px-5 py-4">
                           {tarf.safetyOrientationComplete ? (
-                            <span className="flex items-center gap-1 text-green-400 text-xs font-medium">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            <span
+                              className="flex items-center gap-1 text-xs font-medium"
+                              style={{ color: "var(--rf-green)" }}
+                            >
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2.5}
+                                  d="M5 13l4 4L19 7"
+                                />
                               </svg>
                               Complete
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1 text-red-400 text-xs font-medium">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                            <span
+                              className="flex items-center gap-1 text-xs font-medium"
+                              style={{ color: "var(--rf-red)" }}
+                            >
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2.5}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
                               </svg>
                               Pending
                             </span>
@@ -309,13 +530,19 @@ export default function TARFList() {
 
                         {/* Status Badge */}
                         <td className="px-5 py-4 whitespace-nowrap">
-                          <span className={`text-xs px-2.5 py-1 rounded-full border ${STATUS_COLORS[status] || STATUS_COLORS["Rejected"]}`}>
+                          <span
+                            className="text-xs px-2.5 py-1 rounded-full font-medium"
+                            style={statusStyle(status)}
+                          >
                             {status}
                           </span>
                         </td>
 
                         {/* Sign-in time */}
-                        <td className="px-5 py-4 text-gray-500 text-xs whitespace-nowrap">
+                        <td
+                          className="px-5 py-4 text-xs whitespace-nowrap"
+                          style={{ color: "var(--rf-txt3)" }}
+                        >
                           {tarf.signedInAt
                             ? new Date(tarf.signedInAt).toLocaleString()
                             : "—"}
@@ -329,19 +556,31 @@ export default function TARFList() {
                                 <button
                                   onClick={() => handleApprove(tarf.id)}
                                   disabled={actionLoading}
-                                  className="text-green-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50 disabled:opacity-40"
+                                  className="text-[11px] px-2 py-0.5 rounded disabled:opacity-40"
+                                  style={{
+                                    ...actionBtn,
+                                    color: "var(--rf-green)",
+                                  }}
                                 >
                                   Approve
                                 </button>
                                 <button
                                   onClick={() => setRejectModal(tarf.id)}
-                                  className="text-red-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
+                                  className="text-[11px] px-2 py-0.5 rounded"
+                                  style={{
+                                    ...actionBtn,
+                                    color: "var(--rf-red)",
+                                  }}
                                 >
                                   Reject
                                 </button>
                                 <button
                                   onClick={() => setDeleteConfirm(tarf.id)}
-                                  className="text-gray-500 hover:text-gray-300 text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
+                                  className="text-[11px] px-2 py-0.5 rounded"
+                                  style={{
+                                    ...actionBtn,
+                                    color: "var(--rf-txt3)",
+                                  }}
                                 >
                                   Delete
                                 </button>
@@ -351,9 +590,20 @@ export default function TARFList() {
                             {status === "Approved" && (
                               <button
                                 onClick={() => handleSignIn(tarf.id)}
-                                disabled={!tarf.safetyOrientationComplete || actionLoading}
-                                title={!tarf.safetyOrientationComplete ? "Safety orientation must be complete before sign-in" : ""}
-                                className="text-cyan-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                disabled={
+                                  !tarf.safetyOrientationComplete ||
+                                  actionLoading
+                                }
+                                title={
+                                  !tarf.safetyOrientationComplete
+                                    ? "Safety orientation must be complete before sign-in"
+                                    : ""
+                                }
+                                className="text-[11px] px-2 py-0.5 rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                                style={{
+                                  ...actionBtn,
+                                  color: "var(--rf-accent)",
+                                }}
                               >
                                 Sign In
                               </button>
@@ -363,16 +613,27 @@ export default function TARFList() {
                               <button
                                 onClick={() => handleSignOut(tarf.id)}
                                 disabled={actionLoading}
-                                className="text-purple-400 hover:opacity-80 text-[11px] px-2 py-0.5 rounded bg-gray-800/50 disabled:opacity-40"
+                                className="text-[11px] px-2 py-0.5 rounded disabled:opacity-40"
+                                style={{
+                                  ...actionBtn,
+                                  color: "var(--rf-purple)",
+                                }}
                               >
                                 Sign Out
                               </button>
                             )}
 
-                            {(status === "Approved" || status === "Pending") && (
+                            {(status === "Approved" ||
+                              status === "Pending") && (
                               <button
-                                onClick={() => router.push(`/TARF/Edit/${tarf.id}`)}
-                                className="text-gray-400 hover:text-white text-[11px] px-2 py-0.5 rounded bg-gray-800/50"
+                                onClick={() =>
+                                  router.push(`/TARF/Edit/${tarf.id}`)
+                                }
+                                className="text-[11px] px-2 py-0.5 rounded"
+                                style={{
+                                  ...actionBtn,
+                                  color: "var(--rf-txt2)",
+                                }}
                               >
                                 Edit
                               </button>
@@ -384,7 +645,11 @@ export default function TARFList() {
                   })}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="text-center text-gray-500 py-14">
+                      <td
+                        colSpan={8}
+                        className="text-center py-14"
+                        style={{ color: "var(--rf-txt3)" }}
+                      >
                         No TARF entries found
                       </td>
                     </tr>
@@ -397,23 +662,40 @@ export default function TARFList() {
 
         {/* Delete Confirm Modal */}
         {deleteConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full mx-4">
-              <h3 className="text-white font-bold mb-2">Delete TARF Request?</h3>
-              <p className="text-gray-400 text-sm mb-6">
-                This action cannot be undone. Only pending requests can be deleted.
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div
+              className="rounded-xl p-6 max-w-sm w-full mx-4 shadow-2xl"
+              style={CARD}
+            >
+              <h3
+                className="font-bold mb-2"
+                style={{ color: "var(--rf-txt)" }}
+              >
+                Delete TARF Request?
+              </h3>
+              <p
+                className="text-sm mb-6"
+                style={{ color: "var(--rf-txt2)" }}
+              >
+                This action cannot be undone. Only pending requests can be
+                deleted.
               </p>
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => setDeleteConfirm(null)}
-                  className="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg text-sm"
+                  className="px-4 py-2 rounded-lg text-sm"
+                  style={{
+                    border: "1px solid var(--rf-border2)",
+                    color: "var(--rf-txt2)",
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleDelete(deleteConfirm)}
                   disabled={actionLoading}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
+                  style={{ background: "var(--rf-red)", color: "var(--rf-bg2)" }}
                 >
                   Delete
                 </button>
@@ -424,14 +706,29 @@ export default function TARFList() {
 
         {/* Reject Modal */}
         {rejectModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-white font-bold text-lg mb-1">Reject TARF Request</h3>
-              <p className="text-gray-400 text-sm mb-4">
-                Provide a reason for rejection. This will be recorded for audit purposes.
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div
+              className="rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl"
+              style={CARD}
+            >
+              <h3
+                className="font-bold text-lg mb-1"
+                style={{ color: "var(--rf-txt)" }}
+              >
+                Reject TARF Request
+              </h3>
+              <p
+                className="text-sm mb-4"
+                style={{ color: "var(--rf-txt2)" }}
+              >
+                Provide a reason for rejection. This will be recorded for audit
+                purposes.
               </p>
               <div className="mb-5">
-                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase">
+                <label
+                  className="block text-xs font-bold mb-2 uppercase"
+                  style={{ color: "var(--rf-txt2)" }}
+                >
                   Rejection Reason *
                 </label>
                 <textarea
@@ -439,20 +736,33 @@ export default function TARFList() {
                   onChange={(e) => setRejectReason(e.target.value)}
                   rows={3}
                   placeholder="Reason for rejecting access..."
-                  className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-red-500 resize-none"
+                  className="w-full px-4 py-2.5 rounded-lg text-sm outline-none resize-none placeholder-gray-500"
+                  style={{
+                    background: "var(--rf-bg2)",
+                    color: "var(--rf-txt)",
+                    boxShadow: "inset 0 0 0 1px var(--rf-border2)",
+                  }}
                 />
               </div>
               <div className="flex gap-3 justify-end">
                 <button
-                  onClick={() => { setRejectModal(null); setRejectReason(""); }}
-                  className="px-5 py-2.5 border border-gray-600 text-gray-300 rounded-lg text-sm"
+                  onClick={() => {
+                    setRejectModal(null);
+                    setRejectReason("");
+                  }}
+                  className="px-5 py-2.5 rounded-lg text-sm"
+                  style={{
+                    border: "1px solid var(--rf-border2)",
+                    color: "var(--rf-txt2)",
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleReject}
                   disabled={actionLoading || !rejectReason.trim()}
-                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                  style={{ background: "var(--rf-red)", color: "var(--rf-bg2)" }}
                 >
                   {actionLoading ? "Rejecting..." : "Confirm Reject"}
                 </button>

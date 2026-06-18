@@ -105,7 +105,7 @@ export default function Safety() {
 
   return (
     <div className="p-6">
-      <div className="mx-auto" style={{ maxWidth: 1240 }}>
+      <div className="mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
           <div>

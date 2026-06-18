@@ -491,7 +491,7 @@ function buildSections(projectCode) {
         { title: "QA/QC Command Center", href: "/QAQC", module: MODULE.QA_QC },
         { title: "Safety", 
           href: "/Safety",
-           module: MODULE.SAFETY 
+          //  module: MODULE.SAFETY 
           },
         {
           title: "Phase advancement queue",
