@@ -17,6 +17,8 @@ import {
   RISK_STATUSES,
   RISK_CLOSE_REASONS,
 } from "@/services/RiskRegister";
+import { listV2Projects } from "@/services/CxProjectsV2";
+import { getUsers } from "@/services/Users";
 import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const C = {
@@ -100,9 +102,10 @@ export default function RiskRegisterList({ cxProjectId }) {
   const reload = async () => {
     setLoading(true);
     try {
-      const params = cxProjectId ? { cxProjectId, limit: 200 } : { limit: 200 };
+      // Backend caps risk list limit at 100 (RiskFilterDto @Max(100)).
+      const params = cxProjectId ? { cxProjectId, limit: 100 } : { limit: 100 };
       const page = await listRisks(params);
-      setRisks(page?.data ?? []);
+      setRisks(page?.data ?? page?.items ?? (Array.isArray(page) ? page : []));
     } catch (e) {
       setToast({ type: "error", text: e?.message ?? "Failed to load risks" });
     } finally {
@@ -556,6 +559,8 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
     mitigationPlan: "",
   });
   const [busy, setBusy] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [users, setUsers] = useState([]);
   const set = (k) => (e) => {
     const v = e.target.value;
     setForm({
@@ -563,9 +568,37 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
       [k]: k === "probability" || k === "impact" ? parseInt(v, 10) : v,
     });
   };
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await listV2Projects({ limit: 100 });
+        const arr = Array.isArray(r) ? r : (r?.data ?? r?.projects ?? r?.items ?? []);
+        if (alive) setProjects(arr);
+      } catch {
+        /* non-fatal */
+      }
+      try {
+        const u = await getUsers(100, 1);
+        const arr = Array.isArray(u) ? u : (u?.data ?? u?.users ?? u?.items ?? []);
+        if (alive) setUsers(arr);
+      } catch {
+        /* non-fatal — owner just stays optional */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
   const submit = async () => {
     setBusy(true);
     try {
+      // Only send ownerUserId if it's a real UUID — the backend rejects any
+      // non-UUID value (e.g. a stray typed string) with a 400.
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        form.ownerUserId || "",
+      );
       await createRisk({
         cxProjectId: form.cxProjectId,
         title: form.title,
@@ -573,7 +606,7 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
         category: form.category,
         probability: form.probability,
         impact: form.impact,
-        ownerUserId: form.ownerUserId || undefined,
+        ownerUserId: isUuid ? form.ownerUserId : undefined,
         mitigationPlan: form.mitigationPlan || undefined,
       });
       onCreated();
@@ -584,8 +617,40 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
     }
   };
   return (
-    <Modal title="+ Add risk" onClose={onClose} onSubmit={submit} busy={busy} disabled={!form.title}>
-      <Field label="CxProject ID" v={form.cxProjectId} on={set("cxProjectId")} />
+    <Modal title="+ Add risk" onClose={onClose} onSubmit={submit} busy={busy} disabled={!form.title || !form.cxProjectId}>
+      <div>
+        <div
+          style={{
+            fontSize: 11,
+            color: C.textSoft,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            fontWeight: 600,
+          }}
+        >
+          Project
+        </div>
+        <select
+          value={form.cxProjectId}
+          onChange={set("cxProjectId")}
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            border: `1px solid ${C.border}`,
+            borderRadius: 8,
+            fontSize: 13,
+            marginTop: 4,
+            background: C.surface,
+          }}
+        >
+          <option value="">— Select project —</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.projectName ?? p.name ?? p.id}
+            </option>
+          ))}
+        </select>
+      </div>
       <Field label="Title" v={form.title} on={set("title")} />
       <Field label="Description" v={form.description} on={set("description")} multiline />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 90px", gap: 10 }}>
@@ -603,7 +668,41 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
           options={["1", "2", "3", "4", "5"]}
         />
       </div>
-      <Field label="Owner user ID" v={form.ownerUserId} on={set("ownerUserId")} />
+      <div>
+        <div
+          style={{
+            fontSize: 11,
+            color: C.textSoft,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            fontWeight: 600,
+          }}
+        >
+          Owner (optional)
+        </div>
+        <select
+          value={form.ownerUserId}
+          onChange={set("ownerUserId")}
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            border: `1px solid ${C.border}`,
+            borderRadius: 8,
+            fontSize: 13,
+            marginTop: 4,
+            background: C.surface,
+          }}
+        >
+          <option value="">— Unassigned —</option>
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {[u.firstName, u.lastName].filter(Boolean).join(" ") ||
+                u.email ||
+                u.id}
+            </option>
+          ))}
+        </select>
+      </div>
       <Field label="Mitigation plan" v={form.mitigationPlan} on={set("mitigationPlan")} multiline />
       <div
         style={{

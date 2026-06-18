@@ -195,9 +195,9 @@ export default function RFIAdd() {
         subject: formData.subject.trim(),
         question: formData.question.trim(),
         priority: formData.priority,
-        projectId: formData.projectId,
-        siteId: formData.siteId || undefined,
-        subProjectId: formData.subProjectId || undefined,
+        // Backend whitelist: cxProjectId (NOT projectId). siteId/subProjectId
+        // are not accepted by CreateRfiDto, so they're intentionally omitted.
+        cxProjectId: formData.projectId || undefined,
         zoneId: formData.zoneId || undefined,
         assetId: formData.assetId || undefined,
         assignedToCompanyId: formData.assignedToCompanyId || undefined,

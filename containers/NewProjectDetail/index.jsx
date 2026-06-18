@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   listV2Projects,
   getPlaybookSummary,
@@ -15,10 +15,13 @@ import {
   listTeamCompanies,
   revokeTeamCompany,
   listV2Stakeholders,
+  addV2Stakeholder,
+  addV2Asset,
 } from "../../services/CxProjectsV2";
 import {
   getIssues,
   getIssueById,
+  createIssue,
   changeIssueStatus,
   verifyAndCloseIssue,
 } from "../../services/Issues";
@@ -32,12 +35,19 @@ import {
   listCommissioningTests,
   recordTestResult,
 } from "../../services/CommissioningTests";
-import { listMilestones } from "../../services/ScheduleMilestones";
-import { getSubmittals } from "../../services/Submittals";
-import { getTARFs } from "../../services/TARF";
-import { getProcurementItems } from "../../services/Procurement";
+import { listMilestones, createMilestone } from "../../services/ScheduleMilestones";
+import { getSubmittals, createSubmittal } from "../../services/Submittals";
+import { getTARFs, createTARF } from "../../services/TARF";
+import { getProcurementItems, createProcurement } from "../../services/Procurement";
 import { getProjectFeed } from "../../services/OperationalFeed";
-import { getDocuments } from "../../services/Documents";
+import {
+  getDocuments,
+  requestUploadUrl,
+  uploadFileToS3,
+  confirmUpload,
+} from "../../services/Documents";
+import { generateTurnoverPackage } from "../../services/TurnoverPackages";
+import { getCompanies } from "../../services/Companies";
 import { getAllTasks, updateTask } from "../../services/Tasks";
 import {
   listSafetyItems,
@@ -1749,6 +1759,389 @@ export default function NewProjectDetail() {
       removeSafetyItem(projectId, id).catch((err) =>
         apiErr(err, "Could not remove safety item"),
       );
+    }
+  };
+
+  /* ---------- Generic create system (every Playbook module) ----------
+   * One modal + one state + per-module specs. Each spec declares its form
+   * fields and a `submit(pid, form)` that calls the right service. Every
+   * create re-pulls the operational feed so the action shows in Activity.
+   */
+  const [createOpen, setCreateOpen] = useState(null); // spec key or null
+  const [createForm, setCreateForm] = useState({});
+  const [creating, setCreating] = useState(false);
+  const [companies, setCompanies] = useState([]); // org companies (hold-point target)
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await getCompanies();
+        const arr = Array.isArray(r) ? r : (r?.data ?? r?.items ?? []);
+        if (alive) setCompanies(arr);
+      } catch {
+        /* non-fatal — hold-point company select just stays empty */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Re-pull the feed shortly after a create so Activity reflects it (the
+  // outbox dispatcher fans events out within ~5s).
+  const pullFeedSoon = () => {
+    if (!projectId) return;
+    const grab = async () => {
+      try {
+        const feed = norm(await getProjectFeed(projectId, { limit: 50 }));
+        const entries = Array.isArray(feed)
+          ? feed
+          : (feed?.entries ?? feed?.data ?? feed?.items ?? []);
+        mutate((d) => {
+          d.activity = entries.map((e) => ({
+            when: ago(e.createdAt ?? Date.now()),
+            who: e.actor?.displayName ?? e.actorDisplayName ?? "system",
+            ct: (e.actor?.companyCode ?? e.actorCompanyCode ?? "gc").toLowerCase(),
+            text: [e.action, e.target].filter(Boolean).join(" — "),
+          }));
+        });
+      } catch {
+        /* keep prior activity */
+      }
+    };
+    void grab();
+    window.setTimeout(grab, 6000);
+  };
+
+  const PROC_OWNER = ["OFCI", "CFCI"];
+  const PROC_STATUS = ["NOT_ORDERED", "ORDERED", "IN_TRANSIT", "DELIVERED"];
+  const ISSUE_SEVERITY = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+  const MILESTONE_TYPES = ["CONTRACT", "OPS", "INTERNAL"];
+  const SUBMITTAL_TYPES = ["SHOP_DRAWING", "PRODUCT_DATA", "SAMPLE", "OM_MANUAL", "OTHER"];
+  const STAKE_TIERS = ["MANAGE_CLOSELY", "KEEP_SATISFIED", "KEEP_INFORMED", "MONITOR"];
+
+  // field types: text | textarea | date | select(options) | number
+  const CREATE_SPECS = {
+    issue: {
+      title: "Raise an issue / NCR",
+      fields: [
+        { k: "title", label: "Title", type: "text", required: true },
+        { k: "description", label: "Description", type: "textarea" },
+        { k: "severity", label: "Severity", type: "select", options: ISSUE_SEVERITY, default: "MEDIUM" },
+        { k: "kind", label: "Kind", type: "select", options: ["GENERAL", "NCR", "PUNCH_LIST", "SNAG"], default: "GENERAL" },
+        { k: "dueDate", label: "Due date", type: "date" },
+      ],
+      submit: async (pid, f) =>
+        createIssue({
+          cxProjectId: pid,
+          title: f.title,
+          description: f.description || undefined,
+          severity: f.severity || "MEDIUM",
+          kind: f.kind || "GENERAL",
+          dueDate: f.dueDate || undefined,
+        }),
+      flash: "Issue raised",
+    },
+    holdpoint: {
+      title: "Add a hold point",
+      fields: [
+        { k: "title", label: "Title", type: "text", required: true },
+        { k: "description", label: "Description", type: "textarea" },
+        { k: "severity", label: "Severity", type: "select", options: ISSUE_SEVERITY, default: "HIGH" },
+        {
+          k: "assignedToCompanyId",
+          label: "Inspecting company",
+          type: "select",
+          optionsFrom: "companies",
+          required: true,
+        },
+        { k: "dueDate", label: "Due date", type: "date" },
+      ],
+      submit: async (pid, f) =>
+        createIssue({
+          cxProjectId: pid,
+          title: f.title,
+          description: f.description || undefined,
+          severity: f.severity || "HIGH",
+          kind: "HOLD_POINT",
+          assignedToCompanyId: f.assignedToCompanyId,
+          notifyCompanyId: f.assignedToCompanyId,
+          dueDate: f.dueDate || undefined,
+        }),
+      flash: "Hold point added",
+    },
+    milestone: {
+      title: "Add a schedule milestone",
+      fields: [
+        { k: "name", label: "Name", type: "text", required: true },
+        { k: "date", label: "Date", type: "date", required: true },
+        { k: "type", label: "Type", type: "select", options: MILESTONE_TYPES, default: "CONTRACT" },
+        { k: "isCritical", label: "Critical path", type: "select", options: ["No", "Yes"], default: "No" },
+      ],
+      submit: async (pid, f) =>
+        createMilestone({
+          projectId: pid,
+          name: f.name,
+          date: f.date,
+          type: f.type || "CONTRACT",
+          isCritical: f.isCritical === "Yes",
+        }),
+      flash: "Milestone added",
+    },
+    asset: {
+      title: "Add equipment",
+      fields: [
+        { k: "abbr", label: "Tag / abbr", type: "text", required: true },
+        { k: "name", label: "Name", type: "text", required: true },
+        { k: "assetType", label: "Discipline / type", type: "text", required: true, default: "Electrical" },
+        { k: "quantity", label: "Quantity", type: "number", default: "1" },
+        { k: "procurementOwner", label: "Furnish", type: "select", options: PROC_OWNER, default: "CFCI" },
+        { k: "manufacturer", label: "Manufacturer", type: "text" },
+        { k: "model", label: "Model", type: "text" },
+        { k: "location", label: "Location / lineup", type: "text" },
+      ],
+      submit: async (pid, f) =>
+        addV2Asset(pid, {
+          abbr: f.abbr,
+          name: f.name,
+          assetType: f.assetType || "Electrical",
+          quantity: Number(f.quantity) || 1,
+          procurementOwner: f.procurementOwner || "CFCI",
+          manufacturer: f.manufacturer || undefined,
+          model: f.model || undefined,
+          location: f.location || undefined,
+        }),
+      flash: "Equipment added",
+    },
+    submittal: {
+      title: "Create a submittal",
+      fields: [
+        { k: "title", label: "Title", type: "text", required: true },
+        { k: "description", label: "Description", type: "textarea" },
+        { k: "type", label: "Type", type: "select", options: SUBMITTAL_TYPES, default: "SHOP_DRAWING" },
+        { k: "specSection", label: "Spec section", type: "text" },
+        { k: "dueDate", label: "Due date", type: "date" },
+      ],
+      submit: async (pid, f) =>
+        createSubmittal({
+          cxProjectId: pid,
+          title: f.title,
+          description: f.description || undefined,
+          type: f.type || "SHOP_DRAWING",
+          specSection: f.specSection || undefined,
+          dueDate: f.dueDate || undefined,
+        }),
+      flash: "Submittal created",
+    },
+    procurement: {
+      title: "Add a procurement / long-lead item",
+      fields: [
+        { k: "description", label: "Item description", type: "text", required: true },
+        { k: "ownership", label: "Furnish", type: "select", options: PROC_OWNER, default: "OFCI" },
+        { k: "manufacturer", label: "Manufacturer", type: "text" },
+        { k: "model", label: "Model", type: "text" },
+        { k: "vendor", label: "Vendor", type: "text" },
+        { k: "status", label: "Status", type: "select", options: PROC_STATUS, default: "NOT_ORDERED" },
+        { k: "poSubmittalNo", label: "PO / Submittal #", type: "text" },
+      ],
+      submit: async (pid, f) =>
+        createProcurement({
+          cxProjectId: pid,
+          description: f.description,
+          ownership: f.ownership || "OFCI",
+          manufacturer: f.manufacturer || undefined,
+          model: f.model || undefined,
+          vendor: f.vendor || undefined,
+          status: f.status || "NOT_ORDERED",
+          poSubmittalNo: f.poSubmittalNo || undefined,
+        }),
+      flash: "Procurement item added",
+    },
+    tarf: {
+      title: "Log a site arrival (TARF)",
+      fields: [
+        { k: "personName", label: "Person", type: "text", required: true },
+        { k: "companyName", label: "Company", type: "text", required: true },
+        { k: "roleOnSite", label: "Role on site", type: "text", required: true },
+        { k: "expectedStart", label: "Expected start", type: "date", required: true },
+        { k: "expectedEnd", label: "Expected end", type: "date", required: true },
+      ],
+      submit: async (pid, f) =>
+        createTARF({
+          cxProjectId: pid,
+          personName: f.personName,
+          companyName: f.companyName,
+          roleOnSite: f.roleOnSite,
+          // Backend wants full ISO datetimes for the arrival window.
+          expectedStart: new Date(f.expectedStart).toISOString(),
+          expectedEnd: new Date(f.expectedEnd).toISOString(),
+        }),
+      flash: "Arrival logged",
+    },
+    stakeholder: {
+      title: "Add a key stakeholder",
+      fields: [
+        { k: "name", label: "Name", type: "text", required: true },
+        { k: "role", label: "Role", type: "text" },
+        { k: "company", label: "Company", type: "text" },
+        { k: "tier", label: "Engagement", type: "select", options: STAKE_TIERS, default: "KEEP_INFORMED" },
+        { k: "email", label: "Email", type: "text" },
+        { k: "phone", label: "Phone", type: "text" },
+      ],
+      submit: async (pid, f) =>
+        addV2Stakeholder(pid, {
+          name: f.name,
+          role: f.role || undefined,
+          company: f.company || undefined,
+          tier: f.tier || "KEEP_INFORMED",
+          email: f.email || undefined,
+          phone: f.phone || undefined,
+        }),
+      flash: "Stakeholder added",
+    },
+  };
+
+  const createInputStyle = {
+    width: "100%",
+    minHeight: 38,
+    border: `1px solid ${P.line}`,
+    borderRadius: 9,
+    background: P.card,
+    padding: "8px 11px",
+    fontSize: 14,
+    color: P.ink,
+  };
+
+  const openCreate = (key) => {
+    const spec = CREATE_SPECS[key];
+    const init = {};
+    (spec?.fields || []).forEach((f) => {
+      if (f.default !== undefined) init[f.k] = f.default;
+    });
+    setCreateForm(init);
+    setCreateOpen(key);
+  };
+
+  // Map the active module → which create action(s) its toolbar shows.
+  const MOD_CREATE = {
+    issues: { key: "issue", label: "+ Raise issue" },
+    holds: { key: "holdpoint", label: "+ Add hold point" },
+    schedule: { key: "milestone", label: "+ Add milestone" },
+    readiness: { key: "asset", label: "+ Add equipment" },
+    submittals: { key: "submittal", label: "+ Create submittal" },
+    procurement: { key: "procurement", label: "+ Add item" },
+    tarf: { key: "tarf", label: "+ Log arrival" },
+    stakeholders: { key: "stakeholder", label: "+ Add stakeholder" },
+  };
+
+  const turnoverGenerate = async () => {
+    if (!projectId) return;
+    try {
+      await generateTurnoverPackage(projectId);
+      flash("Turnover package generated");
+      await refresh(projectId);
+      pullFeedSoon();
+    } catch (err) {
+      apiErr(err, "Could not generate turnover package");
+    }
+  };
+
+  // Drawings/documents need a REAL file in S3 before confirm-upload succeeds
+  // (and before document.uploaded fires). So Register-drawing is a real
+  // 3-step upload: request URL → PUT file to S3 → confirm.
+  const drawingFileRef = useRef(null);
+  const onDrawingFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file || !projectId) return;
+    flash("Uploading drawing…");
+    try {
+      const res = norm(
+        await requestUploadUrl({
+          title: file.name.replace(/\.[^.]+$/, ""),
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type || "application/octet-stream",
+          category: "FIELD_EXECUTION",
+          cxProjectId: projectId,
+        }),
+      );
+      const docId = res?.documentId ?? res?.id;
+      const url = res?.uploadUrl ?? res?.url;
+      if (url) await uploadFileToS3(url, file);
+      if (docId) await confirmUpload(docId);
+      flash("Drawing uploaded");
+      await refresh(projectId);
+      pullFeedSoon();
+    } catch (err) {
+      apiErr(err, "Could not upload drawing");
+    }
+  };
+
+  function createBarFor(modId) {
+    const spec = MOD_CREATE[modId];
+    const btn = (label, onClick) => (
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          height: 34,
+          padding: "0 14px",
+          borderRadius: 8,
+          border: "none",
+          background: P.navy,
+          color: "#fff",
+          fontWeight: 700,
+          fontSize: 13,
+          cursor: "pointer",
+        }}
+      >
+        {label}
+      </button>
+    );
+    let control = null;
+    if (spec) control = btn(spec.label, () => openCreate(spec.key));
+    else if (modId === "turnover")
+      control = btn("+ Generate turnover package", turnoverGenerate);
+    else if (modId === "drawings")
+      control = btn("+ Upload drawing", () => drawingFileRef.current?.click());
+    if (!control) return null;
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: 12,
+        }}
+      >
+        {control}
+      </div>
+    );
+  }
+
+  const submitCreate = async () => {
+    const spec = CREATE_SPECS[createOpen];
+    if (!spec || !projectId) return;
+    const missing = (spec.fields || []).find(
+      (f) => f.required && !String(createForm[f.k] ?? "").trim(),
+    );
+    if (missing) {
+      flash(`${missing.label} is required`);
+      return;
+    }
+    setCreating(true);
+    try {
+      await spec.submit(projectId, createForm);
+      flash(spec.flash || "Added");
+      setCreateOpen(null);
+      setCreateForm({});
+      await refresh(projectId); // re-pull all module lists
+      pullFeedSoon(); // and the activity feed (async outbox)
+    } catch (err) {
+      apiErr(err, "Could not create");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -3699,8 +4092,117 @@ export default function NewProjectDetail() {
             );
           })}
         </div>
-        <div className="min-w-0">{body}</div>
+        <div className="min-w-0">
+          {can("create") && createBarFor(mod)}
+          {body}
+        </div>
       </div>
+
+      {/* Hidden file input for the Drawings upload flow */}
+      <input
+        ref={drawingFileRef}
+        type="file"
+        style={{ display: "none" }}
+        onChange={onDrawingFile}
+      />
+
+      {/* Generic create modal (issues, milestones, assets, submittals, …) */}
+      {createOpen && CREATE_SPECS[createOpen] && (
+        <Modal
+          title={CREATE_SPECS[createOpen].title}
+          onClose={() => setCreateOpen(null)}
+        >
+          <div className="grid gap-3" style={{ marginBottom: 10 }}>
+            {CREATE_SPECS[createOpen].fields.map((f) => (
+              <div key={f.k}>
+                <label
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    color: P.smoke,
+                    textTransform: "uppercase",
+                    display: "block",
+                    marginBottom: 4,
+                  }}
+                >
+                  {f.label}
+                  {f.required && <span style={{ color: P.rust }}> *</span>}
+                </label>
+                {f.type === "textarea" ? (
+                  <textarea
+                    rows={2}
+                    style={createInputStyle}
+                    value={createForm[f.k] ?? ""}
+                    onChange={(e) =>
+                      setCreateForm((p) => ({ ...p, [f.k]: e.target.value }))
+                    }
+                  />
+                ) : f.type === "select" ? (
+                  <select
+                    style={createInputStyle}
+                    value={createForm[f.k] ?? ""}
+                    onChange={(e) =>
+                      setCreateForm((p) => ({ ...p, [f.k]: e.target.value }))
+                    }
+                  >
+                    {f.optionsFrom === "companies" ? (
+                      <>
+                        <option value="">— Select company —</option>
+                        {companies.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name ?? c.companyName ?? c.id}
+                          </option>
+                        ))}
+                      </>
+                    ) : (
+                      f.options.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                ) : (
+                  <input
+                    type={
+                      f.type === "date"
+                        ? "date"
+                        : f.type === "number"
+                          ? "number"
+                          : "text"
+                    }
+                    style={createInputStyle}
+                    value={createForm[f.k] ?? ""}
+                    onChange={(e) =>
+                      setCreateForm((p) => ({ ...p, [f.k]: e.target.value }))
+                    }
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            disabled={creating}
+            onClick={submitCreate}
+            style={{
+              width: "100%",
+              height: 40,
+              borderRadius: 9,
+              border: "none",
+              background: P.navy,
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: creating ? "default" : "pointer",
+              opacity: creating ? 0.6 : 1,
+            }}
+          >
+            {creating ? "Saving…" : "Add to project"}
+          </button>
+        </Modal>
+      )}
 
       {/* Invite modal */}
       {inviteOpen && (

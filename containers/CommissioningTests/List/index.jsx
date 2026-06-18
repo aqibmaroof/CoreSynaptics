@@ -121,9 +121,10 @@ export default function CommissioningTestsList({ cxProjectId }) {
   const reload = async () => {
     setLoading(true);
     try {
-      const params = cxProjectId ? { cxProjectId, limit: 200 } : { limit: 200 };
+      // Backend caps the list limit at 100 (>100 → 400).
+      const params = cxProjectId ? { cxProjectId, limit: 100 } : { limit: 100 };
       const page = await listCommissioningTests(params);
-      setTests(page?.data ?? []);
+      setTests(page?.data ?? page?.items ?? (Array.isArray(page) ? page : []));
     } catch (e) {
       setToast({ type: "error", text: e?.message ?? "Failed to load tests" });
     } finally {

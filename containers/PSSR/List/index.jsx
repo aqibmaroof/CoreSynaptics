@@ -16,6 +16,7 @@ import {
   PSSR_CATEGORIES,
   PSSR_CATEGORY_LABELS,
 } from "@/services/PSSR";
+import { listV2Projects } from "@/services/CxProjectsV2";
 import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const C = {
@@ -392,7 +393,24 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
     description: "",
   });
   const [busy, setBusy] = useState(false);
+  const [projects, setProjects] = useState([]);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await listV2Projects({ limit: 100 });
+        const arr = Array.isArray(r) ? r : (r?.data ?? r?.projects ?? r?.items ?? []);
+        if (alive) setProjects(arr);
+      } catch {
+        /* non-fatal */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const submit = async () => {
     setBusy(true);
@@ -448,7 +466,39 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
           + Initiate PSSR inspection
         </div>
         <div style={{ padding: 20, display: "grid", gap: 12 }}>
-          <Field label="CxProject ID" v={form.cxProjectId} on={set("cxProjectId")} />
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                color: C.textSoft,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                fontWeight: 600,
+              }}
+            >
+              Project
+            </div>
+            <select
+              value={form.cxProjectId}
+              onChange={set("cxProjectId")}
+              style={{
+                width: "100%",
+                padding: "8px 10px",
+                border: `1px solid ${C.border}`,
+                borderRadius: 8,
+                fontSize: 13,
+                background: C.surface,
+                marginTop: 4,
+              }}
+            >
+              <option value="">— Select project —</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.projectName ?? p.name ?? p.id}
+                </option>
+              ))}
+            </select>
+          </div>
           <Field label="Asset ID (optional)" v={form.assetId} on={set("assetId")} />
           <Field label="Title" v={form.title} on={set("title")} />
           <Field label="Description" v={form.description} on={set("description")} multiline />

@@ -101,7 +101,7 @@ export default function CxIssues({ cxProjectId }) {
   const reload = async () => {
     setLoading(true);
     try {
-      const params = { limit: 200 };
+      const params = { limit: 100 }; // backend caps list limit at 100 (>100 → 400)
       if (cxProjectId) params.projectId = cxProjectId; // service maps to cxProjectId
       const page = await getIssues(params);
       let list = page?.data ?? [];

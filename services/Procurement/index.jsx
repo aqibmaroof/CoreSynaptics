@@ -10,3 +10,10 @@ export const getProcurementItems = async (params = {}) => {
     method: "GET",
   });
 };
+
+/** Create a procurement / long-lead item (V2 — emits procurement.created → feed).
+ *  payload: { cxProjectId, description (req), ownership (OFCI|CFCI, req),
+ *             manufacturer?, model?, status?, vendor?, poc?, poSubmittalNo? }
+ */
+export const createProcurement = async (payload) =>
+  sendRequest({ url: `/v2/procurement`, method: "POST", data: payload });
