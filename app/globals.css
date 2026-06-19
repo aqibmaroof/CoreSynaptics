@@ -2603,6 +2603,25 @@ body {
 .cx-you .role { font-size: 11px; color: var(--cx-text-soft); margin-top: 2px; }
 
 /* ── Sidebar module search ──────────────────────────────────────────────── */
+/* Sticky bar so the search always stays pinned at the top while the nav scrolls.
+   Full-bleed background (+ ::before) hides nav items scrolling behind it. */
+.cx-side-searchbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 -12px;
+  padding: 0 12px;
+  background: var(--cx-bg);
+}
+.cx-side-searchbar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 16px;
+  background: var(--cx-bg);
+}
 .cx-side-search {
   display: flex;
   align-items: center;
@@ -2614,9 +2633,6 @@ body {
   border-radius: 8px;
   color: var(--cx-text-muted);
 }
-.cx-side-search:focus-within {
-  border-color: var(--cx-brand);
-}
 .cx-side-search svg { flex-shrink: 0; }
 .cx-side-search input {
   flex: 1;
@@ -2627,6 +2643,18 @@ body {
   font-size: 13px;
   font-family: inherit;
   color: var(--cx-text);
+}
+/* Kill the blue focus ring/outline that browsers (and the shared input styles)
+   add when the search box is clicked — keep the box visually unchanged. */
+.cx-side-search:focus-within {
+  border-color: var(--cx-border);
+  box-shadow: none;
+  outline: none;
+}
+.cx-side-search input:focus,
+.cx-side-search input:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 .cx-side-search input::placeholder { color: var(--cx-text-muted); }
 .cx-side-search button {

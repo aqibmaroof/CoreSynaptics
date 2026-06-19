@@ -57,7 +57,8 @@ const fieldCls = "w-full px-3 py-2.5 rounded-lg text-sm outline-none";
 
 const itemName = (i) => i.description ?? i.name ?? i.itemName ?? "—";
 const itemPo = (i) => i.poSubmittalNo ?? i.poNumber ?? i.po ?? "";
-const itemFurnish = (i) => i.ownership ?? i.furnish ?? i.procurementOwner ?? "OFCI";
+const itemFurnish = (i) =>
+  i.ownership ?? i.furnish ?? i.procurementOwner ?? "OFCI";
 const itemVendor = (i) => i.vendor ?? i.vendorName ?? "";
 const itemSource = (i) =>
   i.projectAssetId || i.source === "ASSET_REGISTER" || i.fromAssetRegister
@@ -73,8 +74,7 @@ export default function Procurement() {
   const [items, setItems] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [furnishTab, setFurnishTab] = useState("OFCI");
-
+  const [furnishTab, setFurnishTab] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -191,7 +191,7 @@ export default function Procurement() {
 
   return (
     <div className="p-6">
-      <div className="mx-auto" >
+      <div className="mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-3 mb-5">
           <div>
@@ -205,7 +205,10 @@ export default function Procurement() {
             >
               Procurement Register
             </p>
-            <h1 className="text-2xl font-bold" style={{ color: "var(--rf-txt)" }}>
+            <h1
+              className="text-2xl font-bold"
+              style={{ color: "var(--rf-txt)" }}
+            >
               Procurement
             </h1>
             <p className="text-sm mt-1" style={{ color: "var(--rf-txt2)" }}>
@@ -225,7 +228,6 @@ export default function Procurement() {
             >
               + Add item
             </button>
-          
           </div>
         </div>
 
@@ -341,7 +343,7 @@ export default function Procurement() {
 
         {/* Furnish tabs */}
         <div className="flex items-center gap-2 mb-3">
-          {["OFCI", "CFCI", "All"].map((t) => {
+          {["All", "OFCI", "CFCI"].map((t) => {
             const active = furnishTab === t;
             return (
               <button
@@ -379,11 +381,17 @@ export default function Procurement() {
         {/* Table */}
         <div className="rounded-2xl overflow-hidden" style={CARD}>
           {loading ? (
-            <div className="p-10 text-center text-sm" style={{ color: "var(--rf-txt2)" }}>
+            <div
+              className="p-10 text-center text-sm"
+              style={{ color: "var(--rf-txt2)" }}
+            >
               Loading procurement items…
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-10 text-center text-sm" style={{ color: "var(--rf-txt3)" }}>
+            <div
+              className="p-10 text-center text-sm"
+              style={{ color: "var(--rf-txt3)" }}
+            >
               No procurement items found.
             </div>
           ) : (
@@ -419,21 +427,35 @@ export default function Procurement() {
                         key={item.id}
                         style={{ borderTop: "1px solid var(--rf-border)" }}
                       >
-                        <td className="px-4 py-3 text-sm font-semibold" style={{ color: "var(--rf-txt)" }}>
+                        <td
+                          className="px-4 py-3 text-sm font-semibold"
+                          style={{ color: "var(--rf-txt)" }}
+                        >
                           {itemName(item)}
                         </td>
-                        <td className="px-4 py-3 text-sm" style={{ color: "var(--rf-txt2)" }}>
-                          {[item.manufacturer, item.model].filter(Boolean).join(" · ") || "—"}
+                        <td
+                          className="px-4 py-3 text-sm"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
+                          {[item.manufacturer, item.model]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
                         </td>
                         <td className="px-4 py-3">
                           <span
                             className="px-2 py-0.5 rounded text-[11px] font-bold font-mono"
-                            style={{ background: "var(--rf-bg3)", color: "var(--rf-txt2)" }}
+                            style={{
+                              background: "var(--rf-bg3)",
+                              color: "var(--rf-txt2)",
+                            }}
                           >
                             {itemFurnish(item)}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm" style={{ color: "var(--rf-txt2)" }}>
+                        <td
+                          className="px-4 py-3 text-sm"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
                           {itemPo(item) || "—"}
                         </td>
                         <td className="px-4 py-3">
@@ -455,16 +477,25 @@ export default function Procurement() {
                             ))}
                           </select>
                         </td>
-                        <td className="px-4 py-3 text-sm" style={{ color: "var(--rf-txt2)" }}>
+                        <td
+                          className="px-4 py-3 text-sm"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
                           {item.location || "—"}
                         </td>
-                        <td className="px-4 py-3 text-sm" style={{ color: "var(--rf-txt2)" }}>
+                        <td
+                          className="px-4 py-3 text-sm"
+                          style={{ color: "var(--rf-txt2)" }}
+                        >
                           {itemVendor(item) || "—"}
                         </td>
                         <td className="px-4 py-3">
                           <span
                             className="px-2 py-0.5 rounded text-[11px] font-semibold"
-                            style={{ background: "var(--rf-bg3)", color: "var(--rf-txt3)" }}
+                            style={{
+                              background: "var(--rf-bg3)",
+                              color: "var(--rf-txt3)",
+                            }}
                           >
                             {itemSource(item)}
                           </span>
@@ -475,8 +506,12 @@ export default function Procurement() {
                             title="Remove"
                             className="px-2 text-lg leading-none"
                             style={{ color: "var(--rf-txt3)" }}
-                            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--rf-red)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--rf-txt3)")}
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.color = "var(--rf-red)")
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.color = "var(--rf-txt3)")
+                            }
                           >
                             ×
                           </button>
