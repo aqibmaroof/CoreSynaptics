@@ -12,6 +12,49 @@ const defaultForm = {
   roleId: "",
 };
 
+// Letters (incl. accented), spaces, hyphens, apostrophes — e.g. O'Brien, Jean-Luc.
+const NAME_PATTERN = /^[\p{L}\s'-]+$/u;
+// Standard email shape; also rejects embedded spaces.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL = 254;
+const MAX_NAME = 100;
+
+// Mirrors the backend CreateUserDto rules so the user gets immediate feedback.
+function validateForm(form, isEdit) {
+  const errors = {};
+
+  if (!isEdit) {
+    const email = (form.email || "").trim();
+    if (!email) errors.email = "Email is required.";
+    else if (/\s/.test(form.email || ""))
+      errors.email = "Email cannot contain spaces.";
+    else if (!EMAIL_PATTERN.test(email))
+      errors.email = "Enter a valid email address.";
+    else if (email.length > MAX_EMAIL)
+      errors.email = `Email cannot exceed ${MAX_EMAIL} characters.`;
+
+    if (!form.roleId) errors.roleId = "Please select a role.";
+  }
+
+  const first = (form.firstName || "").trim();
+  if (!first) errors.firstName = "First name is required.";
+  else if (first.length > MAX_NAME)
+    errors.firstName = `First name cannot exceed ${MAX_NAME} characters.`;
+  else if (!NAME_PATTERN.test(first))
+    errors.firstName =
+      "First name may only contain letters, spaces, hyphens, and apostrophes.";
+
+  const last = (form.lastName || "").trim();
+  if (!last) errors.lastName = "Last name is required.";
+  else if (last.length > MAX_NAME)
+    errors.lastName = `Last name cannot exceed ${MAX_NAME} characters.`;
+  else if (!NAME_PATTERN.test(last))
+    errors.lastName =
+      "Last name may only contain letters, spaces, hyphens, and apostrophes.";
+
+  return errors;
+}
+
 export default function AddSubscription() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,6 +64,7 @@ export default function AddSubscription() {
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const roles =
     typeof window !== "undefined"
       ? JSON.parse(localStorage.getItem("roles") || "[]")
@@ -53,21 +97,33 @@ export default function AddSubscription() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    // Clear the inline error for this field as the user corrects it.
+    setFieldErrors((prev) =>
+      prev[name] ? { ...prev, [name]: undefined } : prev,
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
+    const errors = validateForm(form, Boolean(id));
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
+    setFieldErrors({});
+
+    // Trim before sending so leading/trailing spaces never persist.
     const payload = id
       ? {
-          firstName: form?.firstName,
-          lastName: form?.lastName,
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
         }
       : {
-          email: form?.email,
-          firstName: form?.firstName,
-          lastName: form?.lastName,
+          email: form.email.trim(),
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
           roleId: form.roleId,
         };
 
@@ -80,19 +136,41 @@ export default function AddSubscription() {
       }
       router.back();
     } catch (err) {
-      setError(err.message || "Something went wrong.");
+      // Surface backend validation messages (the API may return an array).
+      const apiMsg = Array.isArray(err?.message)
+        ? err.message.join(" ")
+        : err?.message;
+      if (apiMsg && /already exists|already in use|duplicate/i.test(apiMsg)) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          email: "This email is already registered.",
+        }));
+      } else {
+        setError(apiMsg || "Something went wrong.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   // ── Color accent helpers ───────────────────────────────────
-
-  const accentBorder = "border-orange-400/40 focus:border-orange-400";
+  // Higher-contrast input chrome: solid border, readable fill + placeholder.
+  const accentBorder = "border-orange-400/70 focus:border-orange-400";
 
   const accentBg = "bg-orange-400 hover:bg-orange-300";
 
   const cardGradient = "from-[#FF8E4E]/20";
+
+  const inputBase =
+    "w-full bg-white/10 border rounded-xl px-4 py-3 text-white placeholder-gray-400 text-sm outline-none transition-colors";
+  const labelBase =
+    "text-gray-200 text-xs uppercase tracking-widest mb-2 block";
+  const fieldClass = (name) =>
+    `${inputBase} ${fieldErrors[name] ? "border-red-500 focus:border-red-500" : accentBorder}`;
+  const FieldError = ({ name }) =>
+    fieldErrors[name] ? (
+      <p className="mt-1.5 text-red-400 text-xs">{fieldErrors[name]}</p>
+    ) : null;
 
   if (guard.loading || guard.blocked) return guard.fallback;
 
@@ -111,6 +189,7 @@ export default function AddSubscription() {
 
       <form
         onSubmit={handleSubmit}
+        noValidate
         className={`w-full  rounded-2xl border-2 border-white/20 bg-gradient-to-bl ${cardGradient} via-black/30 to-[#151515]/0 p-8 flex flex-col gap-7`}
       >
         {/* Error */}
@@ -123,59 +202,63 @@ export default function AddSubscription() {
         {/* ── Basic Info ── */}
         {!id && (
           <div>
-            <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
+            <label className={labelBase}>
               Email <span className="text-red-400">*</span>
             </label>
             <input
-              type="text"
+              type="email"
               name="email"
               value={form.email}
-              required
               disabled={id}
+              maxLength={MAX_EMAIL}
               onChange={handleChange}
-              placeholder="e.g. Professional"
-              className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
+              placeholder="e.g. jane.doe@company.com"
+              className={fieldClass("email")}
             />
+            <FieldError name="email" />
           </div>
         )}
         <div>
-          <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
-            First Name
+          <label className={labelBase}>
+            First Name <span className="text-red-400">*</span>
           </label>
           <input
             type="text"
             name="firstName"
             value={form.firstName}
             onChange={handleChange}
-            placeholder="e.g. Professional"
-            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
+            maxLength={MAX_NAME}
+            placeholder="e.g. Jane"
+            className={fieldClass("firstName")}
           />
+          <FieldError name="firstName" />
         </div>
 
         <div>
-          <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
-            Last Name
+          <label className={labelBase}>
+            Last Name <span className="text-red-400">*</span>
           </label>
           <input
             type="text"
             name="lastName"
             value={form.lastName}
             onChange={handleChange}
-            placeholder="e.g. Professional"
-            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
+            maxLength={MAX_NAME}
+            placeholder="e.g. Doe"
+            className={fieldClass("lastName")}
           />
+          <FieldError name="lastName" />
         </div>
         {!id && (
           <div>
-            <label className="text-gray-400 text-xs uppercase tracking-widest mb-2 block">
-              Role
+            <label className={labelBase}>
+              Role <span className="text-red-400">*</span>
             </label>
             <select
               name="roleId"
               value={form.roleId}
               onChange={handleChange}
-              className={`select w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 text-sm outline-none transition-colors ${accentBorder}`}
-              required
+              className={`select ${fieldClass("roleId")}`}
             >
               <option
                 className="bg-gradient-to-r from-[#093E7D] to-[#0075FF] rounded-none"
@@ -195,6 +278,7 @@ export default function AddSubscription() {
                   </option>
                 ))}
             </select>
+            <FieldError name="roleId" />
           </div>
         )}
         {/* ── Actions ── */}

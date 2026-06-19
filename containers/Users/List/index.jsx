@@ -81,7 +81,7 @@ export default function PricingPlans() {
           Users Lists
         </h1>
       </div>
-      <div className="flex w-full bg-gradient-to-r font-gilroy from-gray-600/10 to-gray-500/10 border-3 border-white/[0.03] border-t-white/[0.09] p-6 rounded-3xl card">
+      <div className="flex w-full bg-gradient-to-r font-gilroy from-gray-600/10 to-gray-500/10 border border-white/15 p-6 rounded-3xl card">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           {message.text && (
@@ -140,10 +140,10 @@ export default function PricingPlans() {
             </svg>
             <input
               type="text"
-              placeholder="Search Plan"
+              placeholder="Search users"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#0a1128] text-white placeholder-gray-500 pl-12 pr-4 py-3.5 rounded-xl border border-white/10 focus:border-white/20 focus:outline-none transition-colors"
+              className="w-full bg-[#0a1128] text-white placeholder-gray-400 pl-12 pr-4 py-3.5 rounded-xl border border-white/20 focus:border-white/40 focus:outline-none transition-colors"
             />
           </div>
 
@@ -188,29 +188,29 @@ export default function PricingPlans() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[760px]">
             <thead className="bg-[#080C26] rounded-2xl">
               <tr className="rounded-2xl">
-                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
                   #
                 </th>
-                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
                   User Name
                 </th>
-                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
                   Email
                 </th>
-                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
                   Role
                 </th>
-                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
                   Permissions
                 </th>
-                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
                   Status
                 </th>
 
-                <th className="py-4 px-4 text-gray-400 font-medium text-sm">
+                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
                   Action
                 </th>
               </tr>
@@ -284,22 +284,29 @@ export default function PricingPlans() {
                       </div>
                     </td>
 
-                    <td className="flex items-center justify-center py-4 px-4 gap-4">
-                      {canEdit(MODULE.ADMIN) && (
-                        <button className="text-info text-xl mt-10 mb-10 cursor-pointer">
-                          <a href={`/Users/Add?id=${user?.id}`}>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center justify-center gap-4">
+                        {canEdit(MODULE.ADMIN) && (
+                          <a
+                            href={`/Users/Add?id=${user?.id}`}
+                            aria-label="Edit user"
+                            title="Edit user"
+                            className="text-blue-400 hover:text-blue-300 text-xl cursor-pointer"
+                          >
                             <FaEdit />
                           </a>
-                        </button>
-                      )}
-                      {canDelete(MODULE.ADMIN) && (
-                        <button
-                          className="text-error text-xl cursor-pointer"
-                          onClick={() => removeUser(user.id)}
-                        >
-                          <FaTrash />
-                        </button>
-                      )}
+                        )}
+                        {canDelete(MODULE.ADMIN) && (
+                          <button
+                            aria-label="Delete user"
+                            title="Delete user"
+                            className="text-red-400 hover:text-red-300 text-xl cursor-pointer"
+                            onClick={() => removeUser(user.id)}
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

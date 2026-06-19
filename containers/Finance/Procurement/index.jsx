@@ -65,6 +65,14 @@ const itemSource = (i) =>
     : "Manual";
 const itemOrderStatus = (i) => i.status ?? i.orderStatus ?? "NOT_ORDERED";
 
+// Normalize a backend/axios error into a readable string. NestJS validation
+// errors arrive as { message: string[] }.
+const apiMessage = (e) => {
+  const m = e?.response?.data?.message ?? e?.message;
+  if (Array.isArray(m)) return m.join(" ");
+  return typeof m === "string" ? m : "";
+};
+
 /* ------------------------------------------------------------------ *
  * Component
  * ------------------------------------------------------------------ */
@@ -79,6 +87,11 @@ export default function Procurement() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [statusBusy, setStatusBusy] = useState(null);
+  const [formError, setFormError] = useState("");
+  const [fetchError, setFetchError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(null); // item pending deletion
+
+  const DESC_MAX = 500;
 
   useEffect(() => {
     fetchItems();
@@ -87,12 +100,18 @@ export default function Procurement() {
 
   async function fetchItems() {
     setLoading(true);
+    setFetchError("");
     try {
       const res = await getProcurementV2Items();
       const d = res?.data ?? res;
       setItems(Array.isArray(d) ? d : (d?.data ?? d?.items ?? []));
     } catch (e) {
       console.error(e);
+      // Surface the failure instead of silently showing an empty list under
+      // every tab (PROC-028). Leave existing items in place if any.
+      setFetchError(
+        apiMessage(e) || "Could not load procurement records. Please retry.",
+      );
     } finally {
       setLoading(false);
     }
@@ -113,14 +132,24 @@ export default function Procurement() {
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleAdd = async () => {
-    if (!form.description.trim()) return;
+    setFormError("");
+    // Client-side validation mirroring the backend contract (PROC-015, 035, 036).
+    const desc = form.description.trim();
+    if (!desc) {
+      setFormError("Description is required.");
+      return;
+    }
+    if (desc.length > DESC_MAX) {
+      setFormError(`Description cannot exceed ${DESC_MAX} characters.`);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
-        description: form.description.trim(),
+        description: desc,
         ownership: form.furnish,
         status: form.orderStatus,
-        poSubmittalNo: form.po || undefined,
+        poSubmittalNo: form.po?.trim() || undefined,
         manufacturer: form.manufacturer || undefined,
         model: form.model || undefined,
         location: form.location || undefined,
@@ -134,6 +163,10 @@ export default function Procurement() {
       fetchItems();
     } catch (e) {
       console.error(e);
+      // Surface backend validation / duplicate-PO errors (PROC-033, 036).
+      setFormError(
+        apiMessage(e) || "Could not save the item. Please check the fields.",
+      );
     } finally {
       setSaving(false);
     }
@@ -154,14 +187,21 @@ export default function Procurement() {
     }
   };
 
-  const remove = async (id) => {
+  // Two-step delete: open a confirmation, then perform on confirm (PROC-031).
+  const requestRemove = (item) => setConfirmDelete(item);
+
+  const performRemove = async () => {
+    const item = confirmDelete;
+    if (!item) return;
+    setConfirmDelete(null);
     const prev = items;
-    setItems((p) => p.filter((x) => x.id !== id));
+    setItems((p) => p.filter((x) => x.id !== item.id));
     try {
-      await deleteProcurementV2Item(id);
+      await deleteProcurementV2Item(item.id);
     } catch (e) {
       console.error(e);
       setItems(prev);
+      setFetchError(apiMessage(e) || "Could not delete the item.");
     }
   };
 
@@ -258,7 +298,8 @@ export default function Procurement() {
               <input
                 className={`${fieldCls} md:col-span-2`}
                 style={FIELD}
-                placeholder="description"
+                placeholder="Description *"
+                maxLength={DESC_MAX}
                 value={form.description}
                 onChange={(e) => set("description", e.target.value)}
               />
@@ -323,6 +364,15 @@ export default function Procurement() {
                 value={form.poc}
                 onChange={(e) => set("poc", e.target.value)}
               />
+              {formError && (
+                <p
+                  className="md:col-span-2 text-sm"
+                  style={{ color: "var(--rf-red, #dc2626)" }}
+                  role="alert"
+                >
+                  {formError}
+                </p>
+              )}
               <button
                 className="md:col-span-2 rounded-lg text-sm font-bold"
                 style={{
@@ -359,6 +409,27 @@ export default function Procurement() {
             );
           })}
         </div>
+
+        {/* Load/delete error (PROC-028) */}
+        {fetchError && (
+          <div
+            className="mb-3 rounded-lg px-4 py-2 text-sm flex items-center justify-between gap-3"
+            style={{
+              background: "var(--rf-bg3)",
+              color: "var(--rf-red, #dc2626)",
+            }}
+            role="alert"
+          >
+            <span>{fetchError}</span>
+            <button
+              className="font-semibold underline"
+              onClick={fetchItems}
+              style={{ color: "var(--rf-red, #dc2626)" }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* Status summary pills */}
         <div className="flex items-center gap-2 flex-wrap mb-4">
@@ -471,7 +542,7 @@ export default function Procurement() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button
-                            onClick={() => remove(item.id)}
+                            onClick={() => requestRemove(item)}
                             title="Remove"
                             className="px-2 text-lg leading-none"
                             style={{ color: "var(--rf-txt3)" }}
@@ -490,6 +561,47 @@ export default function Procurement() {
           )}
         </div>
       </div>
+
+      {/* Delete confirmation (PROC-031) */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setConfirmDelete(null)}
+        >
+          <div
+            className="w-[90%] max-w-sm rounded-xl p-6"
+            style={{ background: "var(--rf-bg2)", border: "1px solid var(--rf-border2)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              className="text-base font-bold mb-2"
+              style={{ color: "var(--rf-txt)" }}
+            >
+              Delete procurement item?
+            </h3>
+            <p className="text-sm mb-5" style={{ color: "var(--rf-txt2)" }}>
+              “{itemName(confirmDelete)}” will be removed. This action cannot be
+              undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded-lg text-sm font-semibold"
+                style={{ background: "var(--rf-bg3)", color: "var(--rf-txt)" }}
+                onClick={() => setConfirmDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg text-sm font-bold text-white"
+                style={{ background: "var(--rf-red, #dc2626)" }}
+                onClick={performRemove}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
