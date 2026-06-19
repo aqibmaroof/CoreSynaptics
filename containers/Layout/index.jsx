@@ -489,10 +489,11 @@ function buildSections(projectCode) {
       label: "GC QA/QC Toolkit",
       items: [
         { title: "QA/QC Command Center", href: "/QAQC", module: MODULE.QA_QC },
-        { title: "Safety", 
+        {
+          title: "Safety",
           href: "/Safety",
-          //  module: MODULE.SAFETY 
-          },
+          //  module: MODULE.SAFETY
+        },
         {
           title: "Phase advancement queue",
           href: "/Phases/List",
@@ -1138,37 +1139,40 @@ export default function CxLayout({ children }) {
             </div>
           </div>
 
-          <div className="cx-side-search">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              type="text"
-              value={navQuery}
-              onChange={(e) => setNavQuery(e.target.value)}
-              placeholder="Search modules…"
-              aria-label="Search modules"
-            />
-            {navQuery && (
-              <button
-                type="button"
-                onClick={() => setNavQuery("")}
-                aria-label="Clear search"
+          <div className="cx-side-searchbar">
+            <div className="cx-side-search">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
               >
-                ×
-              </button>
-            )}
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                value={navQuery}
+                onChange={(e) => setNavQuery(e.target.value)}
+                placeholder="Search modules…"
+                className="border-none focus:border-none active:border-none"
+                aria-label="Search modules"
+              />
+              {navQuery && (
+                <button
+                  type="button"
+                  onClick={() => setNavQuery("")}
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
 
           {visibleSections.length === 0 ? (

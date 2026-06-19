@@ -309,7 +309,9 @@ const num = (v) => {
 };
 const iso = (d) => (d ? new Date(d).toISOString() : undefined);
 const clean = (obj) =>
-  Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined && v !== ""));
+  Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined && v !== ""),
+  );
 
 // Map a backend field path (e.g. "stakeholders.0.email") to a human-readable
 // label so the user knows exactly which wizard field to fix.
@@ -332,9 +334,15 @@ function humanizeFieldError(raw) {
   if (!m) return raw;
   const [, path, rest] = m;
   const root = path.split(".")[0];
-  const leaf = path.split(".").filter((p) => !/^\d+$/.test(p)).pop() || path;
+  const leaf =
+    path
+      .split(".")
+      .filter((p) => !/^\d+$/.test(p))
+      .pop() || path;
   const step = STEP_FOR_FIELD[root];
-  const label = leaf.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+  const label = leaf
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (c) => c.toUpperCase());
   return `${step ? step + " — " : ""}${label}: ${rest}`;
 }
 
@@ -349,7 +357,11 @@ function extractApiErrors(e) {
     for (const [key, val] of Object.entries(errs)) {
       const items = Array.isArray(val) ? val : [val];
       for (const item of items) {
-        lines.push(key === "general" ? humanizeFieldError(String(item)) : `${key}: ${item}`);
+        lines.push(
+          key === "general"
+            ? humanizeFieldError(String(item))
+            : `${key}: ${item}`,
+        );
       }
     }
   }
@@ -370,7 +382,15 @@ function extractApiErrors(e) {
 // free-text Name/Company (people who may not yet be platform users). Mirroring
 // V1, only the creator is auto-assigned at finalize; named team members are
 // added on the project's Team page once resolved to real users.
-function buildFinalizePayload({ identity, facility, stakeholders, scope, assets, docs, milestones }) {
+function buildFinalizePayload({
+  identity,
+  facility,
+  stakeholders,
+  scope,
+  assets,
+  docs,
+  milestones,
+}) {
   // Step 5 — selected assets become ProjectAsset rows. Each selection carries a
   // detail object (qty / furnish / order status / PO# / manufacturer / model /
   // location) captured inline in the wizard.
@@ -444,9 +464,11 @@ function buildFinalizePayload({ identity, facility, stakeholders, scope, assets,
   });
   const freezeWindows = (milestones.freezes || [])
     .filter((f) => f.label || f.from || f.to)
-    .map((f) => clean({ label: f.label, startDate: iso(f.from), endDate: iso(f.to) }));
+    .map((f) =>
+      clean({ label: f.label, startDate: iso(f.from), endDate: iso(f.to) }),
+    );
 
-    return clean({
+  return clean({
     projectName: (identity.projectName || "").trim(),
     customer: (identity.owner || "").trim() || "Unspecified",
     projectCode: identity.projectCode,
@@ -456,7 +478,10 @@ function buildFinalizePayload({ identity, facility, stakeholders, scope, assets,
     cxScope: Object.keys(cxScope).length ? cxScope : undefined,
     milestones:
       Object.keys(anchors).length || freezeWindows.length
-        ? clean({ anchors: Object.keys(anchors).length ? anchors : undefined, freezeWindows })
+        ? clean({
+            anchors: Object.keys(anchors).length ? anchors : undefined,
+            freezeWindows,
+          })
         : undefined,
     numDataHalls: num(facility.dataHalls),
     assets: assetRows.length ? assetRows : undefined,
@@ -468,8 +493,13 @@ function buildFinalizePayload({ identity, facility, stakeholders, scope, assets,
 // Map a V2 aggregate/list row → the list-card view model.
 function toCard(p) {
   const proj = p.project || p;
-  const loc = proj.siteAddress ? ` · ${String(proj.siteAddress).split(",")[0]}` : "";
-  const bits = [proj.siteAddress, proj.customer && `Cust: ${proj.customer}`].filter(Boolean);
+  const loc = proj.siteAddress
+    ? ` · ${String(proj.siteAddress).split(",")[0]}`
+    : "";
+  const bits = [
+    proj.siteAddress,
+    proj.customer && `Cust: ${proj.customer}`,
+  ].filter(Boolean);
   return {
     id: proj.id,
     name: `${proj.projectName}${loc}`,
@@ -860,7 +890,10 @@ function PickRow({ selected, onClick, title, subtitle, right }) {
         )}
       </span>
       {right && (
-        <span className="flex-shrink-0 text-xs" style={{ color: "var(--rf-txt3)" }}>
+        <span
+          className="flex-shrink-0 text-xs"
+          style={{ color: "var(--rf-txt3)" }}
+        >
           {right}
         </span>
       )}
@@ -1023,7 +1056,11 @@ export default function NewProjectsModule() {
 
   // Normalize the paginated/array response shapes the API may return.
   const rowsFrom = (res) =>
-    (res?.data?.data ?? res?.data ?? res?.results ?? (Array.isArray(res) ? res : [])) || [];
+    (res?.data?.data ??
+      res?.data ??
+      res?.results ??
+      (Array.isArray(res) ? res : [])) ||
+    [];
 
   const loadProjects = async () => {
     setLoadingList(true);
@@ -1549,162 +1586,166 @@ export default function NewProjectsModule() {
       (u) =>
         !q ||
         userLabel(u).toLowerCase().includes(q) ||
-        String(u.email || "").toLowerCase().includes(q),
+        String(u.email || "")
+          .toLowerCase()
+          .includes(q),
     );
     return (
-    <>
-      <StepIntro>
-        Stakeholder directory — link platform users from the Users module (or add
-        new ones), then refine company / role below. {stakeholders.length}{" "}
-        row(s).
-      </StepIntro>
+      <>
+        <StepIntro>
+          Stakeholder directory — link platform users from the Users module (or
+          add new ones), then refine company / role below. {stakeholders.length}{" "}
+          row(s).
+        </StepIntro>
 
-      <ModulePicker
-        title="Platform users"
-        hint="Select existing users to add as stakeholders, or create a new user."
-        search={search.users}
-        onSearch={(e) =>
-          setSearch((p) => ({ ...p, users: e.target.value }))
-        }
-        addLabel="+ New user"
-        addOpen={addOpen.users}
-        onToggleAdd={() => setAddOpen((p) => ({ ...p, users: !p.users }))}
-        loading={moduleLoading.users}
-        isEmpty={userRows.length === 0}
-        emptyText="No users found."
-        addForm={
-          <div className="flex flex-col gap-3">
-            <TextInput
-              placeholder="Email *"
-              value={newUser.email}
-              onChange={(e) =>
-                setNewUser((p) => ({ ...p, email: e.target.value }))
-              }
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <ModulePicker
+          title="Platform users"
+          hint="Select existing users to add as stakeholders, or create a new user."
+          search={search.users}
+          onSearch={(e) => setSearch((p) => ({ ...p, users: e.target.value }))}
+          addLabel="+ New user"
+          addOpen={addOpen.users}
+          onToggleAdd={() => setAddOpen((p) => ({ ...p, users: !p.users }))}
+          loading={moduleLoading.users}
+          isEmpty={userRows.length === 0}
+          emptyText="No users found."
+          addForm={
+            <div className="flex flex-col gap-3">
               <TextInput
-                placeholder="First name"
-                value={newUser.firstName}
+                placeholder="Email *"
+                value={newUser.email}
                 onChange={(e) =>
-                  setNewUser((p) => ({ ...p, firstName: e.target.value }))
+                  setNewUser((p) => ({ ...p, email: e.target.value }))
                 }
               />
-              <TextInput
-                placeholder="Last name"
-                value={newUser.lastName}
-                onChange={(e) =>
-                  setNewUser((p) => ({ ...p, lastName: e.target.value }))
-                }
-              />
-            </div>
-            {roles.length > 0 && (
-              <SelectInput
-                value={newUser.roleId}
-                onChange={(e) =>
-                  setNewUser((p) => ({ ...p, roleId: e.target.value }))
-                }
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <TextInput
+                  placeholder="First name"
+                  value={newUser.firstName}
+                  onChange={(e) =>
+                    setNewUser((p) => ({ ...p, firstName: e.target.value }))
+                  }
+                />
+                <TextInput
+                  placeholder="Last name"
+                  value={newUser.lastName}
+                  onChange={(e) =>
+                    setNewUser((p) => ({ ...p, lastName: e.target.value }))
+                  }
+                />
+              </div>
+              {roles.length > 0 && (
+                <SelectInput
+                  value={newUser.roleId}
+                  onChange={(e) =>
+                    setNewUser((p) => ({ ...p, roleId: e.target.value }))
+                  }
+                >
+                  <option value="">Select role…</option>
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.description || r.name}
+                    </option>
+                  ))}
+                </SelectInput>
+              )}
+              <button
+                type="button"
+                disabled={moduleBusy}
+                onClick={submitNewUser}
+                className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
+                style={{
+                  background: "var(--rf-accent)",
+                  color: "#fff",
+                  opacity: moduleBusy ? 0.6 : 1,
+                }}
               >
-                <option value="">Select role…</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.description || r.name}
-                  </option>
+                {moduleBusy ? "Creating…" : "Create user"}
+              </button>
+            </div>
+          }
+        >
+          {userRows.map((u) => (
+            <PickRow
+              key={u.id}
+              selected={userLinked(u)}
+              onClick={() => linkUser(u)}
+              title={userLabel(u)}
+              subtitle={u.email}
+            />
+          ))}
+        </ModulePicker>
+
+        <div className="flex flex-col gap-3">
+          {stakeholders.map((s, i) => (
+            <div key={i} className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <TextInput
+                placeholder="Company / org"
+                value={s.company}
+                onChange={(e) =>
+                  updateStakeholder(i, "company", e.target.value)
+                }
+              />
+              <SelectInput
+                value={s.role}
+                onChange={(e) => updateStakeholder(i, "role", e.target.value)}
+              >
+                {opts.stakeholderRoles.map((r) => (
+                  <option key={r}>{r}</option>
                 ))}
               </SelectInput>
-            )}
-            <button
-              type="button"
-              disabled={moduleBusy}
-              onClick={submitNewUser}
-              className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
-              style={{
-                background: "var(--rf-accent)",
-                color: "#fff",
-                opacity: moduleBusy ? 0.6 : 1,
-              }}
-            >
-              {moduleBusy ? "Creating…" : "Create user"}
-            </button>
-          </div>
-        }
-      >
-        {userRows.map((u) => (
-          <PickRow
-            key={u.id}
-            selected={userLinked(u)}
-            onClick={() => linkUser(u)}
-            title={userLabel(u)}
-            subtitle={u.email}
-          />
-        ))}
-      </ModulePicker>
-
-      <div className="flex flex-col gap-3">
-        {stakeholders.map((s, i) => (
-          <div key={i} className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <TextInput
-              placeholder="Company / org"
-              value={s.company}
-              onChange={(e) => updateStakeholder(i, "company", e.target.value)}
-            />
-            <SelectInput
-              value={s.role}
-              onChange={(e) => updateStakeholder(i, "role", e.target.value)}
-            >
-              {opts.stakeholderRoles.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </SelectInput>
-            <TextInput
-              placeholder="Name"
-              value={s.name}
-              onChange={(e) => updateStakeholder(i, "name", e.target.value)}
-            />
-            <TextInput
-              placeholder="Email"
-              value={s.email}
-              onChange={(e) => updateStakeholder(i, "email", e.target.value)}
-            />
-            <div className="flex gap-2">
               <TextInput
-                placeholder="Phone"
-                value={s.phone}
-                onChange={(e) => updateStakeholder(i, "phone", e.target.value)}
+                placeholder="Name"
+                value={s.name}
+                onChange={(e) => updateStakeholder(i, "name", e.target.value)}
               />
-              {stakeholders.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setStakeholders((p) => p.filter((_, idx) => idx !== i))
+              <TextInput
+                placeholder="Email"
+                value={s.email}
+                onChange={(e) => updateStakeholder(i, "email", e.target.value)}
+              />
+              <div className="flex gap-2">
+                <TextInput
+                  placeholder="Phone"
+                  value={s.phone}
+                  onChange={(e) =>
+                    updateStakeholder(i, "phone", e.target.value)
                   }
-                  className="px-3 rounded-xl text-sm font-bold"
-                  style={{
-                    color: "var(--rf-red)",
-                    border: "1px solid var(--rf-border, #c5d2ea)",
-                  }}
-                  title="Remove"
-                >
-                  ×
-                </button>
-              )}
+                />
+                {stakeholders.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setStakeholders((p) => p.filter((_, idx) => idx !== i))
+                    }
+                    className="px-3 rounded-xl text-sm font-bold"
+                    style={{
+                      color: "var(--rf-red)",
+                      border: "1px solid var(--rf-border, #c5d2ea)",
+                    }}
+                    title="Remove"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={() =>
-          setStakeholders((p) => [
-            ...p,
-            { company: "", role: "Owner", name: "", email: "", phone: "" },
-          ])
-        }
-        className="mt-3 text-sm font-bold"
-        style={{ color: "var(--rf-accent)" }}
-      >
-        + Add stakeholder
-      </button>
-    </>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            setStakeholders((p) => [
+              ...p,
+              { company: "", role: "Owner", name: "", email: "", phone: "" },
+            ])
+          }
+          className="mt-3 text-sm font-bold"
+          style={{ color: "var(--rf-accent)" }}
+        >
+          + Add stakeholder
+        </button>
+      </>
     );
   };
 
@@ -1793,22 +1834,35 @@ export default function NewProjectsModule() {
     setAssets((p) => ({ ...p, [name]: { ...p[name], [key]: val } }));
 
   const renderAssets = () => {
+    // Names already present in the API-driven Asset Register. Static BQ systems
+    // are bulk-registered by their label at finalize, so once registered they
+    // come back from the API by that same name — dedupe against this set so each
+    // standard system shows once (the real registered asset wins).
+    const apiAssetNames = new Set(
+      assetCatalog
+        .map((a) => (a.name || "").trim().toLowerCase())
+        .filter(Boolean),
+    );
+
     // Standard commissioning systems (BQ) — always available, grouped by
     // discipline/phase. Each [code, label] pair is shaped like an Asset Register
-    // row so it reuses the same checkbox + per-asset detail editor.
+    // row so it reuses the same checkbox + per-asset detail editor. Static
+    // systems already registered via the API are filtered out here.
     const staticGroups = STATIC_ASSET_BQ.map((d) => ({
       title: `${d.disc} · ${d.phase}`,
-      items: d.types.map(([code, label]) => ({
-        id: `bq-${d.disc}-${code}`,
-        name: label,
-        assetTag: code,
-        category: d.disc,
-        // BQ-specific: flag + type code so selected static systems can be
-        // bulk-registered in the Asset Management module at finalize.
-        staticBq: true,
-        bqCode: code,
-      })),
-    }));
+      items: d.types
+        .filter(([, label]) => !apiAssetNames.has(label.trim().toLowerCase()))
+        .map(([code, label]) => ({
+          id: `bq-${d.disc}-${code}`,
+          name: label,
+          assetTag: code,
+          category: d.disc,
+          // BQ-specific: flag + type code so selected static systems can be
+          // bulk-registered in the Asset Management module at finalize.
+          staticBq: true,
+          bqCode: code,
+        })),
+    })).filter((g) => g.items.length > 0);
 
     // Group the registered assets by their `category` so the select UI matches
     // the original category-card layout — but driven entirely by the API.
@@ -1826,103 +1880,104 @@ export default function NewProjectsModule() {
     // Standard systems first, then anything registered via the API.
     const groups = [...staticGroups, ...apiGroups];
     return (
-    <>
-      <StepIntro>
-        Select assets from the Asset Register (grouped by category), or register a
-        new asset. Selected items become project assets you can detail (quantity,
-        furnish, POH) on the project page. {assetCount} selected.
-      </StepIntro>
+      <>
+        <StepIntro>
+          Select assets from the Asset Register (grouped by category), or
+          register a new asset. Selected items become project assets you can
+          detail (quantity, furnish, POH) on the project page. {assetCount}{" "}
+          selected.
+        </StepIntro>
 
-      <div className="flex items-center justify-between mb-4">
-        <label className="uppercase" style={labelStyle}>
-          Asset register
-        </label>
-        <button
-          type="button"
-          onClick={() => setAddOpen((p) => ({ ...p, assets: !p.assets }))}
-          className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-          style={{
-            background: addOpen.assets ? "var(--rf-bg3)" : "var(--rf-accent)",
-            color: addOpen.assets ? "var(--rf-txt2)" : "#fff",
-            border: `1px solid ${addOpen.assets ? "var(--rf-border, #c5d2ea)" : "var(--rf-accent)"}`,
-          }}
-        >
-          {addOpen.assets ? "Close" : "+ New asset"}
-        </button>
-      </div>
-
-      {addOpen.assets && (
-        <div
-          className="rounded-xl p-3 mb-4"
-          style={{
-            background: "var(--rf-bg)",
-            border: "1px dashed var(--rf-border3, #8daacf)",
-          }}
-        >
-          <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <TextInput
-                placeholder="Asset tag * (e.g. IT-LAP-0042)"
-                value={newAsset.assetTag}
-                onChange={(e) =>
-                  setNewAsset((p) => ({ ...p, assetTag: e.target.value }))
-                }
-              />
-              <TextInput
-                placeholder="Asset name *"
-                value={newAsset.name}
-                onChange={(e) =>
-                  setNewAsset((p) => ({ ...p, name: e.target.value }))
-                }
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <SelectInput
-                value={newAsset.category}
-                onChange={(e) =>
-                  setNewAsset((p) => ({ ...p, category: e.target.value }))
-                }
-              >
-                {ASSET_REG_CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </SelectInput>
-              <SelectInput
-                value={newAsset.procurementType}
-                onChange={(e) =>
-                  setNewAsset((p) => ({
-                    ...p,
-                    procurementType: e.target.value,
-                  }))
-                }
-              >
-                <option value="OFCI">OFCI</option>
-                <option value="CFCI">CFCI</option>
-              </SelectInput>
-            </div>
-            <button
-              type="button"
-              disabled={moduleBusy}
-              onClick={submitNewAsset}
-              className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
-              style={{
-                background: "var(--rf-accent)",
-                color: "#fff",
-                opacity: moduleBusy ? 0.6 : 1,
-              }}
-            >
-              {moduleBusy ? "Registering…" : "Register asset"}
-            </button>
-          </div>
+        <div className="flex items-center justify-between mb-4">
+          <label className="uppercase" style={labelStyle}>
+            Asset register
+          </label>
+          <button
+            type="button"
+            onClick={() => setAddOpen((p) => ({ ...p, assets: !p.assets }))}
+            className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+            style={{
+              background: addOpen.assets ? "var(--rf-bg3)" : "var(--rf-accent)",
+              color: addOpen.assets ? "var(--rf-txt2)" : "#fff",
+              border: `1px solid ${addOpen.assets ? "var(--rf-border, #c5d2ea)" : "var(--rf-accent)"}`,
+            }}
+          >
+            {addOpen.assets ? "Close" : "+ New asset"}
+          </button>
         </div>
-      )}
 
-      {moduleLoading.assets && (
-        <p className="text-xs mb-3" style={{ color: "var(--rf-txt3)" }}>
-          Loading registered assets…
-        </p>
-      )}
-      <div className="flex flex-col gap-4">
+        {addOpen.assets && (
+          <div
+            className="rounded-xl p-3 mb-4"
+            style={{
+              background: "var(--rf-bg)",
+              border: "1px dashed var(--rf-border3, #8daacf)",
+            }}
+          >
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <TextInput
+                  placeholder="Asset tag * (e.g. IT-LAP-0042)"
+                  value={newAsset.assetTag}
+                  onChange={(e) =>
+                    setNewAsset((p) => ({ ...p, assetTag: e.target.value }))
+                  }
+                />
+                <TextInput
+                  placeholder="Asset name *"
+                  value={newAsset.name}
+                  onChange={(e) =>
+                    setNewAsset((p) => ({ ...p, name: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <SelectInput
+                  value={newAsset.category}
+                  onChange={(e) =>
+                    setNewAsset((p) => ({ ...p, category: e.target.value }))
+                  }
+                >
+                  {ASSET_REG_CATEGORIES.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </SelectInput>
+                <SelectInput
+                  value={newAsset.procurementType}
+                  onChange={(e) =>
+                    setNewAsset((p) => ({
+                      ...p,
+                      procurementType: e.target.value,
+                    }))
+                  }
+                >
+                  <option value="OFCI">OFCI</option>
+                  <option value="CFCI">CFCI</option>
+                </SelectInput>
+              </div>
+              <button
+                type="button"
+                disabled={moduleBusy}
+                onClick={submitNewAsset}
+                className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
+                style={{
+                  background: "var(--rf-accent)",
+                  color: "#fff",
+                  opacity: moduleBusy ? 0.6 : 1,
+                }}
+              >
+                {moduleBusy ? "Registering…" : "Register asset"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {moduleLoading.assets && (
+          <p className="text-xs mb-3" style={{ color: "var(--rf-txt3)" }}>
+            Loading registered assets…
+          </p>
+        )}
+        <div className="flex flex-col gap-4">
           {groups.map((cat) => (
             <div
               key={cat.title}
@@ -1986,7 +2041,11 @@ export default function NewProjectsModule() {
                               className="w-40"
                               value={d.order}
                               onChange={(e) =>
-                                updateAssetField(a.name, "order", e.target.value)
+                                updateAssetField(
+                                  a.name,
+                                  "order",
+                                  e.target.value,
+                                )
                               }
                             >
                               {ASSET_ORDER_STATUSES.map((o) => (
@@ -2020,7 +2079,11 @@ export default function NewProjectsModule() {
                               placeholder="model"
                               value={d.model}
                               onChange={(e) =>
-                                updateAssetField(a.name, "model", e.target.value)
+                                updateAssetField(
+                                  a.name,
+                                  "model",
+                                  e.target.value,
+                                )
                               }
                             />
                             <MiniText
@@ -2043,8 +2106,8 @@ export default function NewProjectsModule() {
               </div>
             </div>
           ))}
-      </div>
-    </>
+        </div>
+      </>
     );
   };
 
@@ -2059,199 +2122,199 @@ export default function NewProjectsModule() {
       docList.push(d);
     });
     return (
-    <>
-      <StepIntro>
-        Select documents from the Documents module, or upload a new one. Uploads
-        are stored immediately and can be linked to this project from the
-        Documents page. {selectedDocIds.length} selected.
-      </StepIntro>
+      <>
+        <StepIntro>
+          Select documents from the Documents module, or upload a new one.
+          Uploads are stored immediately and can be linked to this project from
+          the Documents page. {selectedDocIds.length} selected.
+        </StepIntro>
 
-      <div className="flex items-center justify-between mb-4">
-        <label className="uppercase" style={labelStyle}>
-          Documents
-        </label>
-        <button
-          type="button"
-          onClick={() => setAddOpen((p) => ({ ...p, docs: !p.docs }))}
-          className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-          style={{
-            background: addOpen.docs ? "var(--rf-bg3)" : "var(--rf-accent)",
-            color: addOpen.docs ? "var(--rf-txt2)" : "#fff",
-            border: `1px solid ${addOpen.docs ? "var(--rf-border, #c5d2ea)" : "var(--rf-accent)"}`,
-          }}
-        >
-          {addOpen.docs ? "Close" : "+ Upload document"}
-        </button>
-      </div>
+        <div className="flex items-center justify-between mb-4">
+          <label className="uppercase" style={labelStyle}>
+            Documents
+          </label>
+          <button
+            type="button"
+            onClick={() => setAddOpen((p) => ({ ...p, docs: !p.docs }))}
+            className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+            style={{
+              background: addOpen.docs ? "var(--rf-bg3)" : "var(--rf-accent)",
+              color: addOpen.docs ? "var(--rf-txt2)" : "#fff",
+              border: `1px solid ${addOpen.docs ? "var(--rf-border, #c5d2ea)" : "var(--rf-accent)"}`,
+            }}
+          >
+            {addOpen.docs ? "Close" : "+ Upload document"}
+          </button>
+        </div>
 
-      {addOpen.docs && (
-        <div
-          className="rounded-xl p-3 mb-4"
-          style={{
-            background: "var(--rf-bg)",
-            border: "1px dashed var(--rf-border3, #8daacf)",
-          }}
-        >
-          <div className="flex flex-col gap-3">
-            <TextInput
-              placeholder="Document title *"
-              value={newDoc.title}
-              onChange={(e) =>
-                setNewDoc((p) => ({ ...p, title: e.target.value }))
-              }
-            />
-            <label
-              htmlFor="np-doc-file"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const f = e.dataTransfer.files?.[0];
-                if (f) setNewDoc((p) => ({ ...p, file: f }));
-              }}
-              className="block rounded-xl p-6 text-center cursor-pointer transition-all"
-              style={{
-                border: `2px dashed ${newDoc.file ? "var(--rf-accent)" : "var(--rf-border3, #8daacf)"}`,
-                background: newDoc.file ? "var(--rf-bg3)" : "var(--rf-bg2)",
-              }}
-            >
-              <input
-                id="np-doc-file"
-                type="file"
-                className="hidden"
+        {addOpen.docs && (
+          <div
+            className="rounded-xl p-3 mb-4"
+            style={{
+              background: "var(--rf-bg)",
+              border: "1px dashed var(--rf-border3, #8daacf)",
+            }}
+          >
+            <div className="flex flex-col gap-3">
+              <TextInput
+                placeholder="Document title *"
+                value={newDoc.title}
                 onChange={(e) =>
-                  setNewDoc((p) => ({
-                    ...p,
-                    file: e.target.files?.[0] || null,
-                  }))
+                  setNewDoc((p) => ({ ...p, title: e.target.value }))
                 }
               />
-              {newDoc.file ? (
-                <div className="flex flex-col items-center gap-1.5">
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--rf-accent)"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  <span
-                    className="text-sm font-semibold break-all"
-                    style={{ color: "var(--rf-txt)" }}
-                  >
-                    {newDoc.file.name}
-                  </span>
-                  <span
-                    className="text-xs"
-                    style={{ color: "var(--rf-txt3)" }}
-                  >
-                    {(newDoc.file.size / 1024 / 1024).toFixed(2)} MB · click to
-                    change
-                  </span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <svg
-                    width="32"
-                    height="32"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--rf-txt3)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9" />
-                    <polyline points="16 16 12 12 8 16" />
-                    <line x1="12" y1="12" x2="12" y2="21" />
-                  </svg>
-                  <span
-                    className="text-sm font-semibold"
-                    style={{ color: "var(--rf-txt)" }}
-                  >
-                    Drag &amp; drop or click to select
-                  </span>
-                  <span
-                    className="text-xs"
-                    style={{ color: "var(--rf-txt3)" }}
-                  >
-                    Any file type supported
-                  </span>
-                </div>
-              )}
-            </label>
-            {docUploadPct !== null && (
-              <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
-                Uploading… {docUploadPct}%
-              </p>
-            )}
-            <button
-              type="button"
-              disabled={moduleBusy}
-              onClick={submitNewDoc}
-              className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
-              style={{
-                background: "var(--rf-accent)",
-                color: "#fff",
-                opacity: moduleBusy ? 0.6 : 1,
-              }}
-            >
-              {moduleBusy ? "Uploading…" : "Upload document"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {moduleLoading.docs ? (
-        <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
-          Loading documents…
-        </p>
-      ) : docList.length === 0 ? (
-        <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
-          No documents found — upload one above to get started.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-2.5">
-          {docList.map((d) => {
-            const selected = selectedDocIds.includes(d.id);
-            return (
-              <div
-                key={d.id}
-                className="rounded-lg px-3 py-2.5"
+              <label
+                htmlFor="np-doc-file"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) setNewDoc((p) => ({ ...p, file: f }));
+                }}
+                className="block rounded-xl p-6 text-center cursor-pointer transition-all"
                 style={{
-                  background: selected ? "var(--rf-bg3)" : "var(--rf-bg2)",
-                  border: `1px solid ${selected ? "var(--rf-accent)" : "var(--rf-border2, #adbbd8)"}`,
+                  border: `2px dashed ${newDoc.file ? "var(--rf-accent)" : "var(--rf-border3, #8daacf)"}`,
+                  background: newDoc.file ? "var(--rf-bg3)" : "var(--rf-bg2)",
                 }}
               >
-                <Checkbox
-                  checked={selected}
-                  onChange={() => toggleDoc(d.id)}
-                  label={d.title || d.fileName || "Document"}
+                <input
+                  id="np-doc-file"
+                  type="file"
+                  className="hidden"
+                  onChange={(e) =>
+                    setNewDoc((p) => ({
+                      ...p,
+                      file: e.target.files?.[0] || null,
+                    }))
+                  }
                 />
-                {(d.fileName || d.category) && (
-                  <div
-                    className="text-xs mt-1 ml-7 flex flex-wrap gap-x-2"
-                    style={{ color: "var(--rf-txt3)" }}
-                  >
-                    {d.fileName && (
-                      <span className="truncate">{d.fileName}</span>
-                    )}
-                    {d.category && (
-                      <span>· {String(d.category).replace(/_/g, " ")}</span>
-                    )}
+                {newDoc.file ? (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="var(--rf-accent)"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span
+                      className="text-sm font-semibold break-all"
+                      style={{ color: "var(--rf-txt)" }}
+                    >
+                      {newDoc.file.name}
+                    </span>
+                    <span
+                      className="text-xs"
+                      style={{ color: "var(--rf-txt3)" }}
+                    >
+                      {(newDoc.file.size / 1024 / 1024).toFixed(2)} MB · click
+                      to change
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <svg
+                      width="32"
+                      height="32"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="var(--rf-txt3)"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9" />
+                      <polyline points="16 16 12 12 8 16" />
+                      <line x1="12" y1="12" x2="12" y2="21" />
+                    </svg>
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: "var(--rf-txt)" }}
+                    >
+                      Drag &amp; drop or click to select
+                    </span>
+                    <span
+                      className="text-xs"
+                      style={{ color: "var(--rf-txt3)" }}
+                    >
+                      Any file type supported
+                    </span>
                   </div>
                 )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </>
+              </label>
+              {docUploadPct !== null && (
+                <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+                  Uploading… {docUploadPct}%
+                </p>
+              )}
+              <button
+                type="button"
+                disabled={moduleBusy}
+                onClick={submitNewDoc}
+                className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
+                style={{
+                  background: "var(--rf-accent)",
+                  color: "#fff",
+                  opacity: moduleBusy ? 0.6 : 1,
+                }}
+              >
+                {moduleBusy ? "Uploading…" : "Upload document"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {moduleLoading.docs ? (
+          <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+            Loading documents…
+          </p>
+        ) : docList.length === 0 ? (
+          <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
+            No documents found — upload one above to get started.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {docList.map((d) => {
+              const selected = selectedDocIds.includes(d.id);
+              return (
+                <div
+                  key={d.id}
+                  className="rounded-lg px-3 py-2.5"
+                  style={{
+                    background: selected ? "var(--rf-bg3)" : "var(--rf-bg2)",
+                    border: `1px solid ${selected ? "var(--rf-accent)" : "var(--rf-border2, #adbbd8)"}`,
+                  }}
+                >
+                  <Checkbox
+                    checked={selected}
+                    onChange={() => toggleDoc(d.id)}
+                    label={d.title || d.fileName || "Document"}
+                  />
+                  {(d.fileName || d.category) && (
+                    <div
+                      className="text-xs mt-1 ml-7 flex flex-wrap gap-x-2"
+                      style={{ color: "var(--rf-txt3)" }}
+                    >
+                      {d.fileName && (
+                        <span className="truncate">{d.fileName}</span>
+                      )}
+                      {d.category && (
+                        <span>· {String(d.category).replace(/_/g, " ")}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </>
     );
   };
 
@@ -2381,125 +2444,127 @@ export default function NewProjectsModule() {
   const renderTeam = () => {
     const q = search.teams.trim().toLowerCase();
     const teamRows = teamCatalog.filter(
-      (t) => !q || String(t.name || "").toLowerCase().includes(q),
+      (t) =>
+        !q ||
+        String(t.name || "")
+          .toLowerCase()
+          .includes(q),
     );
     return (
-    <>
-      <StepIntro>
-        Link teams from the Teams module (or create one), and/or add key people
-        below. Manage the full crew on the project Team page.
-      </StepIntro>
+      <>
+        <StepIntro>
+          Link teams from the Teams module (or create one), and/or add key
+          people below. Manage the full crew on the project Team page.
+        </StepIntro>
 
-      <ModulePicker
-        title="Teams"
-        hint="Select existing teams to attach, or create a new team."
-        search={search.teams}
-        onSearch={(e) =>
-          setSearch((p) => ({ ...p, teams: e.target.value }))
-        }
-        addLabel="+ New team"
-        addOpen={addOpen.teams}
-        onToggleAdd={() => setAddOpen((p) => ({ ...p, teams: !p.teams }))}
-        loading={moduleLoading.teams}
-        isEmpty={teamRows.length === 0}
-        emptyText="No teams found."
-        addForm={
-          <div className="flex flex-col gap-3">
-            <TextInput
-              placeholder="Team name *"
-              value={newTeam.name}
-              onChange={(e) =>
-                setNewTeam((p) => ({ ...p, name: e.target.value }))
+        <ModulePicker
+          title="Teams"
+          hint="Select existing teams to attach, or create a new team."
+          search={search.teams}
+          onSearch={(e) => setSearch((p) => ({ ...p, teams: e.target.value }))}
+          addLabel="+ New team"
+          addOpen={addOpen.teams}
+          onToggleAdd={() => setAddOpen((p) => ({ ...p, teams: !p.teams }))}
+          loading={moduleLoading.teams}
+          isEmpty={teamRows.length === 0}
+          emptyText="No teams found."
+          addForm={
+            <div className="flex flex-col gap-3">
+              <TextInput
+                placeholder="Team name *"
+                value={newTeam.name}
+                onChange={(e) =>
+                  setNewTeam((p) => ({ ...p, name: e.target.value }))
+                }
+              />
+              <button
+                type="button"
+                disabled={moduleBusy}
+                onClick={submitNewTeam}
+                className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
+                style={{
+                  background: "var(--rf-accent)",
+                  color: "#fff",
+                  opacity: moduleBusy ? 0.6 : 1,
+                }}
+              >
+                {moduleBusy ? "Creating…" : "Create team"}
+              </button>
+            </div>
+          }
+        >
+          {teamRows.map((t) => (
+            <PickRow
+              key={t.id}
+              selected={linkedTeamIds.includes(t.id)}
+              onClick={() => toggleTeamLink(t)}
+              title={t.name || "Team"}
+              subtitle={
+                t.memberCount != null ? `${t.memberCount} member(s)` : undefined
               }
             />
-            <button
-              type="button"
-              disabled={moduleBusy}
-              onClick={submitNewTeam}
-              className="self-start px-4 py-2.5 rounded-xl text-sm font-bold"
-              style={{
-                background: "var(--rf-accent)",
-                color: "#fff",
-                opacity: moduleBusy ? 0.6 : 1,
-              }}
-            >
-              {moduleBusy ? "Creating…" : "Create team"}
-            </button>
-          </div>
-        }
-      >
-        {teamRows.map((t) => (
-          <PickRow
-            key={t.id}
-            selected={linkedTeamIds.includes(t.id)}
-            onClick={() => toggleTeamLink(t)}
-            title={t.name || "Team"}
-            subtitle={
-              t.memberCount != null ? `${t.memberCount} member(s)` : undefined
-            }
-          />
-        ))}
-      </ModulePicker>
+          ))}
+        </ModulePicker>
 
-      <label className="uppercase block mb-2.5" style={labelStyle}>
-        Key people
-      </label>
-      <div className="flex flex-col gap-3">
-        {team.map((t, i) => (
-          <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <TextInput
-              placeholder="Name"
-              value={t.name}
-              onChange={(e) => updateTeam(i, "name", e.target.value)}
-            />
-            <TextInput
-              placeholder="Company"
-              value={t.company}
-              onChange={(e) => updateTeam(i, "company", e.target.value)}
-            />
-            <div className="flex gap-2">
-              <SelectInput
-                value={t.role}
-                onChange={(e) => updateTeam(i, "role", e.target.value)}
-              >
-                {opts.teamRoles.map((r) => (
-                  <option key={r}>{r}</option>
-                ))}
-              </SelectInput>
-              {team.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setTeam((p) => p.filter((_, idx) => idx !== i))
-                  }
-                  className="px-3 rounded-xl text-sm font-bold"
-                  style={{
-                    color: "var(--rf-red)",
-                    border: "1px solid var(--rf-border, #c5d2ea)",
-                  }}
-                  title="Remove"
+        <label className="uppercase block mb-2.5" style={labelStyle}>
+          Key people
+        </label>
+        <div className="flex flex-col gap-3">
+          {team.map((t, i) => (
+            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <TextInput
+                placeholder="Name"
+                value={t.name}
+                onChange={(e) => updateTeam(i, "name", e.target.value)}
+              />
+              <TextInput
+                placeholder="Company"
+                value={t.company}
+                onChange={(e) => updateTeam(i, "company", e.target.value)}
+              />
+              <div className="flex gap-2">
+                <SelectInput
+                  value={t.role}
+                  onChange={(e) => updateTeam(i, "role", e.target.value)}
                 >
-                  ×
-                </button>
-              )}
+                  {opts.teamRoles.map((r) => (
+                    <option key={r}>{r}</option>
+                  ))}
+                </SelectInput>
+                {team.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setTeam((p) => p.filter((_, idx) => idx !== i))
+                    }
+                    className="px-3 rounded-xl text-sm font-bold"
+                    style={{
+                      color: "var(--rf-red)",
+                      border: "1px solid var(--rf-border, #c5d2ea)",
+                    }}
+                    title="Remove"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={() =>
-          setTeam((p) => [
-            ...p,
-            { name: "", company: "", role: "Project Manager" },
-          ])
-        }
-        className="mt-3 text-sm font-bold"
-        style={{ color: "var(--rf-accent)" }}
-      >
-        + Add another person
-      </button>
-    </>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            setTeam((p) => [
+              ...p,
+              { name: "", company: "", role: "Project Manager" },
+            ])
+          }
+          className="mt-3 text-sm font-bold"
+          style={{ color: "var(--rf-accent)" }}
+        >
+          + Add another person
+        </button>
+      </>
     );
   };
 
@@ -2638,7 +2703,11 @@ export default function NewProjectsModule() {
                   cursor: submitting ? "not-allowed" : "pointer",
                 }}
               >
-                {isLast ? (submitting ? "Creating…" : "Create project") : "Next"}
+                {isLast
+                  ? submitting
+                    ? "Creating…"
+                    : "Create project"
+                  : "Next"}
               </button>
             </div>
           </div>
@@ -2738,7 +2807,7 @@ export default function NewProjectsModule() {
 
             <button
               type="button"
-              onClick={() => router.push("/projectsDetailNew")}
+              onClick={() => router.push(`/projectsDetailNew/${p.id}`)}
               className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
               style={{ background: "var(--rf-accent)", color: "#fff" }}
             >

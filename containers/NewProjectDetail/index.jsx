@@ -35,10 +35,16 @@ import {
   listCommissioningTests,
   recordTestResult,
 } from "../../services/CommissioningTests";
-import { listMilestones, createMilestone } from "../../services/ScheduleMilestones";
+import {
+  listMilestones,
+  createMilestone,
+} from "../../services/ScheduleMilestones";
 import { getSubmittals, createSubmittal } from "../../services/Submittals";
 import { getTARFs, createTARF } from "../../services/TARF";
-import { getProcurementItems, createProcurement } from "../../services/Procurement";
+import {
+  getProcurementItems,
+  createProcurement,
+} from "../../services/Procurement";
 import { getProcurementV2Items } from "../../services/Finance/ProcurementV2";
 import { getProjectFeed } from "../../services/OperationalFeed";
 import {
@@ -55,6 +61,7 @@ import {
   createSafetyItem,
   removeSafetyItem,
 } from "../../services/SafetyItems";
+import { useParams } from "next/navigation";
 
 /* ================================================================== *
  * Project Playbook — the whole project on one screen, scoped to the
@@ -922,6 +929,7 @@ function LockMsg({ children, style }) {
 
 /* ============================== component ============================== */
 export default function NewProjectDetail() {
+  const params = useParams();
   const [db, setDb] = useState(() => structuredClone(SEED));
   const [ct, setCt] = useState("gc");
   const [ri, setRi] = useState(0);
@@ -932,7 +940,8 @@ export default function NewProjectDetail() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [laAdd, setLaAdd] = useState(null); // { wk, trade, area } when add-activity modal open
   const [toast, setToast] = useState("");
-  const [projectId, setProjectId] = useState(null);
+  console.log(params);
+  const projectId = params?.id;
   const [safetyTab, setSafetyTab] = useState("CERTIFICATION");
   // controlled inline add-form for the active Safety tab
   const [safetyForm, setSafetyForm] = useState({
@@ -1234,11 +1243,7 @@ export default function NewProjectDetail() {
         when: ago(e.createdAt ?? Date.now()),
         // Operational-feed entries nest the actor under `actor`.
         who: e.actor?.displayName ?? e.actorDisplayName ?? "system",
-        ct: (
-          e.actor?.companyCode ??
-          e.actorCompanyCode ??
-          "gc"
-        ).toLowerCase(),
+        ct: (e.actor?.companyCode ?? e.actorCompanyCode ?? "gc").toLowerCase(),
         text: [e.action, e.target].filter(Boolean).join(" — "),
       })),
       tasks: rows(tasksR).map((t) => ({
@@ -1279,19 +1284,7 @@ export default function NewProjectDetail() {
   useEffect(() => {
     (async () => {
       try {
-        const fromUrl = new URLSearchParams(window.location.search).get("id");
-        let pid = fromUrl;
-        if (!pid) {
-          const list = norm(await listV2Projects({ limit: 1 }));
-          pid = (list?.data ?? list ?? [])[0]?.id ?? null;
-        }
-        if (!pid) {
-          flash("No V2 project found — create one from the Projects wizard");
-          // data load settled
-          return;
-        }
-        setProjectId(pid);
-        await refresh(pid);
+        await refresh(projectId);
       } catch {
         flash("Could not load project playbook");
         // data load settled
@@ -1361,7 +1354,11 @@ export default function NewProjectDetail() {
           d.activity = entries.map((e) => ({
             when: ago(e.createdAt ?? Date.now()),
             who: e.actor?.displayName ?? e.actorDisplayName ?? "system",
-            ct: (e.actor?.companyCode ?? e.actorCompanyCode ?? "gc").toLowerCase(),
+            ct: (
+              e.actor?.companyCode ??
+              e.actorCompanyCode ??
+              "gc"
+            ).toLowerCase(),
             text: [e.action, e.target].filter(Boolean).join(" — "),
           }));
         });
@@ -1811,7 +1808,11 @@ export default function NewProjectDetail() {
           d.activity = entries.map((e) => ({
             when: ago(e.createdAt ?? Date.now()),
             who: e.actor?.displayName ?? e.actorDisplayName ?? "system",
-            ct: (e.actor?.companyCode ?? e.actorCompanyCode ?? "gc").toLowerCase(),
+            ct: (
+              e.actor?.companyCode ??
+              e.actorCompanyCode ??
+              "gc"
+            ).toLowerCase(),
             text: [e.action, e.target].filter(Boolean).join(" — "),
           }));
         });
@@ -1827,8 +1828,19 @@ export default function NewProjectDetail() {
   const PROC_STATUS = ["NOT_ORDERED", "ORDERED", "IN_TRANSIT", "DELIVERED"];
   const ISSUE_SEVERITY = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
   const MILESTONE_TYPES = ["CONTRACT", "OPS", "INTERNAL"];
-  const SUBMITTAL_TYPES = ["SHOP_DRAWING", "PRODUCT_DATA", "SAMPLE", "OM_MANUAL", "OTHER"];
-  const STAKE_TIERS = ["MANAGE_CLOSELY", "KEEP_SATISFIED", "KEEP_INFORMED", "MONITOR"];
+  const SUBMITTAL_TYPES = [
+    "SHOP_DRAWING",
+    "PRODUCT_DATA",
+    "SAMPLE",
+    "OM_MANUAL",
+    "OTHER",
+  ];
+  const STAKE_TIERS = [
+    "MANAGE_CLOSELY",
+    "KEEP_SATISFIED",
+    "KEEP_INFORMED",
+    "MONITOR",
+  ];
 
   // field types: text | textarea | date | select(options) | number
   const CREATE_SPECS = {
@@ -1837,8 +1849,20 @@ export default function NewProjectDetail() {
       fields: [
         { k: "title", label: "Title", type: "text", required: true },
         { k: "description", label: "Description", type: "textarea" },
-        { k: "severity", label: "Severity", type: "select", options: ISSUE_SEVERITY, default: "MEDIUM" },
-        { k: "kind", label: "Kind", type: "select", options: ["GENERAL", "NCR", "PUNCH_LIST", "SNAG"], default: "GENERAL" },
+        {
+          k: "severity",
+          label: "Severity",
+          type: "select",
+          options: ISSUE_SEVERITY,
+          default: "MEDIUM",
+        },
+        {
+          k: "kind",
+          label: "Kind",
+          type: "select",
+          options: ["GENERAL", "NCR", "PUNCH_LIST", "SNAG"],
+          default: "GENERAL",
+        },
         { k: "dueDate", label: "Due date", type: "date" },
       ],
       submit: async (pid, f) =>
@@ -1857,7 +1881,13 @@ export default function NewProjectDetail() {
       fields: [
         { k: "title", label: "Title", type: "text", required: true },
         { k: "description", label: "Description", type: "textarea" },
-        { k: "severity", label: "Severity", type: "select", options: ISSUE_SEVERITY, default: "HIGH" },
+        {
+          k: "severity",
+          label: "Severity",
+          type: "select",
+          options: ISSUE_SEVERITY,
+          default: "HIGH",
+        },
         {
           k: "assignedToCompanyId",
           label: "Inspecting company",
@@ -1885,8 +1915,20 @@ export default function NewProjectDetail() {
       fields: [
         { k: "name", label: "Name", type: "text", required: true },
         { k: "date", label: "Date", type: "date", required: true },
-        { k: "type", label: "Type", type: "select", options: MILESTONE_TYPES, default: "CONTRACT" },
-        { k: "isCritical", label: "Critical path", type: "select", options: ["No", "Yes"], default: "No" },
+        {
+          k: "type",
+          label: "Type",
+          type: "select",
+          options: MILESTONE_TYPES,
+          default: "CONTRACT",
+        },
+        {
+          k: "isCritical",
+          label: "Critical path",
+          type: "select",
+          options: ["No", "Yes"],
+          default: "No",
+        },
       ],
       submit: async (pid, f) =>
         createMilestone({
@@ -1903,9 +1945,21 @@ export default function NewProjectDetail() {
       fields: [
         { k: "abbr", label: "Tag / abbr", type: "text", required: true },
         { k: "name", label: "Name", type: "text", required: true },
-        { k: "assetType", label: "Discipline / type", type: "text", required: true, default: "Electrical" },
+        {
+          k: "assetType",
+          label: "Discipline / type",
+          type: "text",
+          required: true,
+          default: "Electrical",
+        },
         { k: "quantity", label: "Quantity", type: "number", default: "1" },
-        { k: "procurementOwner", label: "Furnish", type: "select", options: PROC_OWNER, default: "CFCI" },
+        {
+          k: "procurementOwner",
+          label: "Furnish",
+          type: "select",
+          options: PROC_OWNER,
+          default: "CFCI",
+        },
         { k: "manufacturer", label: "Manufacturer", type: "text" },
         { k: "model", label: "Model", type: "text" },
         { k: "location", label: "Location / lineup", type: "text" },
@@ -1928,7 +1982,13 @@ export default function NewProjectDetail() {
       fields: [
         { k: "title", label: "Title", type: "text", required: true },
         { k: "description", label: "Description", type: "textarea" },
-        { k: "type", label: "Type", type: "select", options: SUBMITTAL_TYPES, default: "SHOP_DRAWING" },
+        {
+          k: "type",
+          label: "Type",
+          type: "select",
+          options: SUBMITTAL_TYPES,
+          default: "SHOP_DRAWING",
+        },
         { k: "specSection", label: "Spec section", type: "text" },
         { k: "dueDate", label: "Due date", type: "date" },
       ],
@@ -1946,12 +2006,29 @@ export default function NewProjectDetail() {
     procurement: {
       title: "Add a procurement / long-lead item",
       fields: [
-        { k: "description", label: "Item description", type: "text", required: true },
-        { k: "ownership", label: "Furnish", type: "select", options: PROC_OWNER, default: "OFCI" },
+        {
+          k: "description",
+          label: "Item description",
+          type: "text",
+          required: true,
+        },
+        {
+          k: "ownership",
+          label: "Furnish",
+          type: "select",
+          options: PROC_OWNER,
+          default: "OFCI",
+        },
         { k: "manufacturer", label: "Manufacturer", type: "text" },
         { k: "model", label: "Model", type: "text" },
         { k: "vendor", label: "Vendor", type: "text" },
-        { k: "status", label: "Status", type: "select", options: PROC_STATUS, default: "NOT_ORDERED" },
+        {
+          k: "status",
+          label: "Status",
+          type: "select",
+          options: PROC_STATUS,
+          default: "NOT_ORDERED",
+        },
         { k: "poSubmittalNo", label: "PO / Submittal #", type: "text" },
       ],
       submit: async (pid, f) =>
@@ -1972,9 +2049,24 @@ export default function NewProjectDetail() {
       fields: [
         { k: "personName", label: "Person", type: "text", required: true },
         { k: "companyName", label: "Company", type: "text", required: true },
-        { k: "roleOnSite", label: "Role on site", type: "text", required: true },
-        { k: "expectedStart", label: "Expected start", type: "date", required: true },
-        { k: "expectedEnd", label: "Expected end", type: "date", required: true },
+        {
+          k: "roleOnSite",
+          label: "Role on site",
+          type: "text",
+          required: true,
+        },
+        {
+          k: "expectedStart",
+          label: "Expected start",
+          type: "date",
+          required: true,
+        },
+        {
+          k: "expectedEnd",
+          label: "Expected end",
+          type: "date",
+          required: true,
+        },
       ],
       submit: async (pid, f) =>
         createTARF({
@@ -1994,7 +2086,13 @@ export default function NewProjectDetail() {
         { k: "name", label: "Name", type: "text", required: true },
         { k: "role", label: "Role", type: "text" },
         { k: "company", label: "Company", type: "text" },
-        { k: "tier", label: "Engagement", type: "select", options: STAKE_TIERS, default: "KEEP_INFORMED" },
+        {
+          k: "tier",
+          label: "Engagement",
+          type: "select",
+          options: STAKE_TIERS,
+          default: "KEEP_INFORMED",
+        },
         { k: "email", label: "Email", type: "text" },
         { k: "phone", label: "Phone", type: "text" },
       ],
@@ -2158,8 +2256,7 @@ export default function NewProjectDetail() {
   function Overview() {
     const verified = db.checklists.filter((c) => isDone(c.status)).length;
     const idy = db.identity || {};
-    const fmtDate = (d) =>
-      d ? new Date(d).toLocaleDateString() : "—";
+    const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : "—");
     const titleCase = (s) =>
       s
         ? String(s)
@@ -2574,7 +2671,10 @@ export default function NewProjectDetail() {
       <Card>
         <SectLab>Drawings &amp; P&amp;ID</SectLab>
         {db.drawings.map((d, i) => (
-          <Row key={d.id ?? d.name} style={i === 0 ? { borderTop: 0 } : undefined}>
+          <Row
+            key={d.id ?? d.name}
+            style={i === 0 ? { borderTop: 0 } : undefined}
+          >
             <Pill kind="lvl">{d.type}</Pill>
             <Grow>
               {d.name} <span style={eyebrow}>· {d.eq}</span>
@@ -2725,7 +2825,11 @@ export default function NewProjectDetail() {
 
     const chipFor = (s) => {
       if (s.status === "EXPIRED")
-        return { background: P.rust, color: "#fff", text: `Expired ${s.expiresAt}` };
+        return {
+          background: P.rust,
+          color: "#fff",
+          text: `Expired ${s.expiresAt}`,
+        };
       if (s.status === "EXPIRING")
         return {
           background: "#fbf2dc",
@@ -2769,10 +2873,7 @@ export default function NewProjectDetail() {
         )}
 
         {/* Tabs */}
-        <div
-          className="flex flex-wrap gap-2"
-          style={{ marginBottom: 14 }}
-        >
+        <div className="flex flex-wrap gap-2" style={{ marginBottom: 14 }}>
           {SAFETY_TABS.map((t) => {
             const c = items.filter((s) => s.kind === t.id).length;
             const active = t.id === safetyTab;
@@ -2901,7 +3002,8 @@ export default function NewProjectDetail() {
               padding: "10px 2px",
             }}
           >
-            No {SAFETY_TABS.find((t) => t.id === safetyTab)?.label.toLowerCase()}{" "}
+            No{" "}
+            {SAFETY_TABS.find((t) => t.id === safetyTab)?.label.toLowerCase()}{" "}
             items yet.
           </div>
         ) : (
