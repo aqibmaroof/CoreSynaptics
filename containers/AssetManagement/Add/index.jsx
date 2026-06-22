@@ -4,6 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createAsset } from "@/services/AssetManagement";
 import { listV2Projects } from "@/services/CxProjectsV2";
+import { required, lengthBetween, numeric } from "@/Utils/validation";
+
+// Asset Tag is a coded identifier — allow alphanumerics plus dash/underscore/dot.
+const ASSET_TAG_PATTERN = /^[A-Za-z0-9._-]+$/;
+// Asset Name is human-readable — letters/numbers/spaces and common punctuation.
+const ASSET_NAME_PATTERN = /^[A-Za-z0-9\s.,'&()/-]+$/;
 
 const CATEGORIES = [
   "IT Equipment",
@@ -96,19 +102,51 @@ export default function AssetAdd() {
     if (errors[k]) setErrors((p) => ({ ...p, [k]: "" }));
   };
 
+  // Optional numeric money field that, when filled, must be strictly > 0.
+  // numeric()'s min is inclusive, so we additionally reject 0 explicitly.
+  const validatePositiveMoney = (raw, label) => {
+    if (!raw) return ""; // optional — empty is allowed
+    const err = numeric(raw, { label, min: 0 });
+    if (err) return err;
+    if (Number(raw) <= 0) return `${label} must be greater than 0.`;
+    return "";
+  };
+
   const validate = () => {
     const e = {};
-    if (!form.assetTag.trim())
-      e.assetTag = "Asset tag is required and must be unique";
-    if (!form.name.trim()) e.name = "Asset name is required";
+
+    const tag = form.assetTag.trim();
+    const tagReq = required(tag, "Asset tag");
+    if (tagReq) e.assetTag = tagReq;
+    else if (tag.length > 50) e.assetTag = "Asset tag cannot exceed 50 characters.";
+    else if (!ASSET_TAG_PATTERN.test(tag))
+      e.assetTag =
+        "Asset tag may only contain letters, numbers, dashes, underscores and dots.";
+
+    const name = form.name.trim();
+    const nameReq = required(name, "Asset name");
+    if (nameReq) e.name = nameReq;
+    else {
+      const lenErr = lengthBetween(name, { max: 100, label: "Asset name" });
+      if (lenErr) e.name = lenErr;
+      else if (!ASSET_NAME_PATTERN.test(name))
+        e.name =
+          "Asset name may only contain letters, numbers, spaces and common punctuation.";
+    }
+
     if (!form.category) e.category = "Category is required";
     if (!form.procurementType) e.procurementType = "ProcurementType is required.";
     else if (!["CFCI", "OFCI"].includes(form.procurementType))
       e.procurementType = "ProcurementType must be one of: CFCI, OFCI.";
-    if (form.purchaseCost && isNaN(Number(form.purchaseCost)))
-      e.purchaseCost = "Must be a valid number";
-    if (form.currentValue && isNaN(Number(form.currentValue)))
-      e.currentValue = "Must be a valid number";
+
+    const costErr = validatePositiveMoney(form.purchaseCost, "Purchase cost");
+    if (costErr) e.purchaseCost = costErr;
+    const valueErr = validatePositiveMoney(form.currentValue, "Current value");
+    if (valueErr) e.currentValue = valueErr;
+
+    const notesErr = lengthBetween(form.notes, { max: 1000, label: "Notes" });
+    if (notesErr) e.notes = notesErr;
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -118,8 +156,8 @@ export default function AssetAdd() {
     setLoading(true);
     try {
       await createAsset({
-        assetTag: form.assetTag,
-        name: form.name,
+        assetTag: form.assetTag.trim(),
+        name: form.name.trim(),
         category: form.category,
         procurementType: form.procurementType,
         // Optional: also materialize this asset in the chosen project's playbook.
@@ -150,7 +188,10 @@ export default function AssetAdd() {
   };
 
   return (
-    <div className="min-h-screen p-6">
+    // This form is styled for a dark surface; give it an opaque dark canvas so
+    // the panels/inputs read as an intentional theme rather than a muddy
+    // translucent overlay on the light app background (RA_TC_069/070/072).
+    <div className="min-h-screen p-6 bg-[#0a1128]">
       <div className="mx-auto">
         <button
           onClick={() => router.back()}
@@ -174,7 +215,7 @@ export default function AssetAdd() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-black mb-2">
+            <h1 className="text-4xl font-bold text-white mb-2">
               Register Asset
             </h1>
             <p className="text-gray-400 mb-8">
@@ -198,7 +239,7 @@ export default function AssetAdd() {
 
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
           {/* ── Identity ─────────────────────────────────────────── */}
-          <section className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-6 space-y-5">
+          <section className="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-5">
             <h2 className="text-sm font-bold text-gray-300 uppercase tracking-widest border-b border-gray-800 pb-3">
               Asset Identity
             </h2>
@@ -210,6 +251,7 @@ export default function AssetAdd() {
                 value={form.assetTag}
                 onChange={set("assetTag")}
                 placeholder="e.g. IT-LAP-0042"
+                maxLength={50}
                 className={`${INPUT} font-mono ${errors.assetTag ? "border-red-500" : ""}`}
               />
               {errors.assetTag && (
@@ -224,6 +266,7 @@ export default function AssetAdd() {
                 value={form.name}
                 onChange={set("name")}
                 placeholder="e.g. Dell Latitude 5540 Laptop"
+                maxLength={100}
                 className={`${INPUT} ${errors.name ? "border-red-500" : ""}`}
               />
               {errors.name && (
@@ -300,7 +343,7 @@ export default function AssetAdd() {
           </section>
 
           {/* ── Financials ───────────────────────────────────────── */}
-          <section className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-6 space-y-5">
+          <section className="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-5">
             <h2 className="text-sm font-bold text-gray-300 uppercase tracking-widest border-b border-gray-800 pb-3">
               Purchase & Value
             </h2>
@@ -319,7 +362,7 @@ export default function AssetAdd() {
                 <FL>Purchase Cost ($)</FL>
                 <input
                   type="number"
-                  min={0}
+                  min={0.01}
                   step={0.01}
                   value={form.purchaseCost}
                   onChange={set("purchaseCost")}
@@ -336,7 +379,7 @@ export default function AssetAdd() {
                 <FL>Current Value ($)</FL>
                 <input
                   type="number"
-                  min={0}
+                  min={0.01}
                   step={0.01}
                   value={form.currentValue}
                   onChange={set("currentValue")}
@@ -368,15 +411,19 @@ export default function AssetAdd() {
           </section>
 
           {/* ── Notes ───────────────────────────────────────────── */}
-          <section className="bg-gray-900/50 rounded-xl border border-gray-800/50 p-6">
+          <section className="bg-gray-900 rounded-xl border border-gray-800 p-6">
             <FL>Notes</FL>
             <textarea
               value={form.notes}
               onChange={set("notes")}
               rows={3}
+              maxLength={1000}
               placeholder="Condition notes, configuration details, accessories..."
-              className={`${INPUT} resize-none`}
+              className={`${INPUT} resize-none ${errors.notes ? "border-red-500" : ""}`}
             />
+            {errors.notes && (
+              <p className="text-red-400 text-xs mt-1">{errors.notes}</p>
+            )}
           </section>
 
           <div className="flex gap-4 justify-end">

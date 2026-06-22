@@ -584,6 +584,15 @@ function VerifyModal({ issue, onClose, onClosed, onError }) {
 }
 
 function Modal({ title, onClose, onSubmit, busy, disabled, submitLabel = "Save", children }) {
+  // Close on Escape so the modal can be dismissed via keyboard (RPI/RHP-054).
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div
       onClick={onClose}
@@ -605,8 +614,11 @@ function Modal({ title, onClose, onSubmit, busy, disabled, submitLabel = "Save",
           borderRadius: 12,
           width: 540,
           maxWidth: "100%",
+          maxHeight: "90vh",
           boxShadow: "0 24px 60px rgba(0,0,0,0.32)",
           overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <div
@@ -619,7 +631,7 @@ function Modal({ title, onClose, onSubmit, busy, disabled, submitLabel = "Save",
         >
           {title}
         </div>
-        <div style={{ padding: 20, display: "grid", gap: 12 }}>{children}</div>
+        <div style={{ padding: 20, display: "grid", gap: 12, overflowY: "auto", flex: 1 }}>{children}</div>
         <div
           style={{
             padding: "12px 20px",

@@ -9,6 +9,11 @@ import { GetZones } from "@/services/Zones";
 import { GetEquipments } from "@/services/Equipment";
 import { getCompanies } from "@/services/Companies";
 import CompanySelect from "@/components/CRM/CompanySelect";
+import {
+  required,
+  lengthBetween,
+  collectErrors,
+} from "@/Utils/validation";
 
 const PRIORITIES = [
   { value: "LOW", label: "Low" },
@@ -74,6 +79,7 @@ export default function RFIAdd() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // Cascade lists
   const [projects, setProjects] = useState([]);
@@ -162,32 +168,27 @@ export default function RFIAdd() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => (prev[name] ? { ...prev, [name]: "" } : prev));
   };
 
-  const validate = () => {
-    if (!formData.rfiNumber.trim()) {
-      setError("RFI Number is required");
-      return false;
-    }
-    if (!formData.subject.trim()) {
-      setError("Subject is required");
-      return false;
-    }
-    if (!formData.question.trim()) {
-      setError("Question is required");
-      return false;
-    }
-    if (!formData.projectId) {
-      setError("Project is required");
-      return false;
-    }
-    setError("");
-    return true;
-  };
+  // Inline per-field validation (RI_TC_016/017/021/022/035/045):
+  // RFI Number + Subject (max 200) + Question + Project all required.
+  const validate = () =>
+    collectErrors({
+      rfiNumber: required(formData.rfiNumber, "RFI Number"),
+      subject:
+        required(formData.subject, "Subject") ||
+        lengthBetween(formData.subject, { max: 200, label: "Subject" }),
+      question: required(formData.question, "Question"),
+      projectId: required(formData.projectId, "Project"),
+    });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    const errs = validate();
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    setError("");
     setLoading(true);
     try {
       await createRFI({
@@ -216,12 +217,26 @@ export default function RFIAdd() {
   const inputCls =
     "w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500";
 
+  const FieldError = ({ name }) =>
+    fieldErrors[name] ? (
+      <p className="mt-1.5 text-sm font-medium text-red-400">
+        {fieldErrors[name]}
+      </p>
+    ) : null;
+
   return (
     <div className="min-h-screen p-6">
       <div className="mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Create RFI</h1>
-          <p className="text-gray-400">Request for Information</p>
+          <h1
+            className="text-4xl font-bold mb-2"
+            style={{ color: "var(--rf-txt, #0f172a)" }}
+          >
+            Create RFI
+          </h1>
+          <p style={{ color: "var(--rf-txt2, #475569)" }}>
+            Request for Information
+          </p>
         </div>
 
         <div className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
@@ -281,6 +296,7 @@ export default function RFIAdd() {
                     placeholder="e.g. RFI-001"
                     className={inputCls}
                   />
+                  <FieldError name="rfiNumber" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-white mb-2">
@@ -304,9 +320,11 @@ export default function RFIAdd() {
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
+                  maxLength={200}
                   placeholder="Brief description of the clarification needed"
                   className={inputCls}
                 />
+                <FieldError name="subject" />
               </div>
 
               <div>
@@ -321,6 +339,7 @@ export default function RFIAdd() {
                   placeholder="Detailed question requiring clarification…"
                   className={`${inputCls} resize-none`}
                 />
+                <FieldError name="question" />
               </div>
             </div>
 
@@ -333,9 +352,7 @@ export default function RFIAdd() {
               {/* Project */}
               <div>
                 <label className="block text-sm font-semibold text-white mb-2">
-                  Project <span className="text-gray-500 font-normal">
-                      (optional)
-                    </span>
+                  Project <span className="text-red-400">*</span>
                 </label>
                 <AppSelect
                   name="projectId"
@@ -347,6 +364,7 @@ export default function RFIAdd() {
                   }))}
                   placeholder="— Select Project —"
                 />
+                <FieldError name="projectId" />
               </div>
 
               {/* Site + Sub-Project */}

@@ -2,6 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { listV2Projects, listV2Assets } from "@/services/CxProjectsV2";
+import {
+  required,
+  lengthBetween,
+  notDuplicate,
+  collectErrors,
+} from "@/Utils/validation";
+
+// Today as a yyyy-mm-dd string, for the Due Date min= attribute and past-date guard.
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+// Spec Section is a coded field (e.g. CSI "16480" or "26 05 00"); allow digits,
+// letters, spaces, dots and dashes only.
+const SPEC_SECTION_PATTERN = /^[A-Za-z0-9.\s-]+$/;
 
 const SUBMITTAL_TYPES = [
   { value: "SHOP_DRAWING", label: "Shop Drawing" },
@@ -71,10 +84,17 @@ function AppSelect({
   );
 }
 
-export default function SubmittalForm({ onSubmit, loading, companies, users }) {
+export default function SubmittalForm({
+  onSubmit,
+  loading,
+  companies,
+  users,
+  existingTitles = [],
+}) {
   // ── Project + Asset (V2) ───────────────────────────────────────────────────
   const [projects, setProjects] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [errors, setErrors] = useState({});
 
   const [form, setForm] = useState({
     cxProjectId: "",
@@ -97,24 +117,63 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
       .catch(() => {});
   }, []);
 
-  // Project → project-scoped assets (V2)
+  // Project → project-scoped assets (V2). Resets are done inside the async flow
+  // (not synchronously in the effect body) so we don't trigger cascading renders.
   useEffect(() => {
-    setAssets([]);
-    setForm((p) => ({ ...p, assetId: "" }));
-    if (!form.cxProjectId) return;
-    listV2Assets(form.cxProjectId, { limit: 100 })
-      .then((d) => setAssets(toArray(d)))
-      .catch(() => {});
+    let alive = true;
+    const projectId = form.cxProjectId;
+    (async () => {
+      const next = projectId
+        ? await listV2Assets(projectId, { limit: 100 })
+            .then((d) => toArray(d))
+            .catch(() => [])
+        : [];
+      if (!alive) return;
+      setAssets(next);
+      setForm((p) => ({ ...p, assetId: "" }));
+    })();
+    return () => {
+      alive = false;
+    };
   }, [form.cxProjectId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
+  };
+
+  const validate = () => {
+    const today = todayStr();
+    const specSection = form.specSection.trim();
+    const fieldErrors = collectErrors({
+      cxProjectId: required(form.cxProjectId, "Project"),
+      title:
+        required(form.title, "Title") ||
+        lengthBetween(form.title, { max: 200, label: "Title" }) ||
+        notDuplicate(form.title, existingTitles, "A submittal with this title"),
+      // Spec Section is optional; only validate format when something is entered.
+      specSection:
+        specSection && !SPEC_SECTION_PATTERN.test(specSection)
+          ? "Spec Section may only contain letters, numbers, spaces, dots and dashes."
+          : "",
+      dueDate:
+        required(form.dueDate, "Due Date") ||
+        (form.dueDate && form.dueDate < today
+          ? "Due Date cannot be in the past."
+          : ""),
+    });
+    setErrors(fieldErrors);
+    return Object.keys(fieldErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (loading) return; // guard against duplicate submission while saving
+    if (!validate()) return;
     const payload = { ...form };
+    payload.title = payload.title.trim();
+    if (payload.specSection) payload.specSection = payload.specSection.trim();
     if (payload.dueDate)
       payload.dueDate = new Date(payload.dueDate).toISOString();
     // Strip empty optional fields
@@ -133,6 +192,13 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
   };
   const labelClass = "text-sm mb-1 block";
   const labelStyle = { color: "var(--rf-txt2)" };
+  // Inline per-field error line, matching the rest of the form's typography.
+  const fieldError = (msg) =>
+    msg ? (
+      <p className="text-xs mt-1" style={{ color: "var(--rf-red)" }}>
+        {msg}
+      </p>
+    ) : null;
 
   return (
     <div
@@ -201,6 +267,7 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
               placeholder="— Select Project —"
               required
             />
+            {fieldError(errors.cxProjectId)}
           </div>
 
           {/* Asset */}
@@ -252,8 +319,10 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
                 placeholder="e.g. UPS-101 Shop Drawing - Primary Feed"
                 className={inputClass}
                 style={inputStyle}
+                maxLength={200}
                 required
               />
+              {fieldError(errors.title)}
             </div>
 
             {/* Type */}
@@ -282,22 +351,27 @@ export default function SubmittalForm({ onSubmit, loading, companies, users }) {
                 placeholder="e.g. 16480"
                 className={inputClass}
                 style={inputStyle}
+                maxLength={50}
               />
+              {fieldError(errors.specSection)}
             </div>
 
             {/* Due Date */}
             <div className="flex flex-col">
               <label className={labelClass} style={labelStyle}>
-                Due Date
+                Due Date *
               </label>
               <input
                 type="date"
                 name="dueDate"
                 value={form.dueDate}
                 onChange={handleChange}
+                min={todayStr()}
                 className={inputClass}
                 style={inputStyle}
+                required
               />
+              {fieldError(errors.dueDate)}
             </div>
           </div>
 

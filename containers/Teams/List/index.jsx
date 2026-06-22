@@ -13,10 +13,6 @@ export default function TeamsList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  useEffect(() => {
-    GetAllTeams();
-  }, []);
-
   const GetAllTeams = async () => {
     try {
       const res = await getTeams();
@@ -26,7 +22,13 @@ export default function TeamsList() {
     }
   };
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    GetAllTeams();
+  }, []);
+
   const removeTeam = async (id) => {
+    if (!window.confirm("Delete this team?")) return;
     try {
       await DeleteTeam(id);
       GetAllTeams();
@@ -57,9 +59,12 @@ export default function TeamsList() {
 
   return (
     <div className="text-white flex flex-col justify-center py-5 px-7">
-      {/* Header */}
+      {/* Header — dark text token so the title is readable on the light page. */}
       <div className="mb-5">
-        <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
+        <h1
+          className="text-3xl font-bold mb-3 tracking-tight"
+          style={{ color: "var(--rf-txt, #0f172a)" }}
+        >
           Teams List
         </h1>
       </div>

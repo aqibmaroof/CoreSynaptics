@@ -594,7 +594,9 @@ function CreateTestModal({ cxProjectId, onClose, onCreated, onError }) {
       .catch(() => {});
   }, [form.cxProjectId]);
 
-  const submit = async () => {
+  const submit = async (e) => {
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
+    if (busy || !form.testName) return;
     setBusy(true);
     try {
       await createCommissioningTest({
@@ -676,7 +678,14 @@ function CreateTestModal({ cxProjectId, onClose, onCreated, onError }) {
         </div>
         <div>
           <div style={labelStyle}>Test name</div>
-          <input style={inputStyle} value={form.testName} onChange={set("testName")} />
+          <input
+            style={inputStyle}
+            value={form.testName}
+            onChange={set("testName")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submit(e);
+            }}
+          />
         </div>
         <div>
           <div style={labelStyle}>Specification / acceptance criteria</div>

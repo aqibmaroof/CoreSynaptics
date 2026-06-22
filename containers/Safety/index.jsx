@@ -2,6 +2,15 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { listV2Projects } from "@/services/CxProjectsV2";
+import {
+  required,
+  validatePersonName,
+  lengthBetween,
+  dateOrder,
+  notDuplicate,
+  collectErrors,
+  NAME_PATTERN,
+} from "@/Utils/validation";
 
 /* ------------------------------------------------------------------ *
  * Config
@@ -33,13 +42,20 @@ const CARD = {
   background: "var(--rf-bg2)",
   border: "1px solid var(--rf-border2)",
 };
-// Border drawn as an inset ring so it survives the global input overrides.
-const FIELD = {
+const fieldCls = "w-full px-3 py-2.5 rounded-lg text-sm outline-none";
+
+// Inset ring turns red when the field has an error.
+const fieldStyle = (err) => ({
   background: "var(--rf-bg2)",
   color: "var(--rf-txt)",
-  boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
-};
-const fieldCls = "w-full px-3 py-2.5 rounded-lg text-sm outline-none";
+  boxShadow: `inset 0 0 0 1px ${err ? "var(--rf-red)" : "var(--rf-border3, #8daacf)"}`,
+});
+const ErrText = ({ msg }) =>
+  msg ? (
+    <span role="alert" className="text-xs mt-1 block" style={{ color: "var(--rf-red)" }}>
+      {msg}
+    </span>
+  ) : null;
 
 let _id = 0;
 
@@ -56,6 +72,8 @@ export default function Safety() {
   const [tab, setTab] = useState("TRAINING");
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [errors, setErrors] = useState({});
+  const [flash, setFlash] = useState(null); // { type: "success"|"error", text }
 
   useEffect(() => {
     listV2Projects({ limit: 100 })
@@ -67,7 +85,10 @@ export default function Safety() {
   }, []);
 
   const projectLabel = (p) => p.name ?? p.projectName ?? p.code ?? p.id;
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k, v) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    setErrors((e) => (e[k] ? { ...e, [k]: undefined } : e));
+  };
 
   const counts = useMemo(() => {
     const c = {};
@@ -91,17 +112,74 @@ export default function Safety() {
     [items, tab],
   );
 
+  // Mirrors the QA contract for this Add form (TC_007..TC_043).
+  const validateSafety = () => {
+    const errs = collectErrors({
+      projectId: required(form.projectId, "Project"), // TC_007
+      name:
+        required(form.name, "Certification") || // TC_008
+        lengthBetween(form.name, { max: 120, label: "Certification" }), // TC_019
+      worker:
+        required(form.worker, "Worker name") || // TC_009
+        validatePersonName(form.worker, "Worker name", NAME_PATTERN), // TC_020, TC_021
+      company: required(form.company, "Company / trade"), // TC_010
+      issued: required(form.issued, "Issued date"), // TC_011
+      expires:
+        required(form.expires, "Expiry date") || // TC_012
+        dateOrder(form.issued, form.expires, { label: "Expiry date" }), // TC_014
+    });
+    // TC_017 — duplicate certification (same cert + worker in this category).
+    if (!errs.name && !errs.worker) {
+      const existingNames = items
+        .filter(
+          (i) =>
+            i.category === tab &&
+            (i.worker || "").trim().toLowerCase() ===
+              form.worker.trim().toLowerCase(),
+        )
+        .map((i) => i.name);
+      const dup = notDuplicate(form.name, existingNames, "Certification");
+      if (dup) errs.name = dup;
+    }
+    return errs;
+  };
+
   const handleAdd = () => {
-    if (!form.name.trim()) return;
+    const errs = validateSafety();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      setFlash({ type: "error", text: "Please fix the highlighted fields." });
+      return;
+    }
+    setErrors({});
     setItems((prev) => [
       ...prev,
-      { id: `s${++_id}`, category: tab, ...form, name: form.name.trim() },
+      {
+        id: `s${++_id}`,
+        category: tab,
+        ...form,
+        // TC_043 — trim text so leading/trailing spaces never persist.
+        name: form.name.trim(),
+        worker: form.worker.trim(),
+        company: form.company.trim(),
+      },
     ]);
     setForm(EMPTY_FORM);
     setShowAdd(false);
+    setFlash({ type: "success", text: "Safety record added." }); // TC_001
   };
 
-  const remove = (id) => setItems((prev) => prev.filter((x) => x.id !== id));
+  const remove = (id) => {
+    setItems((prev) => prev.filter((x) => x.id !== id));
+    setFlash({ type: "success", text: "Record deleted." }); // TC_001 (delete)
+  };
+
+  // Auto-clear the flash so a message never lingers after it's resolved (TC_002).
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 3000);
+    return () => clearTimeout(t);
+  }, [flash]);
 
   return (
     <div className="p-6">
@@ -135,6 +213,29 @@ export default function Safety() {
             + Add
           </button>
         </div>
+
+        {/* Action result — fixed slot so showing it never shifts layout (TC_003) */}
+        {flash && (
+          <div
+            className="px-4 py-2.5 rounded-lg text-sm font-medium mb-4"
+            role="alert"
+            style={
+              flash.type === "success"
+                ? {
+                    background: "color-mix(in srgb, var(--rf-green) 14%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--rf-green) 32%, transparent)",
+                    color: "var(--rf-green)",
+                  }
+                : {
+                    background: "color-mix(in srgb, var(--rf-red) 14%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--rf-red) 32%, transparent)",
+                    color: "var(--rf-red)",
+                  }
+            }
+          >
+            {flash.text}
+          </div>
+        )}
 
         {/* Expiry alert */}
         {expiringSoon > 0 && (
@@ -176,81 +277,97 @@ export default function Safety() {
           <div className="rounded-2xl p-4 mb-4" style={CARD}>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Project — attach the record to a project (listV2Projects) */}
-              <select
-                className={`${fieldCls} md:col-span-3`}
-                style={FIELD}
-                value={form.projectId}
-                onChange={(e) => set("projectId", e.target.value)}
-              >
-                <option value="">— Attach to project —</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {projectLabel(p)}
-                  </option>
-                ))}
-              </select>
+              <div className="md:col-span-3">
+                <select
+                  className={fieldCls}
+                  style={fieldStyle(errors.projectId)}
+                  value={form.projectId}
+                  onChange={(e) => set("projectId", e.target.value)}
+                >
+                  <option value="">— Attach to project * —</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {projectLabel(p)}
+                    </option>
+                  ))}
+                </select>
+                <ErrText msg={errors.projectId} />
+              </div>
 
-              <input
-                className={fieldCls}
-                style={FIELD}
-                placeholder="Certification (e.g. OSHA 30)"
-                value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-              />
-              <input
-                className={fieldCls}
-                style={FIELD}
-                placeholder="Worker name"
-                value={form.worker}
-                onChange={(e) => set("worker", e.target.value)}
-              />
-              <input
-                className={fieldCls}
-                style={FIELD}
-                placeholder="Company / trade"
-                value={form.company}
-                onChange={(e) => set("company", e.target.value)}
-              />
+              <div>
+                <input
+                  className={fieldCls}
+                  style={fieldStyle(errors.name)}
+                  placeholder="Certification (e.g. OSHA 30) *"
+                  maxLength={120}
+                  value={form.name}
+                  onChange={(e) => set("name", e.target.value)}
+                />
+                <ErrText msg={errors.name} />
+              </div>
+              <div>
+                <input
+                  className={fieldCls}
+                  style={fieldStyle(errors.worker)}
+                  placeholder="Worker name *"
+                  maxLength={100}
+                  value={form.worker}
+                  onChange={(e) => set("worker", e.target.value)}
+                />
+                <ErrText msg={errors.worker} />
+              </div>
+              <div>
+                <input
+                  className={fieldCls}
+                  style={fieldStyle(errors.company)}
+                  placeholder="Company / trade *"
+                  maxLength={120}
+                  value={form.company}
+                  onChange={(e) => set("company", e.target.value)}
+                />
+                <ErrText msg={errors.company} />
+              </div>
 
               <div>
                 <label
                   className="block uppercase font-bold mb-1.5"
                   style={{ color: "var(--rf-txt3)", fontSize: 10, letterSpacing: "0.08em" }}
                 >
-                  Issued
+                  Issued *
                 </label>
                 <input
                   type="date"
                   className={fieldCls}
-                  style={FIELD}
+                  style={fieldStyle(errors.issued)}
                   value={form.issued}
                   onChange={(e) => set("issued", e.target.value)}
                 />
+                <ErrText msg={errors.issued} />
               </div>
               <div>
                 <label
                   className="block uppercase font-bold mb-1.5"
                   style={{ color: "var(--rf-txt3)", fontSize: 10, letterSpacing: "0.08em" }}
                 >
-                  Expires
+                  Expires *
                 </label>
                 <input
                   type="date"
                   className={fieldCls}
-                  style={FIELD}
+                  style={fieldStyle(errors.expires)}
+                  min={form.issued || undefined}
                   value={form.expires}
                   onChange={(e) => set("expires", e.target.value)}
                 />
+                <ErrText msg={errors.expires} />
               </div>
               <button
-                className="self-end rounded-lg text-sm font-bold"
+                className="self-start rounded-lg text-sm font-bold"
                 style={{
                   background: "var(--rf-accent)",
                   color: "#fff",
-                  padding: "10px 0",
-                  opacity: form.name.trim() ? 1 : 0.6,
+                  padding: "10px 16px",
                 }}
-                disabled={!form.name.trim()}
                 onClick={handleAdd}
               >
                 Add to project

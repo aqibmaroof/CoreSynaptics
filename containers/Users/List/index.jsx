@@ -44,6 +44,10 @@ export default function PricingPlans() {
         type: "error",
         text: "Error Deleting user : " + error?.message,
       });
+    } finally {
+      // Auto-dismiss so a transient message never lingers after the action has
+      // resolved (TC_002), matching UpdateStatus's behaviour.
+      setTimeout(() => setMessage({ type: "", text: "" }), 3000);
     }
   };
 
@@ -74,10 +78,14 @@ export default function PricingPlans() {
   if (guard.loading || guard.blocked) return guard.fallback;
 
   return (
-    <div className="text-white flex flex-col justify-center py-5 px-7">
-      {/* Header */}
+    <div className="flex flex-col justify-center py-5 px-7">
+      {/* Header — title sits on the light page background, so use the theme's
+          dark text token (not white, which was invisible here) — TC_USER_038. */}
       <div className="mb-5">
-        <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
+        <h1
+          className="text-3xl font-bold mb-3 tracking-tight"
+          style={{ color: "var(--rf-txt, #0f172a)" }}
+        >
           Users Lists
         </h1>
       </div>
@@ -101,7 +109,7 @@ export default function PricingPlans() {
             </div>
           )}
           <div className="flex items-center justify-end ml-auto gap-2">
-            <span className="text-gray-400 text-sm">Sort by</span>
+            <span className="text-gray-300 text-sm">Sort by</span>
             <button className="text-white font-semibold text-sm flex items-center gap-1 hover:text-gray-300 transition-colors">
               Newest
               <svg
@@ -126,7 +134,7 @@ export default function PricingPlans() {
           {/* Search Input */}
           <div className="flex-1 relative">
             <svg
-              className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -143,7 +151,7 @@ export default function PricingPlans() {
               placeholder="Search users"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#0a1128] text-white placeholder-gray-400 pl-12 pr-4 py-3.5 rounded-xl border border-white/20 focus:border-white/40 focus:outline-none transition-colors"
+              className="w-full bg-[#0a1128] text-white placeholder-gray-300 pl-12 pr-4 py-3.5 rounded-xl border border-white/30 focus:border-white/50 focus:outline-none transition-colors"
             />
           </div>
 
@@ -191,26 +199,26 @@ export default function PricingPlans() {
           <table className="w-full min-w-[760px]">
             <thead className="bg-[#080C26] rounded-2xl">
               <tr className="rounded-2xl">
-                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
+                <th className="py-4 px-4 text-gray-100 font-semibold text-sm">
                   #
                 </th>
-                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
+                <th className="py-4 px-4 text-gray-100 font-semibold text-sm">
                   User Name
                 </th>
-                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
+                <th className="py-4 px-4 text-gray-100 font-semibold text-sm">
                   Email
                 </th>
-                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
+                <th className="py-4 px-4 text-gray-100 font-semibold text-sm">
                   Role
                 </th>
-                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
+                <th className="py-4 px-4 text-gray-100 font-semibold text-sm">
                   Permissions
                 </th>
-                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
+                <th className="py-4 px-4 text-gray-100 font-semibold text-sm">
                   Status
                 </th>
 
-                <th className="py-4 px-4 text-gray-200 font-semibold text-sm">
+                <th className="py-4 px-4 text-gray-100 font-semibold text-sm">
                   Action
                 </th>
               </tr>
@@ -291,7 +299,7 @@ export default function PricingPlans() {
                             href={`/Users/Add?id=${user?.id}`}
                             aria-label="Edit user"
                             title="Edit user"
-                            className="text-blue-400 hover:text-blue-300 text-xl cursor-pointer"
+                            className="text-blue-300 hover:text-blue-200 text-xl cursor-pointer"
                           >
                             <FaEdit />
                           </a>
@@ -300,7 +308,7 @@ export default function PricingPlans() {
                           <button
                             aria-label="Delete user"
                             title="Delete user"
-                            className="text-red-400 hover:text-red-300 text-xl cursor-pointer"
+                            className="text-red-300 hover:text-red-200 text-xl cursor-pointer"
                             onClick={() => removeUser(user.id)}
                           >
                             <FaTrash />

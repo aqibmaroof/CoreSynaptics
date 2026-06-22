@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CreateUsers, GetUsersById, UpdateUsers } from "@/services/Users";
 import { useRequirePermission, MODULE } from "@/Utils/rbac";
+import {
+  NAME_PATTERN,
+  MAX_EMAIL,
+  MAX_NAME,
+  validateEmail,
+  validatePersonName,
+} from "@/Utils/validation";
 
 const defaultForm = {
   email: "",
@@ -12,45 +19,21 @@ const defaultForm = {
   roleId: "",
 };
 
-// Letters (incl. accented), spaces, hyphens, apostrophes — e.g. O'Brien, Jean-Luc.
-const NAME_PATTERN = /^[\p{L}\s'-]+$/u;
-// Standard email shape; also rejects embedded spaces.
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MAX_EMAIL = 254;
-const MAX_NAME = 100;
-
 // Mirrors the backend CreateUserDto rules so the user gets immediate feedback.
-function validateForm(form, isEdit) {
+export function validateForm(form, isEdit) {
   const errors = {};
 
   if (!isEdit) {
-    const email = (form.email || "").trim();
-    if (!email) errors.email = "Email is required.";
-    else if (/\s/.test(form.email || ""))
-      errors.email = "Email cannot contain spaces.";
-    else if (!EMAIL_PATTERN.test(email))
-      errors.email = "Enter a valid email address.";
-    else if (email.length > MAX_EMAIL)
-      errors.email = `Email cannot exceed ${MAX_EMAIL} characters.`;
-
+    const emailErr = validateEmail(form.email);
+    if (emailErr) errors.email = emailErr;
     if (!form.roleId) errors.roleId = "Please select a role.";
   }
 
-  const first = (form.firstName || "").trim();
-  if (!first) errors.firstName = "First name is required.";
-  else if (first.length > MAX_NAME)
-    errors.firstName = `First name cannot exceed ${MAX_NAME} characters.`;
-  else if (!NAME_PATTERN.test(first))
-    errors.firstName =
-      "First name may only contain letters, spaces, hyphens, and apostrophes.";
+  const firstErr = validatePersonName(form.firstName, "First name", NAME_PATTERN);
+  if (firstErr) errors.firstName = firstErr;
 
-  const last = (form.lastName || "").trim();
-  if (!last) errors.lastName = "Last name is required.";
-  else if (last.length > MAX_NAME)
-    errors.lastName = `Last name cannot exceed ${MAX_NAME} characters.`;
-  else if (!NAME_PATTERN.test(last))
-    errors.lastName =
-      "Last name may only contain letters, spaces, hyphens, and apostrophes.";
+  const lastErr = validatePersonName(form.lastName, "Last name", NAME_PATTERN);
+  if (lastErr) errors.lastName = lastErr;
 
   return errors;
 }
@@ -161,27 +144,33 @@ export default function AddSubscription() {
 
   const cardGradient = "from-[#FF8E4E]/20";
 
+  // Higher-contrast field chrome: a more opaque fill and lighter placeholder so
+  // the inputs and their hint text are clearly legible on the dark card (TC_USER_028–034).
   const inputBase =
-    "w-full bg-white/10 border rounded-xl px-4 py-3 text-white placeholder-gray-400 text-sm outline-none transition-colors";
+    "w-full bg-white/15 border rounded-xl px-4 py-3 text-white placeholder-gray-300 text-sm outline-none transition-colors";
   const labelBase =
-    "text-gray-200 text-xs uppercase tracking-widest mb-2 block";
+    "text-gray-100 text-xs uppercase tracking-widest mb-2 block";
   const fieldClass = (name) =>
     `${inputBase} ${fieldErrors[name] ? "border-red-500 focus:border-red-500" : accentBorder}`;
   const FieldError = ({ name }) =>
     fieldErrors[name] ? (
-      <p className="mt-1.5 text-red-400 text-xs">{fieldErrors[name]}</p>
+      <p className="mt-1.5 text-red-300 text-xs">{fieldErrors[name]}</p>
     ) : null;
 
   if (guard.loading || guard.blocked) return guard.fallback;
 
   return (
     <div className="flex flex-col mt-5 justify-center py-5 px-7">
-      {/* Header */}
+      {/* Header — sits on the light page background (outside the dark form card),
+          so use the theme's dark text token, not white (was invisible) — TC_USER_038. */}
       <div className=" mb-5">
-        <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
+        <h1
+          className="text-4xl font-bold mb-2 tracking-tight"
+          style={{ color: "var(--rf-txt, #0f172a)" }}
+        >
           {id ? "Edit" : "Add"} Users
         </h1>
-        <p className="text-gray-400 text-sm">
+        <p className="text-sm" style={{ color: "var(--rf-txt2, #475569)" }}>
           {id ? "Update" : "Fill in"} the details{" "}
           {id ? "of created" : "to create a new"} user.
         </p>
@@ -254,11 +243,13 @@ export default function AddSubscription() {
             <label className={labelBase}>
               Role <span className="text-red-400">*</span>
             </label>
+            {/* Plain styling (no daisyUI `select`) so the control matches the
+                other inputs' height and stays within bounds (TC_USER_048/049). */}
             <select
               name="roleId"
               value={form.roleId}
               onChange={handleChange}
-              className={`select ${fieldClass("roleId")}`}
+              className={`${fieldClass("roleId")} h-auto appearance-none`}
             >
               <option
                 className="bg-gradient-to-r from-[#093E7D] to-[#0075FF] rounded-none"

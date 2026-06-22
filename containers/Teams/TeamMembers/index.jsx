@@ -11,6 +11,8 @@ import {
 } from "@/services/Teams";
 import { getUsers } from "@/services/Users";
 
+const MAX_TEAM_MEMBERS = 50;
+
 export default function TeamMembers() {
   const router = useRouter();
   const params = useParams();
@@ -21,6 +23,7 @@ export default function TeamMembers() {
   const [allUsers, setAllUsers] = useState([]);
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [userSearch, setUserSearch] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
   const [addLoading, setAddLoading] = useState(false);
 
@@ -89,6 +92,14 @@ export default function TeamMembers() {
         return;
       }
 
+      if (members.length + newUserIds.length > MAX_TEAM_MEMBERS) {
+        showMessage(
+          "error",
+          `Maximum ${MAX_TEAM_MEMBERS} team members reached.`,
+        );
+        return;
+      }
+
       setAddLoading(true);
       await AddTeamMember(teamId, { userIds: newUserIds });
       setSelectedUserIds([]);
@@ -106,6 +117,7 @@ export default function TeamMembers() {
   };
 
   const handleRemoveMember = async (userId) => {
+    if (!window.confirm("Remove this team member?")) return;
     try {
       await DeleteTeamMember(teamId, userId);
       fetchMembers();
@@ -130,6 +142,12 @@ export default function TeamMembers() {
   const allSelected =
     filteredAvailableUsers.length > 0 &&
     filteredAvailableUsers.every((u) => selectedUserIds.includes(u.id));
+  const atCap = members.length >= MAX_TEAM_MEMBERS;
+  const filteredMembers = members.filter((m) =>
+    `${m.name ?? ""} ${m.firstName ?? ""} ${m.lastName ?? ""} ${m.email ?? ""}`
+      .toLowerCase()
+      .includes(memberSearch.toLowerCase()),
+  );
 
   return (
     <div className="text-white flex flex-col justify-center py-5 px-7">
@@ -154,7 +172,10 @@ export default function TeamMembers() {
           </svg>
           Back to Teams
         </button>
-        <h1 className="text-3xl font-bold text-white mb-1 tracking-tight">
+        <h1
+          className="text-3xl font-bold mb-1 tracking-tight"
+          style={{ color: "var(--rf-txt, #0f172a)" }}
+        >
           {team?.name ?? "Team"} — Members
         </h1>
         <p className="text-gray-400 text-sm">Manage members of this team.</p>
@@ -171,6 +192,12 @@ export default function TeamMembers() {
               </span>
             )}
           </div>
+
+          {atCap && (
+            <div className="mb-3 px-4 py-2.5 rounded-xl bg-red-500/10 border border-red-400/40 text-red-400 text-sm">
+              Maximum {MAX_TEAM_MEMBERS} team members reached.
+            </div>
+          )}
 
           {/* Search */}
           <div className="relative mb-3">
@@ -296,7 +323,7 @@ export default function TeamMembers() {
           {/* Add button */}
           <button
             onClick={handleAddMembers}
-            disabled={selectedUserIds.length === 0 || addLoading}
+            disabled={selectedUserIds.length === 0 || addLoading || atCap}
             className="w-full px-6 py-3 rounded-xl text-sm font-semibold text-white bg-orange-400 hover:bg-orange-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
             {addLoading
@@ -334,6 +361,30 @@ export default function TeamMembers() {
             Current Members ({members.length})
           </h2>
 
+          {/* Search current members */}
+          <div className="relative mb-4">
+            <svg
+              className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+              placeholder="Search members..."
+              className="w-full bg-white/5 border border-orange-400/40 focus:border-orange-400 rounded-xl pl-9 pr-4 py-2.5 text-white placeholder-gray-600 text-sm outline-none transition-colors"
+            />
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-[#080C26] rounded-2xl">
@@ -353,17 +404,19 @@ export default function TeamMembers() {
                 </tr>
               </thead>
               <tbody>
-                {members.length === 0 ? (
+                {filteredMembers.length === 0 ? (
                   <tr>
                     <td
                       colSpan="100%"
                       className="text-center p-13 border-l-1 border-r-1 border-b-1 border-gray-600"
                     >
-                      NO MEMBERS FOUND
+                      {members.length === 0
+                        ? "NO MEMBERS FOUND"
+                        : "NO MEMBERS MATCH YOUR SEARCH"}
                     </td>
                   </tr>
                 ) : (
-                  members.map((member, index) => (
+                  filteredMembers.map((member, index) => (
                     <tr
                       key={member.id ?? member.userId ?? index}
                       className="text-center hover:bg-white/5 transition-colors"

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import SubmittalForm from "@/components/SubmittalsForm";
-import { createSubmittal } from "@/services/Submittals";
+import { createSubmittal, getSubmittals } from "@/services/Submittals";
 import { getCompanies } from "@/services/Companies";
 import { getUsers } from "@/services/Users";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,7 @@ export default function CreateSubmittalContainer() {
   const [message, setMessage] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [users, setUsers] = useState([]);
+  const [existingTitles, setExistingTitles] = useState([]);
 
   useEffect(() => {
     getCompanies()
@@ -26,6 +27,16 @@ export default function CreateSubmittalContainer() {
       .catch(() => {});
     getUsers()
       .then((d) => setUsers(toArray(d)))
+      .catch(() => {});
+    // Existing titles power the duplicate-title guard in the form.
+    getSubmittals({ limit: 1000 })
+      .then((d) =>
+        setExistingTitles(
+          (Array.isArray(d) ? d : (d?.data ?? d?.submittals ?? []))
+            .map((s) => s?.title)
+            .filter(Boolean),
+        ),
+      )
       .catch(() => {});
   }, []);
 
@@ -88,6 +99,7 @@ export default function CreateSubmittalContainer() {
         loading={loading}
         companies={companies}
         users={users}
+        existingTitles={existingTitles}
       />
     </div>
   );

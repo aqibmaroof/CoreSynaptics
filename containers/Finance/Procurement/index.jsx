@@ -366,9 +366,15 @@ export default function Procurement() {
                 value={form.poc}
                 onChange={(e) => set("poc", e.target.value)}
               />
+            </div>
+
+            {/* Footer row kept OUTSIDE the field grid so showing an inline error
+                never reflows the field cells or shifts the Add button (TC_003).
+                The error reserves its own full-width line above the action. */}
+            <div className="mt-3 flex flex-col gap-3">
               {formError && (
                 <p
-                  className="md:col-span-2 text-sm"
+                  className="text-sm"
                   style={{ color: "var(--rf-red, #dc2626)" }}
                   role="alert"
                 >
@@ -376,7 +382,7 @@ export default function Procurement() {
                 </p>
               )}
               <button
-                className="md:col-span-2 rounded-lg text-sm font-bold"
+                className="md:w-1/2 rounded-lg text-sm font-bold py-2.5"
                 style={{
                   background: "var(--rf-accent)",
                   color: "#fff",

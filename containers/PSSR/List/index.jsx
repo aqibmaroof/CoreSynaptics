@@ -18,6 +18,7 @@ import {
 } from "@/services/PSSR";
 import { listV2Projects } from "@/services/CxProjectsV2";
 import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
+import { required, lengthBetween, collectErrors } from "@/Utils/validation";
 
 const C = {
   bg: "#f8fafc",
@@ -189,7 +190,7 @@ export default function PSSRList({ cxProjectId }) {
           lineHeight: 1.55,
         }}
       >
-        <b>PSSR (Pre-Startup Safety Review)</b> is the GC QA/QC's final gate
+        <b>PSSR (Pre-Startup Safety Review)</b> is the GC QA/QC&apos;s final gate
         before authorizing energization. All items must PASS (or be formally
         waived) before sign-off. Each non-compliant answer spawns an{" "}
         <b>Issue (PUNCH_LIST)</b> linked back to the inspection.
@@ -213,7 +214,8 @@ export default function PSSRList({ cxProjectId }) {
         )}
         {!loading && sorted.length === 0 && (
           <div style={{ padding: 36, textAlign: "center", color: C.textMuted }}>
-            No PSSR inspections yet. Click "+ Initiate PSSR" to create one.
+            No PSSR inspections yet. Click &quot;+ Initiate PSSR&quot; to create
+            one.
           </div>
         )}
         {!loading &&
@@ -385,16 +387,32 @@ function Row({ cells, onClick }) {
   );
 }
 
+const EMPTY_FORM = {
+  cxProjectId: "",
+  assetId: "",
+  title: "",
+  description: "",
+};
+
 function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
   const [form, setForm] = useState({
+    ...EMPTY_FORM,
     cxProjectId: cxProjectId ?? "",
-    assetId: "",
-    title: "",
-    description: "",
   });
   const [busy, setBusy] = useState(false);
   const [projects, setProjects] = useState([]);
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const set = (k) => (e) => {
+    setForm({ ...form, [k]: e.target.value });
+    setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: "" } : prev));
+  };
+
+  // RPI_TC_048 — clear all form state before delegating to the parent close.
+  const handleClose = () => {
+    setForm({ ...EMPTY_FORM, cxProjectId: cxProjectId ?? "" });
+    setFieldErrors({});
+    onClose();
+  };
 
   useEffect(() => {
     let alive = true;
@@ -412,7 +430,32 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
     };
   }, []);
 
-  const submit = async () => {
+  // RPI_TC_054 — Esc closes the modal (and resets state via handleClose).
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") handleClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // RPI_TC_016/017/035/045 — Title required + max 120, Project required, with
+  // inline per-field messages.
+  const validate = () =>
+    collectErrors({
+      cxProjectId: required(form.cxProjectId, "Project"),
+      title:
+        required(form.title, "Title") ||
+        lengthBetween(form.title, { max: 120, label: "Title" }),
+    });
+
+  const submit = async (e) => {
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
+    const errs = validate();
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     setBusy(true);
     try {
       const detail = await createPssrInspection({
@@ -432,7 +475,7 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
 
   return (
     <div
-      onClick={onClose}
+      onClick={handleClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -465,6 +508,7 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
         >
           + Initiate PSSR inspection
         </div>
+        <form onSubmit={submit}>
         <div style={{ padding: 20, display: "grid", gap: 12 }}>
           <div>
             <div
@@ -484,7 +528,7 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
               style={{
                 width: "100%",
                 padding: "8px 10px",
-                border: `1px solid ${C.border}`,
+                border: `1px solid ${fieldErrors.cxProjectId ? C.red : C.border}`,
                 borderRadius: 8,
                 fontSize: 13,
                 background: C.surface,
@@ -498,9 +542,16 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
                 </option>
               ))}
             </select>
+            {fieldErrors.cxProjectId && <ErrText>{fieldErrors.cxProjectId}</ErrText>}
           </div>
           <Field label="Asset ID (optional)" v={form.assetId} on={set("assetId")} />
-          <Field label="Title" v={form.title} on={set("title")} />
+          <Field
+            label="Title"
+            v={form.title}
+            on={set("title")}
+            error={fieldErrors.title}
+            maxLength={120}
+          />
           <Field label="Description" v={form.description} on={set("description")} multiline />
           <div
             style={{
@@ -528,7 +579,8 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
           }}
         >
           <button
-            onClick={onClose}
+            type="button"
+            onClick={handleClose}
             style={{
               background: C.brandFade,
               color: C.brandH,
@@ -543,8 +595,8 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
             Cancel
           </button>
           <button
-            onClick={submit}
-            disabled={busy || !form.title || !form.cxProjectId}
+            type="submit"
+            disabled={busy}
             style={{
               background: C.brand,
               color: "#fff",
@@ -554,18 +606,28 @@ function CreateModal({ cxProjectId, onClose, onCreated, onError }) {
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
-              opacity: busy || !form.title ? 0.5 : 1,
+              opacity: busy ? 0.5 : 1,
             }}
           >
             {busy ? "Creating…" : "Create inspection"}
           </button>
         </div>
+        </form>
       </div>
     </div>
   );
 }
 
-function Field({ label, v, on, multiline }) {
+function ErrText({ children }) {
+  return (
+    <div style={{ marginTop: 5, fontSize: 12, fontWeight: 600, color: C.red }}>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, v, on, multiline, error, maxLength }) {
+  const borderColor = error ? C.red : C.border;
   return (
     <div>
       <div
@@ -587,7 +649,7 @@ function Field({ label, v, on, multiline }) {
             width: "100%",
             minHeight: 70,
             padding: "8px 10px",
-            border: `1px solid ${C.border}`,
+            border: `1px solid ${borderColor}`,
             borderRadius: 8,
             fontSize: 13,
             background: C.surface,
@@ -598,10 +660,11 @@ function Field({ label, v, on, multiline }) {
         <input
           value={v}
           onChange={on}
+          maxLength={maxLength}
           style={{
             width: "100%",
             padding: "8px 10px",
-            border: `1px solid ${C.border}`,
+            border: `1px solid ${borderColor}`,
             borderRadius: 8,
             fontSize: 13,
             background: C.surface,
@@ -609,6 +672,7 @@ function Field({ label, v, on, multiline }) {
           }}
         />
       )}
+      {error && <ErrText>{error}</ErrText>}
     </div>
   );
 }

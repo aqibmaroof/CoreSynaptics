@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getV2Catalog,
@@ -20,6 +20,34 @@ import {
   confirmUpload,
 } from "../../services/Documents";
 import { getTeams, CreateTeam } from "../../services/Teams";
+import {
+  required,
+  requiredSelection,
+  numeric,
+  lengthBetween,
+  collectErrors,
+  validateEmail,
+  validatePhone,
+  validatePersonName,
+  dateOrder,
+  notDuplicate,
+  NAME_PATTERN,
+} from "../../Utils/validation";
+
+// Allowed upload extensions + size cap for the Documents & Contracts step
+// (DC_009 unsupported type, DC_010 size limit).
+const ALLOWED_DOC_EXTS = [
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "png",
+  "jpg",
+  "jpeg",
+  "dwg",
+];
+const MAX_DOC_BYTES = 25 * 1024 * 1024; // 25 MB
 
 /* ------------------------------------------------------------------ *
  * Static config
@@ -43,16 +71,16 @@ const IDENTITY_FIELDS = [
     required: true,
     ph: "e.g. DFW39 · Garland",
   },
-  { key: "projectCode", label: "Project Code", ph: "e.g. 25-DR323" },
-  { key: "owner", label: "Owner / Customer", ph: "e.g. Digital Realty" },
-  { key: "location", label: "Location", ph: "e.g. Garland, TX" },
-  { key: "gc", label: "General Contractor", ph: "e.g. HITT" },
-  { key: "ec", label: "Electrical Contractor (EC)", ph: "e.g. CEC" },
-  { key: "mc", label: "Mechanical Contractor (MC)", ph: "e.g. TDIndustries" },
-  { key: "bms", label: "Controls / BMS Contractor", ph: "e.g. Schneider" },
-  { key: "fire", label: "Fire / Life-Safety Contractor", ph: "e.g. JCI" },
-  { key: "neta", label: "Testing Agency (NETA)", ph: "e.g. Shermco" },
-  { key: "cxa", label: "Commissioning Agent (CXA)", ph: "e.g. Iconicx" },
+  { key: "projectCode", label: "Project Code", required: true, ph: "e.g. 25-DR323" },
+  { key: "owner", label: "Owner / Customer", required: true, ph: "e.g. Digital Realty" },
+  { key: "location", label: "Location", required: true, ph: "e.g. Garland, TX" },
+  { key: "gc", label: "General Contractor", required: true, ph: "e.g. HITT" },
+  { key: "ec", label: "Electrical Contractor (EC)", required: true, ph: "e.g. CEC" },
+  { key: "mc", label: "Mechanical Contractor (MC)", required: true, ph: "e.g. TDIndustries" },
+  { key: "bms", label: "Controls / BMS Contractor", required: true, ph: "e.g. Schneider" },
+  { key: "fire", label: "Fire / Life-Safety Contractor", required: true, ph: "e.g. JCI" },
+  { key: "neta", label: "Testing Agency (NETA)", required: true, ph: "e.g. Shermco" },
+  { key: "cxa", label: "Commissioning Agent (CXA)", required: true, ph: "e.g. Iconicx" },
 ];
 
 const REDUNDANCY_OPTS = ["N", "N+1", "N+2", "2N", "2N+1"];
@@ -463,9 +491,15 @@ function buildFinalizePayload({
     baselineScheduleReference: milestones.baselineRef,
   });
   const freezeWindows = (milestones.freezes || [])
-    .filter((f) => f.label || f.from || f.to)
+    .filter((f) => f.label || f.from || f.to || f.reason || f.scope)
     .map((f) =>
-      clean({ label: f.label, startDate: iso(f.from), endDate: iso(f.to) }),
+      clean({
+        label: f.label,
+        startDate: iso(f.from),
+        endDate: iso(f.to),
+        reason: f.reason,
+        scope: f.scope,
+      }),
     );
 
   return clean({
@@ -518,7 +552,9 @@ function toCard(p) {
  * ------------------------------------------------------------------ */
 
 const labelStyle = {
-  color: "var(--rf-txt3)",
+  // --rf-txt2 (not the fainter --rf-txt3) so 10px uppercase labels meet WCAG AA
+  // contrast on the light card (ORP-FAC-061 and all wizard field labels).
+  color: "var(--rf-txt2)",
   letterSpacing: "0.08em",
   fontSize: 10,
   fontWeight: 700,
@@ -546,7 +582,7 @@ const bareControlStyle = {
  * Small building blocks
  * ------------------------------------------------------------------ */
 
-function Field({ label, required, children }) {
+function Field({ label, required, children, error }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="uppercase" style={labelStyle}>
@@ -554,15 +590,27 @@ function Field({ label, required, children }) {
         {required && <span style={{ color: "var(--rf-red)" }}> *</span>}
       </label>
       {children}
+      {error && (
+        <span role="alert" className="text-xs" style={{ color: "var(--rf-red)" }}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }
 
-function TextInput({ className, style, ...props }) {
+function TextInput({ className, style, error, ...props }) {
   return (
-    <div className={`np-fieldbox ${className || ""}`} style={fieldBoxStyle}>
+    <div
+      className={`np-fieldbox ${className || ""}`}
+      style={{
+        ...fieldBoxStyle,
+        ...(error ? { boxShadow: "inset 0 0 0 1px var(--rf-red)" } : {}),
+      }}
+    >
       <input
         {...props}
+        aria-invalid={error ? true : undefined}
         className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none bg-transparent"
         style={{ ...bareControlStyle, ...(style || {}) }}
       />
@@ -963,6 +1011,8 @@ export default function NewProjectsModule() {
   const router = useRouter();
   const [view, setView] = useState("list"); // "list" | "wizard"
   const [step, setStep] = useState(0);
+  // Per-step inline field errors, keyed by field key. Cleared as the user edits.
+  const [stepErrors, setStepErrors] = useState({});
   const [projects, setProjects] = useState(SEED_PROJECTS);
   const [catalog, setCatalog] = useState(null);
   const [loadingList, setLoadingList] = useState(false);
@@ -1001,6 +1051,52 @@ export default function NewProjectsModule() {
     { name: "", company: "", role: "Project Manager" },
   ]);
 
+  /* ---- Draft persistence: survive an accidental page refresh mid-wizard
+     (TC_SL_021, TC_DC_028, TC_BM_030, TC_TEAM_025). Restored once on mount;
+     saved on every change. Cleared when a project is finalized. ---- */
+  const DRAFT_KEY = "np_wizard_draft_v1";
+  const draftLoaded = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.identity) setIdentity(d.identity);
+        if (d.facility) setFacility(d.facility);
+        if (d.stakeholders) setStakeholders(d.stakeholders);
+        if (d.scope) setScope(d.scope);
+        if (d.assets) setAssets(d.assets);
+        if (d.milestones) setMilestones(d.milestones);
+        if (d.team) setTeam(d.team);
+        if (typeof d.step === "number") setStep(d.step);
+      }
+    } catch {
+      /* corrupt draft — ignore */
+    }
+    draftLoaded.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!draftLoaded.current) return;
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          identity,
+          facility,
+          stakeholders,
+          scope,
+          assets,
+          milestones,
+          team,
+          step,
+        }),
+      );
+    } catch {
+      /* storage full / unavailable — non-fatal */
+    }
+  }, [identity, facility, stakeholders, scope, assets, milestones, team, step]);
+
   /* ---- BE module catalogs for the linked wizard steps ---- */
   const [users, setUsers] = useState([]);
   const [assetCatalog, setAssetCatalog] = useState([]);
@@ -1038,6 +1134,9 @@ export default function NewProjectsModule() {
   });
   const [newTeam, setNewTeam] = useState({ name: "" });
   const [newDoc, setNewDoc] = useState({ title: "", file: null });
+  // Inline error for the doc upload form (type/size/duplicate/title — DC_009,
+  // DC_010, DC_027, DC_028, DC_030, DC_031). Cleared as the user edits.
+  const [docError, setDocError] = useState("");
 
   // Roles list (populated at login) drives the new-user role dropdown.
   const roles = useMemo(() => {
@@ -1132,6 +1231,12 @@ export default function NewProjectsModule() {
   }, [catalog]);
 
   const resetWizard = () => {
+    // Project finalized (or wizard cancelled) — clear the saved draft.
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
     setStep(0);
     setIdentity({});
     setFacility({
@@ -1176,6 +1281,7 @@ export default function NewProjectsModule() {
     });
     setNewTeam({ name: "" });
     setNewDoc({ title: "", file: null });
+    setDocError("");
   };
 
   const cancel = () => {
@@ -1265,8 +1371,28 @@ export default function NewProjectsModule() {
           ],
     );
   const submitNewUser = async () => {
-    if (!newUser.email.trim()) {
-      setError("New user needs an email.");
+    // Full inline validation for the add-team-member form (TC_TEAM_013-046):
+    // email format, name charset + length, role required, duplicate email.
+    const emailErr = validateEmail(newUser.email);
+    const firstErr =
+      required(newUser.firstName, "First name") ||
+      validatePersonName(newUser.firstName, "First name", NAME_PATTERN);
+    const lastErr = newUser.lastName
+      ? validatePersonName(newUser.lastName, "Last name", NAME_PATTERN)
+      : "";
+    const roleErr = required(newUser.roleId, "Role");
+    const firstError = emailErr || firstErr || lastErr || roleErr;
+    if (firstError) {
+      setError(firstError);
+      return;
+    }
+    const dupEmail = (users || []).some(
+      (u) =>
+        (u.email || "").trim().toLowerCase() ===
+        newUser.email.trim().toLowerCase(),
+    );
+    if (dupEmail) {
+      setError("A team member with this email already exists.");
       return;
     }
     setModuleBusy(true);
@@ -1304,8 +1430,21 @@ export default function NewProjectsModule() {
   // Asset Register ← Assets: toggling reflects into the `assets` map (keyed by
   // name) so selected registry assets become ProjectAsset rows at finalize.
   const submitNewAsset = async () => {
-    if (!newAsset.assetTag.trim() || !newAsset.name.trim()) {
-      setError("New asset needs a tag and a name.");
+    // Mandatory tag + name (TC_AR_029/030), length cap (TC_AR_023), and a
+    // duplicate-name guard within the current selection (TC_AR_037).
+    const tag = newAsset.assetTag.trim();
+    const name = newAsset.name.trim();
+    const vErr =
+      required(tag, "Asset tag") ||
+      required(name, "Asset name") ||
+      lengthBetween(name, { max: 120, label: "Asset name" });
+    if (vErr) {
+      setError(vErr);
+      return;
+    }
+    const dupNames = Object.keys(assets);
+    if (dupNames.some((n) => n.trim().toLowerCase() === name.toLowerCase())) {
+      setError(`Asset "${name}" is already in this project.`);
       return;
     }
     setModuleBusy(true);
@@ -1386,13 +1525,62 @@ export default function NewProjectsModule() {
     }
   };
 
+  // Validate a picked file before it's accepted into newDoc: extension allow-list
+  // (DC_009) and size cap (DC_010). Returns an error string, or "" when valid.
+  const validateDocFile = (file) => {
+    if (!file) return "";
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    if (!ALLOWED_DOC_EXTS.includes(ext))
+      return `Unsupported file type ".${ext}". Allowed: ${ALLOWED_DOC_EXTS.join(", ")}.`;
+    if (file.size > MAX_DOC_BYTES)
+      return `File is too large (max ${MAX_DOC_BYTES / 1024 / 1024} MB).`;
+    return "";
+  };
+
+  // Accept a file from the input/drop zone, validating type+size up-front so the
+  // user gets an inline error instead of a failed upload (DC_009 / DC_010).
+  const pickDocFile = (file) => {
+    if (!file) {
+      setNewDoc((p) => ({ ...p, file: null }));
+      return;
+    }
+    const err = validateDocFile(file);
+    if (err) {
+      setDocError(err);
+      setNewDoc((p) => ({ ...p, file: null }));
+      return;
+    }
+    setDocError("");
+    setNewDoc((p) => ({ ...p, file }));
+  };
+
   // Documents ← Documents: real S3 upload (standalone — title + file are enough,
   // project hierarchy is optional and resolved later on the project page).
   const submitNewDoc = async () => {
-    if (!newDoc.title.trim() || !newDoc.file) {
-      setError("Document needs a title and a file.");
+    const title = newDoc.title.trim();
+    // Title required + length cap (DC_030 special chars allowed, DC_031 long
+    // title), file required + type/size (DC_009/DC_010), duplicate title /
+    // duplicate file name against already-known docs (DC_027 / DC_028).
+    const knownTitles = [...uploadedDocs, ...documentsCatalog]
+      .map((d) => d?.title)
+      .filter(Boolean);
+    const knownFileNames = [...uploadedDocs, ...documentsCatalog]
+      .map((d) => d?.fileName)
+      .filter(Boolean);
+    const titleErr =
+      required(title, "Document title") ||
+      lengthBetween(title, { max: 200, label: "Document title" }) ||
+      notDuplicate(title, knownTitles, "Document title");
+    const fileErr = !newDoc.file
+      ? "A file is required."
+      : validateDocFile(newDoc.file) ||
+        notDuplicate(newDoc.file.name, knownFileNames, "File");
+    const firstErr = titleErr || fileErr;
+    if (firstErr) {
+      setDocError(firstErr);
       return;
     }
+    setDocError("");
     setModuleBusy(true);
     setDocUploadPct(0);
     setError("");
@@ -1435,18 +1623,188 @@ export default function NewProjectsModule() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
+  /* --------------------------- validation ---------------------------- */
+
+  // Set an identity field and clear its inline error as the user types.
+  const setIdentityField = (key, value) => {
+    setIdentity((p) => ({ ...p, [key]: value }));
+    setStepErrors((e) => (e[key] ? { ...e, [key]: undefined } : e));
+  };
+  const setFacilityField = (key, value) => {
+    setFacility((p) => ({ ...p, [key]: value }));
+    setStepErrors((e) => (e[key] ? { ...e, [key]: undefined } : e));
+  };
+
+  // Returns a field-error map for the given step ({} when the step is valid).
+  const validateStep = (s) => {
+    if (s === 0) {
+      // Identity — every field is mandatory (TC_ID_016..026).
+      return collectErrors(
+        Object.fromEntries(
+          IDENTITY_FIELDS.map((f) => [
+            f.key,
+            required(identity[f.key], f.label),
+          ]),
+        ),
+      );
+    }
+    if (s === 2) {
+      // Stakeholders — any row the user has begun must be complete and valid:
+      // name + role required, email format, phone format (TC_STK_004-007), and
+      // no duplicate name+company pair (TC_STK_008). Fully-empty rows are skipped.
+      const errs = {};
+      const seen = new Set();
+      stakeholders.forEach((row, i) => {
+        const hasAny = (row.name || row.company || row.email || row.phone || "").trim();
+        if (!hasAny) return;
+        const rowErr = collectErrors({
+          name: required(row.name, "Name"),
+          role: required(row.role, "Role"),
+          email: row.email ? validateEmail(row.email) : "",
+          phone: row.phone ? validatePhone(row.phone, "Phone number") : "",
+        });
+        const key = `${(row.name || "").trim().toLowerCase()}|${(row.company || "").trim().toLowerCase()}`;
+        if (row.name && seen.has(key)) rowErr.name = "Duplicate stakeholder.";
+        if (row.name) seen.add(key);
+        if (Object.keys(rowErr).length) errs[i] = rowErr;
+      });
+      // Stash per-row errors in stepErrors under a namespaced key.
+      return Object.keys(errs).length ? { __stakeholders: errs } : {};
+    }
+    if (s === 1) {
+      // Facility (OPR) — numeric fields reject alphabets/special chars and are
+      // mandatory; at least one voltage class must be chosen (ORP-FAC items).
+      return collectErrors({
+        criticalCapacity: numeric(facility.criticalCapacity, {
+          label: "Critical IT Capacity",
+          min: 0,
+        }),
+        whiteSpace: numeric(facility.whiteSpace, {
+          label: "White Space",
+          min: 0,
+        }),
+        dataHalls: numeric(facility.dataHalls, {
+          label: "Data Halls / Pods",
+          allowDecimal: false,
+          min: 0,
+        }),
+        pue: numeric(facility.pue, { label: "Design PUE", min: 0 }),
+        redundancy: required(facility.redundancy, "Redundancy"),
+        uptime: required(facility.uptime, "Uptime Target"),
+        cooling: required(facility.cooling, "Cooling Type"),
+        voltages: requiredSelection(facility.voltages, "Voltage class"),
+      });
+    }
+    if (s === 3) {
+      // Scope & Levels — at least one commissioning level (TC_SL_020) and a
+      // sampling rate must be chosen (TC_SL_019 ensures a sane default exists).
+      return collectErrors({
+        levels: requiredSelection(scope.levels, "At least one commissioning level"),
+        sampling: required(scope.sampling, "Verification sampling rate"),
+      });
+    }
+    if (s === 4) {
+      // Asset Register — per-asset notes are free text but length-capped
+      // (TC_DC_022, max 1000). Notes are optional, so empty is fine.
+      const errs = {};
+      Object.entries(assets).forEach(([name, d]) => {
+        const noteErr = d?.notes
+          ? lengthBetween(d.notes, { max: 1000, label: "Notes" })
+          : "";
+        if (noteErr) errs[name] = { notes: noteErr };
+      });
+      return Object.keys(errs).length ? { __assets: errs } : {};
+    }
+    if (s === 6) {
+      // Baseline & Milestones — milestone anchor dates must be chronological
+      // (TC_BM_011), the baseline reference is length-capped (TC_BM_013), and
+      // each freeze window the user began must have a label + a valid date
+      // range (TC_BM_019/025/038), with no duplicate windows (TC_BM_029).
+      const errs = {};
+      // Milestone anchors are in declared chronological order; flag any that
+      // precede the previous-filled anchor.
+      let prevKey = null;
+      MILESTONE_DATES.forEach((m) => {
+        const v = milestones[m.key];
+        if (!v) return;
+        if (prevKey && dateOrder(milestones[prevKey], v)) {
+          errs[m.key] = `${m.label} must be on or after ${
+            MILESTONE_DATES.find((x) => x.key === prevKey).label
+          }.`;
+        }
+        prevKey = m.key;
+      });
+      const refErr = milestones.baselineRef
+        ? lengthBetween(milestones.baselineRef, {
+            max: 100,
+            label: "Baseline Schedule Reference",
+          })
+        : "";
+      if (refErr) errs.baselineRef = refErr;
+      // Freeze windows: validate each begun row, dedupe label|from|to.
+      const freezeErrs = {};
+      const seenFz = new Set();
+      (milestones.freezes || []).forEach((fz, i) => {
+        const hasAny = (
+          fz.label ||
+          fz.from ||
+          fz.to ||
+          fz.reason ||
+          fz.scope ||
+          ""
+        ).trim();
+        if (!hasAny) return;
+        const rowErr = collectErrors({
+          label:
+            required(fz.label, "Freeze window label") ||
+            lengthBetween(fz.label, { max: 500, label: "Freeze window label" }),
+          from: required(fz.from, "Start date"),
+          to:
+            required(fz.to, "End date") ||
+            dateOrder(fz.from, fz.to, { label: "End date" }),
+          // Reason/Scope are optional, but length-capped when present
+          // (TC_BM_021 / TC_BM_023).
+          reason: fz.reason
+            ? lengthBetween(fz.reason, { max: 500, label: "Reason" })
+            : "",
+          scope: fz.scope
+            ? lengthBetween(fz.scope, { max: 500, label: "Scope" })
+            : "",
+        });
+        const key = `${(fz.label || "").trim().toLowerCase()}|${fz.from}|${fz.to}`;
+        if (hasAny && seenFz.has(key))
+          rowErr.label = "Duplicate freeze window.";
+        seenFz.add(key);
+        if (Object.keys(rowErr).length) freezeErrs[i] = rowErr;
+      });
+      if (Object.keys(freezeErrs).length) errs.__freezes = freezeErrs;
+      return errs;
+    }
+    return {};
+  };
+
+  // Validate the current step; on failure set inline errors and block advance.
+  const goNext = () => {
+    const errs = validateStep(step);
+    if (Object.keys(errs).length > 0) {
+      setStepErrors(errs);
+      return;
+    }
+    setStepErrors({});
+    setStep((s) => s + 1);
+  };
+
   /* --------------------------- step bodies --------------------------- */
 
   const renderIdentity = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
       {IDENTITY_FIELDS.map((f) => (
-        <Field key={f.key} label={f.label} required={f.required}>
+        <Field key={f.key} label={f.label} required={f.required} error={stepErrors[f.key]}>
           <TextInput
             placeholder={f.ph}
             value={identity[f.key] || ""}
-            onChange={(e) =>
-              setIdentity((p) => ({ ...p, [f.key]: e.target.value }))
-            }
+            error={stepErrors[f.key]}
+            onChange={(e) => setIdentityField(f.key, e.target.value)}
           />
         </Field>
       ))}
@@ -1468,95 +1826,99 @@ export default function NewProjectsModule() {
         system list and gates.
       </StepIntro>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
-        <Field label="Critical IT Capacity (MW)">
+        <Field label="Critical IT Capacity (MW)" required error={stepErrors.criticalCapacity}>
           <TextInput
             placeholder="e.g. 36"
+            inputMode="decimal"
             value={facility.criticalCapacity || ""}
-            onChange={(e) =>
-              setFacility((p) => ({ ...p, criticalCapacity: e.target.value }))
-            }
+            error={stepErrors.criticalCapacity}
+            onChange={(e) => setFacilityField("criticalCapacity", e.target.value)}
           />
         </Field>
-        <Field label="White Space (Sq Ft)">
+        <Field label="White Space (Sq Ft)" required error={stepErrors.whiteSpace}>
           <TextInput
             placeholder="e.g. 120000"
+            inputMode="numeric"
             value={facility.whiteSpace || ""}
-            onChange={(e) =>
-              setFacility((p) => ({ ...p, whiteSpace: e.target.value }))
-            }
+            error={stepErrors.whiteSpace}
+            onChange={(e) => setFacilityField("whiteSpace", e.target.value)}
           />
         </Field>
-        <Field label="Data Halls / Pods">
+        <Field label="Data Halls / Pods" required error={stepErrors.dataHalls}>
           <TextInput
             placeholder="e.g. 2"
+            inputMode="numeric"
             value={facility.dataHalls || ""}
-            onChange={(e) =>
-              setFacility((p) => ({ ...p, dataHalls: e.target.value }))
-            }
+            error={stepErrors.dataHalls}
+            onChange={(e) => setFacilityField("dataHalls", e.target.value)}
           />
         </Field>
-        <Field label="Redundancy">
+        <Field label="Redundancy" required error={stepErrors.redundancy}>
           <SelectInput
             value={facility.redundancy}
-            onChange={(e) =>
-              setFacility((p) => ({ ...p, redundancy: e.target.value }))
-            }
+            onChange={(e) => setFacilityField("redundancy", e.target.value)}
           >
             {opts.redundancy.map((o) => (
               <option key={o}>{o}</option>
             ))}
           </SelectInput>
         </Field>
-        <Field label="Uptime Target">
+        <Field label="Uptime Target" required error={stepErrors.uptime}>
           <SelectInput
             value={facility.uptime}
-            onChange={(e) =>
-              setFacility((p) => ({ ...p, uptime: e.target.value }))
-            }
+            onChange={(e) => setFacilityField("uptime", e.target.value)}
           >
             {opts.uptime.map((o) => (
               <option key={o}>{o}</option>
             ))}
           </SelectInput>
         </Field>
-        <Field label="Cooling Type">
+        <Field label="Cooling Type" required error={stepErrors.cooling}>
           <SelectInput
             value={facility.cooling}
-            onChange={(e) =>
-              setFacility((p) => ({ ...p, cooling: e.target.value }))
-            }
+            onChange={(e) => setFacilityField("cooling", e.target.value)}
           >
             {opts.cooling.map((o) => (
               <option key={o}>{o}</option>
             ))}
           </SelectInput>
         </Field>
-        <Field label="Design PUE">
+        <Field label="Design PUE" required error={stepErrors.pue}>
           <TextInput
             placeholder="e.g. 1.3"
+            inputMode="decimal"
             value={facility.pue || ""}
-            onChange={(e) =>
-              setFacility((p) => ({ ...p, pue: e.target.value }))
-            }
+            error={stepErrors.pue}
+            onChange={(e) => setFacilityField("pue", e.target.value)}
           />
         </Field>
       </div>
 
       <div className="mt-6">
         <label className="uppercase block mb-2.5" style={labelStyle}>
-          Voltage Classes Present
+          Voltage Classes Present <span style={{ color: "var(--rf-red)" }}>*</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {opts.voltages.map((v) => (
             <Chip
               key={v}
               active={facility.voltages.includes(v)}
-              onClick={() => toggleVoltage(v)}
+              onClick={() => {
+                toggleVoltage(v);
+                setStepErrors((e) =>
+                  e.voltages ? { ...e, voltages: undefined } : e,
+                );
+              }}
             >
               {v}
             </Chip>
           ))}
         </div>
+        {stepErrors.voltages && (
+          <span role="alert" className="text-xs mt-1.5 block" style={{ color: "var(--rf-red)" }}>
+            {stepErrors.voltages}
+          </span>
+        )}
       </div>
 
       <div className="mt-6">
@@ -1575,10 +1937,17 @@ export default function NewProjectsModule() {
     </>
   );
 
-  const updateStakeholder = (i, key, val) =>
+  const updateStakeholder = (i, key, val) => {
     setStakeholders((p) =>
       p.map((s, idx) => (idx === i ? { ...s, [key]: val } : s)),
     );
+    // Clear this row's inline error as the user corrects it.
+    setStepErrors((e) => {
+      if (!e.__stakeholders?.[i]?.[key]) return e;
+      const next = { ...e.__stakeholders, [i]: { ...e.__stakeholders[i], [key]: undefined } };
+      return { ...e, __stakeholders: next };
+    });
+  };
 
   const renderStakeholders = () => {
     const q = search.users.trim().toLowerCase();
@@ -1612,7 +1981,9 @@ export default function NewProjectsModule() {
           addForm={
             <div className="flex flex-col gap-3">
               <TextInput
+                type="email"
                 placeholder="Email *"
+                maxLength={254}
                 value={newUser.email}
                 onChange={(e) =>
                   setNewUser((p) => ({ ...p, email: e.target.value }))
@@ -1620,7 +1991,8 @@ export default function NewProjectsModule() {
               />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <TextInput
-                  placeholder="First name"
+                  placeholder="First name *"
+                  maxLength={100}
                   value={newUser.firstName}
                   onChange={(e) =>
                     setNewUser((p) => ({ ...p, firstName: e.target.value }))
@@ -1628,6 +2000,7 @@ export default function NewProjectsModule() {
                 />
                 <TextInput
                   placeholder="Last name"
+                  maxLength={100}
                   value={newUser.lastName}
                   onChange={(e) =>
                     setNewUser((p) => ({ ...p, lastName: e.target.value }))
@@ -1694,20 +2067,37 @@ export default function NewProjectsModule() {
                   <option key={r}>{r}</option>
                 ))}
               </SelectInput>
-              <TextInput
-                placeholder="Name"
-                value={s.name}
-                onChange={(e) => updateStakeholder(i, "name", e.target.value)}
-              />
-              <TextInput
-                placeholder="Email"
-                value={s.email}
-                onChange={(e) => updateStakeholder(i, "email", e.target.value)}
-              />
+              <div>
+                <TextInput
+                  placeholder="Name"
+                  value={s.name}
+                  error={stepErrors.__stakeholders?.[i]?.name}
+                  onChange={(e) => updateStakeholder(i, "name", e.target.value)}
+                />
+                {stepErrors.__stakeholders?.[i]?.name && (
+                  <span role="alert" className="text-xs" style={{ color: "var(--rf-red)" }}>
+                    {stepErrors.__stakeholders[i].name}
+                  </span>
+                )}
+              </div>
+              <div>
+                <TextInput
+                  placeholder="Email"
+                  value={s.email}
+                  error={stepErrors.__stakeholders?.[i]?.email}
+                  onChange={(e) => updateStakeholder(i, "email", e.target.value)}
+                />
+                {stepErrors.__stakeholders?.[i]?.email && (
+                  <span role="alert" className="text-xs" style={{ color: "var(--rf-red)" }}>
+                    {stepErrors.__stakeholders[i].email}
+                  </span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <TextInput
                   placeholder="Phone"
                   value={s.phone}
+                  error={stepErrors.__stakeholders?.[i]?.phone}
                   onChange={(e) =>
                     updateStakeholder(i, "phone", e.target.value)
                   }
@@ -1749,13 +2139,15 @@ export default function NewProjectsModule() {
     );
   };
 
-  const toggleLevel = (l) =>
+  const toggleLevel = (l) => {
     setScope((p) => ({
       ...p,
       levels: p.levels.includes(l)
         ? p.levels.filter((x) => x !== l)
         : [...p.levels, l],
     }));
+    setStepErrors((er) => (er.levels ? { ...er, levels: undefined } : er));
+  };
 
   const renderScope = () => (
     <>
@@ -1773,18 +2165,30 @@ export default function NewProjectsModule() {
           </Chip>
         ))}
       </div>
+      {stepErrors.levels && (
+        <span role="alert" className="text-xs mt-2 block" style={{ color: "var(--rf-red)" }}>
+          {stepErrors.levels}
+        </span>
+      )}
       <p className="text-xs mt-2.5" style={{ color: "var(--rf-txt3)" }}>
         L1 Factory · L2 Install · L3 Energize · L4 Functional/Fault · L5 IST.
         Each level is a gate that must close before the next.
       </p>
 
       <div className="mt-6 max-w-3xl">
-        <Field label="Verification Sampling Rate">
+        <Field
+          label="Verification Sampling Rate"
+          required
+          error={stepErrors.sampling}
+        >
           <SelectInput
             value={scope.sampling}
-            onChange={(e) =>
-              setScope((p) => ({ ...p, sampling: e.target.value }))
-            }
+            onChange={(e) => {
+              setScope((p) => ({ ...p, sampling: e.target.value }));
+              setStepErrors((er) =>
+                er.sampling ? { ...er, sampling: undefined } : er,
+              );
+            }}
           >
             {opts.sampling.map((o) => (
               <option key={o}>{o}</option>
@@ -1815,6 +2219,7 @@ export default function NewProjectsModule() {
     manufacturer: "",
     model: "",
     location: "",
+    notes: "",
     category: a?.category || "",
     assetTag: a?.assetTag || "",
     // Static BQ systems are not yet registered assets — flag them so they get
@@ -1830,8 +2235,26 @@ export default function NewProjectsModule() {
       else next[a.name] = defaultAssetDetail(a);
       return next;
     });
-  const updateAssetField = (name, key, val) =>
-    setAssets((p) => ({ ...p, [name]: { ...p[name], [key]: val } }));
+  const updateAssetField = (name, key, val) => {
+    let v = val;
+    // Quantity: digits only, no alphabets / negatives / zero (TC_AR_011-013).
+    if (key === "qty") {
+      v = String(val).replace(/[^\d]/g, "");
+      if (v === "" || Number(v) < 1) v = v === "" ? "" : "1";
+    }
+    setAssets((p) => ({ ...p, [name]: { ...p[name], [key]: v } }));
+    // Clear this asset's inline note error as the user edits it.
+    if (key === "notes") {
+      setStepErrors((e) =>
+        e.__assets?.[name]?.notes
+          ? {
+              ...e,
+              __assets: { ...e.__assets, [name]: undefined },
+            }
+          : e,
+      );
+    }
+  };
 
   const renderAssets = () => {
     // Names already present in the API-driven Asset Register. Static BQ systems
@@ -2098,6 +2521,37 @@ export default function NewProjectsModule() {
                               }
                             />
                           </div>
+                          <div className="np-fieldbox" style={miniBox}>
+                            <textarea
+                              placeholder="notes (optional)"
+                              maxLength={1000}
+                              rows={2}
+                              value={d.notes || ""}
+                              aria-invalid={
+                                stepErrors.__assets?.[a.name]?.notes
+                                  ? true
+                                  : undefined
+                              }
+                              onChange={(e) =>
+                                updateAssetField(
+                                  a.name,
+                                  "notes",
+                                  e.target.value,
+                                )
+                              }
+                              className="w-full px-3 py-2 rounded-[10px] text-sm outline-none bg-transparent resize-y"
+                              style={bareControlStyle}
+                            />
+                          </div>
+                          {stepErrors.__assets?.[a.name]?.notes && (
+                            <span
+                              role="alert"
+                              className="text-xs"
+                              style={{ color: "var(--rf-red)" }}
+                            >
+                              {stepErrors.__assets[a.name].notes}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2158,10 +2612,13 @@ export default function NewProjectsModule() {
             <div className="flex flex-col gap-3">
               <TextInput
                 placeholder="Document title *"
+                maxLength={200}
+                error={docError}
                 value={newDoc.title}
-                onChange={(e) =>
-                  setNewDoc((p) => ({ ...p, title: e.target.value }))
-                }
+                onChange={(e) => {
+                  setNewDoc((p) => ({ ...p, title: e.target.value }));
+                  if (docError) setDocError("");
+                }}
               />
               <label
                 htmlFor="np-doc-file"
@@ -2169,7 +2626,7 @@ export default function NewProjectsModule() {
                 onDrop={(e) => {
                   e.preventDefault();
                   const f = e.dataTransfer.files?.[0];
-                  if (f) setNewDoc((p) => ({ ...p, file: f }));
+                  if (f) pickDocFile(f);
                 }}
                 className="block rounded-xl p-6 text-center cursor-pointer transition-all"
                 style={{
@@ -2181,12 +2638,8 @@ export default function NewProjectsModule() {
                   id="np-doc-file"
                   type="file"
                   className="hidden"
-                  onChange={(e) =>
-                    setNewDoc((p) => ({
-                      ...p,
-                      file: e.target.files?.[0] || null,
-                    }))
-                  }
+                  accept={ALLOWED_DOC_EXTS.map((x) => `.${x}`).join(",")}
+                  onChange={(e) => pickDocFile(e.target.files?.[0] || null)}
                 />
                 {newDoc.file ? (
                   <div className="flex flex-col items-center gap-1.5">
@@ -2251,6 +2704,15 @@ export default function NewProjectsModule() {
               {docUploadPct !== null && (
                 <p className="text-xs" style={{ color: "var(--rf-txt3)" }}>
                   Uploading… {docUploadPct}%
+                </p>
+              )}
+              {docError && (
+                <p
+                  role="alert"
+                  className="text-xs"
+                  style={{ color: "var(--rf-red)" }}
+                >
+                  {docError}
                 </p>
               )}
               <button
@@ -2318,6 +2780,27 @@ export default function NewProjectsModule() {
     );
   };
 
+  // Update one field on a freeze row and clear that row's inline error.
+  const setFreezeField = (i, key, val) => {
+    setMilestones((p) => ({
+      ...p,
+      freezes: p.freezes.map((x, idx) =>
+        idx === i ? { ...x, [key]: val } : x,
+      ),
+    }));
+    setStepErrors((er) =>
+      er.__freezes?.[i]?.[key]
+        ? {
+            ...er,
+            __freezes: {
+              ...er.__freezes,
+              [i]: { ...er.__freezes[i], [key]: undefined },
+            },
+          }
+        : er,
+    );
+  };
+
   const renderBaseline = () => (
     <>
       <StepIntro>
@@ -2327,26 +2810,40 @@ export default function NewProjectsModule() {
       </StepIntro>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
         {MILESTONE_DATES.map((m) => (
-          <Field key={m.key} label={m.label}>
+          <Field key={m.key} label={m.label} error={stepErrors[m.key]}>
             <TextInput
               type="date"
+              error={stepErrors[m.key]}
               value={milestones[m.key] || ""}
-              onChange={(e) =>
-                setMilestones((p) => ({ ...p, [m.key]: e.target.value }))
-              }
+              onChange={(e) => {
+                const v = e.target.value;
+                setMilestones((p) => ({ ...p, [m.key]: v }));
+                setStepErrors((er) =>
+                  er[m.key] ? { ...er, [m.key]: undefined } : er,
+                );
+              }}
             />
           </Field>
         ))}
       </div>
 
       <div className="mt-5">
-        <Field label="Baseline Schedule Reference">
+        <Field
+          label="Baseline Schedule Reference"
+          error={stepErrors.baselineRef}
+        >
           <TextInput
             placeholder="e.g. DLR-DFW39-28-R0 (P6 Update 28)"
+            maxLength={100}
+            error={stepErrors.baselineRef}
             value={milestones.baselineRef || ""}
-            onChange={(e) =>
-              setMilestones((p) => ({ ...p, baselineRef: e.target.value }))
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              setMilestones((p) => ({ ...p, baselineRef: v }));
+              setStepErrors((er) =>
+                er.baselineRef ? { ...er, baselineRef: undefined } : er,
+              );
+            }}
           />
         </Field>
       </div>
@@ -2361,44 +2858,30 @@ export default function NewProjectsModule() {
           should respect these.
         </p>
         <div className="flex flex-col gap-3">
-          {milestones.freezes.map((fz, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {milestones.freezes.map((fz, i) => {
+            const fErr = stepErrors.__freezes?.[i] || {};
+            return (
+            <div key={i} className="flex flex-col gap-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <TextInput
                 placeholder="Label (e.g. Holiday freeze)"
+                maxLength={500}
+                error={fErr.label}
                 value={fz.label}
-                onChange={(e) =>
-                  setMilestones((p) => ({
-                    ...p,
-                    freezes: p.freezes.map((x, idx) =>
-                      idx === i ? { ...x, label: e.target.value } : x,
-                    ),
-                  }))
-                }
+                onChange={(e) => setFreezeField(i, "label", e.target.value)}
               />
               <TextInput
                 type="date"
+                error={fErr.from}
                 value={fz.from}
-                onChange={(e) =>
-                  setMilestones((p) => ({
-                    ...p,
-                    freezes: p.freezes.map((x, idx) =>
-                      idx === i ? { ...x, from: e.target.value } : x,
-                    ),
-                  }))
-                }
+                onChange={(e) => setFreezeField(i, "from", e.target.value)}
               />
               <div className="flex gap-2">
                 <TextInput
                   type="date"
+                  error={fErr.to}
                   value={fz.to}
-                  onChange={(e) =>
-                    setMilestones((p) => ({
-                      ...p,
-                      freezes: p.freezes.map((x, idx) =>
-                        idx === i ? { ...x, to: e.target.value } : x,
-                      ),
-                    }))
-                  }
+                  onChange={(e) => setFreezeField(i, "to", e.target.value)}
                 />
                 <button
                   type="button"
@@ -2419,14 +2902,56 @@ export default function NewProjectsModule() {
                 </button>
               </div>
             </div>
-          ))}
+            {/* Reason + Scope for the freeze (TC_BM_021 / TC_BM_023) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+              <div>
+                <TextInput
+                  placeholder="Reason (why the schedule is locked)"
+                  maxLength={500}
+                  error={fErr.reason}
+                  value={fz.reason || ""}
+                  onChange={(e) => setFreezeField(i, "reason", e.target.value)}
+                />
+                {fErr.reason && (
+                  <span role="alert" className="text-xs" style={{ color: "var(--rf-red)" }}>
+                    {fErr.reason}
+                  </span>
+                )}
+              </div>
+              <div>
+                <TextInput
+                  placeholder="Scope (what the freeze applies to)"
+                  maxLength={500}
+                  error={fErr.scope}
+                  value={fz.scope || ""}
+                  onChange={(e) => setFreezeField(i, "scope", e.target.value)}
+                />
+                {fErr.scope && (
+                  <span role="alert" className="text-xs" style={{ color: "var(--rf-red)" }}>
+                    {fErr.scope}
+                  </span>
+                )}
+              </div>
+            </div>
+            {(fErr.label || fErr.from || fErr.to) && (
+              <span
+                role="alert"
+                className="text-xs"
+                style={{ color: "var(--rf-red)" }}
+              >
+                {fErr.label || fErr.from || fErr.to}
+              </span>
+            )}
+            </div>
+            );
+          })}
         </div>
         <button
           type="button"
           onClick={() =>
             setMilestones((p) => ({
               ...p,
-              freezes: [...p.freezes, { label: "", from: "", to: "" }],
+              freezes: [...p.freezes, { label: "", from: "", to: "", reason: "", scope: "" }],
             }))
           }
           className="mt-3 text-sm font-bold"
@@ -2626,7 +3151,26 @@ export default function NewProjectsModule() {
           }}
         >
           <div className="mb-6">
-            <Stepper steps={STEPS} current={step} onJump={setStep} />
+            <Stepper
+              steps={STEPS}
+              current={step}
+              onJump={(target) => {
+                // Jumping back is always allowed; jumping forward must pass the
+                // current step's validation so required fields can't be skipped.
+                if (target <= step) {
+                  setStepErrors({});
+                  setStep(target);
+                  return;
+                }
+                const errs = validateStep(step);
+                if (Object.keys(errs).length > 0) {
+                  setStepErrors(errs);
+                  return;
+                }
+                setStepErrors({});
+                setStep(target);
+              }}
+            />
           </div>
 
           {STEP_BODIES[step]()}
@@ -2692,9 +3236,7 @@ export default function NewProjectsModule() {
               <button
                 type="button"
                 disabled={submitting}
-                onClick={() =>
-                  isLast ? createProject() : setStep((s) => s + 1)
-                }
+                onClick={() => (isLast ? createProject() : goNext())}
                 className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
                 style={{
                   background: "var(--rf-accent)",

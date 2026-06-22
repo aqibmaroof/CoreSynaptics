@@ -699,6 +699,16 @@ function RaiseIssueModal({
   const [equipment, setEquipment] = useState([]);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Close on Escape (RHP/RPI-054). The form state is local to this modal, so
+  // unmounting on close discards any unsaved entry — old data never persists.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   // Project → V2 equipment. Linking equipment lets the issue gate its phase in
   // the Project Playbook (same behaviour as Issues/Add).
   useEffect(() => {

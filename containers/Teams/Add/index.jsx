@@ -66,12 +66,15 @@ export default function AddTeam() {
 
   return (
     <div className="flex flex-col mt-5 justify-center py-5 px-7">
-      {/* Header */}
+      {/* Header — dark text token so the title is readable on the light page. */}
       <div className="mb-5">
-        <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
+        <h1
+          className="text-4xl font-bold mb-2 tracking-tight"
+          style={{ color: "var(--rf-txt, #0f172a)" }}
+        >
           {id ? "Edit" : "Add"} Team
         </h1>
-        <p className="text-gray-400 text-sm">
+        <p className="text-sm" style={{ color: "var(--rf-txt2, #475569)" }}>
           {id ? "Update" : "Fill in"} the details{" "}
           {id ? "of the existing" : "to create a new"} team.
         </p>

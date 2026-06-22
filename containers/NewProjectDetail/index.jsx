@@ -62,6 +62,12 @@ import {
   removeSafetyItem,
 } from "../../services/SafetyItems";
 import { useParams } from "next/navigation";
+import {
+  required,
+  lengthBetween,
+  notDuplicate,
+  collectErrors,
+} from "@/Utils/validation";
 
 /* ================================================================== *
  * Project Playbook — the whole project on one screen, scoped to the
@@ -939,6 +945,7 @@ export default function NewProjectDetail() {
   const [actf, setActf] = useState("all");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [laAdd, setLaAdd] = useState(null); // { wk, trade, area } when add-activity modal open
+  const [laErrors, setLaErrors] = useState({}); // { field: message } for the add-activity modal
   const [toast, setToast] = useState("");
   console.log(params);
   const projectId = params?.id;
@@ -1663,12 +1670,42 @@ export default function NewProjectDetail() {
     "GC",
     "CXA",
   ];
+  // Close the add-activity modal, discarding any unsaved field values without
+  // touching db.lookahead (cancel = no side effect: 6WLA_TC_016/017/031/032).
+  // If the user has entered data, confirm before discarding (6WLA_TC_030):
+  // OK = discard & close (031), Cancel = stay on the form with data intact (032).
+  const closeLa = () => {
+    const dirty =
+      laAdd &&
+      ((laAdd.area || "").trim() !== "" ||
+        String(laAdd.wk) !== "1" ||
+        laAdd.trade !== "EC");
+    if (
+      dirty &&
+      !window.confirm("Discard this activity? Your unsaved changes will be lost.")
+    ) {
+      return; // 6WLA_TC_032 — user chose to stay; data intact.
+    }
+    setLaAdd(null);
+    setLaErrors({});
+  };
+
+  // All three fields are mandatory (6WLA_TC_007). Returns a { field: message }
+  // map; empty when valid. Also drives the disabled Add button (6WLA_TC_022).
+  const validateLa = (form) =>
+    collectErrors({
+      wk: required(form?.wk, "Week"),
+      trade: required(form?.trade, "Trade"),
+      area: required(form?.area, "Activity / Area"),
+    });
+
   const submitActivity = async () => {
-    const area = (laAdd.area || "").trim();
-    if (!area) {
-      flash("Enter an activity / area");
+    const errs = validateLa(laAdd);
+    if (Object.keys(errs).length) {
+      setLaErrors(errs);
       return;
     }
+    const area = (laAdd.area || "").trim();
     const wk = Number(laAdd.wk);
     if (!projectId) return;
     try {
@@ -1693,6 +1730,7 @@ export default function NewProjectDetail() {
         });
       });
       setLaAdd(null);
+      setLaErrors({});
       flash("Activity added");
     } catch (err) {
       apiErr(err, "Could not add activity");
@@ -1775,6 +1813,7 @@ export default function NewProjectDetail() {
    */
   const [createOpen, setCreateOpen] = useState(null); // spec key or null
   const [createForm, setCreateForm] = useState({});
+  const [createErrors, setCreateErrors] = useState({}); // { fieldKey: message }
   const [creating, setCreating] = useState(false);
   const [companies, setCompanies] = useState([]); // org companies (hold-point target)
 
@@ -1878,9 +1917,24 @@ export default function NewProjectDetail() {
     },
     holdpoint: {
       title: "Add a hold point",
+      // Block a second submit while a create with the same title is already
+      // saved on this project (duplicate hold-point prevention, RHP_TC_059).
+      dupField: "title",
+      dupExisting: () => (db.holdPoints ?? []).map((i) => i.title),
       fields: [
-        { k: "title", label: "Title", type: "text", required: true },
-        { k: "description", label: "Description", type: "textarea" },
+        {
+          k: "title",
+          label: "Title",
+          type: "text",
+          required: true,
+          maxLength: 200, // RHP_TC_016 / 017 — free text, capped length
+        },
+        {
+          k: "description",
+          label: "Description",
+          type: "textarea",
+          maxLength: 2000, // RHP_TC_021
+        },
         {
           k: "severity",
           label: "Severity",
@@ -1890,22 +1944,28 @@ export default function NewProjectDetail() {
         },
         {
           k: "assignedToCompanyId",
-          label: "Inspecting company",
+          label: "Affected company",
           type: "select",
           optionsFrom: "companies",
-          required: true,
+          required: true, // RHP_TC_043
+        },
+        {
+          k: "notifyCompanyId",
+          label: "Notify company",
+          type: "select",
+          optionsFrom: "companies",
         },
         { k: "dueDate", label: "Due date", type: "date" },
       ],
       submit: async (pid, f) =>
         createIssue({
           cxProjectId: pid,
-          title: f.title,
-          description: f.description || undefined,
+          title: f.title.trim(), // RHP_TC_018 — strip leading/trailing spaces
+          description: f.description?.trim() || undefined,
           severity: f.severity || "HIGH",
           kind: "HOLD_POINT",
           assignedToCompanyId: f.assignedToCompanyId,
-          notifyCompanyId: f.assignedToCompanyId,
+          notifyCompanyId: f.notifyCompanyId || f.assignedToCompanyId,
           dueDate: f.dueDate || undefined,
         }),
       flash: "Hold point added",
@@ -2111,6 +2171,8 @@ export default function NewProjectDetail() {
 
   const createInputStyle = {
     width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
     minHeight: 38,
     border: `1px solid ${P.line}`,
     borderRadius: 9,
@@ -2118,6 +2180,10 @@ export default function NewProjectDetail() {
     padding: "8px 11px",
     fontSize: 14,
     color: P.ink,
+    // Long Notify/Affected company names must wrap, not overflow the modal
+    // and overlap the surrounding UI (RHP_TC_011).
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   };
 
   const openCreate = (key) => {
@@ -2127,7 +2193,39 @@ export default function NewProjectDetail() {
       if (f.default !== undefined) init[f.k] = f.default;
     });
     setCreateForm(init);
+    setCreateErrors({});
     setCreateOpen(key);
+  };
+
+  // Per-field validation for the generic create modal. Returns a
+  // { fieldKey: message } map (empty when the form is valid). Used both to
+  // gate submit and to disable the Add button while the form is invalid.
+  const validateCreateForm = (spec, form) => {
+    if (!spec) return {};
+    const checks = {};
+    (spec.fields || []).forEach((f) => {
+      const raw = form[f.k];
+      if (f.required) {
+        const err = required(raw, f.label);
+        if (err) {
+          checks[f.k] = err;
+          return; // don't pile a length error on an empty required field
+        }
+      }
+      if (f.maxLength && String(raw ?? "").trim()) {
+        checks[f.k] = lengthBetween(raw, { max: f.maxLength, label: f.label });
+      }
+    });
+    // Duplicate guard (e.g. hold-point title already on this project).
+    if (spec.dupField) {
+      const v = form[spec.dupField];
+      if (String(v ?? "").trim() && !checks[spec.dupField]) {
+        const existing =
+          typeof spec.dupExisting === "function" ? spec.dupExisting() : [];
+        checks[spec.dupField] = notDuplicate(v, existing, spec.title);
+      }
+    }
+    return collectErrors(checks);
   };
 
   // Map the active module → which create action(s) its toolbar shows.
@@ -2230,11 +2328,9 @@ export default function NewProjectDetail() {
   const submitCreate = async () => {
     const spec = CREATE_SPECS[createOpen];
     if (!spec || !projectId) return;
-    const missing = (spec.fields || []).find(
-      (f) => f.required && !String(createForm[f.k] ?? "").trim(),
-    );
-    if (missing) {
-      flash(`${missing.label} is required`);
+    const errors = validateCreateForm(spec, createForm);
+    if (Object.keys(errors).length) {
+      setCreateErrors(errors);
       return;
     }
     setCreating(true);
@@ -2243,6 +2339,7 @@ export default function NewProjectDetail() {
       flash(spec.flash || "Added");
       setCreateOpen(null);
       setCreateForm({});
+      setCreateErrors({});
       await refresh(projectId); // re-pull all module lists
       pullFeedSoon(); // and the activity feed (async outbox)
     } catch (err) {
@@ -3543,7 +3640,10 @@ export default function NewProjectDetail() {
             {edit && (
               <button
                 type="button"
-                onClick={() => setLaAdd({ wk: 1, trade: "EC", area: "" })}
+                onClick={() => {
+                  setLaErrors({}); // 6WLA_TC_029 — fresh form on each open
+                  setLaAdd({ wk: 1, trade: "EC", area: "" });
+                }}
                 className="font-mono"
                 style={{
                   fontSize: 10,
@@ -3923,6 +4023,13 @@ export default function NewProjectDetail() {
     }
   }
 
+  // Live form-validity for the generic create modal — drives the disabled
+  // state of the Add button (6WLA_TC_022-style gating, applied to all specs).
+  const createSpec = createOpen ? CREATE_SPECS[createOpen] : null;
+  const createInvalid = createSpec
+    ? Object.keys(validateCreateForm(createSpec, createForm)).length > 0
+    : false;
+
   /* ============================ shell ============================ */
   return (
     <div
@@ -4224,7 +4331,22 @@ export default function NewProjectDetail() {
           onClose={() => setCreateOpen(null)}
         >
           <div className="grid gap-3" style={{ marginBottom: 10 }}>
-            {CREATE_SPECS[createOpen].fields.map((f) => (
+            {CREATE_SPECS[createOpen].fields.map((f) => {
+              const fieldErr = createErrors[f.k];
+              const setField = (val) => {
+                setCreateForm((p) => ({ ...p, [f.k]: val }));
+                if (createErrors[f.k])
+                  setCreateErrors((p) => {
+                    const n = { ...p };
+                    delete n[f.k];
+                    return n;
+                  });
+              };
+              const fieldStyle = {
+                ...createInputStyle,
+                ...(fieldErr ? { borderColor: P.rust } : {}),
+              };
+              return (
               <div key={f.k}>
                 <label
                   style={{
@@ -4243,19 +4365,16 @@ export default function NewProjectDetail() {
                 {f.type === "textarea" ? (
                   <textarea
                     rows={2}
-                    style={createInputStyle}
+                    maxLength={f.maxLength}
+                    style={fieldStyle}
                     value={createForm[f.k] ?? ""}
-                    onChange={(e) =>
-                      setCreateForm((p) => ({ ...p, [f.k]: e.target.value }))
-                    }
+                    onChange={(e) => setField(e.target.value)}
                   />
                 ) : f.type === "select" ? (
                   <select
-                    style={createInputStyle}
+                    style={fieldStyle}
                     value={createForm[f.k] ?? ""}
-                    onChange={(e) =>
-                      setCreateForm((p) => ({ ...p, [f.k]: e.target.value }))
-                    }
+                    onChange={(e) => setField(e.target.value)}
                   >
                     {f.optionsFrom === "companies" ? (
                       <>
@@ -4283,19 +4402,32 @@ export default function NewProjectDetail() {
                           ? "number"
                           : "text"
                     }
-                    style={createInputStyle}
+                    maxLength={f.maxLength}
+                    style={fieldStyle}
                     value={createForm[f.k] ?? ""}
-                    onChange={(e) =>
-                      setCreateForm((p) => ({ ...p, [f.k]: e.target.value }))
-                    }
+                    onChange={(e) => setField(e.target.value)}
                   />
                 )}
+                {fieldErr && (
+                  <div
+                    style={{
+                      color: P.rust,
+                      fontSize: 11,
+                      marginTop: 3,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {fieldErr}
+                  </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
           <button
             type="button"
-            disabled={creating}
+            className="cx-hover-lift"
+            disabled={creating || createInvalid}
             onClick={submitCreate}
             style={{
               width: "100%",
@@ -4306,8 +4438,8 @@ export default function NewProjectDetail() {
               color: "#fff",
               fontWeight: 700,
               fontSize: 14,
-              cursor: creating ? "default" : "pointer",
-              opacity: creating ? 0.6 : 1,
+              cursor: creating || createInvalid ? "default" : "pointer",
+              opacity: creating || createInvalid ? 0.6 : 1,
             }}
           >
             {creating ? "Saving…" : "Add to project"}
@@ -4358,131 +4490,179 @@ export default function NewProjectDetail() {
       )}
 
       {/* Add lookahead activity modal */}
-      {laAdd && (
-        <div
-          onClick={() => setLaAdd(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-            zIndex: 40,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: P.card,
-              border: `1px solid ${P.line}`,
-              borderRadius: 12,
-              padding: 16,
-              width: "100%",
-              maxWidth: 420,
-            }}
-          >
-            <SectLab>Add a lookahead activity</SectLab>
-
-            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>
-              Week
-            </label>
-            <select
-              value={laAdd.wk}
-              onChange={(e) => setLaAdd((p) => ({ ...p, wk: e.target.value }))}
-              style={{
-                ...selWrap,
-                width: "100%",
-                marginBottom: 12,
-                fontWeight: 700,
-              }}
-            >
-              {[1, 2, 3, 4, 5, 6].map((w) => (
-                <option key={w} value={w}>
-                  Week {w}
-                </option>
-              ))}
-            </select>
-
-            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>
-              Trade
-            </label>
-            <select
-              value={laAdd.trade}
-              onChange={(e) =>
-                setLaAdd((p) => ({ ...p, trade: e.target.value }))
-              }
-              style={{ ...selWrap, width: "100%", marginBottom: 12 }}
-            >
-              {LA_TRADES.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-
-            <label style={{ ...eyebrow, display: "block", marginBottom: 4 }}>
-              Activity / Area
-            </label>
-            <input
-              autoFocus
-              value={laAdd.area}
-              onChange={(e) =>
-                setLaAdd((p) => ({ ...p, area: e.target.value }))
-              }
-              onKeyDown={(e) => e.key === "Enter" && submitActivity()}
-              placeholder="e.g. DH02 branch conduit rough-in"
-              style={{
-                width: "100%",
-                height: 38,
-                border: `1px solid ${P.line}`,
-                borderRadius: 9,
-                background: P.card,
-                padding: "0 11px",
-                fontSize: 14,
-                color: P.ink,
-                marginBottom: 14,
-              }}
-            />
-
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setLaAdd(null)}
+      {laAdd &&
+        (() => {
+          const laInvalid = Object.keys(validateLa(laAdd)).length > 0;
+          const setLaField = (k, val) => {
+            setLaAdd((p) => ({ ...p, [k]: val }));
+            if (laErrors[k])
+              setLaErrors((p) => {
+                const n = { ...p };
+                delete n[k];
+                return n;
+              });
+          };
+          const errStyle = (k) =>
+            laErrors[k] ? { borderColor: P.rust } : {};
+          const errMsg = (k) =>
+            laErrors[k] ? (
+              <div
                 style={{
-                  height: 36,
-                  padding: "0 14px",
-                  borderRadius: 8,
-                  border: `1px solid ${P.line}`,
+                  color: P.rust,
+                  fontSize: 11,
+                  marginTop: -8,
+                  marginBottom: 12,
+                  wordBreak: "break-word",
+                }}
+              >
+                {laErrors[k]}
+              </div>
+            ) : null;
+          return (
+            <div
+              onClick={closeLa}
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(0,0,0,0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 16,
+                zIndex: 40,
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
                   background: P.card,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  color: P.ink,
+                  border: `1px solid ${P.line}`,
+                  borderRadius: 12,
+                  padding: 16,
+                  width: "100%",
+                  maxWidth: 420,
+                  maxHeight: "85vh", // 6WLA_TC_025 — never overflow the viewport
+                  overflowY: "auto",
                 }}
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={submitActivity}
-                style={{
-                  height: 36,
-                  padding: "0 16px",
-                  borderRadius: 8,
-                  border: `1px solid ${P.teal}`,
-                  background: P.teal,
-                  color: "#fff",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Add activity
-              </button>
+                <SectLab>Add a lookahead activity</SectLab>
+
+                <label
+                  style={{ ...eyebrow, display: "block", marginBottom: 4 }}
+                >
+                  Week
+                </label>
+                <select
+                  value={laAdd.wk}
+                  onChange={(e) => setLaField("wk", e.target.value)}
+                  style={{
+                    ...selWrap,
+                    ...errStyle("wk"),
+                    width: "100%",
+                    marginBottom: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  {[1, 2, 3, 4, 5, 6].map((w) => (
+                    <option key={w} value={w}>
+                      Week {w}
+                    </option>
+                  ))}
+                </select>
+                {errMsg("wk")}
+
+                <label
+                  style={{ ...eyebrow, display: "block", marginBottom: 4 }}
+                >
+                  Trade
+                </label>
+                <select
+                  value={laAdd.trade}
+                  onChange={(e) => setLaField("trade", e.target.value)}
+                  style={{
+                    ...selWrap,
+                    ...errStyle("trade"),
+                    width: "100%",
+                    marginBottom: 12,
+                  }}
+                >
+                  {LA_TRADES.map((t) => (
+                    <option key={t}>{t}</option>
+                  ))}
+                </select>
+                {errMsg("trade")}
+
+                <label
+                  style={{ ...eyebrow, display: "block", marginBottom: 4 }}
+                >
+                  Activity / Area
+                </label>
+                <input
+                  autoFocus
+                  value={laAdd.area}
+                  onChange={(e) => setLaField("area", e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && !laInvalid && submitActivity()
+                  }
+                  placeholder="e.g. DH02 branch conduit rough-in"
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    border: `1px solid ${P.line}`,
+                    ...errStyle("area"),
+                    borderRadius: 9,
+                    background: P.card,
+                    padding: "0 11px",
+                    fontSize: 14,
+                    color: P.ink,
+                    marginBottom: 14,
+                  }}
+                />
+                {errMsg("area")}
+
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={closeLa}
+                    style={{
+                      height: 36,
+                      padding: "0 14px",
+                      borderRadius: 8,
+                      border: `1px solid ${P.line}`,
+                      background: P.card,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      color: P.ink,
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="cx-hover-lift"
+                    disabled={laInvalid}
+                    onClick={submitActivity}
+                    style={{
+                      height: 36,
+                      padding: "0 16px",
+                      borderRadius: 8,
+                      border: `1px solid ${P.teal}`,
+                      background: P.teal,
+                      color: "#fff",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: laInvalid ? "default" : "pointer",
+                      opacity: laInvalid ? 0.6 : 1,
+                    }}
+                  >
+                    Add activity
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          );
+        })()}
 
       {toast && (
         <div

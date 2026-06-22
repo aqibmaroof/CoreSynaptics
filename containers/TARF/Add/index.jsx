@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createTARF } from "@/services/TARF";
+import { createTARF, getTARFs } from "@/services/TARF";
 import { listV2Projects } from "@/services/CxProjectsV2";
 import { getCompanies } from "@/services/Companies";
+import { PERSON_NAME_PATTERN } from "@/Utils/validation";
 
 const ROLES_ON_SITE = [
   "General Contractor",
@@ -119,26 +120,64 @@ export default function TARFAdd() {
   const validate = () => {
     const e = {};
     if (!form.cxProjectId) e.cxProjectId = "Project is required";
-    if (!form.personName.trim()) e.personName = "Person name is required";
+    const person = form.personName.trim();
+    if (!person) e.personName = "Person name is required";
+    else if (!PERSON_NAME_PATTERN.test(person))
+      e.personName =
+        "Person name may only contain letters, spaces, hyphens, apostrophes and periods";
     if (!form.companyName.trim()) e.companyName = "Company name is required";
     if (!form.roleOnSite) e.roleOnSite = "Role on site is required";
     if (!form.expectedStart) e.expectedStart = "Start date is required";
+    else {
+      // Start date cannot be in the past (TARF-047).
+      const today = new Date().toISOString().slice(0, 10);
+      if (form.expectedStart < today)
+        e.expectedStart = "Start date cannot be in the past";
+    }
     if (!form.expectedEnd) e.expectedEnd = "End date is required";
+    // Single-day access (start === end) is allowed; only reject end before start.
     if (
       form.expectedStart &&
       form.expectedEnd &&
       form.expectedEnd < form.expectedStart
     )
-      e.expectedEnd = "End date must be after start date";
+      e.expectedEnd = "End date must be on or after the start date";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Guard against double-click / re-entry while a submit is in flight (TARF-050).
+    if (loading) return;
     if (!validate()) return;
 
     setLoading(true);
+    // Duplicate-request guard (TARF-048): an identical pending request for the
+    // same person + company + project + window is rejected client-side.
+    try {
+      const res = await getTARFs({ cxProjectId: form.cxProjectId });
+      const existing = Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+      const dup = existing.find(
+        (t) =>
+          (t.personName || "").trim().toLowerCase() ===
+            form.personName.trim().toLowerCase() &&
+          (t.companyName || "").trim().toLowerCase() ===
+            form.companyName.trim().toLowerCase() &&
+          (t.expectedStart || "").slice(0, 10) === form.expectedStart &&
+          (t.expectedEnd || "").slice(0, 10) === form.expectedEnd,
+      );
+      if (dup) {
+        setMessage({
+          type: "error",
+          text: "A matching access request already exists for this person and window.",
+        });
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Non-fatal — if the dup check can't run, fall through to create.
+    }
     try {
       await createTARF({
         ...form,
@@ -371,6 +410,7 @@ export default function TARFAdd() {
                     type="date"
                     value={form.expectedStart}
                     onChange={set("expectedStart")}
+                    min={new Date().toISOString().slice(0, 10)}
                     className={INPUT_CLS}
                     style={fieldStyle(errors.expectedStart)}
                   />

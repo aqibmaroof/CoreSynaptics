@@ -6,8 +6,15 @@ import {
   requestUploadUrl,
   uploadFileToS3,
   confirmUpload,
+  getDocuments,
 } from "@/services/Documents";
 import { listV2Projects, listV2Assets } from "@/services/CxProjectsV2";
+import {
+  required,
+  lengthBetween,
+  notDuplicate,
+  collectErrors,
+} from "@/Utils/validation";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -21,6 +28,48 @@ const CATEGORIES = [
   "CONTRACT",
 ];
 const STEP_LABELS = ["Fill Details", "Uploading to S3", "Confirming"];
+
+// ── File validation constraints (DOC_012, DOC_013) ──
+const MAX_DESCRIPTION = 2000;
+const MAX_FILE_MB = 25;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+const ALLOWED_EXTENSIONS = [
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "png",
+  "jpg",
+  "jpeg",
+  "dwg",
+];
+const ALLOWED_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "image/png",
+  "image/jpeg",
+  "image/vnd.dwg",
+  "image/x-dwg",
+  "application/acad",
+  "application/dwg",
+];
+
+// Returns an error string for an unsupported / oversized file, or "" when valid.
+function validateFile(file) {
+  if (!file) return "Please select a file to upload.";
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  const extOk = ALLOWED_EXTENSIONS.includes(ext);
+  const mimeOk = !file.type || ALLOWED_MIME_TYPES.includes(file.type);
+  if (!extOk || !mimeOk)
+    return `Unsupported file type. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}.`;
+  if (file.size > MAX_FILE_BYTES)
+    return `File is too large (max ${MAX_FILE_MB} MB).`;
+  return "";
+}
 
 function toArray(data) {
   return Array.isArray(data)
@@ -95,6 +144,17 @@ function AppSelect({ name, value, onChange, options, placeholder, disabled }) {
   );
 }
 
+// ─── Inline per-field error (red text under the field) ────────────────────────
+
+function FieldError({ message }) {
+  if (!message) return null;
+  return (
+    <p className="text-xs mt-1.5" style={{ color: "var(--rf-red)" }}>
+      {message}
+    </p>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const EMPTY_FORM = {
@@ -116,10 +176,14 @@ export default function DocumentAdd() {
   const [projects, setProjects] = useState([]);
   const [assets, setAssets] = useState([]);
 
+  // Existing document titles for the selected project (DOC_042 duplicate check)
+  const [existingTitles, setExistingTitles] = useState([]);
+
   // Upload flow state
   const [step, setStep] = useState(0); // 0=idle 1=requesting 2=uploading 3=confirming 4=done
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // ── Cascade effects ────────────────────────────────────────────────────────
 
@@ -129,26 +193,71 @@ export default function DocumentAdd() {
       .catch(() => {});
   }, []);
 
+  // When a project is selected, (re)load its assets and existing document
+  // titles (DOC_042 duplicate check). Resets for the cleared-project case live
+  // in handleChange so the effect body holds no synchronous setState.
   useEffect(() => {
-    setAssets([]);
-    setForm((p) => ({ ...p, assetId: "" }));
-    if (!form.projectId) return;
-    listV2Assets(form.projectId, { limit: 100 })
-      .then((d) => setAssets(toArray(d)))
-      .catch(() => {});
+    const projectId = form.projectId;
+    if (!projectId) return;
+
+    let cancelled = false;
+
+    listV2Assets(projectId, { limit: 100 })
+      .then((d) => !cancelled && setAssets(toArray(d)))
+      .catch(() => !cancelled && setAssets([]));
+
+    getDocuments({ projectId, limit: 200 })
+      .then(
+        (d) =>
+          !cancelled &&
+          setExistingTitles(
+            toArray(d)
+              .map((doc) => doc?.title)
+              .filter(Boolean),
+          ),
+      )
+      .catch(() => !cancelled && setExistingTitles([]));
+
+    return () => {
+      cancelled = true;
+    };
   }, [form.projectId]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) =>
+      // Changing the project clears its dependent selection.
+      name === "projectId"
+        ? { ...prev, projectId: value, assetId: "" }
+        : { ...prev, [name]: value },
+    );
+    if (name === "projectId") {
+      // Reset project-scoped lists so stale data can't leak across projects.
+      setAssets([]);
+      setExistingTitles([]);
+    }
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSelectedFile(file);
+    // DOC_012 / DOC_013 — validate type + size at selection time.
+    const fileErr = validateFile(file);
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      if (fileErr) next.file = fileErr;
+      else delete next.file;
+      return next;
+    });
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (ev) => setFilePreview(ev.target?.result);
@@ -158,19 +267,36 @@ export default function DocumentAdd() {
     }
   };
 
-  const validate = () => {
-    if (!form.title.trim()) return "Title is required.";
-    if (!selectedFile) return "Please select a file to upload.";
-    return null;
-  };
+  // Builds a {field: errorString} map of all failing rules (DOC_007..DOC_054).
+  const validate = () =>
+    collectErrors({
+      file: validateFile(selectedFile),
+      // DOC_007 — description mandatory; DOC_028 — max length 2000.
+      description:
+        required(form.description, "Description") ||
+        lengthBetween(form.description, {
+          max: MAX_DESCRIPTION,
+          label: "Description",
+        }),
+      // DOC_008 — category mandatory.
+      category: required(form.category, "Category"),
+      // DOC_009 — project (Project Hierarchy) mandatory.
+      projectId: required(form.projectId, "Project"),
+      // Title was already required; keep it + DOC_042 duplicate-title check.
+      title:
+        required(form.title, "Title") ||
+        notDuplicate(form.title, existingTitles, "A document with this title"),
+    });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const err = validate();
-    if (err) {
-      setError(err);
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      setError("Please fix the highlighted fields below.");
       return;
     }
+    setFieldErrors({});
     setError("");
 
     try {
@@ -496,6 +622,11 @@ export default function DocumentAdd() {
                       style={{ borderColor: "var(--rf-border2)" }}
                     />
                   )}
+                  <p className="text-xs mt-2" style={{ color: "var(--rf-txt3)" }}>
+                    Allowed: {ALLOWED_EXTENSIONS.join(", ")} · max {MAX_FILE_MB}{" "}
+                    MB
+                  </p>
+                  <FieldError message={fieldErrors.file} />
                 </div>
 
                 {/* Title + Description */}
@@ -520,20 +651,22 @@ export default function DocumentAdd() {
                     }}
                     className="w-full px-4 py-2 rounded-lg outline-none placeholder-gray-400 disabled:opacity-50"
                   />
+                  <FieldError message={fieldErrors.title} />
                 </div>
                 <div>
                   <label
                     className="block text-sm font-semibold mb-2"
                     style={{ color: "var(--rf-txt)" }}
                   >
-                    Description
+                    Description <span style={{ color: "var(--rf-red)" }}>*</span>
                   </label>
                   <textarea
                     name="description"
                     value={form.description}
                     onChange={handleChange}
                     rows={2}
-                    placeholder="Optional description…"
+                    maxLength={MAX_DESCRIPTION}
+                    placeholder="Describe this document…"
                     disabled={isUploading}
                     style={{
                       background: "var(--rf-bg2)",
@@ -542,6 +675,7 @@ export default function DocumentAdd() {
                     }}
                     className="w-full px-4 py-2 rounded-lg outline-none placeholder-gray-400 resize-none disabled:opacity-50"
                   />
+                  <FieldError message={fieldErrors.description} />
                 </div>
 
                 {/* Category */}
@@ -550,7 +684,7 @@ export default function DocumentAdd() {
                     className="block text-sm font-semibold mb-2"
                     style={{ color: "var(--rf-txt)" }}
                   >
-                    Category
+                    Category <span style={{ color: "var(--rf-red)" }}>*</span>
                   </label>
                   <AppSelect
                     name="category"
@@ -562,6 +696,7 @@ export default function DocumentAdd() {
                     }))}
                     disabled={isUploading}
                   />
+                  <FieldError message={fieldErrors.category} />
                 </div>
 
                 {/* ── Project Hierarchy ── */}
@@ -583,13 +718,7 @@ export default function DocumentAdd() {
                         className="block text-sm font-semibold mb-2"
                         style={{ color: "var(--rf-txt)" }}
                       >
-                        Project{" "}
-                        <span
-                          className="font-normal"
-                          style={{ color: "var(--rf-txt3)" }}
-                        >
-                          (optional)
-                        </span>
+                        Project <span style={{ color: "var(--rf-red)" }}>*</span>
                       </label>
                       <AppSelect
                         name="projectId"
@@ -602,6 +731,7 @@ export default function DocumentAdd() {
                         placeholder="— Select Project —"
                         disabled={isUploading}
                       />
+                      <FieldError message={fieldErrors.projectId} />
                     </div>
                     <div>
                       <label

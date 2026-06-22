@@ -2,9 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createMilestone } from "@/services/ScheduleMilestones";
+import { createMilestone, listMilestones } from "@/services/ScheduleMilestones";
 import { listPhases } from "@/services/Phases";
 import { listV2Projects } from "@/services/CxProjectsV2";
+import {
+  required,
+  lengthBetween,
+  notDuplicate,
+  validatePersonName,
+  collectErrors,
+  NAME_PATTERN,
+} from "@/Utils/validation";
+
+// Today as a YYYY-MM-DD string for the date input `min` (no past dates).
+const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const MILESTONE_TYPES = [
   { value: "INTERNAL", label: "Internal — tracking only" },
@@ -68,6 +79,13 @@ const sBtnGhost = {
   fontWeight: 600,
   cursor: "pointer",
 };
+const sErr = {
+  display: "block",
+  marginTop: 6,
+  fontSize: 12,
+  fontWeight: 600,
+  color: "var(--rf-red)",
+};
 
 function Chevron() {
   return (
@@ -123,6 +141,9 @@ export default function ScheduleMilestoneAdd() {
   const [phases, setPhases] = useState([]);
   const [phasesLoading, setPhasesLoading] = useState(false);
 
+  const [existingNames, setExistingNames] = useState([]);
+  const [fieldErrors, setFieldErrors] = useState({});
+
   const [form, setForm] = useState({
     name: "",
     date: "",
@@ -140,7 +161,8 @@ export default function ScheduleMilestoneAdd() {
       .finally(() => setProjectsLoading(false));
   }, []);
 
-  // When project changes, reload phases for that project (or global phases if none)
+  // When project changes, reload phases + existing milestone names (for the
+  // duplicate check) scoped to that project (or global when none).
   useEffect(() => {
     setForm((prev) => ({ ...prev, phaseId: "" }));
     setPhasesLoading(true);
@@ -149,6 +171,10 @@ export default function ScheduleMilestoneAdd() {
       .then((d) => setPhases(toArr(d)))
       .catch(() => setPhases([]))
       .finally(() => setPhasesLoading(false));
+
+    listMilestones(params)
+      .then((d) => setExistingNames(toArr(d).map((m) => m?.name).filter(Boolean)))
+      .catch(() => setExistingNames([]));
   }, [form.projectId]);
 
   const handleChange = (e) => {
@@ -157,10 +183,31 @@ export default function ScheduleMilestoneAdd() {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    // Clear a field's inline error as the user edits it.
+    setFieldErrors((prev) => (prev[name] ? { ...prev, [name]: "" } : prev));
   };
+
+  // Validate every field, returning the {field: message} map (empty = valid).
+  // Name: required (CM_TC_005), 2–120 chars (CM_TC_007/008), letters-only
+  // charset that rejects pure-numeric / symbols (CM_TC_009/010), and unique
+  // against existing milestones (CM_TC_014). Type required (CM_TC_026).
+  const validate = () =>
+    collectErrors({
+      name:
+        required(form.name, "Milestone Name") ||
+        lengthBetween(form.name, { min: 2, max: 120, label: "Milestone Name" }) ||
+        validatePersonName(form.name, "Milestone Name", NAME_PATTERN) ||
+        notDuplicate(form.name, existingNames, "Milestone Name"),
+      date: required(form.date, "Target Date"),
+      type: required(form.type, "Type"),
+    });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const errs = validate();
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     setLoading(true);
     setError("");
     try {
@@ -284,9 +331,11 @@ export default function ScheduleMilestoneAdd() {
             value={form.name}
             onChange={handleChange}
             required
+            maxLength={120}
             placeholder="e.g. NTP Issued"
             style={sInput}
           />
+          {fieldErrors.name && <span style={sErr}>{fieldErrors.name}</span>}
         </div>
 
         {/* Date */}
@@ -300,13 +349,17 @@ export default function ScheduleMilestoneAdd() {
             value={form.date}
             onChange={handleChange}
             required
+            min={todayStr()}
             style={sInput}
           />
+          {fieldErrors.date && <span style={sErr}>{fieldErrors.date}</span>}
         </div>
 
         {/* Type */}
         <div style={{ marginBottom: 18 }}>
-          <label style={sLabel}>Type</label>
+          <label style={sLabel}>
+            Type <span style={{ color: "var(--rf-red)" }}>*</span>
+          </label>
           <div style={{ position: "relative" }}>
             <select
               name="type"
@@ -327,6 +380,7 @@ export default function ScheduleMilestoneAdd() {
             </select>
             <Chevron />
           </div>
+          {fieldErrors.type && <span style={sErr}>{fieldErrors.type}</span>}
         </div>
 
         {/* isCritical */}
