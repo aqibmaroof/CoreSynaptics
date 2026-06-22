@@ -492,7 +492,7 @@ function buildSections(projectCode) {
         {
           title: "Safety",
           href: "/Safety",
-          //  module: MODULE.SAFETY
+          module: MODULE.SAFETY,
         },
         {
           title: "Phase advancement queue",
@@ -576,11 +576,11 @@ function buildSections(projectCode) {
           module: MODULE.FINANCE,
         },
         { title: "Org SOPs", href: "/OrgSOPs/List", module: MODULE.SAFETY },
-        {
-          title: "Safety plans",
-          href: "/OrgSafetyPlans/List",
-          module: MODULE.SAFETY,
-        },
+        // {
+        //   title: "Safety plans",
+        //   href: "/OrgSafetyPlans/List",
+        //   module: MODULE.SAFETY,
+        // },
         {
           title: "Toolbox talks",
           href: "/OrgToolboxTalks/List",

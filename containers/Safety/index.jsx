@@ -1,18 +1,24 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { listV2Projects } from "@/services/CxProjectsV2";
+import {
+  listSafetyItems,
+  getSafetySummary,
+  createSafetyItem,
+  removeSafetyItem,
+} from "@/services/SafetyItems";
 
 /* ------------------------------------------------------------------ *
  * Config
  * ------------------------------------------------------------------ */
 
 const CATEGORIES = [
-  { key: "TRAINING", label: "Training / Certification" },
-  { key: "PTP", label: "PTP / AHA / JSA" },
+  { key: "CERTIFICATION", label: "Training / Certification" },
+  { key: "PTP_AHA_JSA", label: "PTP / AHA / JSA" },
   { key: "INSPECTION", label: "Inspection" },
-  { key: "LIFT", label: "Lift Plan" },
-  { key: "SDS", label: "SDS / Document" },
+  { key: "LIFT_PLAN", label: "Lift Plan" },
+  { key: "SDS_DOCUMENT", label: "SDS / Document" },
   { key: "ORIENTATION", label: "Orientation" },
 ];
 
@@ -41,67 +47,147 @@ const FIELD = {
 };
 const fieldCls = "w-full px-3 py-2.5 rounded-lg text-sm outline-none";
 
-let _id = 0;
+const toRows = (res) => {
+  const d = res?.data ?? res;
+  return Array.isArray(d) ? d : (d?.data ?? d?.items ?? []);
+};
 
-const daysUntil = (d) =>
-  d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : null;
+const statusTone = (status) => {
+  if (status === "EXPIRED" || status === "EXPIRING") return "var(--rf-yellow)";
+  if (status === "VOID") return "var(--rf-txt3)";
+  return "var(--rf-txt3)";
+};
+
+const statusLabel = (item) => {
+  if (item.status === "EXPIRED") return `Expired ${item.expiresAt?.slice(0, 10) ?? ""}`;
+  if (item.status === "EXPIRING") return `Expiring ${item.expiresAt?.slice(0, 10) ?? ""}`;
+  if (item.status === "COMPLETED") return "Completed";
+  if (item.status === "VOID") return "Void";
+  return item.expiresAt ? `Valid · ${item.expiresAt.slice(0, 10)}` : "Active";
+};
 
 /* ------------------------------------------------------------------ *
  * Component
  * ------------------------------------------------------------------ */
 
 export default function Safety() {
-  const [items, setItems] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [tab, setTab] = useState("TRAINING");
+
+  const [items, setItems] = useState([]);
+  const [counts, setCounts] = useState({});
+  const [expiringSoon, setExpiringSoon] = useState(0);
+
+  const [tab, setTab] = useState("CERTIFICATION");
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
 
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
   useEffect(() => {
     listV2Projects({ limit: 100 })
-      .then((res) => {
-        const d = res?.data ?? res;
-        setProjects(Array.isArray(d) ? d : (d?.data ?? d?.items ?? []));
-      })
-      .catch(() => {});
+      .then((res) => setProjects(toRows(res)))
+      .catch(() => setProjects([]));
   }, []);
 
   const projectLabel = (p) => p.name ?? p.projectName ?? p.code ?? p.id;
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const counts = useMemo(() => {
-    const c = {};
-    CATEGORIES.forEach((cat) => {
-      c[cat.key] = items.filter((i) => i.category === cat.key).length;
-    });
-    return c;
-  }, [items]);
+  // Listing is independent of the create-form's project picker — it's
+  // aggregated across every project the org has, tagging each item with
+  // the project it came from so remove() knows which project to hit.
+  const fetchItems = useCallback(async () => {
+    if (projects.length === 0) {
+      setItems([]);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const results = await Promise.allSettled(
+        projects.map((p) =>
+          listSafetyItems(p.id, { kind: tab }).then((res) =>
+            toRows(res).map((item) => ({ ...item, _projectId: p.id })),
+          ),
+        ),
+      );
+      setItems(
+        results.filter((r) => r.status === "fulfilled").flatMap((r) => r.value),
+      );
+    } catch (err) {
+      setError(err?.message || "Failed to load safety items.");
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [projects, tab]);
 
-  const expiringSoon = useMemo(
-    () =>
-      items.filter((i) => {
-        const n = daysUntil(i.expires);
-        return n !== null && n >= 0 && n <= 30;
-      }).length,
-    [items],
-  );
+  const refreshSummary = useCallback(async () => {
+    if (projects.length === 0) return;
+    try {
+      const results = await Promise.allSettled(
+        projects.map((p) => getSafetySummary(p.id)),
+      );
+      const totals = {};
+      let expiring = 0;
+      results.forEach((r) => {
+        if (r.status !== "fulfilled") return;
+        const d = r.value?.data ?? r.value ?? {};
+        const perKind = d.counts ?? d.byKind ?? {};
+        Object.entries(perKind).forEach(([k, v]) => {
+          totals[k] = (totals[k] ?? 0) + (v ?? 0);
+        });
+        expiring += d.expiringCount ?? 0;
+      });
+      setCounts(totals);
+      setExpiringSoon(expiring);
+    } catch {
+      // summary is a nice-to-have; ignore failures
+    }
+  }, [projects]);
 
-  const filtered = useMemo(
-    () => items.filter((i) => i.category === tab),
-    [items, tab],
-  );
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
-  const handleAdd = () => {
-    if (!form.name.trim()) return;
-    setItems((prev) => [
-      ...prev,
-      { id: `s${++_id}`, category: tab, ...form, name: form.name.trim() },
-    ]);
-    setForm(EMPTY_FORM);
-    setShowAdd(false);
+  useEffect(() => {
+    refreshSummary();
+  }, [refreshSummary]);
+
+  const handleAdd = async () => {
+    if (!form.name.trim() || !form.projectId) return;
+    setSaving(true);
+    setError("");
+    try {
+      await createSafetyItem(form.projectId, {
+        kind: tab,
+        title: form.name.trim(),
+        workerName: form.worker.trim() || undefined,
+        companyTrade: form.company.trim() || undefined,
+        issuedAt: form.issued || undefined,
+        expiresAt: form.expires || undefined,
+      });
+      setForm(EMPTY_FORM);
+      setShowAdd(false);
+      await Promise.all([fetchItems(), refreshSummary()]);
+    } catch (err) {
+      setError(err?.message || "Could not add safety item.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const remove = (id) => setItems((prev) => prev.filter((x) => x.id !== id));
+  const remove = async (item) => {
+    setItems((prev) => prev.filter((x) => x.id !== item.id));
+    try {
+      await removeSafetyItem(item._projectId, item.id);
+      await refreshSummary();
+    } catch (err) {
+      setError(err?.message || "Could not remove safety item.");
+      fetchItems();
+    }
+  };
 
   return (
     <div className="p-6">
@@ -136,6 +222,23 @@ export default function Safety() {
           </button>
         </div>
 
+        {/* Error */}
+        {error && (
+          <div
+            className="rounded-lg p-3 text-sm mb-4 flex items-center gap-2"
+            style={{
+              background: "color-mix(in srgb, var(--rf-red) 12%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--rf-red) 30%, transparent)",
+              color: "var(--rf-red)",
+            }}
+          >
+            {error}
+            <button className="ml-auto" onClick={() => setError("")}>
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Expiry alert */}
         {expiringSoon > 0 && (
           <div
@@ -157,7 +260,10 @@ export default function Safety() {
             return (
               <button
                 key={cat.key}
-                onClick={() => setTab(cat.key)}
+                onClick={() => {
+                  setTab(cat.key);
+                  setShowAdd(false);
+                }}
                 className="px-4 py-2 rounded-lg text-sm font-bold"
                 style={
                   active
@@ -165,7 +271,7 @@ export default function Safety() {
                     : { background: "var(--rf-bg3)", color: "var(--rf-txt2)" }
                 }
               >
-                {cat.label} ({counts[cat.key]})
+                {cat.label} ({counts[cat.key] ?? 0})
               </button>
             );
           })}
@@ -243,24 +349,30 @@ export default function Safety() {
                 />
               </div>
               <button
-                className="self-end rounded-lg text-sm font-bold"
+                className="self-end rounded-lg text-sm font-bold disabled:opacity-60"
                 style={{
                   background: "var(--rf-accent)",
                   color: "#fff",
                   padding: "10px 0",
-                  opacity: form.name.trim() ? 1 : 0.6,
                 }}
-                disabled={!form.name.trim()}
+                disabled={!form.name.trim() || !form.projectId || saving}
                 onClick={handleAdd}
               >
-                Add to project
+                {saving ? "Adding…" : "Add to project"}
               </button>
             </div>
           </div>
         )}
 
         {/* List */}
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div
+            className="rounded-2xl p-10 text-center text-sm"
+            style={{ ...CARD, color: "var(--rf-txt3)" }}
+          >
+            Loading…
+          </div>
+        ) : items.length === 0 ? (
           <div
             className="rounded-2xl p-10 text-center text-sm"
             style={{ ...CARD, color: "var(--rf-txt3)" }}
@@ -269,10 +381,8 @@ export default function Safety() {
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
-            {filtered.map((item) => {
-              const n = daysUntil(item.expires);
-              const soon = n !== null && n >= 0 && n <= 30;
-              const tone = soon ? "var(--rf-yellow)" : "var(--rf-txt3)";
+            {items.map((item) => {
+              const tone = statusTone(item.status);
               return (
                 <div
                   key={item.id}
@@ -281,27 +391,25 @@ export default function Safety() {
                 >
                   <div className="min-w-0">
                     <div className="text-sm font-bold" style={{ color: "var(--rf-txt)" }}>
-                      {item.name}
+                      {item.title}
                     </div>
                     <div className="text-xs mt-0.5" style={{ color: "var(--rf-txt3)" }}>
-                      {[item.worker, item.company].filter(Boolean).join(" · ") || "—"}
+                      {[item.workerName, item.companyTrade].filter(Boolean).join(" · ") || "—"}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    {item.expires && (
-                      <span
-                        className="px-2.5 py-1 rounded-md text-xs font-bold"
-                        style={{
-                          background: `color-mix(in srgb, ${tone} 14%, transparent)`,
-                          color: tone,
-                          border: `1px solid color-mix(in srgb, ${tone} 32%, transparent)`,
-                        }}
-                      >
-                        Expiring {item.expires}
-                      </span>
-                    )}
+                    <span
+                      className="px-2.5 py-1 rounded-md text-xs font-bold"
+                      style={{
+                        background: `color-mix(in srgb, ${tone} 14%, transparent)`,
+                        color: tone,
+                        border: `1px solid color-mix(in srgb, ${tone} 32%, transparent)`,
+                      }}
+                    >
+                      {statusLabel(item)}
+                    </span>
                     <button
-                      onClick={() => remove(item.id)}
+                      onClick={() => remove(item)}
                       title="Remove"
                       className="px-1 text-lg leading-none"
                       style={{ color: "var(--rf-txt3)" }}
