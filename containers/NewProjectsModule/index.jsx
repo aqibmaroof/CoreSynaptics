@@ -618,11 +618,14 @@ function TextInput({ className, style, error, ...props }) {
   );
 }
 
-function SelectInput({ children, className, ...props }) {
+function SelectInput({ children, className, error, ...props }) {
   return (
     <div
       className={`np-fieldbox relative ${className || ""}`}
-      style={fieldBoxStyle}
+      style={{
+        ...fieldBoxStyle,
+        ...(error ? { border: "1px solid var(--rf-red, #ef4444)" } : {}),
+      }}
     >
       <select
         {...props}
@@ -1021,14 +1024,19 @@ export default function NewProjectsModule() {
 
   const [identity, setIdentity] = useState({});
   const [facility, setFacility] = useState({
-    redundancy: "2N",
-    uptime: "Tier III",
-    cooling: "Chilled Water",
-    voltages: ["34.5kV (35kV class)", "480/277V"],
+    // Empty by default so the user must actively choose — a pre-selected value
+    // would make the required validation (ORP-FAC-039/042/045) unreachable.
+    redundancy: "",
+    uptime: "",
+    cooling: "",
+    // Empty so the "at least one voltage class" requirement is reachable
+    // (ORP-FAC-053) — a pre-selected set made it impossible to fail.
+    voltages: [],
     tccf: false,
   });
   const [stakeholders, setStakeholders] = useState([
-    { company: "", role: "Owner", name: "", email: "", phone: "" },
+    // role empty so "no role selected" is reachable (TC_STK_007).
+    { company: "", role: "", name: "", email: "", phone: "" },
   ]);
   const [scope, setScope] = useState({
     levels: ["L1", "L2", "L3", "L4", "L5"],
@@ -1240,14 +1248,14 @@ export default function NewProjectsModule() {
     setStep(0);
     setIdentity({});
     setFacility({
-      redundancy: "2N",
-      uptime: "Tier III",
-      cooling: "Chilled Water",
-      voltages: ["34.5kV (35kV class)", "480/277V"],
+      redundancy: "",
+      uptime: "",
+      cooling: "",
+      voltages: [],
       tccf: false,
     });
     setStakeholders([
-      { company: "", role: "Owner", name: "", email: "", phone: "" },
+      { company: "", role: "", name: "", email: "", phone: "" },
     ]);
     setScope({
       levels: ["L1", "L2", "L3", "L4", "L5"],
@@ -1635,6 +1643,56 @@ export default function NewProjectsModule() {
     setStepErrors((e) => (e[key] ? { ...e, [key]: undefined } : e));
   };
 
+  // Numeric-input filter for the OPR capacity fields — sanitizes as the user
+  // types so the field can only ever hold a valid number:
+  //   • strips alphabets / special chars (ORP-FAC-003/047/048)
+  //   • allows at most one decimal point when decimals are permitted
+  //   • drops leading zeros so "007" → "7" and "0.5" stays "0.5" (ORP-FAC-057)
+  //   • caps the digit length so absurdly long values can't be entered
+  //     (ORP-FAC-056). `numeric()` still validates on Next as a backstop.
+  const setFacilityNumeric = (
+    key,
+    raw,
+    { allowDecimal = true, maxLen = 12 } = {},
+  ) => {
+    let cleaned = String(raw).replace(allowDecimal ? /[^0-9.]/g : /[^0-9]/g, "");
+    if (allowDecimal) {
+      // collapse multiple dots to a single decimal point
+      const firstDot = cleaned.indexOf(".");
+      if (firstDot !== -1) {
+        cleaned =
+          cleaned.slice(0, firstDot + 1) +
+          cleaned.slice(firstDot + 1).replace(/\./g, "");
+      }
+    }
+    // Leading-zero handling: keep a single leading 0 only when it's "0" or the
+    // integer part of a decimal ("0.x"); otherwise strip leading zeros.
+    if (/^0\d/.test(cleaned)) {
+      const dot = cleaned.indexOf(".");
+      const intPart = dot === -1 ? cleaned : cleaned.slice(0, dot);
+      const rest = dot === -1 ? "" : cleaned.slice(dot);
+      cleaned = intPart.replace(/^0+(?=\d)/, "") + rest;
+    }
+    // Enforce a max length on the DIGITS (ignore the dot) so the limit is
+    // intuitive regardless of decimal position.
+    const digitCount = (cleaned.match(/\d/g) || []).length;
+    if (digitCount > maxLen) {
+      // trim from the end until within the digit budget
+      let over = digitCount - maxLen;
+      let out = "";
+      for (let i = cleaned.length - 1; i >= 0; i--) {
+        const ch = cleaned[i];
+        if (/\d/.test(ch) && over > 0) {
+          over--;
+          continue;
+        }
+        out = ch + out;
+      }
+      cleaned = out;
+    }
+    setFacilityField(key, cleaned);
+  };
+
   // Returns a field-error map for the given step ({} when the step is valid).
   const validateStep = (s) => {
     if (s === 0) {
@@ -1649,23 +1707,37 @@ export default function NewProjectsModule() {
       );
     }
     if (s === 2) {
-      // Stakeholders — any row the user has begun must be complete and valid:
-      // name + role required, email format, phone format (TC_STK_004-007), and
-      // no duplicate name+company pair (TC_STK_008). Fully-empty rows are skipped.
+      // Stakeholders — each begun row must be complete and valid: company, name,
+      // role required (TC_STK_004/007), email format, phone rejects non-numeric
+      // (TC_STK_006), and no duplicate Company/Org + Email pair (TC_STK_008).
+      // A first row left entirely blank still errors so the user can't proceed
+      // with zero stakeholders; extra fully-empty rows are skipped.
       const errs = {};
       const seen = new Set();
       stakeholders.forEach((row, i) => {
-        const hasAny = (row.name || row.company || row.email || row.phone || "").trim();
-        if (!hasAny) return;
+        const hasAny = (
+          row.name ||
+          row.company ||
+          row.email ||
+          row.phone ||
+          row.role ||
+          ""
+        ).trim();
+        // Skip extra empty rows, but require the very first row to be filled.
+        if (!hasAny && i > 0) return;
         const rowErr = collectErrors({
+          company: required(row.company, "Company / org"),
           name: required(row.name, "Name"),
           role: required(row.role, "Role"),
           email: row.email ? validateEmail(row.email) : "",
           phone: row.phone ? validatePhone(row.phone, "Phone number") : "",
         });
-        const key = `${(row.name || "").trim().toLowerCase()}|${(row.company || "").trim().toLowerCase()}`;
-        if (row.name && seen.has(key)) rowErr.name = "Duplicate stakeholder.";
-        if (row.name) seen.add(key);
+        // Duplicate = same Company/Org + Email (TC_STK_008).
+        const key = `${(row.company || "").trim().toLowerCase()}|${(row.email || "").trim().toLowerCase()}`;
+        if (row.company && row.email && seen.has(key)) {
+          rowErr.email = "Duplicate stakeholder (same company and email).";
+        }
+        if (row.company && row.email) seen.add(key);
         if (Object.keys(rowErr).length) errs[i] = rowErr;
       });
       // Stash per-row errors in stepErrors under a namespaced key.
@@ -1832,7 +1904,11 @@ export default function NewProjectsModule() {
             inputMode="decimal"
             value={facility.criticalCapacity || ""}
             error={stepErrors.criticalCapacity}
-            onChange={(e) => setFacilityField("criticalCapacity", e.target.value)}
+            onChange={(e) =>
+              setFacilityNumeric("criticalCapacity", e.target.value, {
+                allowDecimal: true,
+              })
+            }
           />
         </Field>
         <Field label="White Space (Sq Ft)" required error={stepErrors.whiteSpace}>
@@ -1841,7 +1917,11 @@ export default function NewProjectsModule() {
             inputMode="numeric"
             value={facility.whiteSpace || ""}
             error={stepErrors.whiteSpace}
-            onChange={(e) => setFacilityField("whiteSpace", e.target.value)}
+            onChange={(e) =>
+              setFacilityNumeric("whiteSpace", e.target.value, {
+                allowDecimal: false,
+              })
+            }
           />
         </Field>
         <Field label="Data Halls / Pods" required error={stepErrors.dataHalls}>
@@ -1850,14 +1930,22 @@ export default function NewProjectsModule() {
             inputMode="numeric"
             value={facility.dataHalls || ""}
             error={stepErrors.dataHalls}
-            onChange={(e) => setFacilityField("dataHalls", e.target.value)}
+            onChange={(e) =>
+              setFacilityNumeric("dataHalls", e.target.value, {
+                allowDecimal: false,
+              })
+            }
           />
         </Field>
         <Field label="Redundancy" required error={stepErrors.redundancy}>
           <SelectInput
             value={facility.redundancy}
+            error={stepErrors.redundancy}
             onChange={(e) => setFacilityField("redundancy", e.target.value)}
           >
+            <option value="" disabled>
+              Select redundancy…
+            </option>
             {opts.redundancy.map((o) => (
               <option key={o}>{o}</option>
             ))}
@@ -1866,8 +1954,12 @@ export default function NewProjectsModule() {
         <Field label="Uptime Target" required error={stepErrors.uptime}>
           <SelectInput
             value={facility.uptime}
+            error={stepErrors.uptime}
             onChange={(e) => setFacilityField("uptime", e.target.value)}
           >
+            <option value="" disabled>
+              Select uptime target…
+            </option>
             {opts.uptime.map((o) => (
               <option key={o}>{o}</option>
             ))}
@@ -1876,8 +1968,12 @@ export default function NewProjectsModule() {
         <Field label="Cooling Type" required error={stepErrors.cooling}>
           <SelectInput
             value={facility.cooling}
+            error={stepErrors.cooling}
             onChange={(e) => setFacilityField("cooling", e.target.value)}
           >
+            <option value="" disabled>
+              Select cooling type…
+            </option>
             {opts.cooling.map((o) => (
               <option key={o}>{o}</option>
             ))}
@@ -1889,7 +1985,9 @@ export default function NewProjectsModule() {
             inputMode="decimal"
             value={facility.pue || ""}
             error={stepErrors.pue}
-            onChange={(e) => setFacilityField("pue", e.target.value)}
+            onChange={(e) =>
+              setFacilityNumeric("pue", e.target.value, { allowDecimal: true })
+            }
           />
         </Field>
       </div>
@@ -2052,21 +2150,40 @@ export default function NewProjectsModule() {
         <div className="flex flex-col gap-3">
           {stakeholders.map((s, i) => (
             <div key={i} className="grid grid-cols-1 md:grid-cols-5 gap-3">
-              <TextInput
-                placeholder="Company / org"
-                value={s.company}
-                onChange={(e) =>
-                  updateStakeholder(i, "company", e.target.value)
-                }
-              />
-              <SelectInput
-                value={s.role}
-                onChange={(e) => updateStakeholder(i, "role", e.target.value)}
-              >
-                {opts.stakeholderRoles.map((r) => (
-                  <option key={r}>{r}</option>
-                ))}
-              </SelectInput>
+              <div>
+                <TextInput
+                  placeholder="Company / org"
+                  value={s.company}
+                  error={stepErrors.__stakeholders?.[i]?.company}
+                  onChange={(e) =>
+                    updateStakeholder(i, "company", e.target.value)
+                  }
+                />
+                {stepErrors.__stakeholders?.[i]?.company && (
+                  <span role="alert" className="text-xs" style={{ color: "var(--rf-red)" }}>
+                    {stepErrors.__stakeholders[i].company}
+                  </span>
+                )}
+              </div>
+              <div>
+                <SelectInput
+                  value={s.role}
+                  error={stepErrors.__stakeholders?.[i]?.role}
+                  onChange={(e) => updateStakeholder(i, "role", e.target.value)}
+                >
+                  <option value="" disabled>
+                    Select role…
+                  </option>
+                  {opts.stakeholderRoles.map((r) => (
+                    <option key={r}>{r}</option>
+                  ))}
+                </SelectInput>
+                {stepErrors.__stakeholders?.[i]?.role && (
+                  <span role="alert" className="text-xs" style={{ color: "var(--rf-red)" }}>
+                    {stepErrors.__stakeholders[i].role}
+                  </span>
+                )}
+              </div>
               <div>
                 <TextInput
                   placeholder="Name"
@@ -2093,30 +2210,37 @@ export default function NewProjectsModule() {
                   </span>
                 )}
               </div>
-              <div className="flex gap-2">
-                <TextInput
-                  placeholder="Phone"
-                  value={s.phone}
-                  error={stepErrors.__stakeholders?.[i]?.phone}
-                  onChange={(e) =>
-                    updateStakeholder(i, "phone", e.target.value)
-                  }
-                />
-                {stakeholders.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setStakeholders((p) => p.filter((_, idx) => idx !== i))
+              <div>
+                <div className="flex gap-2">
+                  <TextInput
+                    placeholder="Phone"
+                    value={s.phone}
+                    error={stepErrors.__stakeholders?.[i]?.phone}
+                    onChange={(e) =>
+                      updateStakeholder(i, "phone", e.target.value)
                     }
-                    className="px-3 rounded-xl text-sm font-bold"
-                    style={{
-                      color: "var(--rf-red)",
-                      border: "1px solid var(--rf-border, #c5d2ea)",
-                    }}
-                    title="Remove"
-                  >
-                    ×
-                  </button>
+                  />
+                  {stakeholders.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setStakeholders((p) => p.filter((_, idx) => idx !== i))
+                      }
+                      className="px-3 rounded-xl text-sm font-bold"
+                      style={{
+                        color: "var(--rf-red)",
+                        border: "1px solid var(--rf-border, #c5d2ea)",
+                      }}
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+                {stepErrors.__stakeholders?.[i]?.phone && (
+                  <span role="alert" className="text-xs" style={{ color: "var(--rf-red)" }}>
+                    {stepErrors.__stakeholders[i].phone}
+                  </span>
                 )}
               </div>
             </div>
@@ -2124,12 +2248,21 @@ export default function NewProjectsModule() {
         </div>
         <button
           type="button"
-          onClick={() =>
+          onClick={() => {
+            // Validate the existing rows before appending a new blank one, so a
+            // user can't add a stakeholder while the current one is empty/invalid
+            // (TC_STK_004). If anything's wrong, surface the errors and don't add.
+            const errs = validateStep(2);
+            if (Object.keys(errs).length > 0) {
+              setStepErrors(errs);
+              return;
+            }
+            setStepErrors({});
             setStakeholders((p) => [
               ...p,
-              { company: "", role: "Owner", name: "", email: "", phone: "" },
-            ])
-          }
+              { company: "", role: "", name: "", email: "", phone: "" },
+            ]);
+          }}
           className="mt-3 text-sm font-bold"
           style={{ color: "var(--rf-accent)" }}
         >

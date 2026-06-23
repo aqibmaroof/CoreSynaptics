@@ -2306,6 +2306,19 @@ function Card({ label, desc, tech, selected, onClick }) {
   return (
     <div
       onClick={onClick}
+      // Keyboard-accessible: the selection cards were click-only <div>s that Tab
+      // skipped over, so the company-type / facility choices couldn't be reached
+      // or chosen by keyboard (TC_ID_033). role=button + tabIndex=0 puts them in
+      // the tab order; Enter/Space activate them like a real button.
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
       style={{
         background: selected ? C.selBg : C.card,
         border: selected ? `1.5px solid ${C.sel}` : `1px solid ${C.border}`,
@@ -2314,6 +2327,13 @@ function Card({ label, desc, tech, selected, onClick }) {
         cursor: "pointer",
         transition: "all 0.15s",
         position: "relative",
+      }}
+      onFocus={(e) => {
+        e.currentTarget.style.outline = `2px solid ${C.accent}`;
+        e.currentTarget.style.outlineOffset = "2px";
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.outline = "none";
       }}
       onMouseEnter={(e) => {
         if (!selected)
@@ -2573,11 +2593,17 @@ function SH({ kicker, title, sub }) {
 }
 
 function G({ cols = 2, gap = 8, children }) {
+  // Responsive grid: instead of a hard `repeat(N, 1fr)` that overflows / squishes
+  // on small screens (TC_ID_037), use auto-fit with a sensible min track so the
+  // columns wrap down to fewer (and eventually one) as the viewport narrows. The
+  // `min(<min>, 100%)` guard keeps a single wide card from overflowing on very
+  // narrow phones. `cols` still sets the max columns on wide screens.
+  const minTrack = cols >= 3 ? 150 : 200;
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gridTemplateColumns: `repeat(auto-fit, minmax(min(${minTrack}px, 100%), 1fr))`,
         gap,
       }}
     >
@@ -3077,7 +3103,8 @@ function StepEquipment({ w, u }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(150px, 100%), 1fr))",
             gap: 4,
             fontSize: "0.62rem",
             color: "#7c6bba",
@@ -3999,7 +4026,8 @@ function StepTeam({ w, u, apiRoles, roleQtys, setRoleQtys }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(140px, 100%), 1fr))",
           gap: 8,
         }}
       >
@@ -4796,6 +4824,51 @@ function StepReview({ w, u, showPwd, setShowPwd, apiReview }) {
   const companyTypeLabel =
     COMPANY_TYPES.find((t) => t.id === w.companyType)?.n || "—";
   const facilityLabel = DC_TYPES.find((t) => t.id === w.dcType)?.n || "—";
+  // Resolve every entered selection to its human label so the review reflects
+  // exactly what the user picked in each step (SGN_022).
+  const labelOf = (list, id) => list.find((t) => t.id === id)?.n || "—";
+  const dash = (v) => (String(v ?? "").trim() ? v : "—");
+  const reviewSections = [
+    {
+      title: "Company",
+      rows: [
+        ["Company name", dash(w.companyName)],
+        ["Company type", companyTypeLabel],
+        ["Company email", dash(w.companyEmail)],
+        ["Company size", dash(w.companySize)],
+      ],
+    },
+    {
+      title: "Administrator",
+      rows: [
+        [
+          "Name",
+          dash(
+            `${w.adminFirstName || ""} ${w.adminLastName || ""}`.trim(),
+          ),
+        ],
+        ["Email", dash(w.adminEmail)],
+      ],
+    },
+    {
+      title: "Scope",
+      rows: [
+        ["Multiple data centers", w.multiDC ? "Yes" : "No"],
+        ["Default mode", w.defaultConnected ? "Connected" : "Standalone"],
+      ],
+    },
+    {
+      title: "Facility",
+      rows: [
+        ["Facility name", dash(w.facilityName)],
+        ["Type", labelOf(DC_TYPES, w.dcType)],
+        ["Uptime", labelOf(UPTIME_TIERS, w.uptime)],
+        ["Scale", labelOf(FACILITY_SCALES, w.scale)],
+        ["Cooling", labelOf(COOLING_METHODS, w.cooling)],
+        ["Power", labelOf(POWER_ARCHS, w.power)],
+      ],
+    },
+  ];
   const sb = {
     small: { p: 700, p6: 500, a: 800, cx: 900, h: 400, d: 500 },
     med: { p: 2500, p6: 1800, a: 2200, cx: 2800, h: 1500, d: 1800 },
@@ -4872,7 +4945,8 @@ function StepReview({ w, u, showPwd, setShowPwd, apiReview }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(140px, 100%), 1fr))",
           gap: 8,
         }}
       >
@@ -4921,6 +4995,80 @@ function StepReview({ w, u, showPwd, setShowPwd, apiReview }) {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Your details — every value entered across the wizard steps, so the
+          user can confirm the review matches what they entered (SGN_022). */}
+      <div
+        style={{
+          background: C.card,
+          border: `1px solid ${C.border}`,
+          borderRadius: 10,
+          padding: "16px 18px",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: C.sans,
+            fontSize: "0.86rem",
+            fontWeight: 600,
+            color: C.text,
+            marginBottom: 12,
+          }}
+        >
+          Your details
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(220px, 100%), 1fr))",
+            gap: 16,
+          }}
+        >
+          {reviewSections.map((sec) => (
+            <div key={sec.title}>
+              <div
+                style={{
+                  fontFamily: C.mono,
+                  fontSize: "0.56rem",
+                  color: C.accent,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  marginBottom: 6,
+                }}
+              >
+                {sec.title}
+              </div>
+              {sec.rows.map(([k, v]) => (
+                <div
+                  key={k}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    padding: "3px 0",
+                    fontSize: "0.74rem",
+                  }}
+                >
+                  <span style={{ color: C.muted, fontFamily: C.mono }}>
+                    {k}
+                  </span>
+                  <span
+                    style={{
+                      color: C.text,
+                      fontWeight: 500,
+                      textAlign: "right",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {v}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div
@@ -5743,8 +5891,24 @@ export default function RegisterPage() {
   };
 
   // Per-step API call then advance
+  // Client-side required-field validation per step. The backend treats the
+  // facility name as optional (defaults to "Primary Facility"), but the wizard
+  // requires it — skipping it and clicking Next must surface an error rather
+  // than silently advancing (SGN_012).
+  const validateStep = () => {
+    if (step === 2 && !String(wizard.facilityName || "").trim()) {
+      return "Facility name is required.";
+    }
+    return "";
+  };
+
   const handleNext = async () => {
     setStepError("");
+    const validationError = validateStep();
+    if (validationError) {
+      setStepError(validationError);
+      return;
+    }
     setStepLoading(true);
     try {
       // Every /setup step requires a sessionId. The mount effect only creates
