@@ -483,7 +483,10 @@ function StatusTick({ status }) {
         display: "inline-flex",
         alignItems: "center",
         gap: 2,
-        color: read ? "#4ade80" : "inherit",
+        // Read uses a green that's legible on the light page; Delivered inherits
+        // the (now readable) meta color (TC_BUG_047).
+        color: read ? "var(--rf-green, #16a34a)" : "inherit",
+        fontWeight: 600,
       }}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -623,7 +626,11 @@ function MessageBubble({
   const isOwn = !!msg.isOwn;
   const bubbleBg = isOwn ? "var(--rf-blue, #3b82f6)" : "var(--rf-bg3)";
   const bubbleColor = isOwn ? "white" : "var(--rf-txt)";
-  const metaColor = isOwn ? "rgba(255,255,255,0.85)" : "var(--rf-txt3)";
+  // The meta row (time / Delivered / edited) renders BELOW the bubble on the
+  // light page background, NOT inside the coloured bubble — so white (own) was
+  // invisible and the faint --rf-txt3 (incoming) was too low-contrast to read
+  // (TC_BUG_046 time, TC_BUG_047 Delivered). Use a readable muted token for both.
+  const metaColor = "var(--rf-txt2, #3a5070)";
 
   return (
     <div
@@ -685,45 +692,63 @@ function MessageBubble({
               textAlign: "left",
               maxWidth: "100%",
               marginBottom: 3,
-              padding: "4px 8px",
+              padding: "5px 9px",
               borderLeft: "3px solid var(--rf-accent)",
-              background: "var(--rf-bg2)",
+              // Slightly tinted panel + readable text so the quoted reply isn't
+              // faded/low-contrast (TC_UI_CHAT_001). The sender is accent-coloured
+              // and bold; the body uses the primary text token, not the muted one.
+              background: "var(--rf-bg3)",
               borderRadius: 6,
               cursor: "pointer",
               fontSize: 11,
-              color: "var(--rf-txt2)",
+              color: "var(--rf-txt)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}
             title="Jump to replied message"
           >
-            <span style={{ fontWeight: 700 }}>
+            <span style={{ fontWeight: 700, color: "var(--rf-accent)" }}>
               {msg.replyToSender || "Reply"}
             </span>{" "}
-            {msg.replyToBody || "View message"}
+            <span style={{ color: "var(--rf-txt2)" }}>
+              {msg.replyToBody || "View message"}
+            </span>
           </button>
         )}
 
         <div
           style={{
             position: "relative",
-            background: bubbleBg,
-            color: bubbleColor,
+            // While editing, drop the coloured bubble for a neutral panel so the
+            // edit form (light textarea + buttons) is aligned and readable rather
+            // than crammed inside a blue bubble (TC_UI_CHAT_003).
+            background: isEditing ? "var(--rf-bg2)" : bubbleBg,
+            color: isEditing ? "var(--rf-txt)" : bubbleColor,
+            border: isEditing ? "1px solid var(--rf-border)" : "none",
             borderRadius: 14,
-            borderBottomRightRadius: isOwn ? 4 : 14,
-            borderBottomLeftRadius: isOwn ? 14 : 4,
-            padding: "8px 12px",
+            borderBottomRightRadius: isEditing ? 14 : isOwn ? 4 : 14,
+            borderBottomLeftRadius: isEditing ? 14 : isOwn ? 14 : 4,
+            padding: isEditing ? "10px" : "8px 12px",
             fontSize: 13,
             lineHeight: 1.45,
             wordBreak: "break-word",
             whiteSpace: "pre-wrap",
-            boxShadow: "0 1px 1px rgba(0,0,0,0.08)",
+            boxShadow: isEditing ? "none" : "0 1px 1px rgba(0,0,0,0.08)",
             maxWidth: "100%",
           }}
         >
           {isEditing ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 220 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 260 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--rf-txt2)",
+                }}
+              >
+                Edit message
+              </div>
               <textarea
                 value={editValue}
                 autoFocus
@@ -1851,6 +1876,21 @@ export default function Chat() {
     setTimeout(() => setSuccessMsg((cur) => (cur === text ? null : cur)), 3000);
   }, []);
 
+  // Auto-dismiss error banners after 5s (TC_BUG_050) — covers BOTH the general
+  // error banner (lastError) AND the unsupported/oversize file error, which is
+  // a separate uploadError state with its own banner. The user can still close
+  // either sooner via its × button. Re-arms whenever a new error appears.
+  useEffect(() => {
+    if (!lastError) return;
+    const t = setTimeout(() => setLastError(null), 5000);
+    return () => clearTimeout(t);
+  }, [lastError]);
+  useEffect(() => {
+    if (!uploadError) return;
+    const t = setTimeout(() => setUploadError(""), 5000);
+    return () => clearTimeout(t);
+  }, [uploadError]);
+
   // ── Boot: resolve current user ─────────────────────────────────────────────
   useEffect(() => {
     try {
@@ -2611,6 +2651,22 @@ export default function Chat() {
     setEditingId(msg.id);
     setEditingValue(msg.body || "");
   };
+  // Global ESC cancels edit mode regardless of focus (TC_UI_CHAT_002). The
+  // textarea has its own onKeyDown ESC, but that only fires while it holds
+  // focus — a document listener guarantees ESC always exits the edit state.
+  useEffect(() => {
+    if (!editingId) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setEditingId(null);
+        setEditingValue("");
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [editingId]);
+
   const cancelEdit = () => {
     setEditingId(null);
     setEditingValue("");
