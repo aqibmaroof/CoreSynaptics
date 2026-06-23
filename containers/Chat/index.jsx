@@ -20,6 +20,7 @@ import {
   markRoomDelivered,
   getRoomReceipts,
   getRoomPresence,
+  getDirectoryPresence,
   startTyping,
   stopTyping,
   initAttachment,
@@ -842,16 +843,26 @@ function MessageBubble({
         </div>
       </div>
 
-      {/* Hover action bar */}
+      {/* Hover action bar — anchored to the SAME side as the bubble, just
+          inboard of the avatar, so Reply/Forward sit right next to the message.
+          The old code anchored to the opposite edge of the full-width row
+          (`isOwn ? left:16 : right:16`), which pushed the buttons far from the
+          bubble and OFF-SCREEN on wide viewports — so users couldn't reply or
+          forward at all. */}
       {hover && !msg.pending && !isEditing && (
         <div
           style={{
             position: "absolute",
             top: 6,
-            ...(isOwn ? { left: 16 } : { right: 16 }),
+            ...(isOwn ? { right: 52 } : { left: 52 }),
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
+            background: "var(--rf-bg2, #fff)",
+            borderRadius: 8,
+            boxShadow: "0 1px 6px rgba(0,0,0,0.12)",
+            padding: "2px 4px",
+            zIndex: 5,
           }}
         >
           <button
@@ -2163,20 +2174,47 @@ export default function Chat() {
   // we must explicitly subscribe (and re-subscribe on reconnect) or no live
   // message/typing/receipt events arrive for the open room.
   //
-  // IMPORTANT: subscribe only AFTER the server confirms auth via its `connected`
-  // event. Emitting `subscribe:chatroom` on the raw socket.io `connect` races
-  // the gateway's handleConnection (which sets socket.data.auth) and is rejected
-  // as "Unauthenticated" — which silently breaks live typing/receipts for the
-  // room (presence still works because that channel is joined server-side).
+  // The subscribe must reach the gateway AFTER it has set socket.data.auth in
+  // handleConnection. Two timing hazards make a single attempt unreliable:
+  //   1. The gateway's `connected` event is a ONE-SHOT — if it fires before this
+  //      React effect attaches its listener (very common, because the stub→real
+  //      socket swap re-runs the effect a beat after the real socket already
+  //      emitted `connected`), the join never happens and live typing/receipts
+  //      silently break for the room (presence still works — that channel is
+  //      joined server-side).
+  //   2. Emitting on the raw `connect` event can race auth and be rejected as
+  //      "Unauthenticated".
+  // Fix: drive the join off the gateway's ACK. subscribe:chatroom replies with
+  // { ok, channel?, error? }. We attempt immediately (covers the already-authed
+  // case), retry briefly on a not-yet-authed rejection, and also re-join on both
+  // `connect` (reconnect) and `connected` (fresh auth). Idempotent: re-joining a
+  // channel the socket is already in is a no-op server-side.
   useEffect(() => {
     if (!socket || !activeRoomId) return;
-    const join = () => socket.emit?.("subscribe:chatroom", { roomId: activeRoomId });
-    // If the socket is already authenticated (we've been connected a while),
-    // join right away; the `connected` handler covers fresh/reconnect cases.
-    if (socket.connected) join();
-    socket.on?.("connected", join); // server-confirmed auth (gateway emits this)
+    let cancelled = false;
+    let retry = null;
+
+    const join = (attempt = 0) => {
+      if (cancelled) return;
+      socket.emit?.("subscribe:chatroom", { roomId: activeRoomId }, (ack) => {
+        // No ack (older gateway / stub) → assume best-effort success.
+        if (cancelled || !ack || ack.ok) return;
+        // Rejected (usually auth not ready yet) — back off and retry a few times.
+        if (attempt < 5) {
+          retry = setTimeout(() => join(attempt + 1), 400 * (attempt + 1));
+        }
+      });
+    };
+
+    // Attempt right away; if the socket isn't authed yet the ack-retry recovers.
+    join();
+    socket.on?.("connect", () => join()); // socket.io transport (re)connect
+    socket.on?.("connected", () => join()); // gateway server-confirmed auth
     return () => {
+      cancelled = true;
+      if (retry) clearTimeout(retry);
       socket.emit?.("unsubscribe", { channel: `chatroom:${activeRoomId}` });
+      socket.off?.("connect", join);
       socket.off?.("connected", join);
     };
   }, [socket, activeRoomId]);
@@ -2202,9 +2240,16 @@ export default function Chat() {
     };
     const off = onEnvelope(socket, "chat.presence.changed", onChanged);
 
-    const beat = () => socket.emit?.("presence:heartbeat", {});
+    // Heartbeat keeps OUR own presence key alive (30s TTL on the server). Send
+    // it well inside the TTL window so we never flicker offline to peers, and
+    // include the active room so the per-room presence snapshot stays accurate
+    // for the people we're actually looking at.
+    const beat = () =>
+      socket.emit?.("presence:heartbeat", {
+        roomId: activeRoomIdRef.current || undefined,
+      });
     beat();
-    const hb = setInterval(beat, 25000);
+    const hb = setInterval(beat, 15000);
     return () => {
       off && off();
       clearInterval(hb);
@@ -2213,31 +2258,84 @@ export default function Chat() {
 
   // Seed the presence snapshot for the open room's members (CHAT_012/013), then
   // live `chat.presence.changed` events keep it current. Re-seed on room switch.
+  //
+  // The snapshot is ADDITIVE only: it may mark a peer online, but it must NOT
+  // mark a peer offline. The REST snapshot (getRoomPresence) reads a 30s-TTL
+  // heartbeat key that can briefly lag behind a peer who is genuinely connected
+  // (e.g. a freshly-joined peer, or the gap between heartbeats). Letting a stale
+  // "offline" row delete someone the live `chat.presence.changed` event already
+  // told us is online made the header flicker back to "Offline" while the peer
+  // was right there typing. Going-offline is therefore driven exclusively by the
+  // authoritative live edge event, never by this poll.
   useEffect(() => {
     if (!activeRoomId || !currentUser) return;
     let cancelled = false;
-    (async () => {
+    const seed = async () => {
       try {
         const res = await getRoomPresence(activeRoomId);
         const list = Array.isArray(res) ? res : res?.data || [];
         if (cancelled) return;
         setOnlineUserIds((prev) => {
+          let changed = false;
           const next = new Set(prev);
           for (const row of list) {
-            if (!row?.userId) continue;
-            if (row.online) next.add(row.userId);
-            else next.delete(row.userId);
+            if (row?.userId && row.online && !next.has(row.userId)) {
+              next.add(row.userId);
+              changed = true;
+            }
           }
-          return next;
+          return changed ? next : prev;
         });
       } catch {
         /* presence is best-effort — dots just stay as they were */
       }
-    })();
+    };
+    seed();
+    // Re-seed on a slow cadence so a peer who connected while we were already in
+    // the room (and whose live edge we somehow missed) still lights up, without
+    // ever flipping anyone off.
+    const t = setInterval(seed, 15000);
     return () => {
       cancelled = true;
+      clearInterval(t);
     };
   }, [activeRoomId, currentUser]);
+
+  // Seed presence for the ENTIRE org directory (not just the open room), so the
+  // sidebar People list + DM rows show an accurate online dot for everyone the
+  // moment chat loads — including peers who were already online before we
+  // connected (whose live `chat.presence.changed` edge we'd never have seen).
+  // Additive only, same as the room seed: it can light someone up but never
+  // turns anyone off (live edge events own going-offline).
+  useEffect(() => {
+    if (!currentUser) return;
+    let cancelled = false;
+    const seedAll = async () => {
+      try {
+        const list = await getDirectoryPresence();
+        if (cancelled || !Array.isArray(list)) return;
+        setOnlineUserIds((prev) => {
+          let changed = false;
+          const next = new Set(prev);
+          for (const row of list) {
+            if (row?.userId && row.online && !next.has(row.userId)) {
+              next.add(row.userId);
+              changed = true;
+            }
+          }
+          return changed ? next : prev;
+        });
+      } catch {
+        /* best-effort */
+      }
+    };
+    seedAll();
+    const t = setInterval(seedAll, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [currentUser]);
 
   // ── Polling fallback: active-room messages + room unread (no refresh needed) ─
   useEffect(() => {
@@ -2594,17 +2692,38 @@ export default function Chat() {
   // ── Forward a message to another room (uses the confirmed postMessage API) ──
   // Forwards the text body. Attachments aren't re-bound across rooms (each is
   // tied to its original room/message), so a forwarded copy carries the text.
+  const forwardBody = (msg) =>
+    msg.body ||
+    (msg.attachments?.length
+      ? `[Attachment: ${msg.attachments[0].name}]`
+      : "");
+
   const handleForward = async (targetRoomId) => {
     if (!forwardMsg || !targetRoomId) return;
     try {
-      const fwdBody =
-        forwardMsg.body ||
-        (forwardMsg.attachments?.length ? `[Attachment: ${forwardMsg.attachments[0].name}]` : "");
-      await postMessage(targetRoomId, { body: fwdBody });
+      await postMessage(targetRoomId, { body: forwardBody(forwardMsg) });
       setForwardMsg(null);
       const room = rooms.find((r) => r.id === targetRoomId);
       flashSuccess(`Message forwarded to ${room?.name || "conversation"}.`);
       if (targetRoomId === activeRoomId) fetchMessages(activeRoomId);
+    } catch (err) {
+      setLastError(extractErrorMessage(err, "Failed to forward message"));
+    }
+  };
+
+  // Forward to a PERSON (no existing room needed) — opens/creates the DM, then
+  // posts the forwarded body there. Lets forwarding work even when the only
+  // conversation is the one you're in (WhatsApp-style "forward to a contact").
+  const handleForwardToPerson = async (person) => {
+    if (!forwardMsg || !person?.id) return;
+    try {
+      const room = await openDirectRoom(person.id);
+      const roomId = room?.id || room?.data?.id;
+      if (!roomId) throw new Error("Could not open conversation");
+      await postMessage(roomId, { body: forwardBody(forwardMsg) });
+      setForwardMsg(null);
+      flashSuccess(`Message forwarded to ${person.name || "contact"}.`);
+      await fetchRooms();
     } catch (err) {
       setLastError(extractErrorMessage(err, "Failed to forward message"));
     }
@@ -3375,21 +3494,23 @@ export default function Chat() {
             })
           )}
 
-          {/* Typing indicator */}
+          {/* Typing indicator — WhatsApp-style animated bubble (CHAT_011) */}
           {typingNames.length > 0 && (
-            <div
-              style={{
-                padding: "2px 20px 6px",
-                fontSize: 12,
-                color: "var(--rf-txt3)",
-                fontStyle: "italic",
-              }}
-            >
-              {typingNames.length === 1
-                ? `${typingNames[0]} is typing…`
-                : `${typingNames.slice(0, 2).join(", ")}${
-                    typingNames.length > 2 ? " and others" : ""
-                  } are typing…`}
+            <div style={{ padding: "2px 20px 8px" }}>
+              <span className="cx-typing" aria-live="polite">
+                <span className="cx-typing-bubble" aria-hidden="true">
+                  <span className="cx-typing-dot" />
+                  <span className="cx-typing-dot" />
+                  <span className="cx-typing-dot" />
+                </span>
+                <span className="cx-typing-label">
+                  {typingNames.length === 1
+                    ? `${typingNames[0]} is typing…`
+                    : `${typingNames.slice(0, 2).join(", ")}${
+                        typingNames.length > 2 ? " and others" : ""
+                      } are typing…`}
+                </span>
+              </span>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -3885,7 +4006,9 @@ export default function Chat() {
         <ForwardModal
           message={forwardMsg}
           rooms={decoratedRooms.filter((r) => r.id !== activeRoomId)}
+          people={people.filter((u) => u.id !== currentUser.id)}
           onForward={handleForward}
+          onForwardToPerson={handleForwardToPerson}
           onClose={() => setForwardMsg(null)}
         />
       )}
@@ -3966,19 +4089,55 @@ function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCanc
 }
 
 // ─── Forward picker ───────────────────────────────────────────────────────────
-function ForwardModal({ message, rooms, onForward, onClose }) {
+function ForwardModal({
+  message,
+  rooms,
+  people = [],
+  onForward,
+  onForwardToPerson,
+  onClose,
+}) {
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState(null);
-  const list = query.trim()
-    ? rooms.filter((r) =>
-        (r.name || "").toLowerCase().includes(query.trim().toLowerCase())
-      )
-    : rooms;
+  const q = query.trim().toLowerCase();
 
-  const go = async (roomId) => {
-    setBusyId(roomId);
+  // Forward targets = existing conversations PLUS people you can DM. People
+  // already covered by an existing room are dropped so they don't appear twice.
+  const roomPeerIds = new Set(rooms.map((r) => r.peerId).filter(Boolean));
+  const roomItems = (
+    q ? rooms.filter((r) => (r.name || "").toLowerCase().includes(q)) : rooms
+  ).map((r) => ({ kind: "room", id: r.id, label: r.name, ref: r }));
+  // The directory returns firstName/lastName/email (no `name`), so derive the
+  // display name the same way the rest of the app does — otherwise the row
+  // falls back to the raw email (e.g. "pm3@acme.com" instead of "Bob Lee").
+  const personName = (u) =>
+    u.name ||
+    u.displayName ||
+    `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
+    u.email ||
+    "Contact";
+  const peopleItems = people
+    .filter((u) => !roomPeerIds.has(u.id))
+    .filter((u) =>
+      q
+        ? personName(u).toLowerCase().includes(q) ||
+          (u.email || "").toLowerCase().includes(q)
+        : true,
+    )
+    .map((u) => ({
+      kind: "person",
+      id: `person:${u.id}`,
+      label: personName(u),
+      sub: u.email || "Start a direct message",
+      ref: { ...u, name: personName(u) },
+    }));
+  const list = [...roomItems, ...peopleItems];
+
+  const go = async (item) => {
+    setBusyId(item.id);
     try {
-      await onForward(roomId);
+      if (item.kind === "person") await onForwardToPerson(item.ref);
+      else await onForward(item.ref.id);
     } finally {
       setBusyId(null);
     }
@@ -4060,7 +4219,7 @@ function ForwardModal({ message, rooms, onForward, onClose }) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search conversations…"
+            placeholder="Search people or conversations…"
             autoFocus
             style={{
               width: "100%",
@@ -4086,13 +4245,15 @@ function ForwardModal({ message, rooms, onForward, onClose }) {
                 fontSize: 13,
               }}
             >
-              No conversations found.
+              {query.trim()
+                ? "No people or conversations match."
+                : "No one else to forward to yet."}
             </div>
           ) : (
-            list.map((r) => (
+            list.map((item) => (
               <button
-                key={r.id}
-                onClick={() => go(r.id)}
+                key={item.id}
+                onClick={() => go(item)}
                 disabled={busyId !== null}
                 style={{
                   width: "100%",
@@ -4118,17 +4279,36 @@ function ForwardModal({ message, rooms, onForward, onClose }) {
               >
                 <span
                   style={{
+                    display: "flex",
+                    flexDirection: "column",
                     overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    fontFamily: "monospace",
-                    fontWeight: 600,
                   }}
                 >
-                  {r.name}
+                  <span
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                  {item.sub && (
+                    <span style={{ fontSize: 11, color: "var(--rf-txt3)" }}>
+                      {item.sub}
+                    </span>
+                  )}
                 </span>
-                <span style={{ fontSize: 11, color: "var(--rf-accent)", fontWeight: 700 }}>
-                  {busyId === r.id ? "Sending…" : "Forward →"}
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: "var(--rf-accent)",
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {busyId === item.id ? "Sending…" : "Forward →"}
                 </span>
               </button>
             ))

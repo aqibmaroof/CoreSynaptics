@@ -28,7 +28,14 @@ export default function NotificationBell() {
     setLoading(true);
     setError("");
     try {
-      const xs = await myNotifications({ unreadOnly: true, limit: 20 });
+      // Bell counts in-app (WEBSOCKET) deliveries only, so one event = one
+      // notification (each notify() also fans out an OP_FEED row that belongs to
+      // the activity feed, not the bell — counting both double-counts).
+      const xs = await myNotifications({
+        unreadOnly: true,
+        limit: 20,
+        channel: "WEBSOCKET",
+      });
       setRows(Array.isArray(xs) ? xs : (xs?.items ?? []));
     } catch (e) {
       setError(e?.message || "Failed to load notifications");
@@ -41,11 +48,20 @@ export default function NotificationBell() {
     refresh();
   }, [refresh]);
 
-  // Live invalidation — backend emits `notification.created` to the user channel.
+  // Live invalidation. The realtime gateway relays a persisted notification to
+  // the user's personal channel as `notification.new` (see RealtimeGateway
+  // onNotificationDelivered). The previous code listened for `notification.created`,
+  // which the server never emits — so the bell never updated live and CHAT_029
+  // (new-message notification) silently failed. We also listen for the chat
+  // listener's immediate `chat.notification` toast event so a brand-new message
+  // bumps the bell the instant it lands, even before the persisted row is read.
   useEffect(() => {
     if (!socket) return;
-    const off = onEnvelope(socket, "notification.created", () => refresh());
-    return () => off();
+    const offs = [
+      onEnvelope(socket, "notification.new", () => refresh()),
+      onEnvelope(socket, "chat.notification", () => refresh()),
+    ];
+    return () => offs.forEach((off) => off && off());
   }, [socket, refresh]);
 
   // Click-outside close
@@ -88,7 +104,20 @@ export default function NotificationBell() {
       >
         <FaBell />
 
-        {true && <span className="cx-tb-bell-dot" />}
+        {/* Unread indicator — only when there are actually unread notifications.
+            Previously hardcoded to always render, so it conveyed nothing and a
+            real new-message notification produced no visible change (CHAT_029).
+            The numbered pill pops in (cxBellPop) so a new notification visibly
+            "appears" the moment it lands. */}
+        {unreadCount > 0 && (
+          <span
+            className="cx-tb-bell-count"
+            key={unreadCount}
+            aria-label={`${unreadCount} unread notifications`}
+          >
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
       </button>
 
       {open && (

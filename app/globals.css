@@ -2483,6 +2483,31 @@ body {
   border: 2px solid var(--cx-bg);
   border-radius: 50%;
 }
+/* Numbered unread badge — more visible than a bare dot, so a new-message
+   notification unmistakably "appears" on the bell (CHAT_029). */
+.cx-tb-bell-count {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ef4444;
+  color: #fff;
+  border: 2px solid var(--cx-bg);
+  border-radius: 9px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-sizing: content-box;
+  animation: cxBellPop 0.28s ease-out;
+}
+@keyframes cxBellPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
 .cx-tb-badge {
   display: flex;
   align-items: center;
@@ -2768,4 +2793,58 @@ body {
 }
 .cx-hover-lift:disabled {
   cursor: not-allowed;
+}
+
+/* ── WhatsApp-style typing indicator (CHAT_011) ──────────────────────────────
+   An animated three-dot bubble that bounces while a peer is composing. The
+   wave is created by staggering the same keyframe across the three dots. */
+.cx-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cx-typing-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 11px;
+  border-radius: 14px;
+  background: var(--rf-bg3);
+}
+.cx-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rf-txt2);
+  opacity: 0.5;
+  animation: cxTypingBounce 1.2s infinite ease-in-out;
+}
+.cx-typing-dot:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.cx-typing-dot:nth-child(3) {
+  animation-delay: 0.36s;
+}
+.cx-typing-label {
+  font-size: 12px;
+  color: var(--rf-txt3);
+  font-style: italic;
+}
+@keyframes cxTypingBounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-typing-dot {
+    animation: none;
+    opacity: 0.7;
+  }
 }

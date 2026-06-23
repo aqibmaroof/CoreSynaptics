@@ -149,6 +149,21 @@ export const getRoomReceipts = async (roomId) =>
 export const getRoomPresence = async (roomId) =>
   sendRequest({ url: `${base()}/${roomId}/presence`, method: "GET" });
 
+/**
+ * Online status for everyone in the caller's org. Seeds the sidebar presence
+ * dots for ALL people, not just the open room's members, so peers who were
+ * already online before chat opened show online immediately. Live
+ * `chat.presence.changed` events keep it current after the seed.
+ */
+export const getDirectoryPresence = async () => {
+  if (isPlatformUser()) return noop([]);
+  const res = await sendRequest({
+    url: "/chat-rooms/_directory/presence",
+    method: "GET",
+  });
+  return Array.isArray(res) ? res : res?.data || [];
+};
+
 /** Signal typing start (call on first keystroke per compose session). */
 export const startTyping = async (roomId) =>
   sendRequest({ url: `${base()}/${roomId}/typing/start`, method: "POST" });

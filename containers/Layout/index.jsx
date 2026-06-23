@@ -1058,16 +1058,26 @@ export default function CxLayout({ children }) {
               className="cx-tb-badge"
               onClick={() => setMenu((v) => !v)}
             >
-              <div className="cx-tb-av">{initials}</div>
+              {/* These nodes render from client-only state (user pulled from
+                  localStorage / /auth/me), so their text legitimately differs
+                  between the SSR pass ("U" / "Sign in") and the first client
+                  paint. suppressHydrationWarning tells React that's expected —
+                  without it React treats the whole subtree as a hydration
+                  mismatch and REGENERATES it on a loop, which tore down and
+                  recreated the realtime socket every ~70s and broke live chat
+                  typing/presence (CHAT_011/012/013). */}
+              <div className="cx-tb-av" suppressHydrationWarning>
+                {initials}
+              </div>
               <div className="cx-tb-info">
-                <div className="nm">
+                <div className="nm" suppressHydrationWarning>
                   {user
                     ? `${user.firstName ?? user.first_name ?? ""} ${
                         user.lastName ?? user.last_name ?? ""
                       }`.trim() || user.email
                     : "Sign in"}
                 </div>
-                <div className="rl">
+                <div className="rl" suppressHydrationWarning>
                   {user?.activeRole?.description ?? user?.platformRole ?? ""}
                 </div>
               </div>
@@ -1125,14 +1135,15 @@ export default function CxLayout({ children }) {
         <aside ref={sidebarRef} className="cx-sidebar">
           <div className="cx-you">
             <div className="lbl">Signed in</div>
-            <div className="name">
+            {/* Client-only (localStorage/auth) — suppress hydration diff. */}
+            <div className="name" suppressHydrationWarning>
               {user
                 ? `${user.firstName ?? user.first_name ?? ""} ${
                     user.lastName ?? user.last_name ?? ""
                   }`.trim() || user.email
                 : "—"}
             </div>
-            <div className="role">
+            <div className="role" suppressHydrationWarning>
               {user?.activeRole?.description ??
                 user?.platformRole ??
                 "Operator"}

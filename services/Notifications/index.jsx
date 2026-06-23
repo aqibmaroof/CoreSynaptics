@@ -24,7 +24,7 @@ export const markNotificationRead = (id) =>
 export const markAllNotificationsRead = () =>
   sendRequest({
     url: `${base}/me/deliveries/read-all`,
-    method: "PATCH",
+    method: "POST",
     mutationId: true,
   });
 
