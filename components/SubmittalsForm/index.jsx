@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { listV2Projects, listV2Assets } from "@/services/CxProjectsV2";
+import { useRouter } from "next/navigation";
+import { listV2Projects } from "@/services/CxProjectsV2";
+import { getAssets } from "@/services/AssetManagement";
+import { getContactsByCompany } from "@/services/Contacts";
 import {
   required,
   lengthBetween,
@@ -25,6 +28,43 @@ const SUBMITTAL_TYPES = [
   { value: "TEST_REPORT", label: "Test Report" },
   { value: "OTHER", label: "Other" },
 ];
+
+// Submittal workflow separation of duties (Procore/CxAlloy model): the trade
+// that SUBMITS a document is a responsible contractor; the company that REVIEWS
+// it is the design/commissioning authority. Scope each dropdown to the company
+// types that play that role so users don't pick, e.g., a rigger as the reviewer.
+const TRADE_COMPANY_TYPES = new Set([
+  "TRADE",
+  "MECHANICAL",
+  "CONTROLS",
+  "LOW_VOLTAGE",
+  "RIGGER",
+  "SECURITY",
+  "FIRE",
+  "INTEGRATOR",
+  "BUILDER",
+  "OEM",
+  "SUBCONTRACTOR",
+  "VENDOR",
+]);
+const REVIEWER_COMPANY_TYPES = new Set([
+  "CXA",
+  "AE",
+  "GC",
+  "CONSULTANT",
+  "CUSTOMER",
+  "OPERATIONS",
+]);
+
+// Filter companies to those whose type fits the role. Companies with an unknown
+// /legacy type (or no type) fall through to BOTH lists so nothing is hidden by
+// a missing classification.
+const companiesForRole = (companies, typeSet) =>
+  (companies ?? []).filter(
+    (c) => !c.type || typeSet.has(c.type) || isUnclassified(c.type),
+  );
+const isUnclassified = (type) =>
+  ["CLIENT", "PARTNER", "OTHER"].includes(type);
 
 function toArray(data) {
   return Array.isArray(data)
@@ -95,6 +135,13 @@ export default function SubmittalForm({
   const [projects, setProjects] = useState([]);
   const [assets, setAssets] = useState([]);
   const [errors, setErrors] = useState({});
+  // "Reviewed By" lists the people who work at the chosen REVIEWER COMPANY
+  // (the reviewing engineer/CxA firm) — i.e. that company's contacts — not the
+  // org user directory. A reviewer is a person at the reviewing firm.
+  const [reviewers, setReviewers] = useState([]);
+  // Inline "discard unsaved changes?" confirmation (TC_SUB_047).
+  const router = useRouter();
+  const [confirmExit, setConfirmExit] = useState(false);
 
   const [form, setForm] = useState({
     cxProjectId: "",
@@ -110,37 +157,70 @@ export default function SubmittalForm({
     dueDate: "",
   });
 
-  // Load projects on mount
+  // Load projects + org asset register on mount. The Asset field references the
+  // ORG-LEVEL asset register (GET /assets), which is what POST /api/submittals
+  // validates `assetId` against — NOT the project-scoped V2 ProjectAsset list.
+  // Sourcing options from listV2Assets here sent a ProjectAsset.id, which never
+  // matches the Asset table and 404'd every submission with an asset selected.
   useEffect(() => {
     listV2Projects({ limit: 100 })
       .then((d) => setProjects(toArray(d)))
       .catch(() => {});
+    getAssets({ limit: 1000 })
+      .then((d) => setAssets(toArray(d)))
+      .catch(() => {});
   }, []);
 
-  // Project → project-scoped assets (V2). Resets are done inside the async flow
-  // (not synchronously in the effect body) so we don't trigger cascading renders.
+  // Load the reviewer pool (the reviewer company's contacts) whenever the
+  // selected Reviewer Company changes. Clear a stale reviewer selection too.
   useEffect(() => {
     let alive = true;
-    const projectId = form.cxProjectId;
-    (async () => {
-      const next = projectId
-        ? await listV2Assets(projectId, { limit: 100 })
-            .then((d) => toArray(d))
-            .catch(() => [])
-        : [];
-      if (!alive) return;
-      setAssets(next);
-      setForm((p) => ({ ...p, assetId: "" }));
-    })();
+    const companyId = form.reviewerCompanyId;
+    if (!companyId) {
+      Promise.resolve().then(() => {
+        if (alive) {
+          setReviewers([]);
+          setForm((prev) =>
+            prev.reviewerUserId ? { ...prev, reviewerUserId: "" } : prev,
+          );
+        }
+      });
+      return () => {
+        alive = false;
+      };
+    }
+    getContactsByCompany(companyId)
+      .then((d) => {
+        if (alive) setReviewers(toArray(d));
+      })
+      .catch(() => {
+        if (alive) setReviewers([]);
+      });
     return () => {
       alive = false;
     };
-  }, [form.cxProjectId]);
+  }, [form.reviewerCompanyId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
+  };
+
+  // Dirty if any field differs from its empty default. `type` defaults to
+  // SHOP_DRAWING, so it's excluded from the dirty check.
+  const isDirty = () =>
+    Object.entries(form).some(
+      ([k, v]) => k !== "type" && (v ?? "").toString().trim() !== "",
+    );
+
+  // Leave the form: warn first if there are unsaved changes (TC_SUB_047).
+  const requestExit = () => {
+    if (isDirty()) {
+      setConfirmExit(true);
+      return;
+    }
+    router.back();
   };
 
   const validate = () => {
@@ -162,6 +242,16 @@ export default function SubmittalForm({
         (form.dueDate && form.dueDate < today
           ? "Due Date cannot be in the past."
           : ""),
+      // Separation of duties: the submitting trade and the reviewing
+      // engineer/consultant must be different companies — a trade cannot
+      // independently review its own submittal (Procore/industry submittal
+      // workflow). Only enforced when both are chosen (both are optional).
+      reviewerCompanyId:
+        form.tradeCompanyId &&
+        form.reviewerCompanyId &&
+        form.tradeCompanyId === form.reviewerCompanyId
+          ? "Reviewer Company must differ from the Trade Company."
+          : "",
     });
     setErrors(fieldErrors);
     return Object.keys(fieldErrors).length === 0;
@@ -239,6 +329,7 @@ export default function SubmittalForm({
 
       <form
         onSubmit={handleSubmit}
+        noValidate
         className="p-6 space-y-6"
         style={{ background: "var(--rf-bg)" }}
       >
@@ -283,13 +374,9 @@ export default function SubmittalForm({
                 onChange={handleChange}
                 options={assets.map((a) => ({ value: a.id, label: a.name }))}
                 placeholder={
-                  form.cxProjectId
-                    ? assets.length
-                      ? "— Select Asset —"
-                      : "No assets found"
-                    : "— Select Project First —"
+                  assets.length ? "— Select Asset —" : "No assets found"
                 }
-                disabled={!form.cxProjectId || assets.length === 0}
+                disabled={assets.length === 0}
               />
             </div>
           </div>
@@ -412,10 +499,9 @@ export default function SubmittalForm({
                 name="tradeCompanyId"
                 value={form.tradeCompanyId}
                 onChange={handleChange}
-                options={(companies ?? []).map((c) => ({
-                  value: c.id,
-                  label: c.name,
-                }))}
+                options={companiesForRole(companies, TRADE_COMPANY_TYPES).map(
+                  (c) => ({ value: c.id, label: c.name }),
+                )}
                 placeholder="— Select Company —"
               />
             </div>
@@ -429,12 +515,13 @@ export default function SubmittalForm({
                 name="reviewerCompanyId"
                 value={form.reviewerCompanyId}
                 onChange={handleChange}
-                options={(companies ?? []).map((c) => ({
-                  value: c.id,
-                  label: c.name,
-                }))}
+                options={companiesForRole(
+                  companies,
+                  REVIEWER_COMPANY_TYPES,
+                ).map((c) => ({ value: c.id, label: c.name }))}
                 placeholder="— Select Company —"
               />
+              {fieldError(errors.reviewerCompanyId)}
             </div>
 
             {/* Reviewer User */}
@@ -446,30 +533,93 @@ export default function SubmittalForm({
                 name="reviewerUserId"
                 value={form.reviewerUserId}
                 onChange={handleChange}
-                options={(users ?? []).map((u) => ({
+                options={reviewers.map((u) => ({
                   value: u.id,
                   label:
-                    `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() ||
-                    u.email ||
-                    u.id,
+                    `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() +
+                      (u.jobTitle ? ` · ${u.jobTitle}` : "") || u.email || u.id,
                 }))}
-                placeholder="— Select User —"
+                placeholder={
+                  !form.reviewerCompanyId
+                    ? "— Select a reviewer company first —"
+                    : reviewers.length
+                      ? "— Select Reviewer —"
+                      : "No contacts at this company"
+                }
+                disabled={!form.reviewerCompanyId || reviewers.length === 0}
               />
             </div>
           </div>
         </div>
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
-          style={{
-            background: "var(--rf-accent)",
-            color: "#fff",
-            opacity: loading ? 0.6 : 1,
-          }}
-        >
+        {/* Unsaved-changes confirm (TC_SUB_047) */}
+        {confirmExit && (
+          <div
+            role="alertdialog"
+            aria-label="Discard unsaved submittal?"
+            className="rounded-lg p-4"
+            style={{
+              background: "color-mix(in srgb, var(--rf-red) 8%, transparent)",
+              border:
+                "1px solid color-mix(in srgb, var(--rf-red) 35%, transparent)",
+            }}
+          >
+            <p
+              className="text-sm font-semibold mb-3"
+              style={{ color: "var(--rf-txt)" }}
+            >
+              Discard this submittal? Your unsaved changes will be lost.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmExit(false)}
+                className="px-4 py-2 rounded-lg text-sm"
+                style={{
+                  border: "1px solid var(--rf-border2)",
+                  color: "var(--rf-txt2)",
+                }}
+              >
+                Keep editing
+              </button>
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: "var(--rf-red)", color: "#fff" }}
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={requestExit}
+            disabled={loading}
+            className="px-6 py-3 rounded-lg font-medium"
+            style={{
+              border: "1px solid var(--rf-border2)",
+              color: "var(--rf-txt2)",
+              background: "transparent",
+            }}
+          >
+            Cancel
+          </button>
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+            style={{
+              background: "var(--rf-accent)",
+              color: "#fff",
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
           {loading ? (
             <>
               <svg
@@ -497,7 +647,8 @@ export default function SubmittalForm({
           ) : (
             "Create Submittal"
           )}
-        </button>
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -55,7 +55,25 @@ const sendRequest = async ({
       headers: response.headers,
     };
   } catch (error) {
-    throw error?.response?.data || error;
+    const body = error?.response?.data;
+    if (body && typeof body === "object") {
+      // Backend validation responses look like:
+      //   { message: "Some fields have errors...", errors: { field: [msg] } }
+      // That top-level message is useless to a user. Promote the SPECIFIC field
+      // errors into `message` so every caller that shows `err.message` gets an
+      // actionable string ("Title is required. Due Date cannot be in the past.")
+      // without each form having to dig into `errors` itself. The original
+      // structured `errors` is preserved for callers that want per-field display.
+      const fieldErrs =
+        body.errors && typeof body.errors === "object"
+          ? Object.values(body.errors).flat().filter(Boolean)
+          : [];
+      if (fieldErrs.length) {
+        throw { ...body, message: fieldErrs.join(" "), errors: body.errors };
+      }
+      throw body;
+    }
+    throw error;
   }
 };
 

@@ -200,18 +200,31 @@ export function permissionProps(allowed, action = "perform this action") {
 // Reads the cached user from localStorage immediately, then refreshes from
 // /auth/me on mount so a freshly-changed role propagates without a hard reload.
 export function useUserPermissions() {
-  const [user, setLocalUser] = useState(() => {
-    try {
-      const raw = getUser();
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [loading, setLoading] = useState(!user);
+  // The cached user lives in localStorage, which is null during SSR. Reading it
+  // in the initial render state would make the server HTML (user = null) differ
+  // from the client's first render (user = cached), which React reports as a
+  // hydration mismatch and then throws away + re-renders. So the FIRST render
+  // (server and client alike) always starts with `user = null`; an effect then
+  // hydrates the cached user after mount, and a background /auth/me refresh
+  // keeps it current. Both server and first-client render agree → no mismatch.
+  const [user, setLocalUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Hydrate the cached user synchronously after mount so the UI fills in
+    // immediately without waiting for the network round-trip.
     let cancelled = false;
+    let cached = null;
+    try {
+      const raw = getUser();
+      cached = raw ? JSON.parse(raw) : null;
+    } catch {
+      cached = null;
+    }
+    if (cached) {
+      setLocalUser(cached);
+      setLoading(false);
+    }
     (async () => {
       try {
         const fresh = await GetUser();

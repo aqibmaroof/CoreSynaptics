@@ -143,6 +143,9 @@ export default function ScheduleMilestoneAdd() {
 
   const [existingNames, setExistingNames] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
+  // Inline "discard unsaved changes?" confirmation (CM_TC_047). An inline confirm
+  // (not a blocking window.confirm) keeps the UI responsive/accessible.
+  const [confirmExit, setConfirmExit] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -152,6 +155,25 @@ export default function ScheduleMilestoneAdd() {
     projectId: "",
     phaseId: "",
   });
+
+  // The form is dirty if the user entered/changed anything from defaults.
+  const isDirty = () =>
+    form.name.trim() !== "" ||
+    form.date !== "" ||
+    form.type !== "INTERNAL" ||
+    form.isCritical ||
+    form.projectId !== "" ||
+    form.phaseId !== "";
+
+  // Request to leave the form. If there are unsaved changes, show the inline
+  // confirm (CM_TC_047); otherwise leave immediately.
+  const requestExit = () => {
+    if (isDirty()) {
+      setConfirmExit(true);
+      return;
+    }
+    router.back();
+  };
 
   // Load projects on mount
   useEffect(() => {
@@ -240,7 +262,8 @@ export default function ScheduleMilestoneAdd() {
         }}
       >
         <button
-          onClick={() => router.back()}
+          type="button"
+          onClick={requestExit}
           style={{
             display: "flex",
             alignItems: "center",
@@ -488,6 +511,53 @@ export default function ScheduleMilestoneAdd() {
           </p>
         </div>
 
+        {/* Unsaved-changes inline confirm (CM_TC_047) */}
+        {confirmExit && (
+          <div
+            role="alertdialog"
+            aria-label="Discard unsaved milestone?"
+            style={{
+              marginBottom: 16,
+              border: "1px solid var(--rf-red)",
+              borderRadius: 10,
+              padding: "12px 14px",
+              background: "var(--rf-bg3)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "var(--rf-txt)",
+                marginBottom: 10,
+              }}
+            >
+              Discard this milestone? Your unsaved changes will be lost.
+            </div>
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}
+            >
+              <button
+                type="button"
+                onClick={() => setConfirmExit(false)}
+                style={sBtnGhost}
+              >
+                Keep editing
+              </button>
+              <button
+                type="button"
+                onClick={() => router.back()}
+                style={{
+                  ...sBtnPrimary,
+                  background: "var(--rf-red)",
+                }}
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div
           style={{
@@ -497,7 +567,7 @@ export default function ScheduleMilestoneAdd() {
             paddingTop: 4,
           }}
         >
-          <button type="button" onClick={() => router.back()} style={sBtnGhost}>
+          <button type="button" onClick={requestExit} style={sBtnGhost}>
             Cancel
           </button>
           <button

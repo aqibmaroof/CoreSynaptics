@@ -13,6 +13,8 @@ import {
   ISSUE_KIND_LABELS,
   NCR_SUB_STATUS_LABELS,
   NCR_SUB_STATUSES,
+  getEligibleVerifiers,
+  getIssueAssignees,
 } from "@/services/Issues";
 import { getUsers } from "@/services/Users";
 import { getCompanies } from "@/services/Companies";
@@ -181,6 +183,8 @@ const normalizeIssue = (it, usersById = {}) => {
     kind: it.kind || "GENERAL",
     priority: SEVERITY_TO_PRIORITY[it.severity] || "MED",
     title: it.title,
+    // Keep the project id so the duplicate-title guard can scope by project.
+    cxProjectId: it.cxProjectId || it.projectId || it.project?.id || "",
     description: it.description || "",
     discipline: it.discipline || null,
     asset:
@@ -202,7 +206,10 @@ const normalizeIssue = (it, usersById = {}) => {
     raisedDate: created
       ? created.toLocaleDateString("en-US", { month: "short", day: "2-digit" })
       : null,
-    assignedTo: fullName(assignee) || (it.assignedToUserId ? "Assigned" : null),
+    assignedTo:
+      fullName(assignee) ||
+      it.assignedToUserName ||
+      (it.assignedToUserId ? "Assigned" : null),
     assignedToUserId: it.assignedToUserId || "",
     assignedToCompanyId: it.assignedToCompanyId || "",
     ncrSubStatus: it.ncrSubStatus,
@@ -299,7 +306,14 @@ function DisciplineChip({ label }) {
   );
 }
 
-function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
+function IssueCard({
+  issue,
+  canVerify = false,
+  onStatusChange,
+  onAssign,
+  onVerify,
+  onDelete,
+}) {
   const pm = PRIORITY_META[issue.priority] || PRIORITY_META.MED;
   const showOverdue = issue.isOverdue && issue.overdueHours;
 
@@ -568,7 +582,7 @@ function IssueCard({ issue, onStatusChange, onAssign, onVerify, onDelete }) {
                 {next === "READY_FOR_VERIFICATION" ? "RFV" : STATUS_LABEL[next]}
               </button>
             ))}
-            {issue.status === "READY_FOR_VERIFICATION" && (
+            {issue.status === "READY_FOR_VERIFICATION" && canVerify && (
               <button
                 onClick={() => onVerify(issue)}
                 style={{
@@ -663,7 +677,7 @@ const EMPTY_FORM = {
   projectId: "",
   projectAssetId: "",
   assignedToCompanyId: "",
-  notifyCompany: "— Select company to notify —",
+  notifyCompany: "",
   assignedTo: "",
   slaOverride: "",
   blocksPhase: false,
@@ -686,6 +700,9 @@ function RaiseIssueModal({
   onSubmit,
   users,
   companies = [],
+  companiesError = "",
+  usersUnavailable = false,
+  existingIssues = [],
   projects = [],
   initialKind,
 }) {
@@ -697,17 +714,33 @@ function RaiseIssueModal({
   }));
   const [submitting, setSubmitting] = useState(false);
   const [equipment, setEquipment] = useState([]);
+  const [confirmClose, setConfirmClose] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  // Close on Escape (RHP/RPI-054). The form state is local to this modal, so
-  // unmounting on close discards any unsaved entry — old data never persists.
+  // Dirty if the user has typed/picked anything beyond the defaults (title or
+  // description — the fields they'd lose). Used to warn before discarding.
+  const isDirty = () =>
+    !!form.title.trim() || !!(form.description && form.description.trim());
+
+  // Route every close path (Escape, backdrop, X, Cancel) through here so an
+  // unsaved entry prompts a confirm instead of silently vanishing (RHP_TC_057).
+  const requestClose = () => {
+    if (isDirty()) {
+      setConfirmClose(true);
+      return;
+    }
+    onClose();
+  };
+
+  // Close on Escape (RHP/RPI-054) — but warn first if there are unsaved changes.
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") requestClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    // requestClose closes over form; re-bind when title/description change.
+  }, [form.title, form.description]);
 
   // Project → V2 equipment. Linking equipment lets the issue gate its phase in
   // the Project Playbook (same behaviour as Issues/Add).
@@ -728,15 +761,33 @@ function RaiseIssueModal({
   }, [form.projectId]);
 
   // createIssue needs at least a project. HOLD_POINT additionally requires a
-  // responding company, and NCR requires a description (both enforced server-side).
+  // responding company AND a notify company (the latter is marked required and
+  // is the party that gets the sign-off notification), and NCR requires a
+  // description (all enforced server-side too).
   const companyRequired =
-    form.kind === "HOLD_POINT" && !form.assignedToCompanyId;
+    form.kind === "HOLD_POINT" &&
+    (!form.assignedToCompanyId || !form.notifyCompany);
   const descriptionRequired = form.kind === "NCR" && !form.description.trim();
+
+  // Block an obvious duplicate: same title (case-insensitive) on the same
+  // project. Prevents accidentally raising the same Hold Point twice
+  // (RHP_TC_059). Server still owns the source of truth; this is a UX guard.
+  const trimmedTitle = form.title.trim();
+  const isDuplicateTitle =
+    !!trimmedTitle &&
+    !!form.projectId &&
+    existingIssues.some(
+      (i) =>
+        (i.cxProjectId === form.projectId || i.projectId === form.projectId) &&
+        (i.title || "").trim().toLowerCase() === trimmedTitle.toLowerCase(),
+    );
+
   const canSubmit =
-    form.title.trim() &&
+    trimmedTitle &&
     form.projectId &&
     !companyRequired &&
-    !descriptionRequired;
+    !descriptionRequired &&
+    !isDuplicateTitle;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -788,7 +839,7 @@ function RaiseIssueModal({
         zIndex: 1000,
         padding: 16,
       }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => e.target === e.currentTarget && requestClose()}
     >
       <div
         style={{
@@ -821,7 +872,7 @@ function RaiseIssueModal({
             + Raise issue
           </span>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             style={{
               background: "none",
               border: "none",
@@ -838,6 +889,67 @@ function RaiseIssueModal({
 
         {/* Body */}
         <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+          {/* Unsaved-changes confirm (RHP_TC_057) */}
+          {confirmClose && (
+            <div
+              role="alertdialog"
+              aria-label="Discard unsaved issue?"
+              style={{
+                marginBottom: 16,
+                padding: "12px 14px",
+                borderRadius: 8,
+                background: "rgba(239,68,68,0.08)",
+                border: "1px solid rgba(239,68,68,0.35)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "var(--rf-txt)",
+                  marginBottom: 10,
+                }}
+              >
+                Discard this issue? Your unsaved changes will be lost.
+              </div>
+              <div
+                style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setConfirmClose(false)}
+                  style={{
+                    padding: "7px 16px",
+                    borderRadius: 8,
+                    border: "1px solid var(--rf-border)",
+                    background: "transparent",
+                    color: "var(--rf-txt2)",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  style={{
+                    padding: "7px 16px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: "var(--rf-red)",
+                    color: "#fff",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          )}
           {/* Issue Kind */}
           <div style={{ marginBottom: 16 }}>
             <label style={lbl}>ISSUE KIND</label>
@@ -922,17 +1034,16 @@ function RaiseIssueModal({
                 style={{
                   ...inp,
                   borderColor:
-                    form.kind === "HOLD_POINT" &&
-                    form.notifyCompany === "— Select company to notify —"
+                    form.kind === "HOLD_POINT" && !form.notifyCompany
                       ? "rgba(239,68,68,0.4)"
                       : "var(--rf-border)",
                 }}
               >
-                <option value="— Select company to notify —">
-                  — Select company to notify —
-                </option>
+                {/* Store the company id (not the name) so the picked notify
+                    company is actually sent to the backend and notified. */}
+                <option value="">— Select company to notify —</option>
                 {companies.map((c) => (
-                  <option key={c.id} value={c.name}>
+                  <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
@@ -944,6 +1055,32 @@ function RaiseIssueModal({
                   ? "This company must sign off before work resumes. They will be notified automatically."
                   : "This company will be invited to observe. Their absence will not block work."}
               </div>
+              {/* Surface a failed/empty company load instead of leaving the user
+                  stuck on an empty required dropdown. */}
+              {companiesError ? (
+                <div
+                  role="alert"
+                  style={{
+                    fontSize: 11,
+                    color: "var(--rf-red)",
+                    marginTop: 6,
+                    fontWeight: 600,
+                  }}
+                >
+                  {companiesError}
+                </div>
+              ) : companies.length === 0 ? (
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--rf-txt3)",
+                    marginTop: 6,
+                  }}
+                >
+                  No companies registered yet — add one in the Companies module
+                  first.
+                </div>
+              ) : null}
             </div>
           )}
 
@@ -973,14 +1110,30 @@ function RaiseIssueModal({
             <input
               value={form.title}
               onChange={(e) => set("title", e.target.value)}
+              maxLength={500}
+              aria-label="Issue title"
               placeholder="Short summary · e.g. 'Torque marks missing on 3 lugs at PDU-B1'"
               style={{
                 ...inp,
-                borderColor: !form.title.trim()
-                  ? "rgba(239,68,68,0.3)"
-                  : "var(--rf-border)",
+                borderColor:
+                  !form.title.trim() || isDuplicateTitle
+                    ? "rgba(239,68,68,0.3)"
+                    : "var(--rf-border)",
               }}
             />
+            {isDuplicateTitle && (
+              <div
+                role="alert"
+                style={{
+                  fontSize: 11,
+                  color: "var(--rf-red)",
+                  marginTop: 4,
+                  fontWeight: 600,
+                }}
+              >
+                An open issue with this title already exists on this project.
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -989,6 +1142,8 @@ function RaiseIssueModal({
             <textarea
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
+              maxLength={5000}
+              aria-label="Issue description"
               placeholder="What was found · what was checked · investigation steps · next steps"
               rows={4}
               style={{ ...inp, resize: "vertical", lineHeight: 1.55 }}
@@ -1205,6 +1360,18 @@ function RaiseIssueModal({
                   </option>
                 ))}
               </select>
+              {usersUnavailable && (
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "var(--rf-txt3)",
+                    marginTop: 4,
+                  }}
+                >
+                  Direct assignment to a person needs admin access — leave as
+                  &ldquo;None&rdquo; and the responsible company will assign.
+                </div>
+              )}
             </div>
             <div>
               <label style={lbl}>
@@ -1282,7 +1449,7 @@ function RaiseIssueModal({
           }}
         >
           <button
-            onClick={onClose}
+            onClick={requestClose}
             style={{
               padding: "9px 20px",
               borderRadius: 9,
@@ -1437,6 +1604,8 @@ export default function IssuesList() {
   const [issues, setIssues] = useState([]);
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [companiesError, setCompaniesError] = useState("");
+  const [usersUnavailable, setUsersUnavailable] = useState(false);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -1460,11 +1629,52 @@ export default function IssuesList() {
   });
   const [verifyForm, setVerifyForm] = useState({ closeVerifiedBy: "" });
 
+  // RBAC-scoped people pickers (replace the admin-only full-user list, which
+  // 403s for project roles and left the Verify/Assign dropdowns empty):
+  //  • verifiers  = users with issue approve authority (org-wide)
+  //  • assignees  = the issue's project team, fetched per-issue on open
+  const [verifiers, setVerifiers] = useState([]);
+  const [assignees, setAssignees] = useState([]);
+  // The current user may verify & close only if they hold issue-approve
+  // authority — i.e. they appear in the eligible-verifiers list. Gates the
+  // "Close" (Verify & Close) button so non-verifiers don't hit a 403.
+  const canVerifyIssues = !!user?.id && verifiers.some((v) => v.id === user.id);
+
   useEffect(() => {
     fetchUsers();
     fetchCompanies();
     fetchProjects();
+    fetchVerifiers();
   }, []);
+
+  const fetchVerifiers = async () => {
+    try {
+      const res = await getEligibleVerifiers();
+      setVerifiers(Array.isArray(res) ? res : res?.data || []);
+    } catch {
+      setVerifiers([]);
+    }
+  };
+
+  // Load the project team for the assign picker whenever an assign modal opens.
+  useEffect(() => {
+    const pid = assignModal?.cxProjectId;
+    if (!pid) {
+      setAssignees([]);
+      return;
+    }
+    let alive = true;
+    getIssueAssignees(pid)
+      .then((res) => {
+        if (alive) setAssignees(Array.isArray(res) ? res : res?.data || []);
+      })
+      .catch(() => {
+        if (alive) setAssignees([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [assignModal]);
 
   // Re-normalize issues once the users list is available so assignee/raiser
   // names resolve (fetchUsers and fetchIssues race on mount). Also refetch when
@@ -1497,14 +1707,32 @@ export default function IssuesList() {
     try {
       const res = await getUsers();
       setUsers(Array.isArray(res) ? res : res?.data || []);
-    } catch {}
+      setUsersUnavailable(false);
+    } catch {
+      // The user directory is company-admin-only, so a project-only role gets a
+      // 403 here. "Assigned To" is optional (a company can self-assign), so this
+      // isn't fatal — but flag it so the dropdown explains the empty list
+      // instead of looking broken.
+      setUsers([]);
+      setUsersUnavailable(true);
+    }
   };
 
   const fetchCompanies = async () => {
     try {
       const res = await getCompanies();
       setCompanies(Array.isArray(res) ? res : res?.data || []);
-    } catch {}
+      setCompaniesError("");
+    } catch (err) {
+      // Don't silently swallow — a HOLD_POINT requires picking a company, so an
+      // empty dropdown with no explanation leaves the user stuck. Surface it.
+      setCompanies([]);
+      setCompaniesError(
+        err?.response?.status === 403
+          ? "You don't have permission to view companies. Ask an admin for Contacts access."
+          : "Couldn't load companies. Please try again.",
+      );
+    }
   };
 
   const fetchProjects = async () => {
@@ -1514,14 +1742,26 @@ export default function IssuesList() {
     } catch {}
   };
 
+  // Returns true on success / false on failure so callers can keep a modal open
+  // (and not show a false "done") when the action was rejected.
   const withAction = async (fn, successMsg) => {
     setActionLoading(true);
     try {
       await fn();
       setMessage({ type: "success", text: successMsg });
       await fetchIssues();
+      return true;
     } catch (err) {
-      setMessage({ type: "error", text: err?.message || "Action failed" });
+      // Surface the specific backend field errors instead of a generic message.
+      const fieldErrs =
+        err?.errors && typeof err.errors === "object"
+          ? Object.values(err.errors).flat().filter(Boolean)
+          : [];
+      const text = fieldErrs.length
+        ? fieldErrs.join(" ")
+        : err?.message || "Action failed";
+      setMessage({ type: "error", text });
+      return false;
     } finally {
       setActionLoading(false);
     }
@@ -1541,7 +1781,7 @@ export default function IssuesList() {
 
   const handleAssign = async () => {
     if (!assignModal) return;
-    await withAction(
+    const ok = await withAction(
       () =>
         assignIssue(assignModal.id, {
           assignedToUserId: assignForm.assignedToUserId || null,
@@ -1549,19 +1789,22 @@ export default function IssuesList() {
         }),
       "Issue assigned successfully",
     );
+    if (!ok) return;
     setAssignModal(null);
     setAssignForm({ assignedToUserId: "", assignedToCompanyId: "" });
   };
 
   const handleVerifyClose = async () => {
     if (!verifyModal || !verifyForm.closeVerifiedBy) return;
-    await withAction(
+    const ok = await withAction(
       () =>
         verifyAndCloseIssue(verifyModal.id, {
           closeVerifiedBy: verifyForm.closeVerifiedBy,
         }),
       "Issue verified and closed",
     );
+    // Keep the modal open on failure so the error is visible and retryable.
+    if (!ok) return;
     setVerifyModal(null);
     setVerifyForm({ closeVerifiedBy: "" });
   };
@@ -1833,6 +2076,7 @@ export default function IssuesList() {
             <IssueCard
               key={issue.id}
               issue={issue}
+              canVerify={canVerifyIssues}
               onStatusChange={(iss, next) =>
                 setStatusModal({ issue: iss, nextStatus: next })
               }
@@ -1967,12 +2211,44 @@ export default function IssuesList() {
             }}
           >
             <option value="">No user assigned</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.firstName} {u.lastName}
-              </option>
-            ))}
+            {(() => {
+              // Always include the issue's current assignee as an option so the
+              // pre-selection renders even if they aren't (or are no longer) in
+              // the fetched project team.
+              const list = [...assignees];
+              const curId = assignModal?.assignedToUserId;
+              if (curId && !list.some((u) => u.id === curId)) {
+                const name = assignModal?.assignedTo;
+                const [firstName, ...rest] = (name || "Current assignee").split(
+                  " ",
+                );
+                list.unshift({
+                  id: curId,
+                  firstName,
+                  lastName: rest.join(" "),
+                  roleName: null,
+                });
+              }
+              return list.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName}
+                  {u.roleName ? ` · ${u.roleName}` : ""}
+                </option>
+              ));
+            })()}
           </select>
+          {assignModal?.cxProjectId && assignees.length === 0 && (
+            <div
+              style={{
+                fontSize: 11,
+                color: "var(--rf-txt3)",
+                marginTop: -12,
+                marginBottom: 16,
+              }}
+            >
+              No team members are assigned to this issue&rsquo;s project yet.
+            </div>
+          )}
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button
               onClick={() => setAssignModal(null)}
@@ -2078,12 +2354,26 @@ export default function IssuesList() {
             }}
           >
             <option value="">Select verifier...</option>
-            {users.map((u) => (
+            {verifiers.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.firstName} {u.lastName}
+                {u.roleName ? ` · ${u.roleName}` : ""}
               </option>
             ))}
           </select>
+          {verifiers.length === 0 && (
+            <div
+              style={{
+                fontSize: 11,
+                color: "var(--rf-txt3)",
+                marginTop: -12,
+                marginBottom: 16,
+              }}
+            >
+              No one in your organization has issue-verification authority yet.
+              An admin must grant it before issues can be verified &amp; closed.
+            </div>
+          )}
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <button
               onClick={() => {
@@ -2129,6 +2419,9 @@ export default function IssuesList() {
           onClose={() => setShowRaiseModal(false)}
           users={users}
           companies={companies}
+          companiesError={companiesError}
+          usersUnavailable={usersUnavailable}
+          existingIssues={issues}
           projects={projects}
           initialKind={issueKind}
           onSubmit={async (form) => {
@@ -2143,8 +2436,11 @@ export default function IssuesList() {
               payload.projectAssetId = form.projectAssetId;
             if (form.assignedToCompanyId)
               payload.assignedToCompanyId = form.assignedToCompanyId;
-            if (form.assignedToCompanyId)
-              payload.notifyCompanyId = form.assignedToCompanyId;
+            // Notify the company the user explicitly picked in NOTIFY COMPANY
+            // (form.notifyCompany now holds its id). Fall back to the responder
+            // company only if no separate notify company was chosen.
+            const notifyId = form.notifyCompany || form.assignedToCompanyId;
+            if (notifyId) payload.notifyCompanyId = notifyId;
             if (form.assignedTo) payload.assignedToUserId = form.assignedTo;
             try {
               await createIssue(payload);
@@ -2154,10 +2450,18 @@ export default function IssuesList() {
               });
               await fetchIssues();
             } catch (err) {
-              setMessage({
-                type: "error",
-                text: err?.message || "Failed to raise issue",
-              });
+              // Surface the SPECIFIC field errors the backend returned instead
+              // of the generic "Some fields have errors" message, so the user
+              // knows what to fix.
+              const fieldErrs = err?.errors && typeof err.errors === "object"
+                ? Object.values(err.errors)
+                    .flat()
+                    .filter(Boolean)
+                : [];
+              const text = fieldErrs.length
+                ? fieldErrs.join(" ")
+                : err?.message || "Failed to raise issue";
+              setMessage({ type: "error", text });
               throw err; // keep the modal open so the user can retry
             }
           }}

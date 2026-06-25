@@ -11,6 +11,13 @@ export const getSubmittals = async (params = {}) => {
   }
 };
 
+/** Project team members assignable as a submittal reviewer (org-scoped). */
+export const getSubmittalReviewers = async (cxProjectId) =>
+  sendRequest({
+    url: `/submittals/reviewers?cxProjectId=${cxProjectId}`,
+    method: "GET",
+  });
+
 /** GET /api/submittals/statistics?projectId=... */
 export const getSubmittalStatistics = async (params = {}) => {
   try {

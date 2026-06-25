@@ -19,6 +19,18 @@ export const getIssueById = async (id, cxProjectId) => {
   return sendRequest({ url: `/issues/${id}${q}`, method: "GET" });
 };
 
+/** Users authorized to verify & close an issue (role has issue approve
+ *  authority). Used to populate the "Verified By" picker. */
+export const getEligibleVerifiers = async () =>
+  sendRequest({ url: `/issues/eligible-verifiers`, method: "GET" });
+
+/** Project team members assignable to an issue scoped to cxProjectId. */
+export const getIssueAssignees = async (cxProjectId) =>
+  sendRequest({
+    url: `/issues/assignees?cxProjectId=${cxProjectId}`,
+    method: "GET",
+  });
+
 /** Create a new issue.
  *  payload: { cxProjectId?, assetId?, projectAssetId?, kind?, title,
  *             description?, severity, assignedToCompanyId?, assignedToUserId? }

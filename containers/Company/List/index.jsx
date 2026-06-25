@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCompanies, deleteCompany } from "@/services/Companies";
 import ActivityTimeline from "@/components/CRM/ActivityTimeline";
+import Spinner from "@/components/Spinner";
+import EmptyState from "@/components/EmptyState";
 import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 // ─── Badge color map ──────────────────────────────────────────────────────────
@@ -440,30 +442,14 @@ export default function CompanyList() {
 
       {/* ── Loading ───────────────────────────────────────────────────── */}
       {loading ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "60px 0",
-            color: "var(--rf-txt3)",
-            fontSize: 13,
-          }}
-        >
-          Loading companies...
-        </div>
+        <Spinner label="Loading companies…" />
       ) : filtered.length === 0 ? (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "60px 0",
-            color: "var(--rf-txt3)",
-            fontSize: 13,
-          }}
-        >
-          <div style={{ fontSize: 32, marginBottom: 10 }}></div>
-          {searchTerm
-            ? "No companies match your search."
-            : "No companies found."}
-        </div>
+        <EmptyState
+          title={
+            searchTerm ? "No companies match your search." : "No Data Available"
+          }
+          message={searchTerm ? "" : "No companies found."}
+        />
       ) : (
         /* ── Card grid ─────────────────────────────────────────────── */
         <div

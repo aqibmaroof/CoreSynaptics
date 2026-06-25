@@ -28,8 +28,10 @@ export default function CreateSubmittalContainer() {
     getUsers()
       .then((d) => setUsers(toArray(d)))
       .catch(() => {});
-    // Existing titles power the duplicate-title guard in the form.
-    getSubmittals({ limit: 1000 })
+    // Existing titles power the duplicate-title guard in the form. The list
+    // endpoint caps limit at 100, so requesting more 400s and leaves the guard
+    // with no data — keep it at the max the API allows.
+    getSubmittals({ limit: 100 })
       .then((d) =>
         setExistingTitles(
           (Array.isArray(d) ? d : (d?.data ?? d?.submittals ?? []))
@@ -48,9 +50,17 @@ export default function CreateSubmittalContainer() {
       setMessage({ type: "success", text: "Submittal created successfully" });
       router.back();
     } catch (err) {
+      // Surface the SPECIFIC backend field errors instead of the generic
+      // "Some fields have errors" message, so the user knows what to fix.
+      const fieldErrs =
+        err?.errors && typeof err.errors === "object"
+          ? Object.values(err.errors).flat().filter(Boolean)
+          : [];
       setMessage({
         type: "error",
-        text: err?.message || "Error creating submittal",
+        text: fieldErrs.length
+          ? fieldErrs.join(" ")
+          : err?.message || "Error creating submittal",
       });
     } finally {
       setLoading(false);

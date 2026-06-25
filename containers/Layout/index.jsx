@@ -700,6 +700,9 @@ export default function CxLayout({ children }) {
   // so the sidebar paints fully on first render and then refreshes from
   // /auth/me in the background. It also performs the GET /auth/me refresh
   // internally — we don't repeat that here.
+  // useUserPermissions is SSR-safe: it returns user=null on the server AND the
+  // first client render, then hydrates the cached user after mount — so the
+  // permission-filtered sidebar can't cause a hydration mismatch (see the hook).
   const { user: rbacUser } = useUserPermissions();
   const [user, setLocalUser] = useState(rbacUser);
   useEffect(() => {
@@ -783,6 +786,36 @@ export default function CxLayout({ children }) {
       ),
     })).filter((sec) => sec.items.length > 0);
   }, [SECTIONS, navQuery]);
+
+  // Which sidebar item is "active" for the current route (PP-044). An exact
+  // `pathname === href` match fails on sub-routes — /Projects/123 wouldn't
+  // highlight /Projects, and /Tasks/Add wouldn't highlight /Tasks/List. We match
+  // on the item's first path SEGMENT (e.g. "/Tasks/List" → base "/Tasks") so the
+  // module stays highlighted across all its pages, and pick the most specific
+  // (longest-base) winner. Dashboard ("/") only matches an exact "/".
+  const activeHref = useMemo(() => {
+    const path = pathname || "/";
+    const baseOf = (href) => {
+      const seg = href.split("/").filter(Boolean)[0];
+      return seg ? `/${seg}` : "/";
+    };
+    let best = null; // { href, base }
+    for (const sec of SECTIONS) {
+      for (const item of sec.items) {
+        const href = item.href;
+        if (!href) continue;
+        const base = baseOf(href);
+        const matches =
+          base === "/"
+            ? path === "/"
+            : path === base || path.startsWith(base + "/");
+        if (matches && (!best || base.length > best.base.length)) {
+          best = { href, base };
+        }
+      }
+    }
+    return best?.href ?? null;
+  }, [SECTIONS, pathname]);
 
   const initials = useMemo(() => {
     if (!user) return "U";
@@ -1193,11 +1226,12 @@ export default function CxLayout({ children }) {
               <div key={sec.label} className="cx-side-section">
                 <div className="label">{sec.label}</div>
                 {sec.items.map((item) => {
-                  const active = pathname === item.href;
+                  const active = item.href === activeHref;
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
+                      aria-current={active ? "page" : undefined}
                       className={`cx-nav-item${active ? " active" : ""}`}
                     >
                       <span style={{ flex: 1 }}>{item.title}</span>

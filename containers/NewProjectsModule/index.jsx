@@ -32,6 +32,8 @@ import {
   dateOrder,
   notDuplicate,
   NAME_PATTERN,
+  PERSON_NAME_PATTERN,
+  MAX_NAME,
 } from "../../Utils/validation";
 
 // Allowed upload extensions + size cap for the Documents & Contracts step
@@ -254,6 +256,11 @@ const TEAM_ROLES = [
   "Safety Officer",
 ];
 
+// Max key-people rows in the creation wizard (TC_TEAM_027/054/055). The full
+// crew is managed on the project Team page; this is just the initial seed list.
+const MAX_TEAM_MEMBERS = 20;
+const MAX_COMPANY = 150;
+
 const SEED_PROJECTS = [];
 
 /* ------------------------------------------------------------------ *
@@ -312,6 +319,8 @@ const DOC_STATUS_TO_API = {
   Pending: "PENDING",
   "N/A": "NA",
 };
+// Ordered status choices for the per-document readiness dropdown.
+const DOC_STATUSES = Object.keys(DOC_STATUS_TO_API);
 
 // FE doc-item label → backend ProjectDocType enum value
 const DOC_LABEL_TO_TYPE = {
@@ -426,6 +435,10 @@ function buildFinalizePayload({
     .filter(([, d]) => d)
     .map(([name, raw]) => {
       const d = typeof raw === "object" ? raw : {};
+      // Location and Lineup are separate inputs in the UI but the V2 asset DTO
+      // only carries `location` (and rejects unknown fields via the backend's
+      // forbidNonWhitelisted pipe), so combine them into one location string.
+      const loc = [d.location, d.lineup].map((s) => (s || "").trim()).filter(Boolean);
       return clean({
         abbr: (d.assetTag || name).slice(0, 50),
         name,
@@ -436,7 +449,7 @@ function buildFinalizePayload({
         poNumber: d.po,
         manufacturer: d.manufacturer,
         model: d.model,
-        location: d.location,
+        location: loc.length ? loc.join(" — ") : undefined,
       });
     });
 
@@ -629,7 +642,8 @@ function SelectInput({ children, className, error, ...props }) {
     >
       <select
         {...props}
-        className="w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm outline-none appearance-none cursor-pointer bg-transparent"
+        aria-invalid={error ? true : undefined}
+        className="w-full pl-3.5 pr-9 py-2.5 rounded-xl text-sm appearance-none cursor-pointer bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rf-accent)]"
         style={bareControlStyle}
       >
         {children}
@@ -662,7 +676,8 @@ function Chip({ active, children, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="px-3.5 py-2 rounded-lg text-xs font-bold transition-all"
+      aria-pressed={active}
+      className="px-3.5 py-2 rounded-lg text-xs font-bold transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rf-accent)]"
       style={{
         background: active ? "var(--rf-accent)" : "var(--rf-bg2)",
         color: active ? "#fff" : "var(--rf-txt2)",
@@ -684,10 +699,10 @@ function Checkbox({ checked, onChange, label }) {
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="sr-only"
+        className="peer sr-only"
       />
       <span
-        className="flex items-center justify-center flex-shrink-0 transition-all"
+        className="flex items-center justify-center flex-shrink-0 transition-all peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--rf-accent)]"
         style={{
           width: 18,
           height: 18,
@@ -962,12 +977,19 @@ const miniBox = {
   border: "1px solid var(--rf-border, #c5d2ea)",
   borderRadius: 10,
 };
-function MiniText({ className, style, ...props }) {
+function MiniText({ className, style, error, ...props }) {
   return (
-    <div className={`np-fieldbox ${className || ""}`} style={miniBox}>
+    <div
+      className={`np-fieldbox ${className || ""}`}
+      style={{
+        ...miniBox,
+        ...(error ? { border: "1px solid var(--rf-red, #ef4444)" } : {}),
+      }}
+    >
       <input
         {...props}
-        className="w-full px-3 py-2 rounded-[10px] text-sm outline-none bg-transparent"
+        aria-invalid={error ? true : undefined}
+        className="w-full px-3 py-2 rounded-[10px] text-sm bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rf-accent)]"
         style={{ ...bareControlStyle, ...(style || {}) }}
       />
     </div>
@@ -978,7 +1000,7 @@ function MiniSelect({ children, className, ...props }) {
     <div className={`np-fieldbox relative ${className || ""}`} style={miniBox}>
       <select
         {...props}
-        className="w-full pl-3 pr-8 py-2 rounded-[10px] text-sm outline-none appearance-none cursor-pointer bg-transparent"
+        className="w-full pl-3 pr-8 py-2 rounded-[10px] text-sm appearance-none cursor-pointer bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rf-accent)]"
         style={bareControlStyle}
       >
         {children}
@@ -1055,9 +1077,13 @@ export default function NewProjectsModule() {
     return init;
   });
   const [milestones, setMilestones] = useState({ freezes: [] });
-  const [team, setTeam] = useState([
-    { name: "", company: "", role: "Project Manager" },
-  ]);
+  const [team, setTeam] = useState([{ name: "", company: "", role: "" }]);
+  // Index of the team row pending delete-confirmation (TC_TEAM_050), or null.
+  const [teamConfirmRemove, setTeamConfirmRemove] = useState(null);
+  // Documents uploaded via the add flow + the set of selected doc ids. Declared
+  // before the draft-persistence effects below so they're in scope there.
+  const [uploadedDocs, setUploadedDocs] = useState([]);
+  const [selectedDocIds, setSelectedDocIds] = useState([]);
 
   /* ---- Draft persistence: survive an accidental page refresh mid-wizard
      (TC_SL_021, TC_DC_028, TC_BM_030, TC_TEAM_025). Restored once on mount;
@@ -1074,6 +1100,12 @@ export default function NewProjectsModule() {
         if (d.stakeholders) setStakeholders(d.stakeholders);
         if (d.scope) setScope(d.scope);
         if (d.assets) setAssets(d.assets);
+        if (d.docs) setDocs(d.docs);
+        // Uploaded docs already persisted server-side; restore the wizard's
+        // reference to them so they survive a refresh / mid-upload reload
+        // (DC_018 / DC_036).
+        if (Array.isArray(d.uploadedDocs)) setUploadedDocs(d.uploadedDocs);
+        if (Array.isArray(d.selectedDocIds)) setSelectedDocIds(d.selectedDocIds);
         if (d.milestones) setMilestones(d.milestones);
         if (d.team) setTeam(d.team);
         if (typeof d.step === "number") setStep(d.step);
@@ -1095,6 +1127,9 @@ export default function NewProjectsModule() {
           stakeholders,
           scope,
           assets,
+          docs,
+          uploadedDocs,
+          selectedDocIds,
           milestones,
           team,
           step,
@@ -1103,15 +1138,25 @@ export default function NewProjectsModule() {
     } catch {
       /* storage full / unavailable — non-fatal */
     }
-  }, [identity, facility, stakeholders, scope, assets, milestones, team, step]);
+  }, [
+    identity,
+    facility,
+    stakeholders,
+    scope,
+    assets,
+    docs,
+    uploadedDocs,
+    selectedDocIds,
+    milestones,
+    team,
+    step,
+  ]);
 
   /* ---- BE module catalogs for the linked wizard steps ---- */
   const [users, setUsers] = useState([]);
   const [assetCatalog, setAssetCatalog] = useState([]);
   const [teamCatalog, setTeamCatalog] = useState([]);
-  const [uploadedDocs, setUploadedDocs] = useState([]); // created via the add flow
   const [documentsCatalog, setDocumentsCatalog] = useState([]); // from the API
-  const [selectedDocIds, setSelectedDocIds] = useState([]);
   const [linkedTeamIds, setLinkedTeamIds] = useState([]);
   const [moduleLoading, setModuleLoading] = useState({
     users: false,
@@ -1274,7 +1319,7 @@ export default function NewProjectsModule() {
       return init;
     });
     setMilestones({ freezes: [] });
-    setTeam([{ name: "", company: "", role: "Project Manager" }]);
+    setTeam([{ name: "", company: "", role: "" }]);
     setLinkedTeamIds([]);
     setUploadedDocs([]);
     setSelectedDocIds([]);
@@ -1300,6 +1345,21 @@ export default function NewProjectsModule() {
 
   const createProject = async () => {
     setError("");
+    // Re-validate EVERY step before finalizing — not just the current one. The
+    // stepper lets the user jump back, edit, and jump forward (forward-jumps and
+    // Next only validate the step being left), and the final "Create project"
+    // button submits from the last step. Without this sweep a user could reach
+    // submit with an invalid earlier step (bad asset qty, oversized doc note,
+    // missing NTP date, etc.), silently bypassing the per-step rules. This makes
+    // the per-step validations un-bypassable regardless of navigation path.
+    for (let s = 0; s < STEPS.length; s++) {
+      const errs = validateStep(s);
+      if (Object.keys(errs).length > 0) {
+        setStep(s);
+        setStepErrors(errs);
+        return;
+      }
+    }
     if (!identity.projectName?.trim()) {
       setError("Project name is required.");
       setStep(0);
@@ -1540,8 +1600,16 @@ export default function NewProjectsModule() {
     const ext = (file.name.split(".").pop() || "").toLowerCase();
     if (!ALLOWED_DOC_EXTS.includes(ext))
       return `Unsupported file type ".${ext}". Allowed: ${ALLOWED_DOC_EXTS.join(", ")}.`;
+    // Empty file = likely corrupted / failed read (DC_037). True corruption
+    // can't be detected client-side, but a zero-byte file is always invalid.
+    if (file.size === 0)
+      return "This file appears to be empty or corrupted. Please choose another file.";
     if (file.size > MAX_DOC_BYTES)
       return `File is too large (max ${MAX_DOC_BYTES / 1024 / 1024} MB).`;
+    // Guard against pathologically long filenames (DC_038); the name is stored
+    // and shown — keep it within a sane bound.
+    if ((file.name || "").length > 255)
+      return "File name is too long (max 255 characters). Please rename the file.";
     return "";
   };
 
@@ -1620,7 +1688,12 @@ export default function NewProjectsModule() {
       setNewDoc({ title: "", file: null });
       setAddOpen((p) => ({ ...p, docs: false }));
     } catch (e) {
-      setError(extractApiErrors(e));
+      // Upload failed (e.g. network drop). Keep the title + file intact and
+      // surface the error inline so the user can simply click "Upload document"
+      // again to retry (DC_016).
+      const lines = extractApiErrors(e);
+      const msg = Array.isArray(lines) ? lines.join(" ") : String(lines);
+      setDocError(`${msg} Please try again.`);
     } finally {
       setModuleBusy(false);
       setDocUploadPct(null);
@@ -1630,6 +1703,14 @@ export default function NewProjectsModule() {
     setSelectedDocIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
+
+  // Remove a document uploaded this session from the wizard list + selection
+  // (DC_014). Only session-uploaded docs are removable here; catalog docs are
+  // managed on the Documents page.
+  const removeUploadedDoc = (id) => {
+    setUploadedDocs((prev) => prev.filter((d) => d.id !== id));
+    setSelectedDocIds((prev) => prev.filter((x) => x !== id));
+  };
 
   /* --------------------------- validation ---------------------------- */
 
@@ -1776,16 +1857,69 @@ export default function NewProjectsModule() {
       });
     }
     if (s === 4) {
-      // Asset Register — per-asset notes are free text but length-capped
-      // (TC_DC_022, max 1000). Notes are optional, so empty is fine.
+      // Asset Register — validate each selected asset's detail row.
+      //   • Quantity: required whole number ≥ 1 (TC_AR_010/011/012/013/030).
+      //   • PO#: optional, but if present only A–Z 0–9 and - _ / are allowed
+      //     (TC_AR_019/020/021).
+      //   • Manufacturer / Model: optional, length-capped at 100 (TC_AR_022/023/
+      //     024/025).
+      //   • Location / Lineup: optional, length-capped at 120 (TC_AR_026/027).
+      //   • Notes: optional, length-capped at 1000 (TC_DC_022).
       const errs = {};
       Object.entries(assets).forEach(([name, d]) => {
+        const rowErr = {};
+        const qtyErr = numeric(d?.qty, {
+          label: "Quantity",
+          allowDecimal: false,
+          min: 1,
+        });
+        if (qtyErr) rowErr.qty = qtyErr;
+
+        if (d?.po && !/^[A-Za-z0-9\-_/]+$/.test(String(d.po).trim()))
+          rowErr.po = "PO# may only contain letters, numbers, - _ and /.";
+
+        const manuErr = d?.manufacturer
+          ? lengthBetween(d.manufacturer, { max: 100, label: "Manufacturer" })
+          : "";
+        if (manuErr) rowErr.manufacturer = manuErr;
+
+        const modelErr = d?.model
+          ? lengthBetween(d.model, { max: 100, label: "Model" })
+          : "";
+        if (modelErr) rowErr.model = modelErr;
+
+        const locErr = d?.location
+          ? lengthBetween(d.location, { max: 120, label: "Location" })
+          : "";
+        if (locErr) rowErr.location = locErr;
+
+        const lineupErr = d?.lineup
+          ? lengthBetween(d.lineup, { max: 120, label: "Lineup" })
+          : "";
+        if (lineupErr) rowErr.lineup = lineupErr;
+
         const noteErr = d?.notes
           ? lengthBetween(d.notes, { max: 1000, label: "Notes" })
           : "";
-        if (noteErr) errs[name] = { notes: noteErr };
+        if (noteErr) rowErr.notes = noteErr;
+
+        if (Object.keys(rowErr).length) errs[name] = rowErr;
       });
       return Object.keys(errs).length ? { __assets: errs } : {};
+    }
+    if (s === 5) {
+      // Documents & Contracts — each package has a readiness status (always set,
+      // so the required-status check at TC_DC_033 can never be left blank) and an
+      // optional note. Notes accept any characters (TC_DC_023) but are
+      // length-capped at 1000.
+      const docErrs = {};
+      Object.entries(docs).forEach(([label, row]) => {
+        const noteErr = row?.note
+          ? lengthBetween(row.note, { max: 1000, label: "Notes" })
+          : "";
+        if (noteErr) docErrs[label] = { note: noteErr };
+      });
+      return Object.keys(docErrs).length ? { __docs: docErrs } : {};
     }
     if (s === 6) {
       // Baseline & Milestones — milestone anchor dates must be chronological
@@ -1793,6 +1927,12 @@ export default function NewProjectsModule() {
       // each freeze window the user began must have a label + a valid date
       // range (TC_BM_019/025/038), with no duplicate windows (TC_BM_029).
       const errs = {};
+      // NTP Issued is the project start anchor — required so the schedule has a
+      // zero date (TC_BM_038). The remaining anchors stay optional but, when
+      // filled, must be chronological.
+      if (!milestones.ntp) {
+        errs.ntp = "NTP Issued date is required.";
+      }
       // Milestone anchors are in declared chronological order; flag any that
       // precede the previous-filled anchor.
       let prevKey = null;
@@ -1851,6 +1991,38 @@ export default function NewProjectsModule() {
       });
       if (Object.keys(freezeErrs).length) errs.__freezes = freezeErrs;
       return errs;
+    }
+    if (s === 7) {
+      // Team — each begun "key people" row must be complete: Name (required,
+      // person-name charset so numbers/special chars are rejected — TC_TEAM_018/
+      // 020, length-capped — TC_TEAM_016), Company (required — TC_TEAM_014/022,
+      // length-capped — TC_TEAM_017), Role (required — TC_TEAM_015), with no
+      // duplicate Name+Company pair (TC_TEAM_023). Empty rows are skipped so the
+      // team list stays optional (an all-blank list passes).
+      const teamErrs = {};
+      const seen = new Set();
+      team.forEach((t, i) => {
+        const hasAny = (t.name || t.company || t.role || "").trim();
+        if (!hasAny) return;
+        const rowErr = collectErrors({
+          name:
+            required(t.name, "Name") ||
+            validatePersonName(t.name, "Name", PERSON_NAME_PATTERN) ||
+            lengthBetween(t.name, { max: MAX_NAME, label: "Name" }),
+          company:
+            required(t.company, "Company") ||
+            lengthBetween(t.company, { max: MAX_COMPANY, label: "Company" }),
+          role: required(t.role, "Role"),
+        });
+        const key = `${(t.name || "").trim().toLowerCase()}|${(t.company || "")
+          .trim()
+          .toLowerCase()}`;
+        if (seen.has(key))
+          rowErr.name = "Duplicate team member (same name and company).";
+        seen.add(key);
+        if (Object.keys(rowErr).length) teamErrs[i] = rowErr;
+      });
+      return Object.keys(teamErrs).length ? { __team: teamErrs } : {};
     }
     return {};
   };
@@ -2352,6 +2524,7 @@ export default function NewProjectsModule() {
     manufacturer: "",
     model: "",
     location: "",
+    lineup: "",
     notes: "",
     category: a?.category || "",
     assetTag: a?.assetTag || "",
@@ -2370,23 +2543,27 @@ export default function NewProjectsModule() {
     });
   const updateAssetField = (name, key, val) => {
     let v = val;
-    // Quantity: digits only, no alphabets / negatives / zero (TC_AR_011-013).
+    // Quantity: strip alphabets, decimals and the minus sign at input time so the
+    // field only ever holds whole digits (TC_AR_013 rejects text, TC_AR_012
+    // rejects negatives). We intentionally DON'T coerce 0 → 1 here — an empty or
+    // zero quantity is surfaced as a validation error on save (TC_AR_011/030),
+    // not silently rewritten, so the user gets feedback.
     if (key === "qty") {
       v = String(val).replace(/[^\d]/g, "");
-      if (v === "" || Number(v) < 1) v = v === "" ? "" : "1";
     }
     setAssets((p) => ({ ...p, [name]: { ...p[name], [key]: v } }));
-    // Clear this asset's inline note error as the user edits it.
-    if (key === "notes") {
-      setStepErrors((e) =>
-        e.__assets?.[name]?.notes
-          ? {
-              ...e,
-              __assets: { ...e.__assets, [name]: undefined },
-            }
-          : e,
-      );
-    }
+    // Clear this asset's matching inline error as the user edits that field.
+    setStepErrors((e) =>
+      e.__assets?.[name]?.[key]
+        ? {
+            ...e,
+            __assets: {
+              ...e.__assets,
+              [name]: { ...e.__assets[name], [key]: undefined },
+            },
+          }
+        : e,
+    );
   };
 
   const renderAssets = () => {
@@ -2560,133 +2737,201 @@ export default function NewProjectsModule() {
                             : a.name || a.assetTag || "Asset"
                         }
                       />
-                      {d && (
-                        <div className="mt-2.5 flex flex-col gap-2 pb-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span
-                              className="text-[11px] font-bold tracking-wide"
-                              style={{ color: "var(--rf-txt3)" }}
-                            >
-                              QTY
-                            </span>
-                            <MiniText
-                              type="number"
-                              min={1}
-                              className="w-16"
-                              value={d.qty}
-                              onChange={(e) =>
-                                updateAssetField(a.name, "qty", e.target.value)
-                              }
-                            />
-                            <MiniSelect
-                              className="w-24"
-                              value={d.furnish}
-                              onChange={(e) =>
-                                updateAssetField(
-                                  a.name,
-                                  "furnish",
-                                  e.target.value,
-                                )
-                              }
-                            >
-                              {ASSET_FURNISH.map((o) => (
-                                <option key={o}>{o}</option>
-                              ))}
-                            </MiniSelect>
-                            <MiniSelect
-                              className="w-40"
-                              value={d.order}
-                              onChange={(e) =>
-                                updateAssetField(
-                                  a.name,
-                                  "order",
-                                  e.target.value,
-                                )
-                              }
-                            >
-                              {ASSET_ORDER_STATUSES.map((o) => (
-                                <option key={o} value={o}>
-                                  {orderStatusLabel(o)}
-                                </option>
-                              ))}
-                            </MiniSelect>
-                            <MiniText
-                              className="flex-1 min-w-[90px]"
-                              placeholder="PO#"
-                              value={d.po}
-                              onChange={(e) =>
-                                updateAssetField(a.name, "po", e.target.value)
-                              }
-                            />
-                          </div>
-                          <div className="grid grid-cols-3 gap-2">
-                            <MiniText
-                              placeholder="manufacturer"
-                              value={d.manufacturer}
-                              onChange={(e) =>
-                                updateAssetField(
-                                  a.name,
-                                  "manufacturer",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                            <MiniText
-                              placeholder="model"
-                              value={d.model}
-                              onChange={(e) =>
-                                updateAssetField(
-                                  a.name,
-                                  "model",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                            <MiniText
-                              placeholder="location / lineup"
-                              value={d.location}
-                              onChange={(e) =>
-                                updateAssetField(
-                                  a.name,
-                                  "location",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                          </div>
-                          <div className="np-fieldbox" style={miniBox}>
-                            <textarea
-                              placeholder="notes (optional)"
-                              maxLength={1000}
-                              rows={2}
-                              value={d.notes || ""}
-                              aria-invalid={
-                                stepErrors.__assets?.[a.name]?.notes
-                                  ? true
-                                  : undefined
-                              }
-                              onChange={(e) =>
-                                updateAssetField(
-                                  a.name,
-                                  "notes",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-full px-3 py-2 rounded-[10px] text-sm outline-none bg-transparent resize-y"
-                              style={bareControlStyle}
-                            />
-                          </div>
-                          {stepErrors.__assets?.[a.name]?.notes && (
-                            <span
-                              role="alert"
-                              className="text-xs"
-                              style={{ color: "var(--rf-red)" }}
-                            >
-                              {stepErrors.__assets[a.name].notes}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      {d &&
+                        (() => {
+                          const rowErr = stepErrors.__assets?.[a.name] || {};
+                          return (
+                            <div className="mt-2.5 flex flex-col gap-2 pb-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span
+                                  className="text-[11px] font-bold tracking-wide"
+                                  style={{ color: "var(--rf-txt3)" }}
+                                >
+                                  QTY
+                                </span>
+                                <MiniText
+                                  type="number"
+                                  min={1}
+                                  step={1}
+                                  inputMode="numeric"
+                                  className="w-16"
+                                  error={!!rowErr.qty}
+                                  aria-label="Quantity"
+                                  value={d.qty}
+                                  onChange={(e) =>
+                                    updateAssetField(
+                                      a.name,
+                                      "qty",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                                <MiniSelect
+                                  className="w-24"
+                                  aria-label="Furnish (CFCI/OFCI)"
+                                  value={d.furnish}
+                                  onChange={(e) =>
+                                    updateAssetField(
+                                      a.name,
+                                      "furnish",
+                                      e.target.value,
+                                    )
+                                  }
+                                >
+                                  {ASSET_FURNISH.map((o) => (
+                                    <option key={o}>{o}</option>
+                                  ))}
+                                </MiniSelect>
+                                <MiniSelect
+                                  className="w-40"
+                                  aria-label="Order status"
+                                  value={d.order}
+                                  onChange={(e) =>
+                                    updateAssetField(
+                                      a.name,
+                                      "order",
+                                      e.target.value,
+                                    )
+                                  }
+                                >
+                                  {ASSET_ORDER_STATUSES.map((o) => (
+                                    <option key={o} value={o}>
+                                      {orderStatusLabel(o)}
+                                    </option>
+                                  ))}
+                                </MiniSelect>
+                                <MiniText
+                                  className="flex-1 min-w-[90px]"
+                                  placeholder="PO#"
+                                  aria-label="PO number"
+                                  error={!!rowErr.po}
+                                  value={d.po}
+                                  onChange={(e) =>
+                                    updateAssetField(
+                                      a.name,
+                                      "po",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                              {(rowErr.qty || rowErr.po) && (
+                                <span
+                                  role="alert"
+                                  className="text-xs"
+                                  style={{ color: "var(--rf-red)" }}
+                                >
+                                  {rowErr.qty || rowErr.po}
+                                </span>
+                              )}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <MiniText
+                                  placeholder="manufacturer"
+                                  aria-label="Manufacturer"
+                                  maxLength={100}
+                                  error={!!rowErr.manufacturer}
+                                  value={d.manufacturer}
+                                  onChange={(e) =>
+                                    updateAssetField(
+                                      a.name,
+                                      "manufacturer",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                                <MiniText
+                                  placeholder="model"
+                                  aria-label="Model"
+                                  maxLength={100}
+                                  error={!!rowErr.model}
+                                  value={d.model}
+                                  onChange={(e) =>
+                                    updateAssetField(
+                                      a.name,
+                                      "model",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                                <MiniText
+                                  placeholder="location"
+                                  aria-label="Location"
+                                  maxLength={120}
+                                  error={!!rowErr.location}
+                                  value={d.location}
+                                  onChange={(e) =>
+                                    updateAssetField(
+                                      a.name,
+                                      "location",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                                <MiniText
+                                  placeholder="lineup"
+                                  aria-label="Lineup"
+                                  maxLength={120}
+                                  error={!!rowErr.lineup}
+                                  value={d.lineup}
+                                  onChange={(e) =>
+                                    updateAssetField(
+                                      a.name,
+                                      "lineup",
+                                      e.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                              {(rowErr.manufacturer ||
+                                rowErr.model ||
+                                rowErr.location ||
+                                rowErr.lineup) && (
+                                <span
+                                  role="alert"
+                                  className="text-xs"
+                                  style={{ color: "var(--rf-red)" }}
+                                >
+                                  {rowErr.manufacturer ||
+                                    rowErr.model ||
+                                    rowErr.location ||
+                                    rowErr.lineup}
+                                </span>
+                              )}
+                              <div
+                                className="np-fieldbox"
+                                style={miniBox}
+                              >
+                                <textarea
+                                  placeholder="notes (optional)"
+                                  maxLength={1000}
+                                  rows={2}
+                                  value={d.notes || ""}
+                                  aria-invalid={
+                                    rowErr.notes ? true : undefined
+                                  }
+                                  onChange={(e) =>
+                                    updateAssetField(
+                                      a.name,
+                                      "notes",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className="w-full px-3 py-2 rounded-[10px] text-sm outline-none bg-transparent resize-y"
+                                  style={bareControlStyle}
+                                />
+                              </div>
+                              {rowErr.notes && (
+                                <span
+                                  role="alert"
+                                  className="text-xs"
+                                  style={{ color: "var(--rf-red)" }}
+                                >
+                                  {rowErr.notes}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                     </div>
                   );
                 })}
@@ -2711,10 +2956,74 @@ export default function NewProjectsModule() {
     return (
       <>
         <StepIntro>
-          Select documents from the Documents module, or upload a new one.
-          Uploads are stored immediately and can be linked to this project from
-          the Documents page. {selectedDocIds.length} selected.
+          Set the readiness status of each required document package, then
+          optionally select or upload supporting files. {selectedDocIds.length}{" "}
+          file(s) selected.
         </StepIntro>
+
+        {/* Document-readiness grid — a status + note per required package. The
+            `docs` map (keyed by label) carries status/note into the finalize
+            payload (docRows). */}
+        <label className="uppercase block mb-2.5" style={labelStyle}>
+          Document Readiness
+        </label>
+        <div className="flex flex-col gap-2.5 mb-6">
+          {DOC_ITEMS.map((label) => {
+            const row = docs[label] || { status: "Pending", note: "" };
+            const noteErr = stepErrors.__docs?.[label]?.note;
+            return (
+              <div
+                key={label}
+                className="rounded-xl p-3"
+                style={{
+                  background: "var(--rf-bg2)",
+                  border: "1px solid var(--rf-border2, #adbbd8)",
+                }}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-2.5 items-center">
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--rf-txt)" }}
+                  >
+                    {label}
+                  </span>
+                  <SelectInput
+                    aria-label={`${label} status`}
+                    value={row.status}
+                    onChange={(e) =>
+                      setDocField(label, "status", e.target.value)
+                    }
+                  >
+                    {DOC_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </SelectInput>
+                </div>
+                <div className="mt-2">
+                  <TextInput
+                    placeholder="Notes (optional)"
+                    aria-label={`${label} notes`}
+                    maxLength={1000}
+                    error={!!noteErr}
+                    value={row.note || ""}
+                    onChange={(e) => setDocField(label, "note", e.target.value)}
+                  />
+                  {noteErr && (
+                    <span
+                      role="alert"
+                      className="text-xs mt-1 block"
+                      style={{ color: "var(--rf-red)" }}
+                    >
+                      {noteErr}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
         <div className="flex items-center justify-between mb-4">
           <label className="uppercase" style={labelStyle}>
@@ -2755,13 +3064,25 @@ export default function NewProjectsModule() {
               />
               <label
                 htmlFor="np-doc-file"
+                role="button"
+                tabIndex={0}
+                aria-label="Choose a document file to upload"
+                onKeyDown={(e) => {
+                  // The native file <input> is visually hidden, so the label
+                  // itself must open the picker on Enter/Space for keyboard
+                  // users (DC_040).
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    document.getElementById("np-doc-file")?.click();
+                  }
+                }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
                   const f = e.dataTransfer.files?.[0];
                   if (f) pickDocFile(f);
                 }}
-                className="block rounded-xl p-6 text-center cursor-pointer transition-all"
+                className="block rounded-xl p-6 text-center cursor-pointer transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rf-accent)]"
                 style={{
                   border: `2px dashed ${newDoc.file ? "var(--rf-accent)" : "var(--rf-border3, #8daacf)"}`,
                   background: newDoc.file ? "var(--rf-bg3)" : "var(--rf-bg2)",
@@ -2877,6 +3198,7 @@ export default function NewProjectsModule() {
           <div className="flex flex-col gap-2.5">
             {docList.map((d) => {
               const selected = selectedDocIds.includes(d.id);
+              const isUploaded = uploadedDocs.some((u) => u.id === d.id);
               return (
                 <div
                   key={d.id}
@@ -2886,18 +3208,35 @@ export default function NewProjectsModule() {
                     border: `1px solid ${selected ? "var(--rf-accent)" : "var(--rf-border2, #adbbd8)"}`,
                   }}
                 >
-                  <Checkbox
-                    checked={selected}
-                    onChange={() => toggleDoc(d.id)}
-                    label={d.title || d.fileName || "Document"}
-                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <Checkbox
+                      checked={selected}
+                      onChange={() => toggleDoc(d.id)}
+                      label={d.title || d.fileName || "Document"}
+                    />
+                    {isUploaded && (
+                      <button
+                        type="button"
+                        onClick={() => removeUploadedDoc(d.id)}
+                        aria-label={`Remove ${d.title || d.fileName || "document"}`}
+                        title="Remove"
+                        className="flex-shrink-0 px-2.5 py-1 rounded-lg text-sm font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rf-accent)]"
+                        style={{
+                          color: "var(--rf-red)",
+                          border: "1px solid var(--rf-border, #c5d2ea)",
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                   {(d.fileName || d.category) && (
                     <div
                       className="text-xs mt-1 ml-7 flex flex-wrap gap-x-2"
                       style={{ color: "var(--rf-txt3)" }}
                     >
                       {d.fileName && (
-                        <span className="truncate">{d.fileName}</span>
+                        <span className="truncate max-w-full">{d.fileName}</span>
                       )}
                       {d.category && (
                         <span>· {String(d.category).replace(/_/g, " ")}</span>
@@ -2934,6 +3273,22 @@ export default function NewProjectsModule() {
     );
   };
 
+  // Update one field (status / note) on a document-readiness row and clear that
+  // row's inline note error. The `docs` map is keyed by the DOC_ITEM label.
+  const setDocField = (label, key, val) => {
+    setDocs((p) => ({ ...p, [label]: { ...p[label], [key]: val } }));
+    if (key === "note") {
+      setStepErrors((er) =>
+        er.__docs?.[label]?.note
+          ? {
+              ...er,
+              __docs: { ...er.__docs, [label]: undefined },
+            }
+          : er,
+      );
+    }
+  };
+
   const renderBaseline = () => (
     <>
       <StepIntro>
@@ -2943,7 +3298,12 @@ export default function NewProjectsModule() {
       </StepIntro>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
         {MILESTONE_DATES.map((m) => (
-          <Field key={m.key} label={m.label} error={stepErrors[m.key]}>
+          <Field
+            key={m.key}
+            label={m.label}
+            required={m.key === "ntp"}
+            error={stepErrors[m.key]}
+          >
             <TextInput
               type="date"
               error={stepErrors[m.key]}
@@ -3096,8 +3456,48 @@ export default function NewProjectsModule() {
     </>
   );
 
-  const updateTeam = (i, key, val) =>
+  const updateTeam = (i, key, val) => {
     setTeam((p) => p.map((t, idx) => (idx === i ? { ...t, [key]: val } : t)));
+    // Clear this row's matching inline error as the user edits that field.
+    setStepErrors((er) =>
+      er.__team?.[i]?.[key]
+        ? {
+            ...er,
+            __team: { ...er.__team, [i]: { ...er.__team[i], [key]: undefined } },
+          }
+        : er,
+    );
+  };
+
+  // Append a new key-people row only when the current rows are valid and the max
+  // hasn't been reached (TC_TEAM_027/054/055 + validate-before-add).
+  const addTeamRow = () => {
+    const errs = validateStep(7);
+    if (errs.__team) {
+      setStepErrors(errs);
+      return;
+    }
+    if (team.length >= MAX_TEAM_MEMBERS) {
+      setError(`You can add at most ${MAX_TEAM_MEMBERS} team members here.`);
+      return;
+    }
+    setError("");
+    setTeam((p) => [...p, { name: "", company: "", role: "" }]);
+  };
+
+  // Remove a key-people row after an explicit inline confirmation (TC_TEAM_050).
+  // An inline confirm (rather than a blocking window.confirm) keeps the UI
+  // responsive and accessible.
+  const removeTeamRow = (i) => {
+    setTeam((p) => p.filter((_, idx) => idx !== i));
+    setTeamConfirmRemove(null);
+    setStepErrors((er) => {
+      if (!er.__team) return er;
+      const next = { ...er.__team };
+      delete next[i];
+      return { ...er, __team: next };
+    });
+  };
 
   const renderTeam = () => {
     const q = search.teams.trim().toLowerCase();
@@ -3164,59 +3564,121 @@ export default function NewProjectsModule() {
           ))}
         </ModulePicker>
 
-        <label className="uppercase block mb-2.5" style={labelStyle}>
-          Key people
+        <label
+          className="uppercase block mb-2.5 font-bold"
+          style={{ ...labelStyle, color: "var(--rf-txt)" }}
+        >
+          Add Team Member
         </label>
         <div className="flex flex-col gap-3">
-          {team.map((t, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <TextInput
-                placeholder="Name"
-                value={t.name}
-                onChange={(e) => updateTeam(i, "name", e.target.value)}
-              />
-              <TextInput
-                placeholder="Company"
-                value={t.company}
-                onChange={(e) => updateTeam(i, "company", e.target.value)}
-              />
-              <div className="flex gap-2">
-                <SelectInput
-                  value={t.role}
-                  onChange={(e) => updateTeam(i, "role", e.target.value)}
-                >
-                  {opts.teamRoles.map((r) => (
-                    <option key={r}>{r}</option>
-                  ))}
-                </SelectInput>
-                {team.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setTeam((p) => p.filter((_, idx) => idx !== i))
-                    }
-                    className="px-3 rounded-xl text-sm font-bold"
+          {team.map((t, i) => {
+            const rowErr = stepErrors.__team?.[i] || {};
+            return (
+              <div key={i} className="flex flex-col gap-1">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <TextInput
+                    placeholder="Name"
+                    aria-label="Team member name"
+                    maxLength={MAX_NAME}
+                    error={!!rowErr.name}
+                    value={t.name}
+                    onChange={(e) => updateTeam(i, "name", e.target.value)}
+                  />
+                  <TextInput
+                    placeholder="Company"
+                    aria-label="Team member company"
+                    maxLength={MAX_COMPANY}
+                    error={!!rowErr.company}
+                    value={t.company}
+                    onChange={(e) => updateTeam(i, "company", e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <SelectInput
+                      aria-label="Team member role"
+                      error={!!rowErr.role}
+                      value={t.role}
+                      onChange={(e) => updateTeam(i, "role", e.target.value)}
+                    >
+                      <option value="" disabled>
+                        Select role…
+                      </option>
+                      {opts.teamRoles.map((r) => (
+                        <option key={r}>{r}</option>
+                      ))}
+                    </SelectInput>
+                    {team.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setTeamConfirmRemove(i)}
+                        className="px-3 rounded-xl text-sm font-bold"
+                        style={{
+                          color: "var(--rf-red)",
+                          border: "1px solid var(--rf-border, #c5d2ea)",
+                        }}
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {teamConfirmRemove === i && (
+                  <div
+                    role="alertdialog"
+                    aria-label="Confirm remove team member"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 mt-1"
                     style={{
-                      color: "var(--rf-red)",
-                      border: "1px solid var(--rf-border, #c5d2ea)",
+                      background: "var(--rf-bg3)",
+                      border: "1px solid var(--rf-red, #ef4444)",
                     }}
-                    title="Remove"
                   >
-                    ×
-                  </button>
+                    <span
+                      className="text-xs font-semibold"
+                      style={{ color: "var(--rf-txt)" }}
+                    >
+                      Remove{" "}
+                      {(team[i]?.name || team[i]?.company || "this team member")
+                        .toString()
+                        .trim()}
+                      ?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeTeamRow(i)}
+                      className="px-3 py-1 rounded-lg text-xs font-bold"
+                      style={{ background: "var(--rf-red, #ef4444)", color: "#fff" }}
+                    >
+                      Remove
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTeamConfirmRemove(null)}
+                      className="px-3 py-1 rounded-lg text-xs font-bold"
+                      style={{
+                        color: "var(--rf-txt2)",
+                        border: "1px solid var(--rf-border, #c5d2ea)",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+                {(rowErr.name || rowErr.company || rowErr.role) && (
+                  <span
+                    role="alert"
+                    className="text-xs"
+                    style={{ color: "var(--rf-red)" }}
+                  >
+                    {rowErr.name || rowErr.company || rowErr.role}
+                  </span>
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <button
           type="button"
-          onClick={() =>
-            setTeam((p) => [
-              ...p,
-              { name: "", company: "", role: "Project Manager" },
-            ])
-          }
+          onClick={addTeamRow}
           className="mt-3 text-sm font-bold"
           style={{ color: "var(--rf-accent)" }}
         >

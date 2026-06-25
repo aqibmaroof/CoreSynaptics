@@ -946,6 +946,7 @@ export default function NewProjectDetail() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [laAdd, setLaAdd] = useState(null); // { wk, trade, area } when add-activity modal open
   const [laErrors, setLaErrors] = useState({}); // { field: message } for the add-activity modal
+  const [laConfirmClose, setLaConfirmClose] = useState(false); // inline discard-confirm (6WLA_TC_030)
   const [toast, setToast] = useState("");
   console.log(params);
   const projectId = params?.id;
@@ -1670,25 +1671,34 @@ export default function NewProjectDetail() {
     "GC",
     "CXA",
   ];
-  // Close the add-activity modal, discarding any unsaved field values without
-  // touching db.lookahead (cancel = no side effect: 6WLA_TC_016/017/031/032).
-  // If the user has entered data, confirm before discarding (6WLA_TC_030):
-  // OK = discard & close (031), Cancel = stay on the form with data intact (032).
+  // Is the add-activity form dirty (any field changed from its default)?
+  const laDirty = () =>
+    laAdd &&
+    ((laAdd.area || "").trim() !== "" ||
+      String(laAdd.wk) !== "1" ||
+      laAdd.trade !== "EC");
+
+  // Request to close the add-activity modal. If the form has unsaved data, show
+  // an INLINE confirmation (6WLA_TC_030) instead of a blocking window.confirm
+  // (which freezes the UI / automation). Otherwise close immediately. Cancel =
+  // no side effect on db.lookahead (6WLA_TC_016/017).
   const closeLa = () => {
-    const dirty =
-      laAdd &&
-      ((laAdd.area || "").trim() !== "" ||
-        String(laAdd.wk) !== "1" ||
-        laAdd.trade !== "EC");
-    if (
-      dirty &&
-      !window.confirm("Discard this activity? Your unsaved changes will be lost.")
-    ) {
-      return; // 6WLA_TC_032 — user chose to stay; data intact.
+    if (laDirty()) {
+      setLaConfirmClose(true);
+      return;
     }
+    discardLa();
+  };
+
+  // Discard the unsaved activity and close (6WLA_TC_031 — confirm "Discard").
+  const discardLa = () => {
     setLaAdd(null);
     setLaErrors({});
+    setLaConfirmClose(false);
   };
+
+  // Keep the form open with data intact (6WLA_TC_032 — "Keep editing").
+  const keepEditingLa = () => setLaConfirmClose(false);
 
   // All three fields are mandatory (6WLA_TC_007). Returns a { field: message }
   // map; empty when valid. Also drives the disabled Add button (6WLA_TC_022).
@@ -4620,45 +4630,105 @@ export default function NewProjectDetail() {
                 />
                 {errMsg("area")}
 
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={closeLa}
+                {laConfirmClose ? (
+                  <div
+                    role="alertdialog"
+                    aria-label="Discard unsaved activity?"
                     style={{
-                      height: 36,
-                      padding: "0 14px",
+                      border: `1px solid ${P.rust}`,
                       borderRadius: 8,
-                      border: `1px solid ${P.line}`,
+                      padding: 12,
                       background: P.card,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      color: P.ink,
                     }}
                   >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="cx-hover-lift"
-                    disabled={laInvalid}
-                    onClick={submitActivity}
-                    style={{
-                      height: 36,
-                      padding: "0 16px",
-                      borderRadius: 8,
-                      border: `1px solid ${P.teal}`,
-                      background: P.teal,
-                      color: "#fff",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: laInvalid ? "default" : "pointer",
-                      opacity: laInvalid ? 0.6 : 1,
-                    }}
-                  >
-                    Add activity
-                  </button>
-                </div>
+                    <div
+                      style={{
+                        color: P.ink,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        marginBottom: 10,
+                      }}
+                    >
+                      Discard this activity? Your unsaved changes will be lost.
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={keepEditingLa}
+                        style={{
+                          height: 34,
+                          padding: "0 14px",
+                          borderRadius: 8,
+                          border: `1px solid ${P.line}`,
+                          background: P.card,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          color: P.ink,
+                        }}
+                      >
+                        Keep editing
+                      </button>
+                      <button
+                        type="button"
+                        onClick={discardLa}
+                        style={{
+                          height: 34,
+                          padding: "0 14px",
+                          borderRadius: 8,
+                          border: `1px solid ${P.rust}`,
+                          background: P.rust,
+                          color: "#fff",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Discard
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={closeLa}
+                      style={{
+                        height: 36,
+                        padding: "0 14px",
+                        borderRadius: 8,
+                        border: `1px solid ${P.line}`,
+                        background: P.card,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        color: P.ink,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="cx-hover-lift"
+                      disabled={laInvalid}
+                      onClick={submitActivity}
+                      style={{
+                        height: 36,
+                        padding: "0 16px",
+                        borderRadius: 8,
+                        border: `1px solid ${P.teal}`,
+                        background: P.teal,
+                        color: "#fff",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: laInvalid ? "default" : "pointer",
+                        opacity: laInvalid ? 0.6 : 1,
+                      }}
+                    >
+                      Add activity
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );

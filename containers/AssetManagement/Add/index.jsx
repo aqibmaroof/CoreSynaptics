@@ -60,8 +60,24 @@ export default function AssetAdd() {
     notes: "",
   });
 
+  // Inline "discard unsaved changes?" confirmation (RA_TC_056).
+  const [confirmExit, setConfirmExit] = useState(false);
+
   // Optional "link to project" dropdown — reuses the V2 projects list.
   const [projects, setProjects] = useState([]);
+
+  // Dirty if the user changed any field from its empty default.
+  const isDirty = () =>
+    Object.values(form).some((v) => (v ?? "").toString().trim() !== "");
+
+  // Request to leave: warn first if there are unsaved changes (RA_TC_056).
+  const requestExit = () => {
+    if (isDirty()) {
+      setConfirmExit(true);
+      return;
+    }
+    router.back();
+  };
 
   useEffect(() => {
     if (!msg) return;
@@ -194,7 +210,8 @@ export default function AssetAdd() {
     <div className="min-h-screen p-6 bg-[#0a1128]">
       <div className="mx-auto">
         <button
-          onClick={() => router.back()}
+          type="button"
+          onClick={requestExit}
           className="flex items-center gap-2 text-gray-400 hover:text-white text-sm mb-5 transition-colors"
         >
           <svg
@@ -419,17 +436,45 @@ export default function AssetAdd() {
               rows={3}
               maxLength={1000}
               placeholder="Condition notes, configuration details, accessories..."
-              className={`${INPUT} resize-none ${errors.notes ? "border-red-500" : ""}`}
+              className={`${INPUT} resize-y ${errors.notes ? "border-red-500" : ""}`}
             />
             {errors.notes && (
               <p className="text-red-400 text-xs mt-1">{errors.notes}</p>
             )}
           </section>
 
+          {confirmExit && (
+            <div
+              role="alertdialog"
+              aria-label="Discard unsaved asset?"
+              className="rounded-xl border border-red-500/50 bg-gray-900 p-4"
+            >
+              <p className="text-sm font-semibold text-white mb-3">
+                Discard this asset? Your unsaved changes will be lost.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setConfirmExit(false)}
+                  className="px-5 py-2 border border-gray-600 text-gray-300 hover:text-white rounded-lg text-sm"
+                >
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  className="px-5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-medium"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-4 justify-end">
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={requestExit}
               className="px-6 py-2.5 border border-gray-600 text-gray-300 hover:text-white rounded-lg text-sm"
             >
               Cancel
