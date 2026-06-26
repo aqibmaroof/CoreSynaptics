@@ -184,6 +184,9 @@ export default function DocumentAdd() {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [dragActive, setDragActive] = useState(false);
+
+  const isUploading = step > 0 && step < 4;
 
   // ── Cascade effects ────────────────────────────────────────────────────────
 
@@ -246,8 +249,9 @@ export default function DocumentAdd() {
     });
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
+  // Shared handling for a picked file — used by both the click-input and the
+  // drag-and-drop dropzone (DOC_023).
+  const processFile = (file) => {
     if (!file) return;
     setSelectedFile(file);
     // DOC_012 / DOC_013 — validate type + size at selection time.
@@ -265,6 +269,24 @@ export default function DocumentAdd() {
     } else {
       setFilePreview(null);
     }
+  };
+
+  const handleFileSelect = (e) => processFile(e.target.files?.[0]);
+
+  // DOC_023 — accept files dropped onto the dropzone, not just click-to-select.
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (isUploading) return;
+    processFile(e.dataTransfer?.files?.[0]);
+  };
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    if (!isUploading) setDragActive(true);
+  };
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragActive(false);
   };
 
   // Builds a {field: errorString} map of all failing rules (DOC_007..DOC_054).
@@ -332,8 +354,6 @@ export default function DocumentAdd() {
       setStep(0);
     }
   };
-
-  const isUploading = step > 0 && step < 4;
 
   return (
     <div className="min-h-screen p-6">
@@ -538,17 +558,26 @@ export default function DocumentAdd() {
                   </label>
                   <label
                     htmlFor="file-input"
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
                     className={`block rounded-xl p-8 text-center cursor-pointer transition-all ${
                       isUploading ? "pointer-events-none opacity-50" : ""
                     }`}
                     style={
-                      selectedFile
+                      dragActive
                         ? {
                             border: "2px dashed var(--rf-accent)",
                             background:
-                              "color-mix(in srgb, var(--rf-accent) 6%, transparent)",
+                              "color-mix(in srgb, var(--rf-accent) 12%, transparent)",
                           }
-                        : { border: "2px dashed var(--rf-border3)" }
+                        : selectedFile
+                          ? {
+                              border: "2px dashed var(--rf-accent)",
+                              background:
+                                "color-mix(in srgb, var(--rf-accent) 6%, transparent)",
+                            }
+                          : { border: "2px dashed var(--rf-border3)" }
                     }
                   >
                     <input

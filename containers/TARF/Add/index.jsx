@@ -341,6 +341,7 @@ export default function TARFAdd() {
                     value={form.personName}
                     onChange={set("personName")}
                     placeholder="Full name of individual"
+                    maxLength={255}
                     className={INPUT_CLS}
                     style={fieldStyle(errors.personName)}
                   />
@@ -379,6 +380,7 @@ export default function TARFAdd() {
                   value={form.companyName}
                   onChange={set("companyName")}
                   placeholder="e.g. ABC Electrical Services Inc."
+                  maxLength={255}
                   className={INPUT_CLS}
                   style={fieldStyle(errors.companyName)}
                 />

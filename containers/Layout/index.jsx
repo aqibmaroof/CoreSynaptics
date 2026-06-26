@@ -152,15 +152,18 @@ const ROUTE_PERMISSIONS = [
     module: MODULE.COMMISSIONING_TESTS,
     action: "view",
   },
-  { match: /^\/CxTARF/, module: MODULE.COMMISSIONING_TESTS, action: "view" },
+  // TARF (trade access requests) is gated by the SAFETY module on the backend
+  // (tarf controller uses @RequireEdit('tarf') → 'safety' in the catalog map).
+  // The FE guard must match, or users with safety.edit are wrongly denied.
+  { match: /^\/CxTARF/, module: MODULE.SAFETY, action: "view" },
   {
     match: /^\/TARF\/(?:Add|Edit)/,
-    module: MODULE.COMMISSIONING_TESTS,
+    module: MODULE.SAFETY,
     action: "edit",
   },
   {
     match: /^\/TARF(\/|$)/,
-    module: MODULE.COMMISSIONING_TESTS,
+    module: MODULE.SAFETY,
     action: "view",
   },
   { match: /^\/PSSR/, module: MODULE.PSSR, action: "view" },

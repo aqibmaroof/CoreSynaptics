@@ -89,9 +89,17 @@ export default function Procurement() {
   const [statusBusy, setStatusBusy] = useState(null);
   const [formError, setFormError] = useState("");
   const [fetchError, setFetchError] = useState("");
+  const [toast, setToast] = useState(""); // transient success message (TC_001)
   const [confirmDelete, setConfirmDelete] = useState(null); // item pending deletion
 
   const DESC_MAX = 500;
+
+  // Auto-dismiss the success toast so it doesn't linger (TC_001/TC_002).
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   useEffect(() => {
     fetchItems();
@@ -129,7 +137,12 @@ export default function Procurement() {
 
   const projectLabel = (p) => p.name ?? p.projectName ?? p.code ?? p.id;
 
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k, v) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    // Clear the inline error the moment the user starts correcting the field it
+    // referred to, so a resolved error doesn't linger (TC_002).
+    if (formError) setFormError("");
+  };
 
   const handleAdd = async () => {
     setFormError("");
@@ -160,6 +173,7 @@ export default function Procurement() {
       await createProcurementV2Item(payload);
       setForm(EMPTY_FORM);
       setShowAdd(false);
+      setToast("Procurement item added successfully.");
       fetchItems();
     } catch (e) {
       console.error(e);
@@ -198,6 +212,10 @@ export default function Procurement() {
     setItems((p) => p.filter((x) => x.id !== item.id));
     try {
       await deleteProcurementV2Item(item.id);
+      // A previous load/delete error is now resolved — clear it (TC_002) and
+      // confirm the deletion to the user (TC_001).
+      setFetchError("");
+      setToast("Procurement item deleted successfully.");
     } catch (e) {
       console.error(e);
       setItems(prev);
@@ -231,6 +249,19 @@ export default function Procurement() {
 
   return (
     <div className="p-6">
+      {/* Success toast (TC_001) — auto-dismisses after 3s */}
+      {toast && (
+        <div
+          className="fixed top-5 right-5 z-[60] rounded-lg px-4 py-3 text-sm font-semibold shadow-lg flex items-center gap-2"
+          style={{
+            background: "var(--rf-green, #16a34a)",
+            color: "#fff",
+          }}
+          role="status"
+        >
+          {toast}
+        </div>
+      )}
       <div className="mx-auto">
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-3 mb-5">

@@ -114,6 +114,12 @@ export default function Safety() {
     setErrors((e) => (e[k] ? { ...e, [k]: undefined } : e));
   };
 
+  // TC_035 — a non-blocking warning when the expiry date is already in the past.
+  // Recording a historical (already-expired) cert is allowed, so this never
+  // blocks submit; it just flags that the record will land as expired.
+  const expiryInPast =
+    form.expires && form.expires < new Date().toISOString().slice(0, 10);
+
   // Listing is independent of the create-form's project picker — it's
   // aggregated across every project the org has, tagging each item with
   // the project it came from so remove() knows which project to hit.
@@ -188,15 +194,18 @@ export default function Safety() {
         dateOrder(form.issued, form.expires, { label: "Expiry date" }), // TC_014
     });
     // TC_017 — duplicate certification (same cert + worker in this category).
+    // `items` is already scoped to the active tab (listSafetyItems is fetched
+    // with { kind: tab }), and each row carries the API shape — title /
+    // workerName — NOT the form field names. Comparing against i.name / i.worker
+    // here silently matched nothing, so duplicates slipped through.
     if (!errs.name && !errs.worker) {
       const existingNames = items
         .filter(
           (i) =>
-            i.category === tab &&
-            (i.worker || "").trim().toLowerCase() ===
-              form.worker.trim().toLowerCase(),
+            (i.workerName || "").trim().toLowerCase() ===
+            form.worker.trim().toLowerCase(),
         )
-        .map((i) => i.name);
+        .map((i) => i.title);
       const dup = notDuplicate(form.name, existingNames, "Certification");
       if (dup) errs.name = dup;
     }
@@ -398,6 +407,7 @@ export default function Safety() {
                   className={fieldCls}
                   style={fieldStyle(errors.name)}
                   placeholder="Certification (e.g. OSHA 30) *"
+                  title="Name of the certification, training, plan, or document (e.g. OSHA 30, Lift Plan)"
                   maxLength={120}
                   value={form.name}
                   onChange={(e) => set("name", e.target.value)}
@@ -409,6 +419,7 @@ export default function Safety() {
                   className={fieldCls}
                   style={fieldStyle(errors.worker)}
                   placeholder="Worker name *"
+                  title="Full name of the worker this record applies to (letters, spaces, hyphens, apostrophes)"
                   maxLength={100}
                   value={form.worker}
                   onChange={(e) => set("worker", e.target.value)}
@@ -420,6 +431,7 @@ export default function Safety() {
                   className={fieldCls}
                   style={fieldStyle(errors.company)}
                   placeholder="Company / trade *"
+                  title="Company or trade the worker belongs to (e.g. Acme Electrical)"
                   maxLength={120}
                   value={form.company}
                   onChange={(e) => set("company", e.target.value)}
@@ -438,6 +450,7 @@ export default function Safety() {
                   type="date"
                   className={fieldCls}
                   style={fieldStyle(errors.issued)}
+                  title="Date the certification or document was issued"
                   value={form.issued}
                   onChange={(e) => set("issued", e.target.value)}
                 />
@@ -454,11 +467,22 @@ export default function Safety() {
                   type="date"
                   className={fieldCls}
                   style={fieldStyle(errors.expires)}
+                  title="Date the certification expires — must be on or after the issued date"
                   min={form.issued || undefined}
                   value={form.expires}
                   onChange={(e) => set("expires", e.target.value)}
                 />
                 <ErrText msg={errors.expires} />
+                {!errors.expires && expiryInPast && (
+                  <span
+                    role="status"
+                    className="text-xs mt-1 block"
+                    style={{ color: "var(--rf-yellow)" }}
+                  >
+                    This expiry date is in the past — the record will be saved as
+                    already expired.
+                  </span>
+                )}
               </div>
               <button
                 className="self-start rounded-lg text-sm font-bold disabled:opacity-60"
