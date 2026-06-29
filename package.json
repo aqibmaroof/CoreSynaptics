@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:poll": "WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=true next dev --webpack",
+    "dev": "next dev -p 3200",
+    "dev:poll": "WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=true next dev --webpack -p 3200",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
