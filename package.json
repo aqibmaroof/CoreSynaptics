@@ -6,7 +6,7 @@
     "dev": "next dev -p 3200",
     "dev:poll": "WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=true next dev --webpack -p 3200",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3200",
     "lint": "eslint"
   },
   "dependencies": {

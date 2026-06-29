@@ -8,7 +8,7 @@ CoreSynaptics (internal name: "wild-tag") is an ERP / Mission Control Dashboard 
 
 ## Commands
 
-- **Dev server:** `npm run dev` (runs on localhost:3000, expects backend API at localhost:3001)
+- **Dev server:** `npm run dev` (runs on localhost:3200, expects backend API at localhost:4000)
 - **Build:** `npm run build`
 - **Lint:** `npm run lint` (ESLint 9, flat config in `eslint.config.mjs`)
 - **No test framework is configured.**
