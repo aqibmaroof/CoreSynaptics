@@ -68,6 +68,7 @@ import {
   notDuplicate,
   collectErrors,
 } from "@/Utils/validation";
+import { FaDownload } from "react-icons/fa";
 
 /* ================================================================== *
  * Project Playbook — the whole project on one screen, scoped to the
@@ -2362,6 +2363,45 @@ export default function NewProjectDetail() {
   /* ============================ panels ============================ */
   function Overview() {
     const verified = db.checklists.filter((c) => isDone(c.status)).length;
+
+    // KPI stats across the project's core records.
+    const issuesTotal = (db.findings || []).length;
+    const issuesOpen = (db.findings || []).filter((f) =>
+      isOpen(f.status),
+    ).length;
+    const tasksTotal = (db.tasks || []).length;
+    const tasksDone = (db.tasks || []).filter(
+      (t) => t.status === "done",
+    ).length;
+    const subsTotal = (db.submittals || []).length;
+    const subsApproved = (db.submittals || []).filter((s) =>
+      /Approved/i.test(s.status || ""),
+    ).length;
+    const msTotal = (db.milestones || []).length;
+    const msDone = (db.milestones || []).filter(
+      (m) => m.status === "done",
+    ).length;
+    const punchTotal = (db.punchList || []).length;
+    const punchOpen = (db.punchList || []).filter((f) =>
+      isOpen(f.status),
+    ).length;
+    const holdTotal = (db.holdPoints || []).length;
+    const holdOpen = (db.holdPoints || []).filter((f) =>
+      isOpen(f.status),
+    ).length;
+    const procTotal = (db.procurement || []).length;
+    const procDelivered = (db.procurement || []).filter((p) =>
+      /Delivered/i.test(p.status || ""),
+    ).length;
+    const arrTotal = (db.tarf || []).length;
+    const arrBadged = (db.tarf || []).filter((t) =>
+      /Approved|Complete/i.test(t.badge || ""),
+    ).length;
+    const safetyTotal = (db.safety || []).length;
+    const safetyExpiring = (db.safety || []).filter(
+      (s) => s.status === "EXPIRING" || s.status === "EXPIRED",
+    ).length;
+
     const idy = db.identity || {};
     const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : "—");
     const titleCase = (s) =>
@@ -2395,6 +2435,51 @@ export default function NewProjectDetail() {
             />
             <Kpi v={g.gk.length} l="Gatekeeping" tone="bad" />
             <Kpi v={g.mit.length} l="Mitigating" tone="warn" />
+            <Kpi
+              v={`${issuesOpen}/${issuesTotal}`}
+              l="Open issues"
+              tone={issuesOpen > 0 ? "bad" : "good"}
+            />
+            <Kpi
+              v={`${tasksDone}/${tasksTotal}`}
+              l="Tasks done"
+              tone={tasksTotal > 0 && tasksDone === tasksTotal ? "good" : "warn"}
+            />
+            <Kpi
+              v={`${subsApproved}/${subsTotal}`}
+              l="Submittals approved"
+              tone={
+                subsTotal > 0 && subsApproved === subsTotal ? "good" : "warn"
+              }
+            />
+            <Kpi
+              v={`${msDone}/${msTotal}`}
+              l="Milestones done"
+              tone={msTotal > 0 && msDone === msTotal ? "good" : "warn"}
+            />
+            <Kpi
+              v={`${punchOpen}/${punchTotal}`}
+              l="Punch list open"
+              tone={punchOpen > 0 ? "bad" : "good"}
+            />
+            <Kpi
+              v={`${holdOpen}/${holdTotal}`}
+              l="Hold points open"
+              tone={holdOpen > 0 ? "bad" : "good"}
+            />
+            <Kpi
+              v={`${procDelivered}/${procTotal}`}
+              l="Procurement delivered"
+              tone={
+                procTotal > 0 && procDelivered === procTotal ? "good" : "warn"
+              }
+            />
+            <Kpi
+              v={`${arrBadged}/${arrTotal}`}
+              l="Site arrivals badged"
+              tone={arrTotal > 0 && arrBadged === arrTotal ? "good" : "warn"}
+            />
+           
           </Kpis>
         </Card>
         {db.identity && (
@@ -3228,24 +3313,91 @@ export default function NewProjectDetail() {
     const a = db.activity || [];
     const cts = [...new Set(a.map((x) => x.ct).filter(Boolean))];
     const filtered = actf === "all" ? a : a.filter((x) => x.ct === actf);
+
+    const downloadPdf = async () => {
+      if (typeof window === "undefined") return;
+      try {
+        const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+          import("jspdf"),
+          import("jspdf-autotable"),
+        ]);
+        const projectName = db.project?.name || "Project";
+        const scope = actf === "all" ? "All companies" : ctName(actf);
+        const generated = new Date().toLocaleString();
+
+        const doc = new jsPDF({ unit: "pt", format: "a4" });
+        const marginX = 40;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.setTextColor(31, 41, 55);
+        doc.text(`Activity / Updates — ${projectName}`, marginX, 44);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(107, 114, 128);
+        doc.text(
+          `Filter: ${scope}  •  ${filtered.length} entr${
+            filtered.length === 1 ? "y" : "ies"
+          }  •  Generated ${generated}`,
+          marginX,
+          60,
+        );
+
+        const body = filtered.length
+          ? filtered.map((x) => [x.when || "", x.text || "", x.who || ""])
+          : [["—", "No activity for this filter.", ""]];
+
+        autoTable(doc, {
+          startY: 76,
+          head: [["When", "Update", "Who"]],
+          body,
+          margin: { left: marginX, right: marginX },
+          styles: { fontSize: 9, cellPadding: 6, valign: "top" },
+          headStyles: { fillColor: [243, 244, 246], textColor: [31, 41, 55] },
+          columnStyles: {
+            0: { cellWidth: 90, textColor: [55, 65, 81] },
+            1: { cellWidth: "auto" },
+            2: { cellWidth: 110, font: "courier", fontSize: 8, textColor: [107, 114, 128] },
+          },
+        });
+
+        const safe = projectName.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+        doc.save(`activity-${safe || "project"}.pdf`);
+      } catch (e) {
+        console.error(e);
+        flash("Could not generate the activity PDF");
+      }
+    };
+
     return (
       <Card>
         <div className="flex items-center justify-between gap-2">
           <SectLab style={{ margin: 0 }}>
             Activity / Updates — what&apos;s changed on the project
           </SectLab>
-          <select
-            value={actf}
-            onChange={(e) => setActf(e.target.value)}
-            style={{ ...selWrap, flex: "none", minWidth: 0, maxWidth: 200 }}
-          >
-            <option value="all">All companies</option>
-            {cts.map((c) => (
-              <option key={c} value={c}>
-                {ctName(c)}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={downloadPdf}
+              className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer hover:brightness-110 flex-shrink-0"
+              style={{ background: "var(--rf-accent)", color: "#fff" }}
+            >
+              <FaDownload /> Download PDF
+            </button>
+            <select
+              value={actf}
+              onChange={(e) => setActf(e.target.value)}
+              style={{ ...selWrap, flex: "none", minWidth: 0, maxWidth: 200 }}
+            >
+              <option value="all">All companies</option>
+              {cts.map((c) => (
+                <option key={c} value={c}>
+                  {ctName(c)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <LockMsg style={{ margin: "10px 0" }}>
           Every gate advance, task update, constraint, verification and invite

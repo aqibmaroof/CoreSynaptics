@@ -3869,7 +3869,7 @@ export default function NewProjectsModule() {
         {projects.map((p) => (
           <div
             key={p.id}
-            className="rounded-2xl p-5"
+            className="rounded-2xl p-5 flex flex-col justify-between"
             style={{
               background: "var(--rf-bg2)",
               border: "1px solid var(--rf-accent)",
@@ -3899,7 +3899,7 @@ export default function NewProjectsModule() {
                   {p.status}
                 </span>
                 <span
-                  className="px-2 py-0.5 rounded text-[10px] font-bold"
+                  className="w-[max-content] px-2 py-0.5 rounded text-[10px] font-bold"
                   style={{
                     background: "var(--rf-green-soft, #d1fae5)",
                     color: "var(--rf-green)",
@@ -3945,7 +3945,7 @@ export default function NewProjectsModule() {
             <button
               type="button"
               onClick={() => router.push(`/projectsDetailNew/${p.id}`)}
-              className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+              className="w-[max-content] px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer mt-auto hover:-translate-y-0.5 hover:shadow-md hover:brightness-110"
               style={{ background: "var(--rf-accent)", color: "#fff" }}
             >
               Go to Cx Readiness
