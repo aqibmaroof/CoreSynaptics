@@ -166,7 +166,7 @@ export default function SubmittalForm({
     listV2Projects({ limit: 100 })
       .then((d) => setProjects(toArray(d)))
       .catch(() => {});
-    getAssets({ limit: 1000 })
+    getAssets({ limit: 100 })
       .then((d) => setAssets(toArray(d)))
       .catch(() => {});
   }, []);
