@@ -9,7 +9,7 @@
 // shared v9 WhyPanel with a recommendation-specific fetcher; "Open flow"
 // surfaces the GuidedFlowDrawer beneath the row.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   RECOMMENDATION_KIND_LABEL,
@@ -38,19 +38,37 @@ export default function RecommendationsCard({
   const [whyId, setWhyId] = useState(null);
   const [flowRec, setFlowRec] = useState(null);
 
+  // Callers commonly pass `fetcher` as an inline arrow and `params` as an inline
+  // object literal, so both get a new identity on every render. Depending on
+  // them directly would re-run the effect → setState → re-render → re-run,
+  // hammering the endpoint in an infinite loop (and tripping the 429 limiter).
+  // Keep the latest fetcher in a ref, and trigger the fetch off a stable key
+  // derived from the actual VALUES that should cause a refetch.
+  const fetcherRef = useRef(fetcher);
+  fetcherRef.current = fetcher;
+
+  const fetchKey = useMemo(
+    () => JSON.stringify({ params: params ?? {}, lens: lens ?? null, cxProjectId: cxProjectId ?? null }),
+    [params, lens, cxProjectId],
+  );
+
   const load = useCallback(async () => {
-    if (!fetcher) return;
+    const fn = fetcherRef.current;
+    if (!fn) return;
     setLoading(true);
     setError("");
     try {
-      const res = await fetcher({ ...params, lens });
+      const res = await fn({ ...(params ?? {}), lens });
       setPage(res);
     } catch (e) {
       setError(e?.message || "Failed to load recommendations");
     } finally {
       setLoading(false);
     }
-  }, [fetcher, params, lens]);
+    // params/lens are captured via fetchKey; reading the latest fetcher from the
+    // ref keeps this callback identity stable across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchKey]);
 
   useEffect(() => {
     load();
