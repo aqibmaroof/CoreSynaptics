@@ -105,6 +105,15 @@ export default function AssetAdd() {
 
   const showWarranty = WARRANTY_CATEGORIES.has(form.category);
 
+  // Submit is only enabled once every mandatory field is filled (RA_TC_064).
+  // Trim so a value of only whitespace doesn't satisfy a required field.
+  const requiredFilled =
+    form.assetTag.trim() !== "" &&
+    form.name.trim() !== "" &&
+    form.category !== "" &&
+    form.procurementType !== "";
+  const canSubmit = requiredFilled && !loading;
+
   const set = (k) => (e) => {
     const value = e.target.value;
     setForm((p) => ({
@@ -481,8 +490,8 @@ export default function AssetAdd() {
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="px-8 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+              disabled={!canSubmit}
+              className="px-8 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-700 disabled:to-gray-700 flex items-center gap-2"
             >
               {loading && (
                 <svg

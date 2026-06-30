@@ -3076,6 +3076,22 @@ function StepEquipment({ w, u }) {
     u({
       equipment: w.equipment.map((e) => (e.abbr === abbr ? { ...e, proc } : e)),
     });
+
+  // SGN_035: the "Request a new asset class" control used to fire a native
+  // alert("Asset request submitted.") unconditionally — a misleading success
+  // popup with no input and no actual submission. Capture the requested class,
+  // persist it onto the wizard payload, and show an accurate inline confirmation.
+  const [reqOpen, setReqOpen] = useState(false);
+  const [reqText, setReqText] = useState("");
+  const [reqDone, setReqDone] = useState(false);
+  const submitAssetClassRequest = () => {
+    const name = reqText.trim();
+    if (!name) return;
+    u({ assetClassRequests: [...(w.assetClassRequests || []), name] });
+    setReqText("");
+    setReqOpen(false);
+    setReqDone(true);
+  };
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div
@@ -3196,28 +3212,137 @@ function StepEquipment({ w, u }) {
           </div>
         </div>
       ))}
-      <div
-        onClick={() => alert("Asset request submitted.")}
-        style={{
-          padding: "10px 14px",
-          border: `2px dashed ${C.border}`,
-          borderRadius: 8,
-          fontSize: "0.7rem",
-          color: C.muted,
-          cursor: "pointer",
-          textAlign: "center",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = C.accent;
-          e.currentTarget.style.color = C.accent;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = C.border;
-          e.currentTarget.style.color = C.muted;
-        }}
-      >
-        + Request a new asset class we don't cover yet
-      </div>
+      {reqDone && !reqOpen ? (
+        <div
+          role="status"
+          style={{
+            padding: "10px 14px",
+            border: "1px solid rgba(0,160,100,0.45)",
+            background: "rgba(0,200,120,0.14)",
+            borderRadius: 8,
+            fontSize: "0.7rem",
+            color: "#0a7d52",
+            fontWeight: 600,
+            textAlign: "center",
+          }}
+        >
+          Request noted. Our team will review the asset class
+          {(w.assetClassRequests || []).length
+            ? ` ("${w.assetClassRequests[w.assetClassRequests.length - 1]}")`
+            : ""}{" "}
+          and follow up by email.{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setReqDone(false);
+              setReqOpen(true);
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              color: C.accent,
+              cursor: "pointer",
+              textDecoration: "underline",
+              font: "inherit",
+              padding: 0,
+            }}
+          >
+            Request another
+          </button>
+        </div>
+      ) : reqOpen ? (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            padding: "8px 10px",
+            border: `2px dashed ${C.accent}`,
+            borderRadius: 8,
+          }}
+        >
+          <input
+            type="text"
+            autoFocus
+            value={reqText}
+            onChange={(e) => setReqText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submitAssetClassRequest();
+              if (e.key === "Escape") setReqOpen(false);
+            }}
+            placeholder="e.g. Liquid cooling distribution unit"
+            maxLength={80}
+            style={{
+              flex: 1,
+              padding: "7px 10px",
+              border: `1px solid ${C.border}`,
+              borderRadius: 6,
+              fontSize: "0.72rem",
+              color: C.text,
+              background: "transparent",
+              outline: "none",
+            }}
+          />
+          <button
+            type="button"
+            onClick={submitAssetClassRequest}
+            disabled={!reqText.trim()}
+            style={{
+              padding: "7px 12px",
+              border: "none",
+              borderRadius: 6,
+              fontSize: "0.7rem",
+              fontWeight: 700,
+              color: "#020d16",
+              background: reqText.trim() ? C.accent : C.border,
+              cursor: reqText.trim() ? "pointer" : "not-allowed",
+            }}
+          >
+            Submit
+          </button>
+          <button
+            type="button"
+            onClick={() => setReqOpen(false)}
+            style={{
+              padding: "7px 10px",
+              border: `1px solid ${C.border}`,
+              borderRadius: 6,
+              fontSize: "0.7rem",
+              color: C.muted,
+              background: "transparent",
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setReqOpen(true)}
+          style={{
+            width: "100%",
+            padding: "10px 14px",
+            border: `2px dashed ${C.border}`,
+            borderRadius: 8,
+            fontSize: "0.7rem",
+            color: C.muted,
+            cursor: "pointer",
+            textAlign: "center",
+            background: "transparent",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = C.accent;
+            e.currentTarget.style.color = C.accent;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = C.border;
+            e.currentTarget.style.color = C.muted;
+          }}
+        >
+          + Request a new asset class we don&apos;t cover yet
+        </button>
+      )}
     </div>
   );
 }
@@ -4920,7 +5045,10 @@ function StepReview({ w, u, showPwd, setShowPwd, apiReview }) {
             fontFamily: C.sans,
             fontSize: "1.2rem",
             fontWeight: 700,
-            color: C.text,
+            // SGN_039: this hero box has a forced dark gradient background, so
+            // theme text tokens (dark on the light theme) were unreadable. Use
+            // explicit light text here regardless of theme.
+            color: "#eaf6ff",
             marginBottom: 5,
             lineHeight: 1.2,
           }}
@@ -4931,7 +5059,9 @@ function StepReview({ w, u, showPwd, setShowPwd, apiReview }) {
         <div
           style={{
             fontSize: "0.68rem",
-            color: C.muted,
+            // SGN_039: light secondary text on the dark hero box (theme token
+            // was dark-on-dark).
+            color: "rgba(220,238,250,0.78)",
             fontFamily: C.mono,
             maxWidth: 460,
             margin: "0 auto",

@@ -29,6 +29,7 @@ import {
   validateEmail,
   validatePhone,
   validatePersonName,
+  validateCompanyName,
   dateOrder,
   notDuplicate,
   NAME_PATTERN,
@@ -2001,9 +2002,11 @@ export default function NewProjectsModule() {
       // team list stays optional (an all-blank list passes).
       const teamErrs = {};
       const seen = new Set();
+      let startedRows = 0;
       team.forEach((t, i) => {
         const hasAny = (t.name || t.company || t.role || "").trim();
         if (!hasAny) return;
+        startedRows += 1;
         const rowErr = collectErrors({
           name:
             required(t.name, "Name") ||
@@ -2011,7 +2014,7 @@ export default function NewProjectsModule() {
             lengthBetween(t.name, { max: MAX_NAME, label: "Name" }),
           company:
             required(t.company, "Company") ||
-            lengthBetween(t.company, { max: MAX_COMPANY, label: "Company" }),
+            validateCompanyName(t.company, "Company"),
           role: required(t.role, "Role"),
         });
         const key = `${(t.name || "").trim().toLowerCase()}|${(t.company || "")
@@ -2022,6 +2025,17 @@ export default function NewProjectsModule() {
         seen.add(key);
         if (Object.keys(rowErr).length) teamErrs[i] = rowErr;
       });
+      // TC_TEAM_052: at least one key-people row must be started before the
+      // project can be created (also satisfied by linking an existing team).
+      // Only surface this when NO row has been started — if a started row is
+      // merely invalid, its own per-field errors already block submit, so we
+      // must not clobber them with this generic message.
+      if (startedRows === 0 && linkedTeamIds.length === 0) {
+        teamErrs[0] = {
+          ...(teamErrs[0] || {}),
+          name: "Add at least one team member (or link a team) to continue.",
+        };
+      }
       return Object.keys(teamErrs).length ? { __team: teamErrs } : {};
     }
     return {};
@@ -3701,6 +3715,16 @@ export default function NewProjectsModule() {
 
   const isLast = step === STEPS.length - 1;
 
+  // TC_TEAM_052: on the final Team step, the "Create project" button stays
+  // disabled until at least one complete key-people row exists (name + company +
+  // role) or an existing team is linked. A row counts as complete only when all
+  // three fields are filled; charset/length errors are surfaced on submit.
+  const hasCompleteTeamRow = team.some(
+    (t) => t.name?.trim() && t.company?.trim() && t.role?.trim(),
+  );
+  const teamRequirementMet = hasCompleteTeamRow || linkedTeamIds.length > 0;
+  const createDisabled = submitting || (isLast && !teamRequirementMet);
+
   /* ----------------------------- render ----------------------------- */
 
   return (
@@ -3830,14 +3854,19 @@ export default function NewProjectsModule() {
               )}
               <button
                 type="button"
-                disabled={submitting}
+                disabled={createDisabled}
+                title={
+                  isLast && !teamRequirementMet
+                    ? "Add at least one team member (or link a team) to create the project."
+                    : undefined
+                }
                 onClick={() => (isLast ? createProject() : goNext())}
                 className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
                 style={{
                   background: "var(--rf-accent)",
                   color: "#fff",
-                  opacity: submitting ? 0.6 : 1,
-                  cursor: submitting ? "not-allowed" : "pointer",
+                  opacity: createDisabled ? 0.6 : 1,
+                  cursor: createDisabled ? "not-allowed" : "pointer",
                 }}
               >
                 {isLast

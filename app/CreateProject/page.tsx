@@ -1,13 +1,8 @@
-import { Suspense } from "react";
-import CreateProject from "../../containers/CreateProject";
-import Layout from "@/containers/Layout";
+import { redirect } from "next/navigation";
 
-export default function List() {
-  return (
-    <Suspense fallback="Loading...">
-      <Layout>
-        <CreateProject />
-      </Layout>
-    </Suspense>
-  );
+// The 21-step CreateProject wizard (containers/CreateProject) is the deprecated
+// "old" project module. The active project module is NewProjectsModule at
+// /Projects. Bounce any stale link/bookmark to the new module.
+export default function CreateProjectDeprecated() {
+  redirect("/Projects");
 }

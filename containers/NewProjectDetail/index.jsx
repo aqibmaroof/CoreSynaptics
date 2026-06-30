@@ -1897,8 +1897,19 @@ export default function NewProjectDetail() {
     issue: {
       title: "Raise an issue / NCR",
       fields: [
-        { k: "title", label: "Title", type: "text", required: true },
-        { k: "description", label: "Description", type: "textarea" },
+        {
+          k: "title",
+          label: "Title",
+          type: "text",
+          required: true,
+          maxLength: 200, // RI_TC_017 / RPI_TC_017 — free text, capped length
+        },
+        {
+          k: "description",
+          label: "Description",
+          type: "textarea",
+          maxLength: 2000,
+        },
         {
           k: "severity",
           label: "Severity",
@@ -1918,8 +1929,8 @@ export default function NewProjectDetail() {
       submit: async (pid, f) =>
         createIssue({
           cxProjectId: pid,
-          title: f.title,
-          description: f.description || undefined,
+          title: f.title.trim(), // RI_TC_017 — strip leading/trailing spaces
+          description: f.description?.trim() || undefined,
           severity: f.severity || "MEDIUM",
           kind: f.kind || "GENERAL",
           dueDate: f.dueDate || undefined,
@@ -3806,7 +3817,7 @@ export default function NewProjectDetail() {
                   setLaErrors({}); // 6WLA_TC_029 — fresh form on each open
                   setLaAdd({ wk: 1, trade: "EC", area: "" });
                 }}
-                className="font-mono"
+                className="font-mono transition-all"
                 style={{
                   fontSize: 10,
                   border: `1px dashed ${P.line}`,
@@ -3815,6 +3826,17 @@ export default function NewProjectDetail() {
                   padding: "3px 9px",
                   cursor: "pointer",
                   color: P.navy,
+                }}
+                // 6WLA_TC_021 — hover feedback on the Add Activity button.
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = P.electric;
+                  e.currentTarget.style.color = P.electric;
+                  e.currentTarget.style.background = P.soft;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = P.line;
+                  e.currentTarget.style.color = P.navy;
+                  e.currentTarget.style.background = "none";
                 }}
               >
                 + Add activity

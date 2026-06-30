@@ -12,6 +12,7 @@ import {
   reviseSubmittal,
   resubmitSubmittal,
 } from "@/services/Submittals";
+import { listV2Projects } from "@/services/CxProjectsV2";
 import { useUserPermissions, MODULE, permissionProps } from "@/Utils/rbac";
 
 const STATUSES = [
@@ -109,6 +110,10 @@ export default function SubmittalsList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterType, setFilterType] = useState("");
+  // TC_SUB_050 — filter the list by project. `projectNames` maps cxProjectId →
+  // display name (submittal rows only carry cxProjectId, not the name).
+  const [filterProject, setFilterProject] = useState("");
+  const [projectNames, setProjectNames] = useState({});
   const [message, setMessage] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [actionModal, setActionModal] = useState(null); // { id, action, submittal }
@@ -117,7 +122,26 @@ export default function SubmittalsList() {
 
   useEffect(() => {
     fetchSubmittals();
+    fetchProjectNames();
   }, []);
+
+  // Build a cxProjectId → name map for the project filter labels (TC_SUB_050).
+  // Non-fatal: if it fails, the filter still works using the raw ids.
+  const fetchProjectNames = async () => {
+    try {
+      const res = await listV2Projects({ limit: 100 });
+      const list = Array.isArray(res)
+        ? res
+        : (res?.data ?? res?.items ?? res?.projects ?? []);
+      const map = {};
+      list.forEach((p) => {
+        if (p?.id) map[p.id] = p.name || p.projectName || p.title || p.id;
+      });
+      setProjectNames(map);
+    } catch {
+      /* leave projectNames empty — filter falls back to ids */
+    }
+  };
   useEffect(() => {
     if (message) {
       const t = setTimeout(() => setMessage(null), 3500);
@@ -202,8 +226,22 @@ export default function SubmittalsList() {
       (s.specSection || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = !filterStatus || s.status === filterStatus;
     const matchType = !filterType || s.type === filterType;
-    return matchSearch && matchStatus && matchType;
+    const matchProject = !filterProject || s.cxProjectId === filterProject;
+    return matchSearch && matchStatus && matchType && matchProject;
   });
+
+  // Distinct projects present in the loaded submittals, for the project filter
+  // dropdown (TC_SUB_050). Labelled by name where known, else the raw id.
+  const projectOptions = Array.from(
+    new Map(
+      submittals
+        .filter((s) => s.cxProjectId)
+        .map((s) => [
+          s.cxProjectId,
+          projectNames[s.cxProjectId] || s.cxProjectId,
+        ]),
+    ).entries(),
+  ).sort((a, b) => String(a[1]).localeCompare(String(b[1])));
 
   // Stats from real status values
   const stats = {
@@ -370,6 +408,24 @@ export default function SubmittalsList() {
             {TYPES.map((t) => (
               <option key={t} value={t}>
                 {TYPE_LABELS[t]}
+              </option>
+            ))}
+          </select>
+          {/* TC_SUB_050 — filter submittals by project. */}
+          <select
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            className="px-4 py-2.5 rounded-lg text-sm focus:outline-none"
+            style={{
+              background: "var(--rf-bg2)",
+              color: "var(--rf-txt)",
+              boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
+            }}
+          >
+            <option value="">All Projects</option>
+            {projectOptions.map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
               </option>
             ))}
           </select>

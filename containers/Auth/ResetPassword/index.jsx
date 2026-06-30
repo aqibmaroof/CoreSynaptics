@@ -21,6 +21,9 @@ const LoginPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // SGN_044: a stale success/error banner must not linger once the user
+    // edits or clears the field — drop it as soon as they type again.
+    setMessage((prev) => (prev.text ? { type: "", text: "" } : prev));
   };
 
   const handleSubmit = async (e) => {
@@ -447,13 +450,17 @@ const LoginPage = () => {
                   fontFamily: "'Share Tech Mono', monospace",
                   backgroundColor:
                     message.type === "success"
-                      ? "rgba(0, 255, 136, 0.1)"
+                      ? "rgba(0, 200, 120, 0.16)"
                       : "rgba(255, 100, 100, 0.1)",
-                  color: message.type === "success" ? "#00ff88" : "#ff6464",
+                  // SGN_043: neon "#00ff88" on a near-transparent tint was too
+                  // low-contrast to read. Use a deeper green that meets contrast
+                  // against this light panel.
+                  color: message.type === "success" ? "#0a7d52" : "#c0392b",
                   border:
                     message.type === "success"
-                      ? "1px solid rgba(0, 255, 136, 0.3)"
+                      ? "1px solid rgba(0, 160, 100, 0.45)"
                       : "1px solid rgba(255, 100, 100, 0.3)",
+                  fontWeight: 600,
                   animation: "fadeIn 0.3s ease-in",
                 }}
               >

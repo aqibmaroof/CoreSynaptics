@@ -8,9 +8,26 @@ export const NAME_PATTERN = /^[\p{L}\s'-]+$/u;
 export const PERSON_NAME_PATTERN = /^[\p{L}\s'.-]+$/u;
 // Standard email shape; also rejects embedded spaces.
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Company names: letters, digits, spaces and business punctuation
+// (& . , ' - ( ) /) — e.g. "AT&T", "Turner Construction, Inc.", "3M". Mirrors
+// the backend COMPANY_NAME_PATTERN in create-company.dto.ts.
+export const COMPANY_NAME_PATTERN = /^[\p{L}\p{N}\s&.,'()/-]+$/u;
 
 export const MAX_EMAIL = 254;
 export const MAX_NAME = 100;
+export const MAX_COMPANY = 150;
+
+// Returns an error string for a company/org name, or "" when valid. `required`
+// defaults to false so optional company fields can pass when blank.
+export function validateCompanyName(raw, label = "Company", required = false) {
+  const name = (raw || "").trim();
+  if (!name) return required ? `${label} is required.` : "";
+  if (name.length > MAX_COMPANY)
+    return `${label} cannot exceed ${MAX_COMPANY} characters.`;
+  if (!COMPANY_NAME_PATTERN.test(name))
+    return `${label} may only contain letters, numbers, spaces, and & . , ' - ( ) / characters.`;
+  return "";
+}
 
 // Returns an error string for an email, or "" when valid.
 export function validateEmail(raw) {

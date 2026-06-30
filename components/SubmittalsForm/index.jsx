@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import { listV2Projects } from "@/services/CxProjectsV2";
 import { getAssets } from "@/services/AssetManagement";
 import { getContactsByCompany } from "@/services/Contacts";
-import {
-  required,
-  lengthBetween,
-  notDuplicate,
-  collectErrors,
-} from "@/Utils/validation";
+import { required, lengthBetween, collectErrors } from "@/Utils/validation";
 
 // Today as a yyyy-mm-dd string, for the Due Date min= attribute and past-date guard.
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -124,13 +119,7 @@ function AppSelect({
   );
 }
 
-export default function SubmittalForm({
-  onSubmit,
-  loading,
-  companies,
-  users,
-  existingTitles = [],
-}) {
+export default function SubmittalForm({ onSubmit, loading, companies, users }) {
   // ── Project + Asset (V2) ───────────────────────────────────────────────────
   const [projects, setProjects] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -228,10 +217,12 @@ export default function SubmittalForm({
     const specSection = form.specSection.trim();
     const fieldErrors = collectErrors({
       cxProjectId: required(form.cxProjectId, "Project"),
+      // Titles are free text and need NOT be unique: the server auto-generates
+      // the unique submittalNumber, so two submittals may share a title
+      // (TC_SUB_037). Only enforce presence + length here, no duplicate block.
       title:
         required(form.title, "Title") ||
-        lengthBetween(form.title, { max: 200, label: "Title" }) ||
-        notDuplicate(form.title, existingTitles, "A submittal with this title"),
+        lengthBetween(form.title, { max: 200, label: "Title" }),
       // Spec Section is optional; only validate format when something is entered.
       specSection:
         specSection && !SPEC_SECTION_PATTERN.test(specSection)

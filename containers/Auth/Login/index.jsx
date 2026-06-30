@@ -702,8 +702,17 @@ const LoginPage = () => {
                 type="button"
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 onClick={togglePasswordVisibility}
-                className="absolute right-3 top-8.5 text-slate-400 hover:text-cyan-400 transition-colors"
-                style={{ color: "#5a9ab5" }}
+                className="absolute right-3 text-slate-400 hover:text-cyan-400 transition-colors flex items-center justify-center"
+                style={{
+                  color: "#5a9ab5",
+                  // Anchor to the input (which sits below the label), not a
+                  // fixed `top-8.5` — that class isn't in the Tailwind spacing
+                  // scale, so it was dropped and the icon fell to top:0,
+                  // overlapping the label (SGN_040). Pin to the input's bottom
+                  // edge and lift by half the input height to vertically centre.
+                  bottom: 0,
+                  height: "2.5rem",
+                }}
               >
                 {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
               </button>
