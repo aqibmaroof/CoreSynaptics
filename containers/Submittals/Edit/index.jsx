@@ -2,49 +2,40 @@
 
 import { useState, useEffect } from "react";
 import SubmittalEditForm from "@/components/EditSubmittalsForm";
-import EntityApprovals from "@/components/EntityApprovals";
-import RelatedSidebar from "@/components/RelatedSidebar";
-import CopilotPanel from "@/components/CopilotPanel";
-import WhyTab from "@/components/WhyTab";
-import LineageTab from "@/components/LineageTab";
-import ContextPanel from "@/components/ContextPanel";
-import EntityRecommendationsPanel from "@/components/EntityRecommendationsPanel";
-import FederatedBadge from "@/components/FederatedBadge";
-import ComplianceHoldBadge from "@/components/ComplianceHoldBadge";
+// import EntityApprovals from "@/components/EntityApprovals";
+// import RelatedSidebar from "@/components/RelatedSidebar";
+// import CopilotPanel from "@/components/CopilotPanel";
+// import WhyTab from "@/components/WhyTab";
+// import LineageTab from "@/components/LineageTab";
+// import ContextPanel from "@/components/ContextPanel";
+// import EntityRecommendationsPanel from "@/components/EntityRecommendationsPanel";
+// import FederatedBadge from "@/components/FederatedBadge";
+// import ComplianceHoldBadge from "@/components/ComplianceHoldBadge";
 import { updateSubmittal, getSubmittalById } from "@/services/Submittals";
-import { listV2Projects } from "@/services/CxProjectsV2";
 import { getCompanies } from "@/services/Companies";
-import { getUsers } from "@/services/Users";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 function toArray(data) {
-  return Array.isArray(data)
-    ? data
-    : (data?.data ?? data?.projects ?? data?.users ?? data?.companies ?? []);
+  return Array.isArray(data) ? data : (data?.data ?? data?.companies ?? []);
 }
 
 export default function EditSubmittalContainer() {
   const params = useParams();
+  const router = useRouter();
+
   const submittalId = params.id;
 
   const [loading, setLoading] = useState(false);
   const [initialData, setInitialData] = useState(null);
   const [message, setMessage] = useState(null);
 
-  const [projects, setProjects] = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [users, setUsers] = useState([]);
 
-  // Load dropdown data and submittal in parallel
+  // Companies feed the Trade/Reviewer dropdowns; projects + assets are loaded
+  // inside the form itself (same as the Add form).
   useEffect(() => {
-    listV2Projects({ limit: 100 })
-      .then((d) => setProjects(toArray(d)))
-      .catch(() => {});
     getCompanies()
       .then((d) => setCompanies(toArray(d)))
-      .catch(() => {});
-    getUsers()
-      .then((d) => setUsers(toArray(d)))
       .catch(() => {});
   }, []);
 
@@ -63,6 +54,7 @@ export default function EditSubmittalContainer() {
       setMessage(null);
       await updateSubmittal(submittalId, data);
       setMessage({ type: "success", text: "Submittal updated successfully" });
+      router.back();
     } catch (err) {
       setMessage({
         type: "error",
@@ -114,12 +106,10 @@ export default function EditSubmittalContainer() {
         data={initialData}
         onSubmit={handleUpdate}
         loading={loading}
-        projects={projects}
         companies={companies}
-        users={users}
       />
 
-      {submittalId && (
+      {/* {submittalId && (
         <div
           style={{
             marginTop: 24,
@@ -156,7 +146,7 @@ export default function EditSubmittalContainer() {
             <RelatedSidebar entityType="Submittal" entityId={submittalId} />
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
