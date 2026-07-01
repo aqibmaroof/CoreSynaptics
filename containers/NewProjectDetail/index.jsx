@@ -1672,9 +1672,12 @@ export default function NewProjectDetail() {
     "GC",
     "CXA",
   ];
-  // Is the add-activity form dirty (any field changed from its default)?
+  // Is the activity form dirty? In ADD mode, dirty = anything changed from the
+  // empty defaults. In EDIT mode the modal is prefilled with real values, so we
+  // don't nag on close — treat it as not-dirty (Cancel just closes).
   const laDirty = () =>
     laAdd &&
+    !laAdd.editId &&
     ((laAdd.area || "").trim() !== "" ||
       String(laAdd.wk) !== "1" ||
       laAdd.trade !== "EC");
@@ -1710,6 +1713,15 @@ export default function NewProjectDetail() {
       area: required(form?.area, "Activity / Area"),
     });
 
+  // Open the activity modal prefilled to EDIT an existing lookahead row
+  // (6WLA_TC_037). Carrying `editId` on laAdd flips the modal into edit mode.
+  const openLaEdit = (id) => {
+    const a = db.lookahead.find((x) => x.id === id);
+    if (!a) return;
+    setLaAdd({ editId: id, wk: String(a.wk), trade: a.trade, area: a.area });
+    setLaErrors({});
+  };
+
   const submitActivity = async () => {
     const errs = validateLa(laAdd);
     if (Object.keys(errs).length) {
@@ -1719,10 +1731,37 @@ export default function NewProjectDetail() {
     const area = (laAdd.area || "").trim();
     const wk = Number(laAdd.wk);
     if (!projectId) return;
+    const weekOf = new Date(isoMonday().getTime() + (wk - 1) * 7 * 86400000)
+      .toISOString()
+      .slice(0, 10);
+    // EDIT path — patch the existing activity's core fields and reflect locally.
+    if (laAdd.editId) {
+      const id = laAdd.editId;
+      const trade = laAdd.trade;
+      mutate((d) => {
+        const x = d.lookahead.find((y) => y.id === id);
+        if (x) {
+          x.wk = wk;
+          x.trade = trade;
+          x.area = area;
+        }
+      });
+      setLaAdd(null);
+      setLaErrors({});
+      try {
+        await updateLookahead(projectId, id, {
+          weekOf,
+          trade,
+          description: area,
+        });
+        flash("Activity updated");
+      } catch (err) {
+        apiErr(err, "Could not update activity");
+      }
+      return;
+    }
+    // ADD path — create a new activity.
     try {
-      const weekOf = new Date(isoMonday().getTime() + (wk - 1) * 7 * 86400000)
-        .toISOString()
-        .slice(0, 10);
       const created = norm(
         await createLookahead(projectId, {
           weekOf,
@@ -3960,6 +3999,7 @@ export default function NewProjectDetail() {
                               ["−", () => laStep(a.id, -10)],
                               ["+", () => laStep(a.id, 10)],
                               ["⟳", () => laCycle(a.id)],
+                              ["✎", () => openLaEdit(a.id)],
                               ["⚠", () => laBlock(a.id)],
                               ["×", () => laRemove(a.id)],
                             ].map(([t, fn], j) => (
@@ -4729,7 +4769,11 @@ export default function NewProjectDetail() {
                   overflowY: "auto",
                 }}
               >
-                <SectLab>Add a lookahead activity</SectLab>
+                <SectLab>
+                  {laAdd.editId
+                    ? "Edit lookahead activity"
+                    : "Add a lookahead activity"}
+                </SectLab>
 
                 <label
                   style={{ ...eyebrow, display: "block", marginBottom: 4 }}
@@ -4899,7 +4943,7 @@ export default function NewProjectDetail() {
                         opacity: laInvalid ? 0.6 : 1,
                       }}
                     >
-                      Add activity
+                      {laAdd.editId ? "Save changes" : "Add activity"}
                     </button>
                   </div>
                 )}

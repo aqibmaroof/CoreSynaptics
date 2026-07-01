@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { DeleteUsers, getUsers, UpdateUserStatus } from "@/services/Users";
 import StatusDropdown from "../../../components/StatusDropDown";
 import PermisionsDropdown from "../../../components/PersmissionsDropdown";
+import EmptyState from "@/components/EmptyState";
 import { useUserPermissions, useRequirePermission, MODULE, permissionProps } from "@/Utils/rbac";
 
 export default function PricingPlans() {
@@ -228,9 +229,12 @@ export default function PricingPlans() {
                 <tr>
                   <td
                     colSpan="100%"
-                    className="text-center p-13 border-l-1 border-r-1 border-b-1 border-gray-600"
+                    className="border-l-1 border-r-1 border-b-1 border-gray-600"
                   >
-                    NO USERS FOUND
+                    <EmptyState
+                      title="No Data Available"
+                      message="No users found."
+                    />
                   </td>
                 </tr>
               ) : (

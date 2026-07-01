@@ -389,6 +389,7 @@ export default function Safety() {
                 <select
                   className={fieldCls}
                   style={fieldStyle(errors.projectId)}
+                  title="Project this safety record belongs to"
                   value={form.projectId}
                   onChange={(e) => set("projectId", e.target.value)}
                 >

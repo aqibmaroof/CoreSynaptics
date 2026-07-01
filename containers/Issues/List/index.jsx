@@ -1466,6 +1466,13 @@ function RaiseIssueModal({
           <button
             onClick={handleSubmit}
             disabled={!canSubmit || submitting}
+            onMouseEnter={(e) => {
+              if (canSubmit && !submitting)
+                e.currentTarget.style.filter = "brightness(1.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.filter = "none";
+            }}
             style={{
               padding: "9px 22px",
               borderRadius: 9,
@@ -1479,6 +1486,7 @@ function RaiseIssueModal({
               alignItems: "center",
               gap: 7,
               opacity: submitting ? 0.7 : 1,
+              transition: "filter 0.15s ease",
             }}
           >
             <span></span> {submitting ? "Raising..." : "Raise issue"}

@@ -3257,6 +3257,15 @@ export default function NewProjectsModule() {
                       )}
                     </div>
                   )}
+                  {isUploaded && (
+                    <div
+                      className="text-[10px] mt-1 ml-7"
+                      style={{ color: "var(--rf-txt3)" }}
+                    >
+                      File name can’t be changed here — remove and re-upload to
+                      rename.
+                    </div>
+                  )}
                 </div>
               );
             })}
