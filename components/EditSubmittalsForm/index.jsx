@@ -1,16 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { listV2Projects } from "@/services/CxProjectsV2";
+import { getAssets } from "@/services/AssetManagement";
 import { getContactsByCompany } from "@/services/Contacts";
 import { required, lengthBetween, collectErrors } from "@/Utils/validation";
 
+// Today as a yyyy-mm-dd string, for the Due Date min= attribute and past-date guard.
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+// Normalise an ISO timestamp (e.g. "2026-05-15T00:00:00.000Z") to the yyyy-mm-dd
+// value an <input type="date"> expects. Returns "" for empty/invalid input.
+const toDateInput = (v) => (v ? String(v).slice(0, 10) : "");
+
 // Spec Section is a coded field (e.g. CSI "16480" or "26 05 00"); allow digits,
-// letters, spaces, dots and dashes only. Mirrors SubmittalsForm (create).
+// letters, spaces, dots and dashes only.
 const SPEC_SECTION_PATTERN = /^[A-Za-z0-9.\s-]+$/;
 
-// The API enum values — must match SubmittalType on the backend. The previous
-// version of this form sent human-readable labels ("Product Data") which the
-// UpdateSubmittalDto @IsEnum rejected with a 400.
 const SUBMITTAL_TYPES = [
   { value: "SHOP_DRAWING", label: "Shop Drawing" },
   { value: "PRODUCT_DATA", label: "Product Data" },
@@ -21,9 +28,10 @@ const SUBMITTAL_TYPES = [
   { value: "OTHER", label: "Other" },
 ];
 
-// Submittal workflow separation of duties (see SubmittalsForm for the rationale):
-// scope the Trade vs Reviewer company dropdowns to the company types that play
-// each role so a trade can't be picked as its own reviewer.
+// Submittal workflow separation of duties (Procore/CxAlloy model): the trade
+// that SUBMITS a document is a responsible contractor; the company that REVIEWS
+// it is the design/commissioning authority. Scope each dropdown to the company
+// types that play that role so users don't pick, e.g., a rigger as the reviewer.
 const TRADE_COMPANY_TYPES = new Set([
   "TRADE",
   "MECHANICAL",
@@ -46,23 +54,27 @@ const REVIEWER_COMPANY_TYPES = new Set([
   "CUSTOMER",
   "OPERATIONS",
 ]);
-const isUnclassified = (type) => ["CLIENT", "PARTNER", "OTHER"].includes(type);
+
+// Filter companies to those whose type fits the role. Companies with an unknown
+// /legacy type (or no type) fall through to BOTH lists so nothing is hidden by
+// a missing classification.
 const companiesForRole = (companies, typeSet) =>
   (companies ?? []).filter(
     (c) => !c.type || typeSet.has(c.type) || isUnclassified(c.type),
   );
+const isUnclassified = (type) =>
+  ["CLIENT", "PARTNER", "OTHER"].includes(type);
 
 function toArray(data) {
-  return Array.isArray(data) ? data : (data?.data ?? []);
+  return Array.isArray(data)
+    ? data
+    : (data?.data ??
+        data?.projects ??
+        data?.sites ??
+        data?.zones ??
+        data?.equipment ??
+        []);
 }
-
-// The API returns dueDate as an ISO timestamp; the <input type="date"> control
-// needs a bare yyyy-mm-dd. Empty/invalid → "".
-const isoToDateInput = (v) => {
-  if (!v) return "";
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
-};
 
 function AppSelect({
   name,
@@ -111,23 +123,26 @@ function AppSelect({
   );
 }
 
-// Edit form — mirrors SubmittalsForm's field vocabulary and payload shape so the
-// PUT body only ever contains fields UpdateSubmittalDto whitelists. `data` is the
-// camelCase SubmittalResponseDto from GET /submittals/:id. Project + Submittal
-// Number are shown read-only (the API does not allow changing them on update).
-export default function SubmittalEditForm({
-  data,
-  onSubmit,
-  loading,
-  projects,
-  companies,
-  users, // kept for prop compatibility; reviewers now come from company contacts
-}) {
+export default function SubmittalEditForm({ data, onSubmit, loading, companies }) {
+  // ── Project + Asset (V2) ───────────────────────────────────────────────────
+  const [projects, setProjects] = useState([]);
+  const [assets, setAssets] = useState([]);
   const [errors, setErrors] = useState({});
-  // "Reviewed By" is the reviewer company's contacts (matches create form).
+  // "Reviewed By" lists the people who work at the chosen REVIEWER COMPANY
+  // (the reviewing engineer/CxA firm) — i.e. that company's contacts — not the
+  // org user directory. A reviewer is a person at the reviewing firm.
   const [reviewers, setReviewers] = useState([]);
+  const router = useRouter();
+
+  // The dueDate as loaded from the server (yyyy-mm-dd). An existing submittal
+  // may legitimately have a due date in the past, so we only enforce the "not in
+  // the past" rule when the user actually CHANGES the date. Derived from the
+  // prop — no state needed.
+  const initialDueDate = toDateInput(data?.dueDate);
 
   const [form, setForm] = useState({
+    cxProjectId: "",
+    assetId: "",
     title: "",
     description: "",
     type: "SHOP_DRAWING",
@@ -135,40 +150,58 @@ export default function SubmittalEditForm({
     tradeCompanyId: "",
     reviewerCompanyId: "",
     reviewerUserId: "",
+    taskId: "",
     dueDate: "",
   });
 
-  // Hydrate from the API response using the SAME camelCase keys the API returns.
-  // Defer the setState off the effect body (matches SubmittalsForm) so we don't
-  // trip react-hooks/set-state-in-effect.
+  // Prefill the form from the fetched submittal (GET /api/submittals/:id). The
+  // API returns the same camelCase fields the form edits, so mapping is direct;
+  // dueDate is an ISO timestamp and must be trimmed to yyyy-mm-dd for the input.
   useEffect(() => {
     if (!data) return;
-    let alive = true;
-    Promise.resolve().then(() => {
-      if (!alive) return;
-      setForm({
-        title: data.title || "",
-        description: data.description || "",
-        type: data.type || "SHOP_DRAWING",
-        specSection: data.specSection || "",
-        tradeCompanyId: data.tradeCompanyId || "",
-        reviewerCompanyId: data.reviewerCompanyId || "",
-        reviewerUserId: data.reviewerUserId || "",
-        dueDate: isoToDateInput(data.dueDate),
-      });
+    // Syncing fetched server data into local form state — a legitimate
+    // prop→state sync, so the set-state-in-effect rule doesn't apply here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setForm({
+      cxProjectId: data.cxProjectId || "",
+      assetId: data.assetId || "",
+      title: data.title || "",
+      description: data.description || "",
+      type: data.type || "SHOP_DRAWING",
+      specSection: data.specSection || "",
+      tradeCompanyId: data.tradeCompanyId || "",
+      reviewerCompanyId: data.reviewerCompanyId || "",
+      reviewerUserId: data.reviewerUserId || "",
+      taskId: data.taskId || "",
+      dueDate: toDateInput(data.dueDate),
     });
-    return () => {
-      alive = false;
-    };
   }, [data]);
 
-  // Load the reviewer pool (reviewer company's contacts) when it changes.
+  // Load projects + org asset register on mount. The Asset field references the
+  // ORG-LEVEL asset register (GET /assets), which is what the submittal API
+  // validates `assetId` against — NOT the project-scoped V2 ProjectAsset list.
+  useEffect(() => {
+    listV2Projects({ limit: 100 })
+      .then((d) => setProjects(toArray(d)))
+      .catch(() => {});
+    getAssets({ limit: 100 })
+      .then((d) => setAssets(toArray(d)))
+      .catch(() => {});
+  }, []);
+
+  // Load the reviewer pool (the reviewer company's contacts) whenever the
+  // selected Reviewer Company changes. Clear a stale reviewer selection too.
   useEffect(() => {
     let alive = true;
     const companyId = form.reviewerCompanyId;
     if (!companyId) {
       Promise.resolve().then(() => {
-        if (alive) setReviewers([]);
+        if (alive) {
+          setReviewers([]);
+          setForm((prev) =>
+            prev.reviewerUserId ? { ...prev, reviewerUserId: "" } : prev,
+          );
+        }
       });
       return () => {
         alive = false;
@@ -188,27 +221,36 @@ export default function SubmittalEditForm({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => {
-      // Changing the reviewer company invalidates a previously-picked reviewer.
-      if (name === "reviewerCompanyId" && value !== prev.reviewerCompanyId) {
-        return { ...prev, reviewerCompanyId: value, reviewerUserId: "" };
-      }
-      return { ...prev, [name]: value };
-    });
+    setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
   };
 
   const validate = () => {
+    const today = todayStr();
     const specSection = form.specSection.trim();
     const fieldErrors = collectErrors({
+      cxProjectId: required(form.cxProjectId, "Project"),
+      // Titles are free text and need NOT be unique — only enforce presence + length.
       title:
         required(form.title, "Title") ||
         lengthBetween(form.title, { max: 200, label: "Title" }),
+      // Spec Section is optional; only validate format when something is entered.
       specSection:
         specSection && !SPEC_SECTION_PATTERN.test(specSection)
           ? "Spec Section may only contain letters, numbers, spaces, dots and dashes."
           : "",
-      // Separation of duties — trade and reviewer companies must differ when both set.
+      dueDate:
+        required(form.dueDate, "Due Date") ||
+        // Only block past dates when the user changed the date away from the
+        // stored value; an already-past due date on an existing record is fine.
+        (form.dueDate &&
+        form.dueDate !== initialDueDate &&
+        form.dueDate < today
+          ? "Due Date cannot be in the past."
+          : ""),
+      // Separation of duties: the submitting trade and the reviewing
+      // engineer/consultant must be different companies. Only enforced when both
+      // are chosen (both are optional).
       reviewerCompanyId:
         form.tradeCompanyId &&
         form.reviewerCompanyId &&
@@ -224,20 +266,16 @@ export default function SubmittalEditForm({
     e.preventDefault();
     if (loading) return; // guard against duplicate submission while saving
     if (!validate()) return;
-    // Build a payload containing ONLY whitelisted UpdateSubmittalDto fields.
-    const payload = {
-      title: form.title.trim(),
-      description: form.description,
-      type: form.type,
-      specSection: form.specSection.trim(),
-      tradeCompanyId: form.tradeCompanyId,
-      reviewerCompanyId: form.reviewerCompanyId,
-      reviewerUserId: form.reviewerUserId,
-      dueDate: form.dueDate
-        ? new Date(form.dueDate).toISOString()
-        : "",
-    };
-    // Strip empty optionals so we never send "" for a UUID/enum field.
+    const payload = { ...form };
+    payload.title = payload.title.trim();
+    if (payload.specSection) payload.specSection = payload.specSection.trim();
+    if (payload.dueDate)
+      payload.dueDate = new Date(payload.dueDate).toISOString();
+    // A submittal's project is fixed at creation — PUT /api/submittals/:id
+    // rejects cxProjectId (whitelist DTO). We keep it in the form for context
+    // (and to satisfy the required-field check) but never send it on update.
+    delete payload.cxProjectId;
+    // Strip empty optional fields
     Object.keys(payload).forEach((key) => {
       if (payload[key] === "" || payload[key] === null) delete payload[key];
     });
@@ -251,26 +289,15 @@ export default function SubmittalEditForm({
     color: "var(--rf-txt)",
     boxShadow: "inset 0 0 0 1px var(--rf-border3, #8daacf)",
   };
-  const readOnlyStyle = {
-    ...inputStyle,
-    opacity: 0.7,
-    cursor: "not-allowed",
-  };
   const labelClass = "text-sm mb-1 block";
   const labelStyle = { color: "var(--rf-txt2)" };
+  // Inline per-field error line, matching the rest of the form's typography.
   const fieldError = (msg) =>
     msg ? (
       <p className="text-xs mt-1" style={{ color: "var(--rf-red)" }}>
         {msg}
       </p>
     ) : null;
-
-  const projectLabel = (() => {
-    const p = (projects ?? []).find((x) => x.id === data?.cxProjectId);
-    return (
-      p?.projectName ?? p?.name ?? p?.code ?? data?.cxProjectId ?? "—"
-    );
-  })();
 
   return (
     <div
@@ -280,7 +307,7 @@ export default function SubmittalEditForm({
         border: "1px solid var(--rf-border2)",
       }}
     >
-      {/* HEADER */}
+      {/* Header */}
       <div
         className="p-6"
         style={{
@@ -289,7 +316,7 @@ export default function SubmittalEditForm({
         }}
       >
         <h2
-          className="flex items-center gap-2 text-xl font-semibold"
+          className="text-xl font-semibold flex items-center gap-2"
           style={{ color: "#fff" }}
         >
           <svg
@@ -315,7 +342,7 @@ export default function SubmittalEditForm({
         className="p-6 space-y-6"
         style={{ background: "var(--rf-bg)" }}
       >
-        {/* ── Project Hierarchy (read-only) ── */}
+        {/* ── Section 1: Project Hierarchy ── */}
         <div>
           <h3
             className="text-xs font-semibold uppercase tracking-widest mb-4"
@@ -323,35 +350,52 @@ export default function SubmittalEditForm({
           >
             Project Hierarchy
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="flex flex-col">
+
+          {/* Project */}
+          <div className="mb-4">
+            <label className={labelClass} style={labelStyle}>
+              Project
+            </label>
+            <AppSelect
+              name="cxProjectId"
+              value={form.cxProjectId}
+              onChange={handleChange}
+              options={projects.map((p) => ({
+                value: p.id,
+                label: p.projectName ?? p.name ?? p.code ?? p.id,
+              }))}
+              placeholder="— Select Project —"
+              disabled
+            />
+            {/* Project is fixed at creation and can't be reassigned on edit. */}
+            <p className="text-xs mt-1" style={{ color: "var(--rf-txt3)" }}>
+              Project can&apos;t be changed after creation.
+            </p>
+            {fieldError(errors.cxProjectId)}
+          </div>
+
+          {/* Asset */}
+          <div className="grid grid-cols-1 gap-4">
+            <div>
               <label className={labelClass} style={labelStyle}>
-                Project
+                Asset{" "}
+                <span style={{ color: "var(--rf-txt3)" }}>(optional)</span>
               </label>
-              <input
-                value={projectLabel}
-                readOnly
-                disabled
-                className={inputClass}
-                style={readOnlyStyle}
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className={labelClass} style={labelStyle}>
-                Submittal Number
-              </label>
-              <input
-                value={data?.submittalNumber ?? "—"}
-                readOnly
-                disabled
-                className={inputClass}
-                style={readOnlyStyle}
+              <AppSelect
+                name="assetId"
+                value={form.assetId}
+                onChange={handleChange}
+                options={assets.map((a) => ({ value: a.id, label: a.name }))}
+                placeholder={
+                  assets.length ? "— Select Asset —" : "No assets found"
+                }
+                disabled={assets.length === 0}
               />
             </div>
           </div>
         </div>
 
-        {/* ── Submittal Info ── */}
+        {/* ── Section 2: Submittal Info ── */}
         <div
           className="border-t pt-6"
           style={{ borderColor: "var(--rf-border2)" }}
@@ -372,6 +416,7 @@ export default function SubmittalEditForm({
                 name="title"
                 value={form.title}
                 onChange={handleChange}
+                placeholder="e.g. UPS-101 Shop Drawing - Primary Feed"
                 className={inputClass}
                 style={inputStyle}
                 maxLength={200}
@@ -414,7 +459,7 @@ export default function SubmittalEditForm({
             {/* Due Date */}
             <div className="flex flex-col">
               <label className={labelClass} style={labelStyle}>
-                Due Date
+                Due Date *
               </label>
               <input
                 type="date"
@@ -423,7 +468,9 @@ export default function SubmittalEditForm({
                 onChange={handleChange}
                 className={inputClass}
                 style={inputStyle}
+                required
               />
+              {fieldError(errors.dueDate)}
             </div>
           </div>
 
@@ -438,13 +485,12 @@ export default function SubmittalEditForm({
               onChange={handleChange}
               className={`${inputClass} h-28 resize-none`}
               style={inputStyle}
-              maxLength={5000}
               placeholder="Describe the submittal content, scope, and relevant details..."
             />
           </div>
         </div>
 
-        {/* ── Review & Assignment ── */}
+        {/* ── Section 3: Review & Assignment ── */}
         <div
           className="border-t pt-6"
           style={{ borderColor: "var(--rf-border2)" }}
@@ -503,9 +549,7 @@ export default function SubmittalEditForm({
                   value: u.id,
                   label:
                     `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() +
-                      (u.jobTitle ? ` · ${u.jobTitle}` : "") ||
-                    u.email ||
-                    u.id,
+                      (u.jobTitle ? ` · ${u.jobTitle}` : "") || u.email || u.id,
                 }))}
                 placeholder={
                   !form.reviewerCompanyId
@@ -520,19 +564,61 @@ export default function SubmittalEditForm({
           </div>
         </div>
 
-        {/* BUTTON */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full mt-2 px-4 py-3 rounded-lg font-medium transition-all"
-          style={{
-            background: "var(--rf-accent)",
-            color: "#fff",
-            opacity: loading ? 0.6 : 1,
-          }}
-        >
-          {loading ? "Updating..." : "Update Submittal"}
-        </button>
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            disabled={loading}
+            className="px-6 py-3 rounded-lg font-medium"
+            style={{
+              border: "1px solid var(--rf-border2)",
+              color: "var(--rf-txt2)",
+              background: "transparent",
+            }}
+          >
+            Cancel
+          </button>
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+            style={{
+              background: "var(--rf-accent)",
+              color: "#fff",
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            {loading ? (
+              <>
+                <svg
+                  className="w-4 h-4 animate-spin"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Updating…
+              </>
+            ) : (
+              "Update Submittal"
+            )}
+          </button>
+        </div>
       </form>
     </div>
   );
